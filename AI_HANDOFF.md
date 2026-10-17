@@ -2,6 +2,12 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-17 — A1.2 kimlik ve imza (Claude; dal `ccr-2794f98b-53t67j`, `main`'e birleşti)
+- Yapılan: `ci/kuryelog-test.keystore` (Rawstats'tan), `app/build.gradle.kts` signingConfig `kuryelog` → debug (`.dev`, `-dev`, etiket "WEEM dev") ve release (`com.kuryelog.app`); sürüm `gradle.properties` `weem.versionCode=34`, `weem.versionName=0.1.0` (>33 derlemede `require`). Manifest: izinler (`VERI_SOZLESMESI` 3), `allowBackup=false` + Rawstats `data_extraction_rules.xml`. `:capture`: `com.kuryelog.app.WatchService` / `NotifService` boş gövde + Rawstats `accessibility_config.xml`, `acc_desc`.
+- `ci/check_identity.sh <apk> <paket>`: aapt2 (paket, sürüm, min/target), apksigner (SHA-256 = sabit pin = keystore), manifestte iki servis ve yedek ayarı. `tools/setup-android-sdk.sh`: kanca bunu zaten çağırıyordu ama dosya yoktu; SDK 36 + `local.properties`.
+- Doğrulama: `assembleDebug assembleRelease` yerelde derlendi; betik iki APK'da yeşil; yanlış paket ve başka anahtarla imza denemede yakalandı. `lintDebug` 0 hata / 6 uyarı (simge yok, AGP/Kotlin yeni sürüm, "adres" yazım). `test` ve `-p logic test` yeşil. CI yok; telefonda denenmedi.
+- Açık kalan: A1.4 CI (betiği çağırsın; lint ayarı Rawstats gibi `abortOnError` + `lint.xml`; `apk.yml` yalnız `.dev` dağıtsın — release WEEM 1.0'a kadar telefona kurulmamalı, Rawstats'ın yerini alır). Simge kullanıcıdan.
+
 ## 2026-10-17 — A0.2 açık soruların yanıtı + A1.1 Gradle iskeleti (Claude; dal `ccr-2e70dcaf-vhiw6n`, `main`'e birleşti)
 - Yapılan: S1–S13 kararları plan Bölüm 8'e; plan, iş listesi, `sartname/` ve `BEKLEYEN_OZELLIKLER` güncellendi (Y12 1.0'da → A6.11; YolGo'ya ek yok; MapLibre; hava her telefonda; scooter yalnız Receiver'a; net/hedef tanımı). `AGENTS.md`: paralel ajan en çok 2–3 + bölüm bölüm push, "Devam promptu", "Ortam" (`dl.google.com`).
 - A1.1: wrapper 9.3.1 (Rawstats'tan), `gradle/libs.versions.toml` (AGP 9.1.0, Kotlin 2.4.0, JUnit 4.13.2), `logic/` (8 modül, paket `com.kuryelog.logic.*`, grup `com.kuryelog.logic`, JVM 17), kök build `includeBuild("logic")` + `:app` ve 8 ince Android modülü (her biri `com.kuryelog.logic:<ad>`'a bağlı). Modül yönü: `gradle/module-graph.properties` + `gradle/module-graph.gradle.kts` (iki build ortak; `test`/`check` öncesi `checkModuleGraph`).

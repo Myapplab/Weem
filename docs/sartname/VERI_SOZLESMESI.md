@@ -11,7 +11,7 @@ Ayrıntılı alan listeleri ve satır başvuruları: `docs/sartname/bulgular/` (
 | Kalem | Değer | Kaynak | WEEM |
 |---|---|---|---|
 | applicationId / namespace | `com.kuryelog.app` | `app/build.gradle.kts:7-16` | aynı |
-| İmza | `ci/kuryelog-test.keystore`, alias `kuryelogtest`; şifreler `app/build.gradle.kts:21,23`'te (belgeye yazılmaz) | `app/build.gradle.kts:18-29` | aynı (debug imzası; `release` buildType'a bağlı değil) |
+| İmza | `ci/kuryelog-test.keystore`, alias `kuryelogtest`; şifreler `app/build.gradle.kts:21,23`'te (belgeye yazılmaz) | `app/build.gradle.kts:18-29` | aynı anahtar: WEEM debug (`.dev`) ve release (`com.kuryelog.app`) ikisi de bununla imzalı; sertifika SHA-256 `f679…1883`, `ci/check_identity.sh` denetler |
 | Sürüm | versionCode 33, versionName `0.25.1` | `app/build.gradle.kts` | kod >33, tek yönlü artar |
 | SDK | minSdk 29, target/compile 36, Java/JVM 17 | `app/build.gradle.kts` | aynı (JVM 17 ya da 21: A1.1'de) |
 | Araçlar | Gradle 9.3.1, AGP 9.1.0, Kotlin 2.4.0; sürüm kataloğu yok; `android.builtInKotlin=false`, `android.newDsl=false`, `nonTransitiveRClass=true` | `gradle/wrapper/gradle-wrapper.properties:3`, kök `build.gradle.kts:2-4`, `gradle.properties` | aynı sürümler; katalog `yeni` |

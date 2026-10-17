@@ -4,7 +4,7 @@
 
 **Durum:** plan, şartname ve iş listesi hazır; Aşama 1 (iskelet) sürüyor. Henüz kurulabilir sürüm yok.
 
-**Derleme:** saf Kotlin mantık `logic/` ayrı build'de, her ortamda: `./gradlew -p logic test`. Android (`:app` ve modüller) Android SDK ve `dl.google.com` ister: `./gradlew assembleDebug`. Modüller arası izinli bağımlılıklar: `gradle/module-graph.properties`.
+**Derleme:** saf Kotlin mantık `logic/` ayrı build'de, her ortamda: `./gradlew -p logic test`. Android (`:app` ve modüller) Android SDK ve `dl.google.com` ister: `tools/setup-android-sdk.sh` (SDK + `local.properties`), sonra `./gradlew assembleDebug` (paket `com.kuryelog.app.dev`). APK kimlik denetimi: `ci/check_identity.sh <apk> <paket>`. Modüller arası izinli bağımlılıklar: `gradle/module-graph.properties`.
 
 | Dosya | Ne için |
 |---|---|
