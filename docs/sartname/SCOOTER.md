@@ -174,3 +174,92 @@ Zaman aşımı (122-128): `pending` boşalır, `due=now`; yoklama → `probeTime
 - `derive(auth, wallMs)` (16-23): `seed = wallMs + Σ (int)auth[i] << ((i%8)*8)` — Java `int` kaydırması: kaydırma `& 31` (32→0, 40→8, 48→16, 56→24), bayt işaretli; toplam `long`'a. `java.util.Random(seed).nextBytes(16)` → `SHA-256(…)[0..16)`; ara dizi sıfırlanır. Yalnız referans/eşitlik kurucusunda (`keyFactory == null`; `generator=reference_java_lcg_sha256`).
 - **WEEM:** `derive` Kotlin'de `java.util.Random` ile (kotlin.random değil) ve `Int.shl` (aynı 5 bit maske) ile birebir; yalnız testlerde. Uygulama `SecureRandom`.
 - Var olan anahtar hiç döndürülmez (yalnız açık eşleştirme yeni anahtar üretir; `SessionKey.java:14`).
+
+## 3. Okunan değerler ve ölçekler (NB `NinebotMetrics.java`)
+
+### 3.1 Register tablosu
+
+Çözme (`decode`, 76): veri boyu register boyuna eşit ve 2 ya da 4 olmalı; **küçük uçlu** işaretsiz tamsayı; `signed` ve boy 2 ise `short`'a çevrilir (4 baytlık işaretli yok); `değer = n × ölçek`; `[min, max]` dışında `null` (red, `measurement_rejected`). Son değer anahtar başına tutulur (`LinkedHashMap`, 77-80); bağlantı düşünce silinir.
+
+| Kart | Reg | Boy | Anahtar | Birim | İşaret | Ölçek | Aralık | Şerit | Satır |
+|---|---|---|---|---|---|---|---|---|---|
+| `0x16` (VCU) | `0x55` | 2 | `battery_percent` | % | – | 1 | 0–100 | slow | 13 |
+| `0x16` | `0x5f` | 2 | `remaining_range_km` | km | – | 0,01 | 0–200 | slow | 14 |
+| `0x16` | `0x62` | 4 | `odometer_km` | km | – | 0,1 | 0–1.000.000 | rare | 15 |
+| `0x16` | `0x64` | 4 | `lifetime_awake_seconds` | s | – | 1 | 0–4.294.967.295 | rare | 16 |
+| `0x16` | `0x66` | 4 | `lifetime_riding_seconds` | s | – | 1 | 0–4.294.967.295 | rare | 17 |
+| `0x16` | `0x6b` | 2 | `vehicle_temperature_c` | °C | – | 0,1 | 0–120 | slow | 18 |
+| `0x16` | `0x57` | 2 | `scooter_speed_kmh` (aday) | km/h | – | 0,1 | 0–120 | fast (+ araya girme) | 25 |
+| `0x16` | `0x68` | 2 | `dashboard_trip_km` (aday) | km | – | **0,1** (topluluk haritası 0,01; saha 7 Ekim düzeltti) | 0–10.000 | slow | 26 |
+| `0x16` | `0x6a` | 2 | `dashboard_ride_seconds` (aday) | s | – | **1** (topluluk "dakika"; saha düzeltti) | 0–1.000.000 | slow | 27 |
+| her BMS `b` | `0x8c` | 2 | `bms_<b>_voltage_v` | V | – | 0,01 | 20–80 | fast | 40 |
+| BMS `b` (ilk yanıttan sonra eklenir) | `0x8d` | 2 | `bms_<b>_current_a_charge_positive` | A | **işaretli** (+ şarj, − deşarj) | 0,01 | −200–200 | fast | 41 |
+| BMS `b` | `0x8f` | 2 | `bms_<b>_percent` | % | – | 1 | 0–100 | slow | 41 |
+| BMS `b` | `0x8a` | 2 | `bms_<b>_reg8a_raw` (anlamı bilinmiyor: iç %81'de sabit 1217, harici %58'de 1000) | raw | – | 1 | 0–65.535 | rare | 42-45 |
+| sweep kartı | `from..to` | 2 | `sweep_<b>_<i>` | raw | işaretli | 1 | −32.768–32.767 | sweep | 51 |
+
+`<b>` iki haneli küçük onaltılık (`String.format(Locale.ROOT,"bms_%02x_…")`, 39-41). Kartlar: `PRIMARY_BMS = 7` (iç batarya, 30); bağlantıda her zaman `voltage(7)`, `voltage(0x22)`, `voltage(0x23)` okunur (`NinebotSession.java:56`; G3'te `0x22/0x23` hiç yanıtlamaz → 3 zaman aşımında düşer); harici batarya kartı yoklamayla bulunur (sahada `0x06`; Bölüm 9). Batarya registerları bir kart **ilk kez** yanıtlayınca eklenir (`battery(b)` listesinin voltaj dışındaki üçü, `NinebotSession.java:112`).
+
+Bütün araç registerları ve ölçekler "topluluk G3 haritası" (Ninebot-BLE-MQTT-Bridge) + saha düzeltmeleridir; `device_verified=false`, `mapping=community_g3` her ölçüm olayında yazılır (`BleCapture.java:57`). Resmî uygulamanın W değeri V×A değildir, kaynağı bilinmiyor (19-24).
+
+### 3.2 Tazelik ve türetilen değerler
+
+| Kural | Değer (satır) |
+|---|---|
+| `FAST_FRESH_MS` | 3.000 ms — fast şeridi (voltaj, akım, hız) (57-58) |
+| `SLOW_FRESH_MS` | 15.000 ms — diğerleri (57-58) |
+| `freshValue(values, key, now, freshMs)` | anahtarın `0 ≤ yaş ≤ freshMs` en yeni değeri, yoksa `null` (75) |
+| `PACK_CONFIRM_MS` | 60.000 ms — harici paket güç toplamına yalnız yüzdesi bu kadar taze iken girer (38, 66) |
+| `packPowerW(b)` | taze `voltaj × akım` (W, + şarj / − deşarj), biri yoksa `null` (64) |
+| `powerW` | iç paket (`7`) yoksa `null`; varsa iç + onaylı harici paketlerin toplamı (62, 66) |
+| `packBoards` | sweep olmayan `bms_` değerlerinin kartları, sıralı (67) |
+| `exportable(key)` | araç anahtarları ya da `bms_[0-9a-f]{2}_(voltage_v\|current_a_charge_positive\|percent\|reg8a_raw)`; sweep asla (70) |
+| `parseBoards(text)` / `addBoard` | virgüllü onaltılık; `0<b<256`, `7`, `0x16`, `0x04` hariç, yinelenen atılır; `addBoard` sıralı `%02x` yazar (72-73) |
+
+`BleCapture.telemetry()` (65-72; kayıt `sample` satırı): her değer için `{value (taze değilse null), last_value, age_ms, fresh, unit, board, register, decoded_mono_ms}` + `mapping="community_g3_candidate"`, `device_verified=false`, `scooter_speed_kmh`, `dashboard_power_w`, `dashboard_power_source` (`voltage_times_current` ya da harici varsa `voltage_times_current_all_packs`), `internal_power_w`, `external_power_w`, `dashboard_trip_km`, `dashboard_ride_minutes` (= sn/60), `dashboard_ride_seconds`.
+
+`BleCapture.measurements()` (75): ayar ekranındaki durum metni (etiketler "Pil", "Menzil", "Toplam km", "Araç sıcaklığı", "Hız (aday)", "Sürüş km (aday)", "Sürüş sn (aday)", "Pil [kk] • Voltaj/Akım (+ şarj)/Reg 0x8a (kapasite?)/Yüzde"; `lifetime` gizli; güç "Güç: N W (V×A • doğrulanmamış)").
+
+**WEEM:** tablo, ölçek, aralık, işaret ve tazelik birebir (`logic/scooter`); anahtar adları kayıtta korunur (11). "Aday" ve "doğrulanmamış" uyarıları arayüzde kalır (A5.4).
+
+## 4. Eşleşme ve anahtar deposu (`pairing-v1`, Keystore)
+
+### 4.1 Depo (NB `KeyVault.java`)
+
+| Öğe | Değer (satır) |
+|---|---|
+| SharedPreferences | **`pairing-v1`**, `MODE_PRIVATE` (14) |
+| Keystore | `AndroidKeyStore`, takma ad **`NinebotLogger.Pairing.v1`**; yoksa üretilir: AES, `PURPOSE_ENCRYPT\|DECRYPT`, `BLOCK_MODE_GCM`, `ENCRYPTION_PADDING_NONE`, anahtar boyu verilmez (sağlayıcı varsayılanı), kullanıcı doğrulaması yok (13, 15) |
+| Şifreleme | `AES/GCM/NoPadding`, IV sağlayıcıdan (12 bayt), etiket 128 bit, **AAD = cihaz adresi UTF-8**; değer = `Base64.NO_WRAP(IV ‖ şifreli+etiket)` (16 bayt anahtar → 44 karakter) (16, 22) |
+| Anahtarlar (adres başına; adres = BLE MAC, ör. `AA:BB:…`) | `<adres>` (etkin), `<adres>.confirmed` (bool), `<adres>.pending` (aday), `<adres>.previous`, `<adres>.previous.confirmed` (16-26) |
+| `get` | etkin değer yoksa `null`; boy <28 ya da çözülen ≠16 bayt ya da her hata → `KeyUnavailableException("Yerel eşleştirme anahtarı açılamadı")` (16-17) |
+| `has` / `confirmed` / `hasPending` | yalnız tercih okur, şifre çözmez (19-21) |
+| `save(adres, k, confirmed=false)` | yalnız `.pending` yazılır; etkin anahtar değişmez (23) |
+| `save(adres, k, confirmed=true)` | etkin anahtar farklıysa (ya da okunamıyorsa) eskisi `.previous` + `.previous.confirmed`'a; yeni etkin + `.confirmed=true`; `.pending` silinir. Aynı anahtarla yeniden kayıt `.previous`'u silmez (24) |
+| `restore` | `.previous` yoksa false; varsa etkin ← önceki, onay işareti önceki değerden (uydurulmaz), `.previous*` ve `.pending` silinir (26) |
+| Yazma | `commit()` (eşzamanlı); başarısızsa `IllegalStateException("Eşleştirme anahtarı saklanamadı")` (25) |
+
+Akış (NB `BleCapture.java:46-58`):
+
+- Bağlantı başında `vault.get(adres)`; açılamazsa: eşleştirme isteniyorsa anahtar `null` + olay `ble_key_error {reason: local_key_unavailable, explicit_repair: true}`; istenmiyorsa `close()` (yeniden bağlanma **yok**), durum + uyarı "Yerel anahtar açılamadı; Bluetooth durduruldu, GPS sürüyor. Kaydı durdurup G3 ile eşleştir veya Gelişmiş bağlantı anahtarı ile kurtar." + olay `ble_key_error {retry: false}`.
+- Olay `local_key_state {present, confirmed, pending_candidate}`.
+- Eşleştirme penceresi bağlantılar arası tek: ilk kurulumda `pairEnd = now + 300 sn`; yeniden bağlanmada kalan süre geçer; süre dolmuşsa oturum kurulmaz, durum "Eşleştirme süresi doldu; yeniden denemek için kaydı durdur" (46-47).
+- `Port.key(k, confirmed)` → `vault.save`; onaylı kayıttan sonra `allowPair=false` (sonraki yeniden bağlanmalar normal AUTH); dizi her durumda sıfırlanır (54).
+
+Elle anahtar (NB `MainActivity.java:122-123`, yalnız bağlantı kapalıyken): "Kendi scooter'ının bağlantı anahtarı" — 32 onaltılık karakter (boşluklar silinir), 16 bayt değilse "Anahtar kaydedilemedi. 32 hex karakter gerekir."; önce aday sonra onaylı kaydedilir (`.previous` korunur); "Önceki anahtarı geri al" → `restore`. Durum metni (`keyState`): "Bu scooter için anahtar yok." / "Onaylanmamış aday anahtar var; etkin anahtar yok." / "Bu scooter için anahtar kayıtlı. Yerel onay işareti var; bağlantıda AUTH gerekir." / "…Önceki sürümden onaysız anahtar; bağlantıda AUTH gerekir." / "Saklanan anahtar açılamadı."
+
+Eşleştirme başlatma (NB `DashboardActivity.java:172`): bağlantı, dışa aktarma ve bakım yokken, izinler tamam ve scooter seçiliyse onay penceresi "G3 ile eşleştir" ("Segway Mobility bağlantısını kapat. İstenirse scooter'ın güç düğmesine kısa bas. Bluetooth anahtarı değişebilir; Segway ile yeniden eşleşmen gerekebilir. Önceki logger anahtarı ayarlardan geri alınabilir. GPS kaydı da başlar.") → "Eşleştir ve kaydet" = servis `pair=true` (eşleştirme her zaman kayıtla açılır; `RecordingService.java:38-40`).
+
+### 4.2 Eşleştirme uyarısı (NB `PairAttention.java`)
+
+- Metin `MESSAGE = "ŞİMDİ güç düğmesine bir kez kısa bas"` (10); bildirim no **8**, kanal `pairing-attention` "Eşleştirme onayı", `IMPORTANCE_HIGH`, ses yok, kanal titreşimi kapalı (11, 22); başlık "Scooter yanıt verdi", dokununca ayarlar (`MainActivity`).
+- Servis başına **bir kez** (yeniden bağlanmalar dahil): titreşim `[0, 300, 120, 300]` ms (titreşim motoru varsa), olay `pair_attention {message, first_reply, vibrator_available, vibration_requested, vibration_error}` (17-26). Kapanınca bildirim silinir. Oturum `pairPrompt(true)` ilk PAIR yanıtında, `false` READING'e geçince, başarısızlıkta ve kapanışta.
+- Ayarlar ekranı aynı metni saniyede bir yeniler (`refreshPairPrompt`, NB `MainActivity.java:18`).
+
+### 4.3 Kimlik ve göç
+
+- Keystore anahtarı uygulamanın UID'sine bağlı: WEEM aynı `applicationId` (`com.kuryelog.app`) ve imzayla Rawstats'ın üstüne kurulunca `pairing-v1` + `NinebotLogger.Pairing.v1` aynen okunur (plan Bölüm 2). Sürüş Paneli'nin bağımsız APK'sı (`az.ninebot.logger`, 0.3.0'da bitti; NB `build.gradle:2`) ayrı UID'di; onun anahtarları zaten taşınmadı.
+- Göç sınaması: NT `upgrade_smoke.py` + `KeyVaultInstrument` `upgrade_seed` (eski APK'da sentetik anahtar `00:11:22:33:44:55` / `00112233…eeff` yazılır, yeni APK okur).
+- `crypto_mode`: tek mod `gen2_fw` (`NinebotMode.java:3-8`); eski `gen3_zero` değeri `GEN2_FW`'ye çevrilir, başka değer `IllegalArgumentException("unknown crypto mode")`; ayarlar açılınca `gen2_fw` yazılır (NB `MainActivity.java:20`).
+
+**WEEM:** `pairing-v1` dosyası, beş anahtar biçimi, AAD, IV düzeni ve Keystore takma adı **değişmez** (taşınmazsa scooter yeniden eşleşmeli; `VERI_SOZLESMESI` 5.3). `KeyVault` Android'de kalır (Keystore); kural kısmı (aday/etkin/önceki geçişi) saf `PairingStore` arayüzüyle test edilir, Android uygulaması `KeyVaultInstrument`'in 9 denetimini cihaz testine çevirir (A5.2). Eşleştirme penceresi 300 sn ve "bir kez titreşim" aynen; bildirim numarası `NotificationIds` tablosuna girer (11.4).
