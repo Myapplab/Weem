@@ -245,3 +245,65 @@ Aşama (ilk tutan): geçmiş sayfası → UNKNOWN · `declineDialog` → UNKNOWN
 - Yalnız sınıfı `ProgressBar` (ya da `.ProgressBar` ile biten; Compose da bu sınıfı verir) olan ve **kareye yakın** (genişlik ≤ 2 × yükseklik ve tersi, boş değil) kutular sayılır.
 - Aynı karede teslim etiketi kutusu varsa gösterge etiketin satırında olmalı (merkezinin y'si etiketin üstünden bir etiket boyu yukarı ile altından bir etiket boyu aşağı arasında); etiket yoksa (gösterge etiketin yerini almış olabilir) kare sayılır.
 - Sonuç yalnız ek kanıttır; tek başına teslim değildir. `:orders` bunu müşterinin kaydırıcı karesinden sonra `SPINNER_AFTER_SLIDER_MS` = 10 sn içinde kabul eder (`ORDERS.md`). Kayıt satırında `deliver_spinner: true` (yalnız erişilebilirlik).
+
+## 3. R1 — OCR: tempo, ekran görüntüsü, maskeleme (D6, K37)
+
+Gerekçe (RS `OfferCapture.kt:3-13`, saha 11–12 Ekim): Wolt'un harita, teklif ve görev ekranlarında erişilebilirlik metni yok; her Wolt kartı OCR'dan gelir. Wolt kartı önce ücretsiz ve rota satırsız gösterir, ücreti 1–12 sn sonra yükler (ilk kart karesinden sonra ortanca 3 sn; 28 kartın yalnız 4'ünde ücret ilk karede). Bu yüzden pencere "önemliyken" Android'in izin verdiği en kısa aralıkla okunur.
+
+### 3.1 Sabitler (`OfferCapture`, RS `OfferCapture.kt:14-44`) — WEEM: aynen `logic/capture`
+
+| Ad | Değer | Anlam |
+|---|---:|---|
+| `REREAD_MS` | 100 ms | ücretsiz teklif kartının ek okumaları arası (erişilebilirlik) |
+| `MAX_REREADS` | 10 | kart başına ek okuma (≈ 1 sn) |
+| `INVALID_WINDOW` | 5 | `ERROR_TAKE_SCREENSHOT_INVALID_WINDOW` (API 34) |
+| `DISPLAY_FALLBACK_MS` | 60 000 ms | geçersiz pencere hatasından sonra tüm ekran görüntüsü süresi |
+| `OCR_GAP_MS` | 1 500 ms | sıcak olmayan pencerenin iki OCR'ı arası |
+| `SHOT_INTERVAL_MS` | 350 ms | iki ekran görüntüsü arası (Android 333 ms'den sıkını reddeder) |
+| `HOT_AFTER_TRIGGER_MS` | 10 000 ms | bildirim ya da yeni pencere durumu sonrası sıcaklık (saha: kart bildirimden 2,1–6,7 sn sonra) |
+| `HOT_OFFER_MS` | 20 000 ms | ücretsiz kart ilk karesinden bu yana sıcaklık üst sınırı (saha: en çok 12 sn) |
+| `OCR_MAX_WIDTH` | 960 px | OCR girdisi genişlik sınırı (Wolt'un 12–14 sp yazısı 1280 px ekranda ≈ 20–24 px kalır; ML Kit ≥ 16 px ister) |
+
+- `reread(o, yapılan)` = OFFER ∧ ücret yok ∧ yapılan < 10. `useDisplay(sdk, geçersizPencereAnı, now)` = sdk < 34 ∨ (son geçersiz pencereden bu yana 0 ≤ geçen < 60 sn). `ocrScale(w)` = w ≤ 960 ise 1, değilse 960 / w.
+- WEEM ek sabitleri (Android'de düz sayı olmasın diye `CaptureTiming`): `SECOND_READ_MS` = 180, `OCR_STALE_MS` = 1 800 (3.4), `TICK_SHIFT_MS` = 500, `TICK_IDLE_MS` = 2 000.
+
+### 3.2 `OcrPace` — hangi pencere, ne zaman (RS `OfferCapture.kt:46-111`, saf; WEEM: aynen)
+
+Durum: pencere başına son okuma anı, paketi, "ücretsiz kart yükleniyor" başlangıcı, son görüntü (parmak izi + satırlar), son başarısız okuma; paket başına son tetik; son ekran görüntüsü anı.
+
+- `trigger(pkg, at)`: paketin son tetik anı (yalnız ileri).
+- `hot(id, pkg, now)` = (now − paketin tetiği ∈ [0, 10 sn]) ∨ (now − pencerenin yükleme başlangıcı ∈ [0, 20 sn]).
+- `due(id, pkg, now)` = (now − son ekran görüntüsü ≥ 350 ms) ∧ (now − pencerenin son okuması ≥ [sıcak ∧ son okuma başarısız değil ise 350 ms, değilse 1 500 ms]).
+- `next(pencereler, now)`: vadesi gelenlerden önce sıcak olanların en eski okunanı, yoksa vadesi gelenlerin en eski okunanı; yoksa null.
+- `started(id, pkg, at)`: pencerenin son okuması, paketi ve son ekran görüntüsü = at. `failed(id, at)`: o okuma başarısız; pencere sıcak aralığı değil normal aralığı bekler.
+- `read(id, gözlem)`: kabul edilen OCR karesi OFFER ∧ ücretsiz → yükleme başlangıcı (yoksa) = gözlem anı; başka her kare yüklemeyi bitirir.
+- `hotDelay(now)`: bilinen pencerelerden biri sıcaksa bir sonraki ekran görüntüsüne kalan süre (`son ekran görüntüsü + 350 − now`, en az 0), değilse null (sonraki tik ya da olay okur).
+- `same(id, iz)` / `remember(id, iz, satırlar)`: aynı parmak izli görüntü yeniden OCR'lanmaz, önceki satırlar kullanılır.
+- `retain(id'ler)`: ekranda olmayan pencereler unutulur (paket tetikleri kalır).
+- **Parmak izi** (RS `WatchService.kt:279-287`, `OfferCapture.kt:101-109`): 64 bit FNV-1a; başlangıç `FNV_OFFSET xor ((genişlik shl 32) or yükseklik)`, her piksel `x = (x xor (piksel and 0xFFFFFFFF)) × 0x100000001b3`; satır blokları (en çok 65 536 piksel) tek ara bellekle. Her piksel sayılır: değişen tek rakam izi değiştirir.
+
+### 3.3 Ekran görüntüsü (RS `WatchService.kt:196-248, 288-300`)
+
+1. OCR meşgul işaretlenir; `pace.started`; o anki `shiftStart` saklanır; `display = useDisplay(...)`.
+2. API ≥ 34 ve `display` değilse **pencere görüntüsü** (`takeScreenshotOfWindow(id)`), değilse **tüm ekran** (`takeScreenshot(DEFAULT_DISPLAY)`); geri çağrılar ana iş parçacığında.
+3. Başarı: donanım tamponu `ARGB_8888` kopyalanır (tüm ekranda değiştirilebilir kopya), tampon kapatılır. Tüm ekranda **kendi pencerelerimiz siyahla boyanır** (`maskOverlays`): rozet (bağlı ve genişliği > 0 ise ekrandaki yeri ve boyu) ve Sürüş Paneli'nin yüzen topu (`SurusPaneli.floatingBounds()`); topun "12.4" + "km" yazısı teklifin km'si ya da ücreti sanılmasın. Pencere görüntüsünde kendi pencerelerimiz yoktur.
+4. Ayrı tek iş parçacığında (rozet ve top ana iş parçacığında çizilir): tüm ekranda pencere sınırına kırpma (kesişim boşsa ya da ekran dışıysa girdi yok), genişlik > 960 ise oranlı küçültme (süzgeçli), parmak izi. Ara görüntüler geri verilir. Girdi ya da iz yoksa OCR biter.
+5. Ana iş parçacığında `recognize`: servis bağlı değilse biter. Aynı iz → önceki satırlar (3.4), OCR biter, `afterOcr`. Değilse ML Kit (`TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)` = Latin yazısı; `com.google.mlkit:text-recognition:16.0.1`, model APK içinde): satırlar = bütün blokların satırları, sınır kutusunun (üst, sol) sırasıyla (kutu yoksa 0); iz ve satırlar saklanır; 3.4. Hata `ocr`; her durumda görüntü geri verilir, OCR biter, `afterOcr`.
+6. Hata (`onFailure(kod)`): OCR biter; `pace.failed`; kod 5 ve pencere görüntüsüyse geçersiz pencere anı = at (60 sn tüm ekran); `events.jsonl` `screenshot_unavailable {pkg, code, display}`; son hata metni (1.8).
+7. `afterOcr`: servis bağlıysa `hotDelay` kadar sonra yeni okuma.
+
+Latin tanıyıcı Kiril okumaz: söz dağarcığındaki Rusça sözcükler yalnız erişilebilirlik metninden gelir.
+
+### 3.4 OCR satırlarının kabulü (`ocrLines`, RS `WatchService.kt:260-273`)
+
+- **Atılır:** servis bağlı değil ∨ kayıt izni yok ∨ `shiftStart` değişti (başka vardiya) ∨ pencere (aynı id ve aynı kök paket) artık ekranda değil ∨ ekran görüntüsünden bu yana ≥ 1 800 ms geçti ∨ satır yok.
+- **Eylemler OCR'da yoktur**, satırlardan türetilir: kabul, ret, alış, teslim satırları ve (bir satır `slide to confirm` içeriyorsa) "vardım" satırları.
+- Aynı pencerenin erişilebilirlik okuması (`native`) da ayrıştırılır. **Erişilebilirlik PICKUP/DROPOFF diyorken OCR karesi OFFER/IDLE/OFFLINE ise OCR karesi yok sayılır** (geçiş sırasında alınmış kare dolu sipariş durumunu ezmesin). Değilse `accept(..., "ocr")` (1.5) ve `pace.read`.
+- Gözlem anı = **ekran görüntüsünün istendiği an** (`at`), OCR'ın bittiği an değil (geç kare zamanı, K37 `backfill`, `ORDERS.md`).
+
+### 3.5 WEEM yerleşimi
+
+- Saf (`logic/capture`): `OfferCapture`, `OcrPace` (FNV dahil), `CaptureTiming`, `ocrLines` kararı (`OcrAcceptance.accept(native, ocr, ...)` gibi saf bir işlev: atma koşulları + native/OCR çatışması + türetilmiş eylemler) — test edilebilir olsun diye.
+- Android (`:capture`): ekran görüntüsü, kırpma/ölçek, parmak izi için piksel okuma, ML Kit çağrısı, maskeleme.
+- **Maskeleme kaynağı:** Android `:core`'da küçük bir kayıt (`OwnOverlays`: modüller ekrandaki pencerelerinin dikdörtgenini veren işlev kaydeder). Rozet (`:orders`, A3.7) ve yüzen panel (`:scooter` S7, A5) kaydolur; `:capture` hepsini boyar. Restoran/müşteri balonları (R6) Rawstats'ta maskelenmiyordu: aynı kalır (risk 9).
+- ML Kit sürümü 16.0.1 (plan 4.7); ağ ayrıntısı 7.3.
