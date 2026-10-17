@@ -307,3 +307,46 @@ Latin tanıyıcı Kiril okumaz: söz dağarcığındaki Rusça sözcükler yaln�
 - Android (`:capture`): ekran görüntüsü, kırpma/ölçek, parmak izi için piksel okuma, ML Kit çağrısı, maskeleme.
 - **Maskeleme kaynağı:** Android `:core`'da küçük bir kayıt (`OwnOverlays`: modüller ekrandaki pencerelerinin dikdörtgenini veren işlev kaydeder). Rozet (`:orders`, A3.7) ve yüzen panel (`:scooter` S7, A5) kaydolur; `:capture` hepsini boyar. Restoran/müşteri balonları (R6) Rawstats'ta maskelenmiyordu: aynı kalır (risk 9).
 - ML Kit sürümü 16.0.1 (plan 4.7); ağ ayrıntısı 7.3.
+
+## 4. R2 — Bildirim okuma (`NotifService`) ve R16 — navigasyon bildiriminden mesafe (`NavDistance`)
+
+### 4.1 Bildirim dinleyici (RS `NotifService.kt:11-82`)
+
+- **Ev izleyici tiki** (E7): dinleyici bağlanınca 5 sn'de bir `HomeWatch.refresh` (korumalı); bağlantı kopunca ve kapanınca durur. Sistem dinleyiciyi bağlı tuttuğundan ekran okuma kapalıyken de evden çıkış vardiyayı başlatır (`CORE.md` 1.7). WEEM: aynı (`CaptureTiming.HOME_TICK_MS` = 5 000).
+- `onNotificationPosted` korumalı (kaynak `notification`; 16 Ekim: navigasyon uygulaması bildirimini saniyede bir yeniler, tek istisna uygulamayı açılır açılmaz kapatıyordu). Sıra:
+  1. **Navigasyon paketi** (`NavDistance.packages`, 4.2): bildirimin `EXTRA_TITLE`, `EXTRA_TEXT`, `EXTRA_SUB_TEXT`, `EXTRA_BIG_TEXT`, `EXTRA_INFO_TEXT` alanları → `OrderTracker.navigation(satırlar, now)`; **diske hiçbir şey yazılmaz**; dön. Bu adım `targets`'tan önce: navigasyon uygulamasının izlenen listede olması gerekmez; kayıt iznine `navigation` bakar.
+  2. Paket `targets`'ta değilse dön.
+  3. Kayıt izni yoksa tekrar süzgeci (`lastByKey`) boşaltılır, dön.
+  4. `title`, `text`, `big` (`EXTRA_BIG_TEXT`), `sub` (`EXTRA_SUB_TEXT`); aynı `sbn.key` için `"title|text|big|sub"` öncekiyle aynıysa dön (yenilenen bildirim tekrar yazılmaz), değilse saklanır.
+  5. `notifs.jsonl` "posted" satırı (6.2).
+  6. `OrderTracker.notification(pkg, [title, text, big, sub] boş olmayan tekil, "\n" ile, sbn.postTime)`.
+- `onNotificationRemoved` korumalı: `targets` dışıysa dön; tekrar süzgecinden silinir (izin yokken de); izin yoksa dön; "removed" satırı (6.2).
+- Aynı bildirim `:orders`'a iki yoldan gelebilir: erişilebilirlik bildirim olayı (1.3, olay metinleri) ve dinleyici (bu bölüm). İkisi de bugünkü gibi iletilir; `:orders` (ipucu satırı, hazır sayacı) buna göre yazılmıştır.
+- WEEM: Android `NotifService` (ad değişmez, A1.2 manifestte) ince; tekrar süzgeci (`NotificationDedup`: anahtar → içerik) ve satır biçimi saf `logic/capture`.
+
+### 4.2 R16 — Navigasyon bildiriminden kalan yol (RS `NavDistance.kt:11-36`)
+
+- Paketler: `com.google.android.apps.maps`, `com.waze`, `ru.yandex.yandexnavi`, `ru.yandex.yandexmaps`, `ru.dublgis.dgismobile`, `com.here.app.maps`.
+- Süre birimleri: `min|mins|minute|minutes|dk|dak|deq|deqiqe|мин|h|hr|hrs|saat|ч`. Mesafe: `(\d+(?:[.,]\d+)?)\s*(km|m|км|м)(?![a-zа-я])`.
+- `summary(satırlar)`: `norm`'lanmış hâlinde hem süre (`\b\d+\s*(birim)\b`) hem de kendisi süre olmayan bir mesafe taşıyan **ilk** satır ("8 min · 2,1 km"), kırpılmış, en çok 60 karakter. Yalnız mesafe ("150 m", "Turn left in 300 m") bir sonraki manevradır, yok sayılır.
+- `metres(özet)` (M20): `norm` sonrası açık Unicode sınırlı süre (`(?<![\p{L}\p{N}_])[0-9]+[\s\p{Z}]*(birim)(?![\p{L}\p{N}_])`) yoksa null; varsa süre olmayan **son** mesafe; `,` → `.`; `km`/`км` × 1000 ("1 min · 5 m" → 5, "8 min · 2,1 km" → 2100, "3 мин · 1,2 км" → 1200, "1 saat 5 dk · 300 m" → 300; "5 minutos · 2 km", "x3 min · 2 km" → null).
+- 0.25.0 çökmesi: `durationU` önce `Regex("(?U)…")` idi; Android ICU `(?U)` bilmez, nesne yüklenemedi, ilk bildirim uygulamayı kapattı; 0.25.1'de sınırlar açık yazıldı (`:16-19`).
+- Kullanım (`ORDERS.md`): özet ve anı yalnız bellekte (`navSummary`, `navSummaryAt`); kartların canlı satırı "Kalan: <özet>" / "Qalıb: <özet>" (≤ 20 sn taze); varış kuralında (M18/M20) restoran aşamasında (TO_RESTAURANT, WAITING) ve müşteri yolunda (TO_CUSTOMER) kaynak `nav_google_maps` (bildirim hangi uygulamadan gelirse gelsin bu ad), ≤ 30 sn taze. E16: müşteri kartı artık bu mesafeyle açılmaz.
+- **WEEM:** R16 kalır (ilk sürüm listesinde). YolGo'nun E8 rota yükünün yerini WEEM'in kendi navigasyonu alır (`NavPort.route`, `RouteStatus.remainingM`; kaynak adı `nav_yolgo` korunur, `ORDERS.md`). `summary`'deki düz `\b` JDK 21'de Kiril birimle eşleşmez ("3 мин · 1,2 км" → null; cihazda ICU ve Rawstats'ın JDK 17 testlerinde eşleşir): WEEM'de açık sınırla yazılır (7.5).
+
+## 5. R19 — Ekran okuma kapalı uyarısı (E7)
+
+### 5.1 Kural (RS `ScreenReading.kt:9-40`, saf)
+
+- `ScreenReading.enabled(ayar, pkg)` = `Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES` `:` ile bölünür, `"<pkg>/"` ile başlayan öğe var. `on(ayar, pkg, bağlı)` = bağlı ∧ açık (açık ama çökmüş servis de hiçbir şey kaydetmez).
+- `ScreenReadingGuard(graceMs = 10 000)`: `check(on, vardiya, now)` — açıksa ya da vardiya yoksa "kapalı başlangıcı" silinir; değilse (yoksa) now; uyarı = başlangıç var ∧ now − başlangıç ≥ 10 sn; uyarı değiştiyse true. Sabitler `GRACE_MS` = 10 000, `CHECK_MS` = 5 000, `NOTIFICATION_ID` = 5103 (**WEEM: 5104**, `NotificationIds.SCREEN_READING_OFF`).
+
+### 5.2 Çalıştırma ve gösterim (RS `GpsService.kt:25-31, 100, 117-155, 293, 303, 316-326`; `MainActivity.kt:543, 1384-1390`)
+
+- Vardiya başlangıcında 5 sn'lik denetim kurulur, vardiya sürdükçe yinelenir. Her denetim: `on = ScreenReading.on(ayar, paket, WatchService.running)`; uyarı değiştiyse göster ya da kaldır ve `events.jsonl` `screen_reading_off` / `screen_reading_on`. Vardiya bitince denetim durur, koruyucu sıfırlanır (`check(true, false, now)`), uyarı kalkar; servis kapanınca denetim silinir.
+- **Bildirim:** kanal `screen_reading` ("Ekran okuma uyarısı" / "Ekran oxuma xəbərdarlığı", IMPORTANCE_HIGH); başlık "Ekran okuma kapalı — kayıt yapılmıyor" / "Ekran oxuma bağlıdır — qeyd aparılmır"; metin "Wolt ve Bolt okunmuyor. Açmak için dokun: Erişilebilirlik → Rawstats ekran kaydı." / "Wolt və Bolt oxunmur. Açmaq üçün toxun: Əlçatanlıq → Rawstats ekran kaydı."; renk paletin uyarı kırmızısı (gece/gündüz); `ongoing`, `onlyAlertOnce`; dokununca erişilebilirlik ayarı.
+- **Erişilebilirlik ayarı intent'i** (K39): `ACTION_ACCESSIBILITY_SETTINGS` + `NEW_TASK`; `":settings:fragment_args_key"` = `WatchService` bileşeni, `":settings:show_fragment_args"` paketinde aynı anahtar (desteklenen telefonda servis vurgulanır); açılamazsa genel ayarlar.
+- **Kırmızı rozet:** "Diğer uygulamaların üzerinde göster" izni varsa (`Settings.canDrawOverlays`) ve rozet yoksa: başlık metni, 13 sp sans-serif-medium, yazı gece `#121212` gündüz beyaz, dolgu 12/8 dp, köşe 16 dp kırmızı zemin, yükselti 6 dp; `TYPE_APPLICATION_OVERLAY`, odaklanmaz, dokunuşu geçirir; üst orta, y = 64 dp; dokununca erişilebilirlik ayarı. İzin yoksa yalnız bildirim.
+- **Ana sayfa:** vardiya açık ∧ ekran okuma çalışmıyorsa kırmızı satır "Ekran okuma kapalı — kayıt yapılmıyor" + "!" → erişilebilirlik ayarı. Elle vardiya başlatma ekran okuma **istemez** (E7: vardiya okumasız da açılır).
+- **WEEM:** kural `logic/capture` (`ScreenReading`, `ScreenReadingGuard`). Denetim döngüsü, bildirim (`NotifyPort`, 5104) ve kırmızı rozet Android `:capture`'ta bir `ShiftListeners` dinleyicisi (vardiya başı: döngü; vardiya sonu: durdur ve kaldır); `:core` vardiya servisi `:capture`'ı tanımaz. Metindeki servis adı "WEEM ekran kaydı" (manifest etiketi). Ana sayfa satırı Harita sekmesindeki vardiya kartında (A2.4 kartı; A3.7). `NotificationIds.kt`'deki "`:orders`/R19" sahiplik notu `:capture` olur.
+- R19'un diğer kalemleri: otomatik başlatma bildirimleri 5101/5103 A2.4'te yazıldı (`Notices`), 5102 scooter A5'te; pil optimizasyonu bilgi satırı ve izinler kartı (`MainActivity.kt:1186-1210`) `:app` ilk açılış/izinler ekranında (G5; `ORDERS.md` R19 satırında ayrıntı).
