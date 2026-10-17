@@ -14,4 +14,12 @@ abstract class NinebotSuite {
         assertTrue(label, ok)
         count++
     }
+
+    companion object {
+        /**
+         * Başka bir suitin paylaşılan yardımcısı içindeki denetim (ör. `ProtocolTest.Port`, `PowerCadenceTest.run`): eskide o suitin
+         * statik sayacına giderdi, çağıranın sayısına girmezdi; burada da yalnız doğrulanır.
+         */
+        val ASSERT_ONLY: (Boolean, String) -> Unit = { ok, label -> assertTrue(label, ok) }
+    }
 }
