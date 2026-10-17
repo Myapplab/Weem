@@ -2,6 +2,7 @@ package com.kuryelog.app
 
 import android.app.Application
 import android.content.Context
+import com.kuryelog.app.capture.ScreenReadingWarning
 import com.kuryelog.app.core.CrashLog
 import com.kuryelog.app.core.ShiftHub
 
@@ -16,5 +17,7 @@ class WeemApplication : Application() {
         super.onCreate()
         // ShiftPort durumu tercihlerden (süreç vardiya sürerken yeniden başlamış olabilir).
         ShiftHub.attach(this)
+        // E7 ekran okuma uyarısı (CAPTURE.md 5.2): vardiya dinleyicilerinin sonuncusu (RS: `GpsService.startShift` sonunda).
+        ShiftHub.listeners.add("screen_reading", ScreenReadingWarning(this))
     }
 }

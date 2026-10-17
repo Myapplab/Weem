@@ -12,18 +12,22 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.kuryelog.app.capture.CaptureStatus
 import com.kuryelog.app.core.Home
 import com.kuryelog.app.core.ShiftHub
 import com.kuryelog.logic.core.Lang
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -48,6 +52,14 @@ fun ShiftCard(lang: Lang) {
                     style = MaterialTheme.typography.titleMedium,
                 )
                 if (interrupted) Text(Str.SHIFT_INTERRUPTED.get(lang), color = MaterialTheme.colorScheme.error)
+                // E7 (CAPTURE.md 5.2): vardiya açık, ekran okuma çalışmıyor → kırmızı satır, dokununca erişilebilirlik ayarı.
+                // Rawstats ana sayfası her çizimde bakardı; burada 5 sn'de bir (uyarı denetimiyle aynı tempo).
+                val screenReadingOffTitle by produceState<String?>(null, on, lang) {
+                    while (true) { value = runCatching { CaptureStatus.offWarning(ctx, lang, on) }.getOrNull(); delay(CaptureStatus.CHECK_MS) }
+                }
+                if (screenReadingOffTitle != null) TextButton(onClick = { ctx.safely { CaptureStatus.openAccessibilitySettings(ctx) } }) {
+                    Text("$screenReadingOffTitle  !", color = MaterialTheme.colorScheme.error)
+                }
                 status?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 if (on && !interrupted) {
                     OutlinedButton(onClick = { ctx.safely { ShiftHub.stop() } }, modifier = Modifier.padding(top = 8.dp)) { Text(Str.SHIFT_STOP.get(lang)) }

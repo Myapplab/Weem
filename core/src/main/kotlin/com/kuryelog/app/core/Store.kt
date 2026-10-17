@@ -7,6 +7,7 @@ import com.kuryelog.logic.core.FailureSink
 import com.kuryelog.logic.core.KuryelogPrefs
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.core.LogStore
+import com.kuryelog.logic.core.ManualSessionPolicy
 import com.kuryelog.logic.core.attempt
 import org.json.JSONObject
 import java.io.File
@@ -42,6 +43,16 @@ object Store {
     inline fun <T> guarded(ctx: Context, source: String, block: () -> T): T? = attempt(source, sink(ctx), block).getOrNull()
 
     fun shiftOn(ctx: Context): Boolean = KuryelogPrefs.shiftOn(values(ctx))
+    /** Ekran ve bildirim kaydı izni (CAPTURE.md 0; RS `Store.canRecordScreen`): elle vardiya açık ve içe aktarma yok. */
+    fun canRecordScreen(ctx: Context): Boolean = prefs(ctx).let {
+        ManualSessionPolicy.canCapture(it.getBoolean(KuryelogPrefs.SHIFT, false), it.getBoolean(KuryelogPrefs.MANUAL_SESSION, false), importing)
+    }
+    /** İzlenen uygulamalar (tercih `targets`, CAPTURE.md 1.9). */
+    fun targets(ctx: Context): Set<String> = prefs(ctx).getStringSet(TARGETS, null) ?: emptySet()
+    /** Telefon pili 0–100, okunamazsa null (`screens.jsonl` `phone_battery_pct`). */
+    fun phoneBattery(ctx: Context): Int? = ctx.getSystemService(android.os.BatteryManager::class.java)
+        ?.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY)?.takeIf { it in 0..100 }
+    const val TARGETS = "targets"
     @Synchronized fun ensureManualMode(ctx: Context): Boolean = KuryelogPrefs.ensureManualMode(values(ctx))
 
     private class PrefValues(private val p: SharedPreferences) : KuryelogPrefs.Values {
