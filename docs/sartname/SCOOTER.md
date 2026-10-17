@@ -301,3 +301,86 @@ Sürüş Paneli bağlanma anını dışarı vermez; durum karelerden okunur. `ti
 - Sürüş Paneli'nin kendi "Açılışta canlı paneli bağla" anahtarı (`auto_live`, varsayılan false; NB `DashboardActivity.java:178-181`): panel açılınca, bağlantı yok + scooter seçili + izin + Bluetooth açıksa canlı bağlantı.
 
 **WEEM:** 5.1 sabitleri, sınıflandırma ve M23 aynen (`TimingTest`, `ScooterReconnectM23Test`). S11: 2 telefon modunda **yalnız Receiver** bağlanır; Provider rolünde `:scooter` BLE'yi hiç açmaz (vardiya başı `open` "role_provider" nedeniyle atlanır, yeni neden adı: 11.3). Tek telefon modunda bugünkü gibi. Bildirim numaraları 4902, 5102 `NotificationIds`'te (`CORE.md` 3.3).
+
+## 6. S2 — Canlı panel ve S7 — yüzen panel
+
+### 6.1 Panel karesi (NB `NinebotDashboard.java`, saf)
+
+`snapshot(values, now)` (19-27) her kabul edilen ölçümde (`BleCapture.java:57`) üretilir, servis yayımlar (`RecordingService.publishFrame`, 48; dinleyiciler ana iş parçacığında, yalnız son kare):
+
+| Alan | Kaynak | Tazelik |
+|---|---|---|
+| `speedKmh` | `scooter_speed_kmh` | 3 sn |
+| `maxSpeedKmh` | oturumun en yüksek taze hızı (`reset()` ile −1; resmî uygulamanınkiyle aynı olmayabilir) | — |
+| `powerW` | `NinebotMetrics.powerW` (iç + onaylı harici, + şarj / − harcama) | 3 sn |
+| `voltageV`, `currentA` | iç paket `bms_07_voltage_v`, `bms_07_current_a_charge_positive` (harici paket kutucuklara girmez) | 3 sn |
+| `batteryPct` | `battery_percent`, yoksa `bms_07_percent` | 15 sn |
+| `rangeKm`, `tripKm`, `rideSec`, `tempC`, `odometerKm` | `remaining_range_km`, `dashboard_trip_km`, `dashboard_ride_seconds`, `vehicle_temperature_c`, `odometer_km` | 15 sn |
+| `extBatteryPct` | `7` dışındaki ilk kartın taze yüzdesi (`packBoards` sırasıyla) | 15 sn |
+| `monoMs` | kare anı (`elapsedRealtime`) | — |
+
+`sameValues` (14) zaman dışında bütün alanları karşılaştırır (gereksiz çizim yok). Biçimler (29-40): `DASH = "–"` (değer yoksa, asla 0 uydurulmaz); `speed`/`oneDecimal` `%.1f`; `watts` yuvarlanmış tamsayı (−0 → "0"); `whole` yuvarlanmış; `clock` `m:ss`, ≥1 sa `h:mm:ss`; `ride` `["N","sn"]` / `["M","dk","S","sn"]` / `["H","sa","M","dk"]`; `gauge` = hız/30 (0–1).
+
+### 6.2 Canlı panel ekranı (NB `DashboardView.java`, `DashboardActivity.java`)
+
+- Gösterge: büyük hız, halka (`gauge`), altında enerji/güç/batarya/menzil/voltaj/akım/sıcaklık kutucukları ve "BU SÜRÜŞ" ya da (Rawstats siparişi sayacı sıfırladıysa) "BU SİPARİŞ" satırı (Wh, ort. hız, pil kullanımı; `DashboardView.java:33-34, 58`). Kare **5 sn**'den eskiyse "VERİ BEKLENİYOR" (`STALE_MS`, 11, 37, 70); değerler hiçbir zaman ara değerlenmez ya da GPS ile doldurulmaz.
+- Dokunma: tam ekran (araç çubuğu kayar; `immersive` örnek durumunda saklanır, tercih değil); geri tuşu tam ekrandan çıkar (`DashboardActivity.java:60-99`). Ekran açık tut: bağlantı varken ve `keep_screen_on` (varsayılan true) (109).
+- Kalp atışı saniyede bir (bayatlık, araç çubuğu, 34). Görünürken `RecordingService.dashboardVisible = true` (BLE yüksek öncelik ve hızlı tempo; 2.1, 2.5) (205-206).
+- Resim içinde resim (PiP): yalnız yüzen panel açık ama "üstte göster" izni **yokken** ve cihaz destekliyorsa (`pipEnabled`, 213); oran 16:10; API ≥31 otomatik giriş, eskide `onUserLeaveHint` (107, 211-216).
+- Başlat (168-171): bağlantı varsa ve kayıt yoksa "Kayda geç" ("Bağlantı kopmadan GPS ve sürüş kaydı başlar."); scooter seçili değilse yalnız GPS kaydı; değilse "Nasıl başlasın?" → "Canlı panel • kayıt yok" / "Panel + kayıt • GPS dahil".
+- Tarama (128-164): `startScan(filtre yok, SCAN_MODE_LOW_LATENCY)`, **4 sn** (`SCAN_MS`), sonuçlar canlı (yeni cihaz, ad gelince ya da RSSI ≥6 dB değişince liste yenilenir); sıra: kayıtlı cihaz, adlı, adsız; etiket "<ad | İsimsiz BLE cihazı> • <adres> • <rssi> dBm"; boşsa "Cihaz bulunamadı. Scooter'ı aç, Segway bağlantısını kapat ve tekrar dene."; seçim `device`, `device_name` (etiket), `ble_name` (yayın adı) yazar.
+- Bildirim (servis, NB `RecordingService.java:126-127, 168-186`): no **7**, kanal `recording` "Scooter kaydı" `IMPORTANCE_LOW`, sürekli, kategori `NAVIGATION`; başlık "Sürüş Paneli • kayıt sürüyor" / "… • canlı • Rawstats vardiyası kaydediyor" / "… • canlı panel (kayıt yok)"; metin: uyarı varsa uyarı, değer geliyorsa **2 sn**'de bir "<hız> km/h • <W> W[ • <Wh> Wh][ • ort. <v> km/h][ • %<pil>]", yoksa 10 sn'de bir bağlantı durumu; eylemler "Kayda geç" (canlıyken) ve "Durdur"; aynı metin yeniden gönderilmez.
+
+### 6.3 S7 — Yüzen panel (NB `FloatingPanel.java`, `FloatGeometry.java`, `PanelField.java`, `FloatPainter.java`)
+
+- Ne zaman (24-36): bağlantı açıkken uygulamanın son ekranı da durduktan **400 ms** sonra (ekranlar arası geçişte değil), `floating` (varsayılan **true**) ve `Settings.canDrawOverlays`; Rawstats'ın ekranları da sayaca katılır (`SurusPaneli.screenStarted/Stopped`). Bağlantı bitince kalkar (tik saniyede bir, 51; servis kapanışı `FloatingPanel.hide()`).
+- Pencere: `TYPE_APPLICATION_OVERLAY`, `FLAG_NOT_FOCUSABLE | FLAG_LAYOUT_NO_LIMITS | FLAG_WATCH_OUTSIDE_TOUCH` (53); konum `float_x`/`float_y` (varsayılan sağ kenar, ekranın 1/3'ü), bırakınca en yakın kenara kayar ve kaydedilir.
+- Hareketler (sınıf açıklaması 10-17): hemen sürükle; dokun → iki ok (sağ: yatay bar, alt: dikey sütun); açık bara dokun ya da ters yöne kaydır → kapanır; çift dokunma (`ViewConfiguration.getDoubleTapTimeout`) → Sürüş Paneli ayarları; uzun basma → canlı panel; "×" hedefine bırakma (alttan 170 dp, 64 dp, yakınlık `1,1 × boy`) → `floating=false` (yalnız ayardan geri açılır).
+- Çizim: kare her ölçümde gelir; yalnız gösterilen değer değiştiyse ve en sık **80 ms**'de bir (`MIN_FRAME_MS`, 46, 57).
+- Geometri (`FloatGeometry.java:10-39`, saf): top `BALL_DP=100` (64–160), bar kalınlığı topun `THICK_PCT=125`%'i (80–200), yatay uzunluk 4 değerde uzun kenarın `H_PCT=80`%'i (30–100), dikey `V_PCT=60`%'i (25–95), yazı `TEXT_PCT=100`% (60–180; dikey/yatay ekran ayrı); `length = round(max(top, min(uzunKenar × pay × n/4, ekran − 2×kenar)))`, `n = clamp(alan sayısı, 1, 4)`; `cross`, `start` barı ekran içinde tutar; `direction(dx, dy, slop)`: iki eksende de `<slop` ise dokunma, yoksa büyük eksen.
+- Alanlar (`PanelField.java:6-42`): 16 değer — `speed`, `power`, `battery`, `range`, `voltage`, `current`, `temp`, `ext_battery`, `max_speed`, `odometer`, `scooter_trip`, `ride_time`, `trip_wh`, `trip_pct`, `trip_km`, `avg_speed`; en çok **4** (`MAX`); varsayılan `power, trip_wh, battery, avg_speed` (hız scooter'ın kendi ekranında); `float_fields` virgüllü anahtarlar (bilinmeyen/yinelenen atılır, boşsa varsayılan); `float_ball_field` topta gösterilen (yoksa ilk alan); `value` boş değerde "–", `trip_km` hareket yoksa "–"; `caption` "Wh • sürüş", "% • sürüş", "km • sürüş", "ort. km/h", "% • harici", "maks. km/h", "toplam km", "süre".
+- `SurusPaneli.floatingBounds()` → Rawstats ekran okuması topu OCR'da maskeler (RS `WatchService.kt:296`; WEEM `OwnOverlays`, `CAPTURE.md` 7.1).
+- Ayarlar (NB `MainActivity.java:37-70, 95-102`): "Sıra ve top değeri" (oklarla sıra, daire = top), boyut kaydırıcıları (`float_ball_dp`, `float_thick_pct`, `float_h_pct`, `float_v_pct`, `float_text_port_pct`, `float_text_land_pct`).
+
+**WEEM:** 6.1 saf ve aynen (`DashboardTest`, `ScooterFeedTest`); 6.2–6.3 Compose Scooter sekmesi + `:app` üstü pencere (A5.4): metinler, eşikler (5 sn bayat, 80 ms, 400 ms, 2 sn/10 sn bildirim), alanlar ve geometri aynen (`FloatingTest`). "Sürüş Paneli" adı ekranda "Scooter" sekmesi olur; bildirim başlıklarındaki "Rawstats vardiyası" → "WEEM vardiyası" (bilerek fark, 14).
+
+## 7. S3 — Sürüş kaydı (NB `RecordingService.java`, `LogStore.java`, `LogExport.java`, politikalar)
+
+### 7.1 Kip ve servis
+
+| Kip | Başlatan | GPS | SQLite | Ön plan türü |
+|---|---|---|---|---|
+| Canlı panel (`live_only`) | Panel "Canlı panel • kayıt yok", `auto_live`, Rawstats vardiyası (`SurusPaneli.startLive`) | yok | yok | `CONNECTED_DEVICE` |
+| Kayıt | Panel "Panel + kayıt", eşleştirme (her zaman kayıt) | var | var | `LOCATION \| CONNECTED_DEVICE` |
+| Canlıdan kayda | "Kayda geç" (bildirim/panel; `RECORD` eylemi) | açılır | açılır (`upgraded_from_live_panel: true`) | türe konum eklenir; reddedilirse uyarı "Kayıt açık, ancak arka planda konum izni verilmedi; GPS uygulama açıkken kaydedilir" |
+
+- Başlatma niyeti (39-40): `device`, `device_name` (= `ble_name`, yoksa `device_name`'in " • " öncesi), `pair`, `live_only` (= canlı ve eşleştirme değil), `crypto_mode = gen2_fw`, `sweep` (tercih), `sweep_board = 0x16`, `sweep_from = 0x00`, `sweep_to = 0xc0`.
+- İzin (71): Bluetooth (API ≥31 `BLUETOOTH_CONNECT`) **ve** (ince konum **ya da** canlı + API ≥31).
+- Durum bayrakları (`active`, `recording`, `maintenance`, `dashboardVisible`, `summary`, `warning`, `dashboard`; 15-26): `active` başka başlatmayı yok sayar; `maintenance` (eski kayıt silme) sırasında kayıt başlamaz.
+- `begin` (73-94): `trip.reset("")`; kayıtsa depo; oturum olayı `session_start {sdk, device_model, version, decoder_available: true, device_verified: false, crypto_mode, profile: 0, sweep, sweep_board/from/to, wire_transcript_sensitive: true}`; `PARTIAL_WAKE_LOCK "NinebotLogger:Recording"` 24 sa; GPS; scooter seçiliyse `BleCapture.start` (BLE iş parçacığında), değilse durum "GPS kaydı • scooter seçilmedi".
+- Saniyelik tik (113-131, yazıcı iş parçacığı `logger-writer`): BLE önceliği; kuyruk taşması uyarısı ("Teşhis kuyruğu doldu: N BLE ayrıntısı atlandı; GPS ve sürüş kaydı sürüyor" + `log_backpressure`); **1 Hz örnek** `ble.sample()` → `energy.add`, `trip.add`, ana uygulamanın `SampleSink`'i (hatası bağlantıyı durdurmaz; `true` dönerse `hostLogging`); kayıttaysa olay `sample` (7.2); bildirim; uyandırma kilidi tazelenir.
+- Bitiş (`finish`/`finishStorage`, 154-167): BLE önce kapanır, sonra depo: `log_summary {dropped_ble_events, omitted_diagnostic_events}`, oturum durumu `failed` (özet "Kayıt durdu:" ile başlıyorsa) / `stopped_with_log_gaps` (atlanan BLE olayı varsa) / `stopped`; kilit bırakılır, `null` kare, özet "Canlı panel kapatıldı • kayıt yapılmadı" ya da "Kayıt tamamlandı • GPS N • BLE M". Ölümcül hata (`fatal`): uyarı "Kayıt durdu: depolama veya servis hatası. Ayarlar bölümünü kontrol et." ve kapanış.
+
+### 7.2 GPS (kayıtta; `NinebotGpsPolicy.java:5-9`, `RecordingService.java:97-112, 132`)
+
+- `GPS_PROVIDER`, `minDistance 0`; aralık 1.000 ms; sabit duruş (hız ≤0,3 m/s, doğruluk ≤15 m, hız doğruluğu ≤0,5 m/s) **15 sn** sürünce 3.000 ms; hareket, belirsizlik ya da >5 sn fix boşluğu → 1.000 ms; sağlayıcı açılınca/kapanınca sıfırlanır; değişince olay `gps_cadence {requested_interval_ms}`.
+- Olay `gps_fix`: `fix_wall_ms`, `fix_mono_ns`, `gps_age_ms`, `lat`, `lon`, `accuracy_m`, `gps_speed_kmh`, `speed_accuracy_mps`, `bearing_accuracy_deg`, `bearing_deg`, `altitude_m`, `mock`; `gps_state {state, provider}`.
+- Olay `sample`: `elapsed_ms`, `gps` (son fix), `gps_fresh` (≤5 sn), `gps_request_interval_ms`, `ble_state`, `scooter_telemetry` (3.2).
+
+### 7.3 Depo (`ninebot-logger.db`, NB `LogStore.java`)
+
+- SQLite sürüm 1, WAL, `PRAGMA foreign_keys=ON`; `sessions(id INTEGER PRIMARY KEY, started_ms INTEGER NOT NULL, ended_ms INTEGER, state TEXT NOT NULL, device TEXT)`, `events(id INTEGER PRIMARY KEY, session_id INTEGER NOT NULL REFERENCES sessions(id), wall_ms INTEGER NOT NULL, mono_ns INTEGER NOT NULL, kind TEXT NOT NULL, payload TEXT NOT NULL)`, `INDEX event_session(session_id,id)`; `onUpgrade` → `IllegalStateException("Migration required")` (12-20).
+- `start(device)`: açık kalmış `recording` oturumları `interrupted` olur, yeni oturum `recording` (21-29); `end(id, state)` (30); `event` hazır deyimle (31).
+- `json(k, v, …)`: `null` → `JSONObject.NULL` (33).
+- `deleteCompletedBefore(cutoff)`: yalnız `recording` olmayan ve `started_ms < cutoff`; ardından `VACUUM`; yalnız ayarlardaki "Eski kayıtları sil" (30 gün; onaylı; NB `MainActivity.java:112-118`).
+
+Olay politikası (`NinebotLogPolicy.java:9-21`): sık türler `ble_raw`, `ble_write`, `ble_write_result`, `protocol_tx` (READING'deki), `ble_measurement` yalnız "Ayrıntılı teşhis" (`detailed_diagnostics`) açıkken ve kaydın ilk **10 dk**'sında (`DETAIL_MS`), en çok **10.000**; diğer BLE olayları ayrı **10.000** bütçe; el sıkışma TX'i (`stage=READING` içermeyen `protocol_tx`) `handshake_tx` bütçesine sayılır (`RecordingService.java:137-139`); atlananlar `omitted`. Yazma kuyruğu (`NinebotEventQueue.java:8`): sınır **2.048** (`RecordingService.java:56`); dolu ise BLE olayı atılır ve sayılır; GPS ve örnek satırları kuyruğu atlar (doğrudan yazıcı). Canlı kipte hiçbir olay yazılmaz.
+
+### 7.4 Dışa aktarma ZIP (NB `LogStore.java:45-75`, `LogExport.java:7-34`; `DashboardActivity.java:185-200`)
+
+- Seçenekler: "Son kayıt • konumsuz" (varsayılan), "Son kayıt • GPS rotası dahil", "Tüm kayıtlar • GPS rotaları dahil", "Tam teşhis • son kayıt • HASSAS" (ek uyarı: "Bu dosyadan scooter eşleştirme anahtarı çıkarılabilir…"); kayıt sırasında yapılmaz. Dosya `ACTION_CREATE_DOCUMENT`, ad `NinebotLogger-<ms>.zip`.
+- İçerik: `manifest.json` (`schema: 1`, `app: "Sürüş Paneli"`, `version`, `decoder_available: true`, `device_verified: false`, `utc_export_ms`, `wire_transcript_sensitive`, `full_diagnostics`, `location_included`, `latest_session_only`, `note`), `sessions.jsonl`, `events.jsonl` (satır = sütunlar; `device` filtreli ZIP'te `null`).
+- Filtreli (izin listesi, eski veritabanları dahil): `sample` (`elapsed_ms`, `gps_fresh`, `gps_request_interval_ms`, `gps`, `scooter_telemetry`: özet alanlar + `exportable` alanlar), `gps_fix` (konum seçilmediyse `lat`, `lon`, `altitude_m`, `bearing_deg`, `bearing_accuracy_deg` çıkar), `log_backpressure`/`log_summary`, `session_start` (`version`, `sdk`, `decoder_available`, `device_verified`, `sweep`), `gps_cadence`, `battery_config` (`probe`, `known_boards`), `battery_boards`/`battery_probe_*`/`battery_lost`/`battery_quiet`/`battery_back` (`detail`); başka tür **çıkmaz** (ham tel, el sıkışma, serbest metin). `pick` yalnız sayı/bool/dizi/null kopyalar.
+- Tam teşhis: bütün yükler, `device` ve konum dahil.
+
+**WEEM:** dosya adı, şema, durum değerleri, olay türleri ve alanları, politika sabitleri, ZIP biçimi ve izin listesi **aynı** (`VERI_SOZLESMESI` 7–8; eski ZIP'leri okuyan araçlar çalışır). `LogExport` ve politikalar `logic/scooter`'da saf (`LogPolicyTest`, `EventQueueTest`, androidTest `LogExportTest` → JVM testine). Dosya adı `NinebotLogger-<ms>.zip` ve `app: "Sürüş Paneli"` korunur (analiz araçları; değiştirmek kullanıcı kararı, 14). GPS kaydı: 2 telefonda yalnız Receiver'da (scooter orada).
