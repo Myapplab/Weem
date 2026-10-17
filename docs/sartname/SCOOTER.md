@@ -263,3 +263,41 @@ Eşleştirme başlatma (NB `DashboardActivity.java:172`): bağlantı, dışa akt
 - `crypto_mode`: tek mod `gen2_fw` (`NinebotMode.java:3-8`); eski `gen3_zero` değeri `GEN2_FW`'ye çevrilir, başka değer `IllegalArgumentException("unknown crypto mode")`; ayarlar açılınca `gen2_fw` yazılır (NB `MainActivity.java:20`).
 
 **WEEM:** `pairing-v1` dosyası, beş anahtar biçimi, AAD, IV düzeni ve Keystore takma adı **değişmez** (taşınmazsa scooter yeniden eşleşmeli; `VERI_SOZLESMESI` 5.3). `KeyVault` Android'de kalır (Keystore); kural kısmı (aday/etkin/önceki geçişi) saf `PairingStore` arayüzüyle test edilir, Android uygulaması `KeyVaultInstrument`'in 9 denetimini cihaz testine çevirir (A5.2). Eşleştirme penceresi 300 sn ve "bir kez titreşim" aynen; bildirim numarası `NotificationIds` tablosuna girer (11.4).
+
+## 5. S6 — Yeniden bağlanma
+
+### 5.1 Bağlantı katmanı (NB `BleCapture.java`, `Timing.java`)
+
+`failed(reason)` (39): bekçi ve bekleyen yeniden bağlanma iptal, `closeGatt()`, durum metni = neden, olay `ble_state {state: neden, attempt}`, `Timing.retryMs(attempt++)` sonra `connect()`. Her kabul edilen ölçümde `attempt = 0` (57): okuyan bağlantı 1 sn'den başlar.
+
+`Timing.retryMs(a)` (`Timing.java:10-11`): `a = max(0, a)`; `a ≥ FAST_RETRIES (24)` → **60.000 ms**; değilse `min(15.000, 1.000 << min(4, a))` → 1, 2, 4, 8 sn, sonra 15 sn (a=4…23). İlk 24 deneme ~11 dk (15 sn bağlanma bekçisiyle; restoran/kapı durağı), sonra dakikada bir.
+
+| Yeniden bağlanır (`failed`) | Bağlantıda kalır, okumaz (`fail`, `FAILED`/`NEEDS_KEY`) | Durur (`close`) |
+|---|---|---|
+| Bluetooth kapalı; `connectGatt` null ya da hata; 15 sn GATT bekçisi; kopma (`status≠0`/`DISCONNECTED`); servis keşfi başlatılamadı/hatası; abonelik başlatılamadı/hatası/hiç kanal; yazma reddi ya da `status≠0`; BLE geri çağrısında `RuntimeException`; protokol başlangıcı/nabız hatası; oturum `fault` (12 ardışık zaman aşımı "Ölçüm yanıtı kesildi; yeniden bağlanıyor", sayaç bitti "Şifreli oturum yenileniyor") | Ad boş; PRE_COMM 3 deneme yanıtsız; seri biçimi bozuk; anahtar yok / scooter `idx==0` (`NEEDS_KEY`); eşleştirme penceresi doldu; AUTH 3 kez başarısız (eşleştirmesiz); bildirim karakteristiği yok ("GATT kaydedildi; desteklenen kanal yok"); pencere dolmuş eşleştirme bağlantısında oturum kurulmaz | Yerel anahtar açılamadı ve eşleştirme istenmedi; kullanıcı/servis durdurdu (`close`: `closed=true`, bekleyen yeniden bağlanma iptal, 41) |
+
+"Bağlantıda kalır" satırı: GATT açık, nabız durmuş (`schedulePulse` yalnız `CLOSED/FAILED/NEEDS_KEY` dışında kurar, 27), bekçi son yazma geri çağrısında kaldırılmış; scooter kapanınca kopma gelir ve normal yeniden bağlanma başlar. Kullanıcı ancak kaydı durdurup yeniden başlatarak tekrar dener (14, R-S3).
+
+Servis (`RecordingService`): `START_NOT_STICKY` (57-69); süreç ölürse Sürüş Paneli kendini yeniden başlatmaz. Rawstats'ta vardiya servisi yapışkan yeniden başladığında `ScooterLink.onShiftStart` canlı bağlantıyı yeniden açar (RS `GpsService.kt:98`, `ScooterLink.kt:92-97`).
+
+### 5.2 M23 — "Scooter verileri alınıyor / alınamıyor" (RS `ScooterReconnect.kt`, saf)
+
+Sürüş Paneli bağlanma anını dışarı vermez; durum karelerden okunur. `tick(now, linkActive, lastFrameAt, speedKmh)` (20-34), sabitler `LOST_MS = 30.000`, `NO_DATA_MS = 30.000`, `RIDE_KMH = 10.0` (37-39):
+
+1. `linkActive == false` → her şey sıfırlanır, `null`.
+2. `fresh` = `lastFrameAt` var ve öncekinden büyük; öyleyse `lastFrame = lastFrameAt`.
+3. Kayıp durumunda: taze kare → kayıp biter, `RECEIVING`; uyarı verildiyse `null`; GPS hızı ≥10 km/s ise sürüş başlangıcı tutulur (altına düşünce silinir); sürüş ≥30 sn → **bir kez** `NOT_RECEIVING`.
+4. Kayıp değilken: taze kare → "görüldü"; görülmüş ve son kareden ≥30 sn → kayıp. Bağlantının ilk kareleri yeniden bağlanma sayılmaz.
+
+Çağrı (RS `ScooterLink.kt:38-53`, `GpsService.kt:248`): vardiyada her GPS fix'inde (hız m/s × 3,6), yalnız vardiya açık ve scooter seçiliyken; saat `elapsedRealtime`, kare zamanı `SurusPaneli.live()?.monoMs` (bağlantı düşünce kare `null`). Bildirim: `events.jsonl` satırı `{type: "scooter_link", action: "scooter_data_back" | "scooter_data_missing", reason: null}`; bildirim **4902**, kanal `scooter_link` "Scooter bağlantısı" (AZ "Skuter bağlantısı"), `IMPORTANCE_DEFAULT`, `setAutoCancel(true)`, `setOnlyAlertOnce(false)`; `RECEIVING`: "Scooter verileri alınıyor" / "Bağlantı yeniden kuruldu, değerler geliyor." (AZ "Skuter məlumatları alınır" / "Bağlantı bərpa olundu, dəyərlər gəlir."), 15 sn sonra kalkar; `NOT_RECEIVING`: "Scooter verileri alınamıyor" / "Sürüyorsun ama scooter'dan değer gelmiyor; Sürüş Paneli'ne bak." (AZ "Skuter məlumatları alınmır" / "Sürürsən, amma skuterdən dəyər gəlmir; Sürüş Panelinə bax."), zaman aşımı yok.
+
+### 5.3 Vardiya bağlantısı (RS `ScooterLink.kt:86-137`)
+
+- Tercih `scooter.autoConnect` (`kuryelog`, varsayılan **true**; ayar "Vardiyada scooter'a otomatik bağlan", RS `MainActivity.kt:1165-1166`).
+- Vardiya başı (`onShiftStart`, 93-97; vardiya servisinin yapışkan yeniden başlaması dahil): otomatik kapalıysa `scooter_link {action: skip, reason: auto_off}`; değilse `open`: sırayla `already_active`, `no_scooter`, `not_paired` (`KeyVault.has`), `no_bluetooth_permission`, denetim hatası `check_failed` → `skip`. Sonra canlı bağlantı (`startLive`, kayıt yok): başarılıysa `scooter.shiftLink = true`, `{action: start}`, 5102 silinir; reddedilirse (ör. `ForegroundServiceStartNotAllowedException`) `{action: failed, reason: <Sınıf> | refused}` + bildirim **5102** "Scooter bağlanmadı" / "Bağlanmak için dokun." (AZ "Skuter qoşulmadı" / "Qoşulmaq üçün toxun."; RS `AutoStartNotice.kt:19, 34-38`; kanal ve zaman aşımı `CORE.md` 3.3).
+- Vardiya sonu (`onShiftEnd`, 126-137): yalnız `scooter.shiftLink` true ise (silinir): bağlantı yoksa bir şey yapılmaz; kullanıcı kayda çevirdiyse `{action: kept_recording}`; değilse durdurulur `{action: stop}`; hata `{action: stop_failed, reason}`. Kullanıcının kendi açtığı bağlantıya dokunulmaz.
+- Vardiya içinde sonradan (`canConnectNow`/`connectNow`, 100-103): ana kartta "Scooter'a şimdi bağlan" (vardiya açık, bağlantı yok, seçili + eşleşmiş + izinli) ve "Scooter için Bluetooth izni ver" (API ≥31; `BLUETOOTH_SCAN` + `BLUETOOTH_CONNECT`); izin verilince otomatikse bağlanır (RS `MainActivity.kt:567-571, 1410`).
+- Ana kart satırı (`status`, 203-219): "Scooter seçilmedi · Sürüş Paneli'nde ara ve seç" / "Eşleştirilmedi · Sürüş Paneli'nde G3 ile eşleştir" / "Bluetooth izni gerekli" / "Bağlı değil · vardiyada otomatik bağlantı kapalı" / "Bağlı değil" / "Vardiya başlayınca bağlanır" / "Bağlanıyor · scooter verisi bekleniyor" / canlı: "%<pil> · <hız> km/h · <W> W[ · harici %<p>][ · bu sipariş <Wh> Wh]" (TR/AZ).
+- Sürüş Paneli'nin kendi "Açılışta canlı paneli bağla" anahtarı (`auto_live`, varsayılan false; NB `DashboardActivity.java:178-181`): panel açılınca, bağlantı yok + scooter seçili + izin + Bluetooth açıksa canlı bağlantı.
+
+**WEEM:** 5.1 sabitleri, sınıflandırma ve M23 aynen (`TimingTest`, `ScooterReconnectM23Test`). S11: 2 telefon modunda **yalnız Receiver** bağlanır; Provider rolünde `:scooter` BLE'yi hiç açmaz (vardiya başı `open` "role_provider" nedeniyle atlanır, yeni neden adı: 11.3). Tek telefon modunda bugünkü gibi. Bildirim numaraları 4902, 5102 `NotificationIds`'te (`CORE.md` 3.3).
