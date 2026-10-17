@@ -55,8 +55,8 @@ fun RecordsScreen(lang: Lang, onBack: () -> Unit, source: (android.content.Conte
             status = Str.RECORDS_PREPARING.get(lang)
             LogImport.start(ctx, { ctx.contentResolver.openInputStream(uri) }) { outcome ->
                 status = when (outcome) {
-                    // Biten içe aktarma: akış varsa courier.db günlüklerden yeniden kurulur (A3.7 bağlayınca).
-                    is LogImport.Outcome.Done -> { OrdersAccess.reload(); Str.RECORDS_IMPORT_DONE.get(lang) }
+                    // Siparişler `LogImport.afterImport` ile (WeemApplication) yeniden kurulur.
+                    is LogImport.Outcome.Done -> Str.RECORDS_IMPORT_DONE.get(lang)
                     LogImport.Outcome.ShiftOn -> Str.RECORDS_IMPORT_STOP.get(lang)
                     LogImport.Outcome.Busy -> Str.RECORDS_PREPARING.get(lang)
                     is LogImport.Outcome.Failed -> Str.ERROR.get(lang) + outcome.message
@@ -90,7 +90,7 @@ fun RecordsScreen(lang: Lang, onBack: () -> Unit, source: (android.content.Conte
             Text(labels.dailyRecords, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
             DayPages(screen, records = true, archive = archive, platform = platform.ifEmpty { null }, onPlatform = { platform = it ?: "" }, selected = selected,
                 onSelected = { selected = it }, onDetail = {}, onTrip = { trip = it }) { date ->
-                RecordCard(screen, src.today(), date, lang) { version++ }
+                RecordCard(screen, src.today(), date, lang, canDelete = src.canAct) { version++ }
             }
         }
     }
@@ -105,7 +105,7 @@ private fun TripDetailDialog(ctx: android.content.Context, lang: Lang, id: Strin
 
 /** Bir günün kayıt kartı (Rawstats `renderDailyRecords`): dosya sayısı ve boyut, kayıt dosyaları, arşiv, sil. Paylaşma ZIP'i A4.3'te. */
 @Composable
-private fun RecordCard(screen: OrdersScreen, today: String, date: String, lang: Lang, onChanged: () -> Unit) {
+private fun RecordCard(screen: OrdersScreen, today: String, date: String, lang: Lang, canDelete: Boolean, onChanged: () -> Unit) {
     val ctx = LocalContext.current
     val labels = screen.labels
     val records = remember(date) { DailyRecords(Store.logsRoot(ctx)) }
@@ -113,7 +113,6 @@ private fun RecordCard(screen: OrdersScreen, today: String, date: String, lang: 
     var files by remember { mutableStateOf(false) }
     var file by remember { mutableStateOf<String?>(null) }
     var confirm by remember { mutableStateOf<String?>(null) }
-    val canDelete = OrdersAccess.flow != null
 
     /** Arşivle/çıkar ([archive] true/false) ya da sil (null); bugünün kaydı vardiya açıkken değişmez. */
     fun change(name: String?, archive: Boolean?) = ctx.safely {
@@ -122,7 +121,7 @@ private fun RecordCard(screen: OrdersScreen, today: String, date: String, lang: 
             check(date != today || !Store.shiftOn(ctx)) { labels.recordStop }
             if (archive == null) records.delete(date, name) else records.archive(date, name, archive)
         }
-        if (archive == null) OrdersAccess.reload()
+        if (archive == null) OrdersAccess.reload(ctx)
         onChanged()
     }
 

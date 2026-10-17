@@ -32,11 +32,15 @@ import java.util.concurrent.Executors
 object Orders {
     @Volatile private var app: Context? = null
     @Volatile private var instance: OrderFlow? = null
+    @Volatile private var env: AndroidEnv? = null
 
     /** Süreçteki tek sipariş akışı (ilk çağrıda kurulur). */
     fun flow(ctx: Context): OrderFlow = instance ?: synchronized(this) {
-        instance ?: OrderFlow(AndroidEnv(ctx.applicationContext.also { app = it })).also { instance = it }
+        instance ?: AndroidEnv(ctx.applicationContext.also { app = it }).also { env = it }.let(::OrderFlow).also { instance = it }
     }
+
+    /** Akışın `courier.db` bağlantısı: Siparişler sekmesinin okuyucuları (A3.8) aynı bağlantıyı kullanır. */
+    fun records(ctx: Context): CourierRecords { flow(ctx); return env!!.db }
 
     /** `:app` açılışta: ekran ve bildirim olayları bu akışa, erişilebilirlik servisinin sipariş işleri [OrdersHost]'a (CAPTURE.md 7.1). */
     fun bind(ctx: Context) {
