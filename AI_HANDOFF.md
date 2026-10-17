@@ -2,6 +2,12 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-17 — A3.5 `:orders` çekirdek (Claude Opus · high; dal `ccr-e90bca59-fxabvl`, `c192b40`)
+- Yapılan: `DeliveryCore` + yardımcılar (Readiness, DeliveryDeadline, ArrivalDistance, VenueArrival, LegacyRecords, RecordJson, PlatformHistory, CashPayment/CashTips, OnlineSessions, OfferWeather, BoostLog, OrderHistory) satır satır `logic/orders`'a; uyarlananlar `OfferWindows`, `Platforms`, `OverlayText` (`OwnLines` sabitleri), `OrderStages`, `NavBinding`, `OfferSummaries`, `OfferWeather.from(WeatherNow)`; `OrderTracker` → saf `OrderFlow` (`Env`: LogStore, prefs, `CourierRecords`, Clock, ScooterBridge, WeatherPort, `OrderObserver`), `CaptureSink` + `ShiftMachine.Hooks` uygular. Farklar `ORDERS.md` 16.1.
+- Doğrulama: `logic/orders` 383 test, 336 yeşil (A3.2 sipariş testleri, `SahaTekrarTest` 10/10, yeni `OrderFlowTest` 7, `OverlayTextOwnLinesTest` 2); kalan 47 = A3.6 iskeletleri (PlatformTotals 19, CashReconcile 5, CashPending 3, PocketCash 3, RecordPages 2, RestaurantBubble 4, CustomerBubble 6, CustomerCard 5). capture 128/129, core 216 yeşil; kök `:orders`/`:capture` derlenir. CI yok (`[skip ci]`), telefonda denenmedi.
+- **`main`'e birleşmedi** (orders kırmızı); `main`'e yalnız `WEEM_ISLER.md` + bu not.
+- Açık kalan: A3.6 (Sonnet · high): A3.6 sınıfları + `OrderFlow`'daki "A3.6" notlu adımlar (resmî toplamlar, CASH PENDING, cep nakdi, E14/E16 açılışı). `OrderObserver` kanca imzaları A4.1'de kesinleşir. AZ "hava məlumatı gəlmədi" onayı hâlâ bekliyor.
+
 ## 2026-10-17 — A3.4 `:capture` kodu (Claude Opus · high; dal `ccr-e90bca59-fxabvl`, `aea4f62`)
 - Yapılan: Rawstats ayrıştırıcısı + yardımcılar satır satır `logic/capture`'a; saf yeni parçalar `CaptureText`, `CaptureTiming`, `OcrAcceptance`, `NotificationDedup`, `TargetApps`, `CaptureRows`, `CaptureSink`; JDK 21/ICU `\b` → açık Unicode sınırı, norm'da NBSP (`CAPTURE.md` 7.5); ağ yasağı: `NoNetworkTest`, `:capture:verifyRuntimeAllowlist` (`capture/runtime-allowlist.txt`, `preBuild`), ML Kit 16.0.1.
 - S17: `transport-backend-cct` dışlanamaz (ML Kit `CCTDestination.INSTANCE`'a doğrudan bakar → `NoClassDefFoundError`); onun yerine `TransportBackendDiscovery` meta-data'sı `tools:node="remove"` → arka uç yok, olaylar gönderilmeden silinir. Birleşik manifestte doğrulandı.
