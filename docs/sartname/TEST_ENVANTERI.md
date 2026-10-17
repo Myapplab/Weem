@@ -293,3 +293,67 @@ Eksik: Sürüş Paneli ve YolGo için saha kaydı tabanlı altın test yok (YolG
 - **Çevrilmez (10 dosya, 54):** `FeedSignerTest`, `OfferFeedAccessTest`, `YolGoButtonE5Test`, `HomeShareTest`, `app_version_test`, `ci_apk_workflow_test`, `offer_navigation_removed_test`, `native_telemetry_test`, `rawstats_home_sync_test`, `rawstats_home_stale_test` — davranışları WEEM'de yok; 2 telefon eşleştirme/izin testleri A8'de yeniden yazılır.
 - **Sonra (13 dosya, 100):** Y13/Y14 testleri. Y12 testleri (6 dosya, 45; `ww_clean_run_test` ve `ww_no_problem_green_test` zaten `:map`) 17 Ekim'de `:map`'e alındı (S3; A6.2a, A6.11).
 - **Uyarlanır (6 dosya, 48):** Rawstats ↔ YolGo eşitleme testleri (`rawstats_shift_end_test`, `rawstats_signals_test`, `RawstatsObserverTest`, `CourierFeedPayloadTest`, `LogFeedV3Test`, `HomePickContractTest`): tek uygulamada iç arayüz, 2 telefon modunda `:link` mesajı olarak yeniden yazılır.
+
+## A3.2 çeviri durumu (17 Ekim 2026)
+
+Rawstats testleri `tools/test-translate/` betikleriyle bölündü ve çevrildi (kaynak `rawstats` @ `6388c04`); `./gradlew -p logic compileTestKotlin` yeşil, kök Android `:capture`/`:orders` derlemesi bozulmadı. Üretim sınıfları iskelet imza (`TODO("A3.4")`/`TODO("A3.5")`): `:capture` ve `:orders` testleri **kırmızı** (333 testten 4'ü yeşil: modül kimliği ×2, `karelerYuklenirVeKisiselVeriYok`, `noRegexConstructAndroidRejects`), `:core`'a giden 4 test yeşil (kod A2'de vardı).
+
+| Hedef | Hedef (belge) | Çevrilen | Dosya |
+|---|---:|---:|---|
+| `logic/capture` | 93 | **93** | 14 dosya (`CAPTURE.md` 8); `ScreenReadingE7Test` 3 + 1 uyarlanan kaynak taraması, `IcuRegexTest` 2 (tüm modülleri tarar), `OfferCapture`/`OcrPace`/`OfferRules`/`ScreenDeduper`/`SliderSpinner`/`ScreenReading`/`NoteFields`/`NavDistance`/`OwnLines`/`NameMatch`/`Dialer` iskeletleri |
+| `logic/orders`, `CAPTURE.md` 8 payı | 100 | **100** | `CourierFlowTest` 27, `DeliveryRecognitionTest` 13, `WoltFlowK1K5Test` 20, `SahaTekrarTest` 10, `WoltDeliverySliderTest` 6, `WoltSliderSpinnerK33Test` 7, `WoltOfferFeeK37Test` 4, `OcrPaceD6Test` 2, `BoltBubbleR2Test` 1, `ParserEconomicsTest` 3, `CashScreenM16Test` 7 |
+| `logic/orders`, `ORDERS.md` 15.1 | 136 (M20 = 2) | **138** | `CoreLifecycleV2Test` 15, `CustomerStageK34*` 10+10+7+5, `CustomerStageK34RecordTest` 7 (6 + uyarlanan `feedV2ShowsOneOrderAtTheCustomer` → `OrderStages`/`TripStages`), `DeliveryCountD3Test` 9, `VenueArrivalD9Test` 10, `VenueNearM18Test` 5, `CustomerNearM19Test` 5, `ArrivalDistanceM20Test` 4, `StuckCustomerM22Test` 8, `RestaurantWaitE2Test` 5, `ReadinessE15Test` 4, `WoltSameCustomerR1Test` 5, `CustomerMatchK21Test` 5, `DeliveryDeadlineK29Test` 4, `TripStagesE8Test` 4 (`logic/core` `TripStages` tipine), `YolGoNavE8Test` 10 (`NavBinding`/`ScreenTrail`/`RouteStatus.Target`), `RecordJsonTest` 6 |
+| `logic/core` | 4 | **4** | `ManualSessionPolicyTest` 2, `BackupRestoreTest` 2 (yeşil) |
+| Çevrilmez | 6 | 0 | `MotionGate` 4, `OfferIdentity` 2 (`RecordingPolicyTest`) |
+
+**Sapmalar (kaynağı: `ORDERS.md` 15.1 sayıları):**
+- `ArrivalDistanceM20Test` belgede "orders (M20'den 2 kaynak taraması)" diyordu; dosyada kaynak taraması yok, 4 test de saf. **Dördü de `logic/orders`'a çevrildi** (+2). `googleMapsSummaryGivesMetres` yalnız `:capture`'ın `NavDistance`'ini dener; dosya bölünmesin diye `ArrivalDistanceM20Test` ile kaldı.
+- Kaynak taraması testleri bu görevde **yazılmadı** (Android dosya adları A3.7/A3.8'de belli olur): `RestaurantWaitE2Test.cardAndListShowIt`, `ReadinessE15Test.restaurantNotificationUsesTheCounterAndFollowsIt` (ve A3.3 listesindekiler). Yalnız E7'nin uyarlanan taraması (`CAPTURE.md` 8) yazıldı.
+- `CustomerStageK34LateDeliveryTest` (7 test): Rawstats testi ekonomi kaydedicisini (`EconomicsRecorder`) sürüyordu; kaydedicisiz kopya (ORDERS.md 15.1 `CustomerStageK34RecordTest` kuralı), altı `legs` satırı ifadesi (`assertEquals(1, r.legs(w.id).size)` vb.) çıkarıldı → **A4.1'e** (`EconomicsRecorder` testlerine) taşınacak.
+- `TripStagesE8Test` (4 test) ve `CustomerStageK34RecordTest.feedV2ShowsOneOrderAtTheCustomer`: Rawstats JSON `TripStages.feed/trip` yerine `logic/core` `TripStages` tipini üreten **`OrderStages.of/trip`** (yeni ad; A3.5 yazar).
+- `YolGoNavE8Test`: `YolGoNav.pickupOf/preferred` → **`NavBinding.pickupOf/preferred`** (yeni ad; kayıt dizgileri `yolgo_venue`, `nav_yolgo`, `gps_*_yolgo_target` aynı), `YolGoNav.Target` → `RouteStatus.Target`, `TARGET_MAX_AGE_MS` → `RouteStatus.TARGET_MAX_AGE_MS`.
+- `SahaTekrarTest` (capture 6 + orders 10): `olcumRaporu` belgenin listesine göre `logic/orders`'ta (yalnız ayrıştırıcı kullanıyor ama listede capture'ın 6'sında yok); saha yükleyicisi `SahaFrames` (testFixtures, `SahaFrame`), kareler `logic/capture/src/testFixtures/resources/saha/` (bayt bayt kopya).
+- Ekonomi payı (`CoreLifecycleV2Test` 8, `VenueArrivalD9Test` 1, `CustomerStageK34RecordTest` 1, `RestaurantWaitE2Test`/`ReadinessE15Test` taramaları, `TripStagesE8Test` 2) ve `core` (R18) 2 test A4.1/A4.3'te.
+
+## A3.3 çeviri durumu (17 Ekim 2026)
+
+Aynı hat (`tools/test-translate/`: `cfg.py` `A33`, `gen_a33.py`, `patch_a33.py`, `fixup_a33.py`, `regen_stubs.sh`); kaynak `rawstats` @ `6388c04`, dal `ccr-e90bca59-fxabvl`. `./gradlew -p logic compileTestKotlin` yeşil; kök Android `:orders`/`:capture` `compileDebugKotlin` yeşil. `-p logic test`: `capture` 100 test (97 kırmızı), `orders` 374 test (371 kırmızı), `core` 216 yeşil. Gövdeler A3.4–A3.6'da.
+
+| Hedef | Hedef (belge 15.2) | Çevrilen | Dosya |
+|---|---:|---:|---|
+| `logic/orders` | 137 (+ M15/M17 taramaları 2) | **135** | `CashOrderK31K32Test` 16, `TipRecordF48Test` 5, `PocketCashM15Test` 3, `CashPendingM17Test` 4, `CashReconcileM17Test` 5, `BoostLogK27Test` 7, `BoostListM21Test` 4, `BoostTempE3Test` 4, `OfferWeatherK28Test` 2, `PlatformHistoryK36Test` 10, `PlatformListD15Test` 5, `PlatformTotalsF82Test` 6, `…F83Test` 4, `…F84Test` 7, `…F85Test` 2, `OverlayBadgeK35Test` 3, `DualOfferStatusK30Test` 3, `OfferNetLineTest` 4, `RestaurantBubbleE14Test` 4, `CustomerCardE16Test` 5 (3 uyarlanır), `CustomerBubbleF72Test` 7, `PhoneK25Test` 3, `AverageListE1Test` 5, `OrderHistoryTest` 9, `TodayAveragesTest` 2, `RecordPagesTest` 2, `OfferFeedV2Test` 4 (uyarlanır) |
+| `logic/capture` | 6 | **6** | `NoteFieldsF71Test` (`NoteFields`) |
+| Kaynak taraması (yazılmadı) | 24 (belge) | **20** + E2/E15 (A3.2'de 2) | aşağıda |
+| Çevrilmez | 2 | 0 yazıldı | `OfferFeedV2Test.v1IsByteIdenticalForOffersOnScreen`, `e8ChangeKeyOverTheRealPayloads` |
+
+Beklentiler Rawstats ile birebir; elle değişenler yalnız aşağıdakiler (`git diff` ile Rawstats testine karşı doğrulandı; `PlatformTotalsF82/84`, `BoostLog/List`, `K36/D15` vb. 0 satır fark).
+
+**Sapmalar:**
+- **Kaynak taramaları yazılmadı** (Android dosya adları A3.7/A3.8'de belli olur; dosya adları/dizgi aramaları WEEM dosyalarına yeniden yazılır): `TipNotificationF46Test` 4 (mesaj stili, `RemoteInput`, hızlı düğmeler, pencere), `BoostTempE3Test.cardTopShowsIt`, `PlatformTotalsF85Test.dayPageHasTheCard`, `OverlayBadgeK35Test.overlayUsesTheNamelessLinesAndHomeKeepsNames`, `OfferNetLineTest` (`analysisExportButtonSitsUnderKayitlarNextToTheFullExport` → A4.3, `accessibilityDescriptionSaysTheNumberStaysOnThePhone` → A3.7 `:capture`), `RestaurantBubbleE14Test` 2, `CustomerCardE16Test.oldNotificationTriggerIsGone`, `CustomerBubbleViewF73Test` 3, `AverageListE1Test.eachAverageOpensItsList`, `AutoStartNoticeTest` 1 (`:core`, A2.4 `Notices`/`HomeWatch`), "günlük yedeğe ve dışa aktarmaya girer" üçü (`PocketCashM15Test`, `CashPendingM17Test` `theLogIsBackedUpAndExported`; `PlatformTotalsF83Test.fileIsBackedUpAndExported`: `BackupFiles.logNames` + `tools/analysis/kl_export.py` dizgisi; `:core`). Belgenin "24"ü A3.2'de pür çıkan `ArrivalDistanceM20Test`'in 2 taramasını da sayıyordu: gerçek 22 (20 burada + E2/E15).
+- **`AnalysisExport` ifadeleri A4.3'e (`:core`, R18)**: `CashOrderK31K32Test.theLogIsBackedUpAndExportedAnonymously` (yalnız `BackupFiles.logNames` kaldı; `AnalysisExport.kindOf(...) == KEEP_ALL` çıktı), `PlatformHistoryK36Test.cardsAndExports` (`kindOf` ve dışa aktarılan satırda `missed_by_kuryeplus:true`), `OfferNetLineTest` (`analysisExportDropsTheNetLine…` → **`theNetLineIsOneOfTheParsersOwnLines`**: yalnız `OwnLines.isOwn` yarısı; `AnalysisExport.isPanelLine` ve `AnalysisExport(...).screen(...)` ifadeleri `AnalysisExportTest`'e). A4.3 bu üç parçayı oraya yazmalı.
+- **Ad değişiklikleri (bilerek farklar, ORDERS.md 16)**: `PlatformTotalsF85Test` "Rawstats:" → "WEEM:" (5 dizgi: `line`, `diffLine`); `BoostTempE3Test` "(YolGo'dan hava gelmedi)" → "(hava bilgisi gelmedi)", AZ "(hava məlumatı gəlmədi)" — **AZ ifadesi belgede yok, ben seçtim; kullanıcı doğrulamalı**; `CustomerCardE16Test` "(YolGo)"/"(YolGo, 280 m)" → "(WEEM)". `OverlayText.isOwn` → `OwnLines.isOwn` (`:capture`) `OverlayBadgeK35Test` ve `OfferNetLineTest`'te. Kayıt dizgileri (`missed_by_kuryeplus`, `weather_source`) aynı.
+- **`CustomerCardE16Test`**: `YolGoNav.parse/State/Route` → `RouteStatus.fromNavFeed` (aynı yük metni, `onRoute` yok sayılır) / `RouteStatus.Route`; `CustomerCard.routeFor(state: RouteStatus?, since, now): RouteStatus.Route?`, `trigger/reason/live` `RouteStatus.Route` alır.
+- **`OfferFeedV2Test`** → yeni **`OfferSummaries.of(active, offers, now, startedAtMs = Long.MIN_VALUE): List<OfferSummary>`** (`OrderEvents.offers` üreticisi; `MAX_UNSEEN_MS` 90 sn, `MAX_OFFERS` 8). 4 test: `ghostOffersAreNotExported`, `offersFromBeforeARestartWaitUntilSeenAgain` (`restartedAtMs` global'i yerine `startedAtMs` parametresi), `summaryCarriesTheV1AndV2Fields` (eski `v2PayloadExtendsTheV1Offers`: `offerKey`, `firstSeen/lastSeen`, ücret, mesafe, restoran, adres, `visibleNow`, `dropoffKnown`, `shown.approachMin/stops`, ekonomi alanları null/`unknown`), `atMostEightOffersAndOnlyKnownPlatforms` (eski `v2HasAtMostEightOffersAndOnlyKnownPlatforms`). `OfferSummary`'de olmayan: `feeBasis`, `producer`, `courierState`, `duringTripId` (sonuncusu `:economics`'in, A4.1). Araştırma çıktısı `KL_ROWS_OUT` dökümü çevrilmedi.
+- Yeni iskelet sınıflar (`TODO`): `PocketCash`, `CashPending`, `PlatformTotals` (A3.6), `RestaurantBubble`, `CustomerCard`, `CustomerBubble`, `RecordPages` (etiket A3.6: A3.6'nın "bitti sayılır"ı **bütün A3.3 testleri**, balon/rozet/gün sayfası dahil), `OfferSummaries` (A3.5). Önceki iskeletlerin (`CashTips`, `BoostLog`, `OfferWeather`, `PlatformHistory`, `OrderHistory`, `OverlayText`) `A3.5` etiketi A3.2'den kaldı; sorumluluk bölüşümü `WEEM_ISLER.md`'deki görev tablosuna göre.
+
+## A3.4 kod durumu (17 Ekim 2026)
+
+- `logic/capture`: 129 test, **128 yeşil** (A3.2/A3.3'ten 100 + A3.4'te yazılan 29: `RegexPortabilityTest` 6, `OcrAcceptanceTest` 4, `NotificationDedupTest` 6, `TargetAppsTest` 3, `CaptureRowsTest` 4, `CaptureTextTest` 3, `NoNetworkTest` 3). Kırmızı kalan 1: `ScreenReadingE7Test.shiftServiceWarnsAndTheHomeShowsIt` (Android `:capture` uyarı dinleyicisi, `ShiftCard` satırı, `WatchService`/`NotifService` gövdeleri: A3.7).
+- `logic/orders`: 374 test, 365 kırmızı (A3.5–A3.6 kodu; önce 371). `logic/core` yeşil.
+- Kod: Rawstats @ `6388c04`'ten satır satır (`CAPTURE.md` 2); WEEM farkları yalnız `CAPTURE.md` 7.5 desen sınırları (cihaz sonucu aynı), `OwnLines` (sabitler `:orders` `OverlayText` için açık), `ScreenReadingGuard.NOTIFICATION_ID` 5104, `click.text` `redact`.
+
+## A3.5 kod durumu (17 Ekim 2026)
+
+- `logic/orders`: 383 test, **336 yeşil** (A3.2/A3.3'ten 374 + A3.5'te yazılan 9: `OverlayTextOwnLinesTest` 2, `OrderFlowTest` 7). A3.2 sipariş akışı testleri ve `SahaTekrarTest` (10/10) yeşil.
+- Kırmızı kalan 47, hepsi A3.6 iskeleti (`TODO("A3.6")`): `PlatformTotalsF82Test` 6, `F83Test` 4, `F84Test` 7, `F85Test` 2, `CashReconcileM17Test` 5, `CashPendingM17Test` 3, `PocketCashM15Test` 3, `RecordPagesTest` 2, `RestaurantBubbleE14Test` 4, `CustomerBubbleF72Test` 6, `CustomerCardE16Test` 5.
+- Kod: Rawstats @ `6388c04`'ten satır satır; farklar `ORDERS.md` 16.1. `logic/capture` 128/129 (kalan A3.7), `logic/core` 216 yeşil; kök `:orders`/`:capture` `compileDebugKotlin` yeşil.
+
+## A3.6 kod durumu (17 Ekim 2026)
+
+- `logic/orders`: 387 test, **hepsi yeşil** (A3.5'in 47 kırmızısı A3.6 gövdeleriyle yeşile döndü + `OrderFlowTest` +4: resmî toplamlar/CASH PENDING, vardiya kancaları, E14, E16).
+- Kod: Rawstats @ `6388c04`'ten satır satır; farklar `ORDERS.md` 16.2. `logic/capture`'ta tek kırmızı `ScreenReadingE7Test.shiftServiceWarnsAndTheHomeShowsIt` (A3.7).
+
+## A3.7 durumu (17 Ekim 2026)
+
+Android `:capture`/`:orders` katmanı (dal `ccr-e90bca59-fxabvl`). Kaynak taramaları WEEM dosyalarına uyarlandı (`ORDERS.md` 16.3, `CAPTURE.md` 8 "A3.7 durumu"): `logic/capture` `ScreenReadingE7Test.shiftServiceWarnsAndTheHomeShowsIt` yeşile döndü, yeni `NoGestureTest` 4, `CaptureCrashGuardTest` 6; `logic/orders` `CustomerBubbleViewF73Test` 3, `TipNotificationF46Test` 4, `RestaurantBubbleE14Test` +2, `CustomerCardE16Test` +1, `ReadinessE15Test` +1, `OverlayBadgeK35Test` +1, `OrdersWiringTest` 3; `logic/core` `CrashGuardTest` içe aktarma kancası satırı. Sayılar: core 216, capture 139, orders 402 — **hepsi yeşil**. Kök `test lintDebug assembleDebug assembleRelease` yerelde yeşil; `.dev` APK kimliği `ci/check_identity.sh` ile doğru. Kalan taramalar: A3.8 (gün sayfası, sipariş kartı, ayarlar: `RestaurantWaitE2Test.cardAndListShowIt`, `BoostTempE3Test.cardTopShowsIt`, `PlatformTotalsF85Test.dayPageHasTheCard`, `AverageListE1Test.eachAverageOpensItsList`, E14/E16/K35 ayar ve ana sayfa kısımları), A4.3 (yedek/dışa aktarma).
+

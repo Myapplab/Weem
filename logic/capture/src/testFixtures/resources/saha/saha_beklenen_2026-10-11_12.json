@@ -1,0 +1,953 @@
+{
+ "surum": 1,
+ "kaynak": "Rawstats 0.23.1 + YolGo 1.8.0 saha verisi; Wolt 2.202.6 (22020600)",
+ "fixture": "saha_kareleri_2026-10-11_12.jsonl.gz",
+ "gunler": {
+  "2026-10-11": {
+   "wolt_kazanc_listesi": [
+    {
+     "saat": "16:30",
+     "restoran": "King Doner Shamahinka",
+     "km": 1.11,
+     "azn": 1.63,
+     "ek_bekleme_azn": null,
+     "nakit_tahsilat": {
+      "azn": 6.4,
+      "saat": "16:46"
+     },
+     "beklenen_boost": 20,
+     "boost_kaynak_kare": "16:25:15"
+    },
+    {
+     "saat": "17:09",
+     "restoran": "Bonbon PATISSERIE",
+     "km": 4.2,
+     "azn": 4.83,
+     "ek_bekleme_azn": 0.5,
+     "nakit_tahsilat": {
+      "azn": 54.25,
+      "saat": "17:45"
+     },
+     "beklenen_boost": 30,
+     "boost_kaynak_kare": "16:50:09"
+    },
+    {
+     "saat": "17:45",
+     "restoran": "Bravo Supermarket Winter Park",
+     "km": 1.89,
+     "azn": 2.27,
+     "ek_bekleme_azn": null,
+     "nakit_tahsilat": null,
+     "beklenen_boost": 30,
+     "boost_kaynak_kare": "16:50:09"
+    },
+    {
+     "saat": "18:01",
+     "restoran": "Borani Sahil",
+     "km": 2.01,
+     "azn": 2.61,
+     "ek_bekleme_azn": 0.3,
+     "nakit_tahsilat": null,
+     "beklenen_boost": 50,
+     "boost_kaynak_kare": "16:50:09"
+    },
+    {
+     "saat": "18:38",
+     "restoran": "Hatay Usulü Dönər Fəvvarələr Meydanı",
+     "km": 1.03,
+     "azn": 2.31,
+     "ek_bekleme_azn": null,
+     "nakit_tahsilat": null,
+     "beklenen_boost": 50,
+     "boost_kaynak_kare": "18:27:57"
+    },
+    {
+     "saat": "18:51",
+     "restoran": "ZO0 28",
+     "km": 2.61,
+     "azn": 3.79,
+     "ek_bekleme_azn": null,
+     "nakit_tahsilat": null,
+     "beklenen_boost": 50,
+     "boost_kaynak_kare": "18:50:08"
+    },
+    {
+     "saat": "19:07",
+     "restoran": "BIR-IKI Döner Caspian",
+     "km": 0.82,
+     "azn": 1.84,
+     "ek_bekleme_azn": null,
+     "nakit_tahsilat": null,
+     "beklenen_boost": 40,
+     "boost_kaynak_kare": "19:07:03"
+    },
+    {
+     "saat": "19:18",
+     "restoran": "SMOKING SHOP 6th Parallel",
+     "km": 1.42,
+     "azn": 1.97,
+     "ek_bekleme_azn": null,
+     "nakit_tahsilat": null,
+     "beklenen_boost": 40,
+     "boost_kaynak_kare": "19:07:03"
+    }
+   ],
+   "teklifler": [
+    {
+     "ilk_kare": "16:30:33",
+     "restoran": "King Doner Shamahinka",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 1.63,
+     "azn_ilk_karede": true,
+     "km": 1.1,
+     "dk": "9-17",
+     "nakit": true,
+     "para_ustu_azn": null,
+     "pickup_etiketi": 6,
+     "kare": 5,
+     "listede": true,
+     "nakit_tahsilat": {
+      "azn": 6.4,
+      "saat": "16:46"
+     },
+     "beklenen_boost": 20,
+     "boost_kaynak_kare": "16:25:15"
+    },
+    {
+     "ilk_kare": "17:00:08",
+     "restoran": "Bursa Kebap Evi Ajami",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 2.43,
+     "azn_ilk_karede": false,
+     "km": 2.1,
+     "dk": "11-19",
+     "nakit": true,
+     "para_ustu_azn": null,
+     "pickup_etiketi": 8,
+     "kare": 3,
+     "listede": false,
+     "nakit_tahsilat": null,
+     "beklenen_boost": 30,
+     "boost_kaynak_kare": "16:50:09"
+    },
+    {
+     "ilk_kare": "17:09:26",
+     "restoran": "Bonbon PATISSERIE",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 4.83,
+     "azn_ilk_karede": false,
+     "km": 4.2,
+     "dk": "15-30",
+     "nakit": true,
+     "para_ustu_azn": null,
+     "pickup_etiketi": 16,
+     "kare": 5,
+     "listede": true,
+     "nakit_tahsilat": {
+      "azn": 54.25,
+      "saat": "17:45"
+     },
+     "beklenen_boost": 30,
+     "boost_kaynak_kare": "16:50:09"
+    },
+    {
+     "ilk_kare": "17:45:29",
+     "restoran": "Bravo Supermarket Winter Park",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 2.27,
+     "azn_ilk_karede": false,
+     "km": 1.8,
+     "dk": "14-22",
+     "nakit": false,
+     "para_ustu_azn": null,
+     "pickup_etiketi": "Ready",
+     "kare": 4,
+     "listede": true,
+     "nakit_tahsilat": null,
+     "beklenen_boost": 30,
+     "boost_kaynak_kare": "16:50:09"
+    },
+    {
+     "ilk_kare": "18:01:30",
+     "restoran": "Borani Sahil",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 2.61,
+     "azn_ilk_karede": false,
+     "km": 2.0,
+     "dk": "9-17",
+     "nakit": false,
+     "para_ustu_azn": null,
+     "pickup_etiketi": 5,
+     "kare": 7,
+     "listede": true,
+     "nakit_tahsilat": null,
+     "beklenen_boost": 50,
+     "boost_kaynak_kare": "16:50:09"
+    },
+    {
+     "ilk_kare": "18:37:58",
+     "restoran": "Hatay Usulü Dönər Favvarələr Meydanı",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 2.31,
+     "azn_ilk_karede": false,
+     "km": 1.0,
+     "dk": "4-12",
+     "nakit": false,
+     "para_ustu_azn": null,
+     "pickup_etiketi": 3,
+     "kare": 5,
+     "listede": true,
+     "nakit_tahsilat": null,
+     "beklenen_boost": 50,
+     "boost_kaynak_kare": "18:27:57"
+    },
+    {
+     "ilk_kare": "18:50:12",
+     "restoran": "Araz Torgovaya 3",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": null,
+     "azn_ilk_karede": false,
+     "km": null,
+     "dk": null,
+     "nakit": false,
+     "para_ustu_azn": null,
+     "pickup_etiketi": "Ready",
+     "kare": 1,
+     "listede": false,
+     "nakit_tahsilat": null,
+     "beklenen_boost": 50,
+     "boost_kaynak_kare": "18:50:08"
+    },
+    {
+     "ilk_kare": "18:51:30",
+     "restoran": "ZO0 28",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 3.79,
+     "azn_ilk_karede": false,
+     "km": 2.6,
+     "dk": "12-20",
+     "nakit": false,
+     "para_ustu_azn": null,
+     "pickup_etiketi": 1,
+     "kare": 5,
+     "listede": true,
+     "nakit_tahsilat": null,
+     "beklenen_boost": 50,
+     "boost_kaynak_kare": "18:50:08"
+    },
+    {
+     "ilk_kare": "19:07:34",
+     "restoran": "BIR-IKI Döner Caspian",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 1.84,
+     "azn_ilk_karede": true,
+     "km": 0.8,
+     "dk": "4-12",
+     "nakit": false,
+     "para_ustu_azn": null,
+     "pickup_etiketi": "Ready",
+     "kare": 2,
+     "listede": true,
+     "nakit_tahsilat": null,
+     "beklenen_boost": 40,
+     "boost_kaynak_kare": "19:07:03"
+    },
+    {
+     "ilk_kare": "19:18:41",
+     "restoran": "SMOKING SHOP 6th Parallel",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 1.97,
+     "azn_ilk_karede": false,
+     "km": 1.4,
+     "dk": "5-13",
+     "nakit": false,
+     "para_ustu_azn": null,
+     "pickup_etiketi": 2,
+     "kare": 3,
+     "listede": true,
+     "nakit_tahsilat": null,
+     "beklenen_boost": 40,
+     "boost_kaynak_kare": "19:07:03"
+    },
+    {
+     "ilk_kare": "19:28:59",
+     "restoran": "Fryday Caspian",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 2.99,
+     "azn_ilk_karede": false,
+     "km": 2.0,
+     "dk": "12-20",
+     "nakit": true,
+     "para_ustu_azn": null,
+     "pickup_etiketi": 5,
+     "kare": 4,
+     "listede": false,
+     "nakit_tahsilat": {
+      "azn": 33.17,
+      "saat": "19:50"
+     },
+     "beklenen_boost": 40,
+     "boost_kaynak_kare": "19:27:33"
+    }
+   ],
+   "boost_dilimleri": [
+    {
+     "dilim": "13:00-16:00",
+     "gorulen_yuzdeler": {
+      "30": 2
+     }
+    },
+    {
+     "dilim": "16:00-17:00",
+     "gorulen_yuzdeler": {
+      "20": 11
+     }
+    },
+    {
+     "dilim": "17:00-18:00",
+     "gorulen_yuzdeler": {
+      "30": 1
+     }
+    },
+    {
+     "dilim": "18:00-19:00",
+     "gorulen_yuzdeler": {
+      "50": 24,
+      "10": 4,
+      "15": 4
+     }
+    },
+    {
+     "dilim": "19:00-20:00",
+     "gorulen_yuzdeler": {
+      "40": 12,
+      "10": 4
+     }
+    },
+    {
+     "dilim": "12:00-13:00",
+     "gorulen_yuzdeler": {
+      "50": 15,
+      "30": 4
+     }
+    },
+    {
+     "dilim": "13:00-14:00",
+     "gorulen_yuzdeler": {
+      "20": 4
+     }
+    }
+   ],
+   "nakit_tahsilatlari": [
+    {
+     "restoran": "King Doner Shamahinka",
+     "saat": "16:46",
+     "azn": 6.4
+    },
+    {
+     "restoran": "Bonbon PATISSERIE",
+     "saat": "17:45",
+     "azn": 54.25
+    },
+    {
+     "restoran": "Fryday Caspian",
+     "saat": "19:50",
+     "azn": 33.17
+    }
+   ],
+   "kare_sayilari": {
+    "wolt": 2290,
+    "bekleme": 1263,
+    "bolunmus_1413": 225,
+    "teklif_karti": 44
+   }
+  },
+  "2026-10-12": {
+   "wolt_kazanc_listesi": [
+    {
+     "saat": "12:46",
+     "restoran": "Mix Point Cafe (2 deliveries)",
+     "km": 4.44,
+     "azn": 4.65,
+     "ek_bekleme_azn": null,
+     "nakit_tahsilat": null,
+     "beklenen_boost": null,
+     "boost_kaynak_kare": null
+    },
+    {
+     "saat": "13:04",
+     "restoran": "McDonald's Sahil",
+     "km": 2.99,
+     "azn": 3.03,
+     "ek_bekleme_azn": null,
+     "nakit_tahsilat": null,
+     "beklenen_boost": null,
+     "boost_kaynak_kare": null
+    },
+    {
+     "saat": "13:20",
+     "restoran": "Kenny's Baku",
+     "km": 4.08,
+     "azn": 3.96,
+     "ek_bekleme_azn": null,
+     "nakit_tahsilat": null,
+     "beklenen_boost": null,
+     "boost_kaynak_kare": null
+    },
+    {
+     "saat": "13:38",
+     "restoran": "Fryday Mammadamin Rasul-Zadeh",
+     "km": 5.65,
+     "azn": 4.75,
+     "ek_bekleme_azn": null,
+     "nakit_tahsilat": null,
+     "beklenen_boost": 20,
+     "boost_kaynak_kare": "13:38:09"
+    },
+    {
+     "saat": "14:11",
+     "restoran": "Zemanın Ocaghı",
+     "km": 2.48,
+     "azn": 2.13,
+     "ek_bekleme_azn": null,
+     "nakit_tahsilat": null,
+     "beklenen_boost": null,
+     "boost_kaynak_kare": null
+    },
+    {
+     "saat": "14:26",
+     "restoran": "Beauty Is You AF Mall",
+     "km": 3.95,
+     "azn": 3.85,
+     "ek_bekleme_azn": null,
+     "nakit_tahsilat": null,
+     "beklenen_boost": null,
+     "boost_kaynak_kare": null
+    },
+    {
+     "saat": "14:54",
+     "restoran": "McDonald's & McCafe Grand Hayat",
+     "km": 0.55,
+     "azn": 1.32,
+     "ek_bekleme_azn": null,
+     "nakit_tahsilat": null,
+     "beklenen_boost": null,
+     "boost_kaynak_kare": null
+    },
+    {
+     "saat": "14:57",
+     "restoran": "McDonald's & McCafe Grand Hayat",
+     "km": 0.55,
+     "azn": 1.32,
+     "ek_bekleme_azn": null,
+     "nakit_tahsilat": null,
+     "beklenen_boost": null,
+     "boost_kaynak_kare": null
+    },
+    {
+     "saat": "17:08",
+     "restoran": "McDonald's & McCafe Badamdar",
+     "km": 5.02,
+     "azn": 3.83,
+     "ek_bekleme_azn": null,
+     "nakit_tahsilat": null,
+     "beklenen_boost": 20,
+     "boost_kaynak_kare": "16:52:16"
+    },
+    {
+     "saat": "17:40",
+     "restoran": "Shaurma 1 - Bayıl",
+     "km": 2.64,
+     "azn": 2.37,
+     "ek_bekleme_azn": null,
+     "nakit_tahsilat": {
+      "azn": 6.99,
+      "saat": "17:56"
+     },
+     "beklenen_boost": 20,
+     "boost_kaynak_kare": "16:52:16"
+    },
+    {
+     "saat": "18:04",
+     "restoran": "Firuze Restaurant",
+     "km": 2.5,
+     "azn": 2.77,
+     "ek_bekleme_azn": null,
+     "nakit_tahsilat": {
+      "azn": 38.9,
+      "saat": "18:26"
+     },
+     "beklenen_boost": 10,
+     "boost_kaynak_kare": "17:40:24"
+    },
+    {
+     "saat": "18:27",
+     "restoran": "Popeyes 28 May",
+     "km": 1.44,
+     "azn": 1.61,
+     "ek_bekleme_azn": null,
+     "nakit_tahsilat": null,
+     "beklenen_boost": 10,
+     "boost_kaynak_kare": "17:40:24"
+    },
+    {
+     "saat": "18:57",
+     "restoran": "Arishta",
+     "km": 5.45,
+     "azn": 4.49,
+     "ek_bekleme_azn": null,
+     "nakit_tahsilat": {
+      "azn": 43.39,
+      "saat": "19:30"
+     },
+     "beklenen_boost": 10,
+     "boost_kaynak_kare": "17:40:24"
+    }
+   ],
+   "teklifler": [
+    {
+     "ilk_kare": "12:40:49",
+     "restoran": "Mix Point Cafe",
+     "ocr_varyant": [],
+     "toplu": 2,
+     "azn": 4.65,
+     "azn_ilk_karede": true,
+     "km": 4.4,
+     "dk": "13-28",
+     "nakit": false,
+     "para_ustu_azn": null,
+     "pickup_etiketi": 8,
+     "kare": 7,
+     "listede": true,
+     "nakit_tahsilat": null,
+     "beklenen_boost": null,
+     "boost_kaynak_kare": null
+    },
+    {
+     "ilk_kare": "13:00:01",
+     "restoran": "Harrbidoner",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 1.74,
+     "azn_ilk_karede": false,
+     "km": 1.3,
+     "dk": "4-12",
+     "nakit": true,
+     "para_ustu_azn": null,
+     "pickup_etiketi": 4,
+     "kare": 4,
+     "listede": false,
+     "nakit_tahsilat": null,
+     "beklenen_boost": null,
+     "boost_kaynak_kare": null
+    },
+    {
+     "ilk_kare": "13:04:08",
+     "restoran": "McDonald's Sahil",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 3.03,
+     "azn_ilk_karede": false,
+     "km": 2.9,
+     "dk": "14-22",
+     "nakit": false,
+     "para_ustu_azn": null,
+     "pickup_etiketi": 2,
+     "kare": 10,
+     "listede": true,
+     "nakit_tahsilat": null,
+     "beklenen_boost": null,
+     "boost_kaynak_kare": null
+    },
+    {
+     "ilk_kare": "13:20:39",
+     "restoran": "Kenny's Baku",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 3.96,
+     "azn_ilk_karede": false,
+     "km": 4.0,
+     "dk": "16-24",
+     "nakit": false,
+     "para_ustu_azn": null,
+     "pickup_etiketi": "Ready",
+     "kare": 6,
+     "listede": true,
+     "nakit_tahsilat": null,
+     "beklenen_boost": null,
+     "boost_kaynak_kare": null
+    },
+    {
+     "ilk_kare": "13:38:34",
+     "restoran": "Fryday Mammadamin Rasul-Zadeh",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 4.75,
+     "azn_ilk_karede": false,
+     "km": 5.6,
+     "dk": "18-33",
+     "nakit": false,
+     "para_ustu_azn": null,
+     "pickup_etiketi": 7,
+     "kare": 10,
+     "listede": true,
+     "nakit_tahsilat": null,
+     "beklenen_boost": 20,
+     "boost_kaynak_kare": "13:38:09"
+    },
+    {
+     "ilk_kare": "14:03:55",
+     "restoran": "Shaurma 1 - Badamdar",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 1.93,
+     "azn_ilk_karede": false,
+     "km": 2.7,
+     "dk": "11-19",
+     "nakit": true,
+     "para_ustu_azn": null,
+     "pickup_etiketi": 4,
+     "kare": 5,
+     "listede": false,
+     "nakit_tahsilat": null,
+     "beklenen_boost": null,
+     "boost_kaynak_kare": null
+    },
+    {
+     "ilk_kare": "14:11:01",
+     "restoran": "Zemanın Ocaghi",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 2.13,
+     "azn_ilk_karede": false,
+     "km": 2.4,
+     "dk": "11-19",
+     "nakit": false,
+     "para_ustu_azn": null,
+     "pickup_etiketi": 4,
+     "kare": 6,
+     "listede": true,
+     "nakit_tahsilat": null,
+     "beklenen_boost": null,
+     "boost_kaynak_kare": null
+    },
+    {
+     "ilk_kare": "14:26:02",
+     "restoran": "Beauty Is You AF Mall",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 3.85,
+     "azn_ilk_karede": false,
+     "km": 3.9,
+     "dk": "17-32",
+     "nakit": false,
+     "para_ustu_azn": null,
+     "pickup_etiketi": "Ready",
+     "kare": 6,
+     "listede": true,
+     "nakit_tahsilat": null,
+     "beklenen_boost": null,
+     "boost_kaynak_kare": null
+    },
+    {
+     "ilk_kare": "14:53:54",
+     "restoran": "McDonald's & McCafe Grand Hayat",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 1.32,
+     "azn_ilk_karede": false,
+     "km": 0.5,
+     "dk": "5-11",
+     "nakit": false,
+     "para_ustu_azn": null,
+     "pickup_etiketi": 3,
+     "kare": 8,
+     "listede": true,
+     "nakit_tahsilat": null,
+     "beklenen_boost": null,
+     "boost_kaynak_kare": null
+    },
+    {
+     "ilk_kare": "15:10:55",
+     "restoran": "McDonald's & McCafe Grand Hayat",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 1.47,
+     "azn_ilk_karede": false,
+     "km": 2.3,
+     "dk": "8-16",
+     "nakit": true,
+     "para_ustu_azn": null,
+     "pickup_etiketi": 6,
+     "kare": 5,
+     "listede": false,
+     "nakit_tahsilat": null,
+     "beklenen_boost": null,
+     "boost_kaynak_kare": null
+    },
+    {
+     "ilk_kare": "17:08:24",
+     "restoran": "McDonald's & McCafe Badamdar",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 3.83,
+     "azn_ilk_karede": false,
+     "km": 5.0,
+     "dk": "13-28",
+     "nakit": false,
+     "para_ustu_azn": null,
+     "pickup_etiketi": 5,
+     "kare": 10,
+     "listede": true,
+     "nakit_tahsilat": null,
+     "beklenen_boost": 20,
+     "boost_kaynak_kare": "16:52:16"
+    },
+    {
+     "ilk_kare": "17:40:26",
+     "restoran": "Shaurma 1 - Bayıl",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 2.37,
+     "azn_ilk_karede": false,
+     "km": 2.6,
+     "dk": "13-21",
+     "nakit": true,
+     "para_ustu_azn": null,
+     "pickup_etiketi": 8,
+     "kare": 17,
+     "listede": true,
+     "nakit_tahsilat": {
+      "azn": 6.99,
+      "saat": "17:56"
+     },
+     "beklenen_boost": 20,
+     "boost_kaynak_kare": "16:52:16"
+    },
+    {
+     "ilk_kare": "18:04:26",
+     "restoran": "Firuze Restaurant",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 2.77,
+     "azn_ilk_karede": false,
+     "km": 2.5,
+     "dk": "14-22",
+     "nakit": true,
+     "para_ustu_azn": null,
+     "pickup_etiketi": "Ready",
+     "kare": 5,
+     "listede": true,
+     "nakit_tahsilat": {
+      "azn": 38.9,
+      "saat": "18:26"
+     },
+     "beklenen_boost": 10,
+     "boost_kaynak_kare": "17:40:24"
+    },
+    {
+     "ilk_kare": "18:27:11",
+     "restoran": "Popeyes 28 May",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 1.61,
+     "azn_ilk_karede": true,
+     "km": 1.4,
+     "dk": "5-13",
+     "nakit": false,
+     "para_ustu_azn": null,
+     "pickup_etiketi": "Ready",
+     "kare": 4,
+     "listede": true,
+     "nakit_tahsilat": null,
+     "beklenen_boost": 10,
+     "boost_kaynak_kare": "17:40:24"
+    },
+    {
+     "ilk_kare": "18:44:32",
+     "restoran": "Wolt Market Landmark",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 3.48,
+     "azn_ilk_karede": false,
+     "km": 3.5,
+     "dk": "16-24",
+     "nakit": false,
+     "para_ustu_azn": null,
+     "pickup_etiketi": 1,
+     "kare": 6,
+     "listede": false,
+     "nakit_tahsilat": null,
+     "beklenen_boost": 10,
+     "boost_kaynak_kare": "17:40:24"
+    },
+    {
+     "ilk_kare": "18:57:01",
+     "restoran": "Arishta",
+     "ocr_varyant": [],
+     "toplu": 1,
+     "azn": 4.49,
+     "azn_ilk_karede": false,
+     "km": 5.4,
+     "dk": "21-36",
+     "nakit": true,
+     "para_ustu_azn": null,
+     "pickup_etiketi": 8,
+     "kare": 5,
+     "listede": true,
+     "nakit_tahsilat": {
+      "azn": 43.39,
+      "saat": "19:30"
+     },
+     "beklenen_boost": 10,
+     "boost_kaynak_kare": "17:40:24"
+    }
+   ],
+   "boost_dilimleri": [
+    {
+     "dilim": "13:00-14:00",
+     "gorulen_yuzdeler": {
+      "20": 8,
+      "10": 8,
+      "45": 3
+     }
+    },
+    {
+     "dilim": "18:00-19:00",
+     "gorulen_yuzdeler": {
+      "10": 45,
+      "15": 11,
+      "45": 5
+     }
+    },
+    {
+     "dilim": "12:00-13:00",
+     "gorulen_yuzdeler": {
+      "30": 5,
+      "50": 5,
+      "40": 8
+     }
+    },
+    {
+     "dilim": "19:00-20:00",
+     "gorulen_yuzdeler": {
+      "10": 13,
+      "40": 3
+     }
+    },
+    {
+     "dilim": "17:00-18:00",
+     "gorulen_yuzdeler": {
+      "20": 6,
+      "30": 2
+     }
+    },
+    {
+     "dilim": "11:00-13:00",
+     "gorulen_yuzdeler": {
+      "50": 3
+     }
+    },
+    {
+     "dilim": "14:00-15:00",
+     "gorulen_yuzdeler": {
+      "20": 3
+     }
+    },
+    {
+     "dilim": "18:00-20:00",
+     "gorulen_yuzdeler": {
+      "25": 3
+     }
+    },
+    {
+     "dilim": "10:00-11:00",
+     "gorulen_yuzdeler": {
+      "20": 2
+     }
+    }
+   ],
+   "nakit_tahsilatlari": [
+    {
+     "restoran": "King Doner Shamahinka",
+     "saat": "16:46",
+     "azn": 6.4
+    },
+    {
+     "restoran": "Bonbon PATISSERIE",
+     "saat": "17:45",
+     "azn": 54.25
+    },
+    {
+     "restoran": "Shaurma 1 - Bayil",
+     "saat": "17:56",
+     "azn": 6.99
+    },
+    {
+     "restoran": "Firuze Restaurant",
+     "saat": "18:26",
+     "azn": 38.9
+    },
+    {
+     "restoran": "Arishta",
+     "saat": "19:30",
+     "azn": 43.39
+    },
+    {
+     "restoran": "Fryday Caspian",
+     "saat": "19:50",
+     "azn": 33.17
+    }
+   ],
+   "kare_sayilari": {
+    "wolt": 3432,
+    "bekleme": 1452,
+    "bolunmus_1413": 0,
+    "teklif_karti": 114
+   }
+  }
+ },
+ "ozel_durumlar": {
+  "2026-10-11": [
+   "ZO0 28 / ZOO 28: OCR farkı, TEK teklif (D2)",
+   "Araz Torgovaya 3 18:50:12: tek kare, kartın üst kısmı yok -> kazanç okunamaz, sipariş açılmaz",
+   "Kartın ilk karesinde kazanç satırı çoğu zaman yok (kart kayarken); tutar sonraki karelerde 'Expected earnings' satırının hemen önünde",
+   "Nakit kartta 'AZN x' + 'Total change needed' çifti para üstüdür (Bonbon 45.75, Fryday Caspian 6.83) - kazanç değildir",
+   "Kazanç listesi saati = kabul saati (dakika); 'Extra waiting time' satırı hemen üstündeki teslimata aittir (Bonbon 0.50, Borani 0.30)",
+   "Finances 'Cash collection' saati = teslim saati (King Doner 16:46, Bonbon 17:45, Fryday Caspian 19:50)",
+   "Fryday Caspian 19:28 kazanç listesi karesinde yok ama nakit tahsilatı 19:50 -> teslim edildi"
+  ],
+  "2026-10-12": [
+   "12:27-12:36 Soloha #612: gerçek kabul (teklif kartı yakalanmadı); 12:36:38 iptal nedeni penceresi -> kurye iptal etti; teslim SAYILMAZ (D7)",
+   "13:00 Harrbidoner: gerçek kabul (#676), 13:03:15'ten itibaren bekleme ekranı -> Wolt geri aldı; teslim SAYILMAZ",
+   "Mix Point Cafe 12:40 teklifi kayboldu; listede 12:46 '2 deliveries' 4.65 -> ikinci teklif karesi yakalanmamış",
+   "Kazanç listesinde 14:54 ve 14:57 McDonald's Gran 0.55 km 1.32: aynı teslim, OCR saat farkı (hiçbir karede birlikte değil; kayıtta tek kabul 14:54) (D15)",
+   "'AZN 2:13' (Zemanın): ondalık ayırıcı ':' okunabiliyor",
+   "Boost planı gün içinde değişiyor (13:00-14:00 önce %20 sonra %10; 18:00-19:00 %10/%15) -> kabul anından önceki EN SON gözlem kullanılır",
+   "18:44:32 ve 18:45:29 Wolt Market Landmark iki AYRI teklif (3.48/3.5 km ve 2.27/2.3 km), ikisi de reddedildi; 'teklifler' listesi bunları tek satırda birleştiriyor -> ayrık teklif sayısı 17"
+  ]
+ },
+ "kabul_olcutleri": {
+  "D1": "Kazanç: 11 Ekim 10/11 teklif (Araz hariç), 12 Ekim 16/16; nakit kartlarda para üstü asla kazanç olmaz",
+  "D2": "Ayrık Wolt teklifi: 11 Ekim 11, 12 Ekim 17 (aynı teklif = ad + ücret + km uyumu)",
+  "D5": "1413 yükseklikli 225 bölünmüş karenin hepsi bekleme",
+  "D19": "2715 bekleme karesinin >=%95'i (>=2580) IDLE/OFFLINE",
+  "D3": "Aynı anda en fazla 1 Wolt siparişi müşteri aşamasında; hiçbir sipariş bir sonrakinin restoran aşamasından sonra açık kalmaz",
+  "D4": "Teslim: 11 Ekim Wolt 9 + Bolt 1; 12 Ekim Wolt 12 görev (Mix Point 2 teslimat); Soloha ve Harrbidoner teslim sayılmaz",
+  "D11": "Boost: aşağıdaki beklenen_boost alanları (11 Ekim: 20,30,30,50,50,50,40,40,40)",
+  "D15/D23": "Ek bekleme Bonbon 0.50, Borani 0.30; 14:54/14:57 tek teslim",
+  "D25": "Nakit: 11 Ekim King Doner 6.40, Bonbon 54.25, Fryday Caspian 33.17; 12 Ekim Shaurma 1 Bayıl 6.99, Firuze 38.90, Arishta 43.39",
+  "D7": "Soloha 12:27 (kurye iptali) ve Harrbidoner 13:00 (Wolt geri aldı) teslim sayılmaz"
+ }
+}

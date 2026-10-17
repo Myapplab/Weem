@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ekim planı F4.6: the cash tip question's expanded view (texts are set in CashTipPrompt, TR/AZ). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+    <TextView
+        android:id="@+id/tip_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:orientation="horizontal"
+        tools:ignore="ButtonStyle">
+        <Button android:id="@+id/tip_1" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minWidth="0dp" />
+        <Button android:id="@+id/tip_2" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minWidth="0dp" />
+        <Button android:id="@+id/tip_3" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minWidth="0dp" />
+        <Button android:id="@+id/tip_5" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minWidth="0dp" />
+        <Button android:id="@+id/tip_other" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.4" android:minWidth="0dp" />
+    </LinearLayout>
+</LinearLayout>

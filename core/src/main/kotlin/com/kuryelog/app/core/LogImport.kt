@@ -8,7 +8,7 @@ import java.io.InputStream
 
 /**
  * ZIP yedeğini arka planda içe aktarır (CORE.md 5.3; RS `MainActivity.kt:1477-1490`). Vardiya açıkken başlamaz; sürerken
- * [Store.importing] (vardiya başlamaz, ekran kaydı durur). Sonuç ana iş parçacığında. A3: ardından `:orders` istatistiği yeniden yükler.
+ * [Store.importing] (vardiya başlamaz, ekran kaydı durur). Sonuç ana iş parçacığında. Ardından [afterImport] (`:orders` istatistiği yeniden yükler).
  */
 object LogImport {
     sealed interface Outcome {
@@ -18,8 +18,16 @@ object LogImport {
         data class Failed(val message: String?) : Outcome
     }
 
-    fun start(ctx: Context, open: () -> InputStream?, done: (Outcome) -> Unit) {
+    /** İçe aktarma bitince (ana iş parçacığında, korumalı): `:orders` istatistiği yeniden kurar; `:app` bağlar. */
+    @Volatile var afterImport: ((Context) -> Unit)? = null
+
+    fun start(ctx: Context, open: () -> InputStream?, then: (Outcome) -> Unit) {
         val app = ctx.applicationContext
+        // RS sırası: bayrak iner → `reloadImportedStats` (korumalı) → kullanıcıya sonuç.
+        val done: (Outcome) -> Unit = { outcome ->
+            if (outcome is Outcome.Done) afterImport?.let { hook -> Store.guarded(app, "import") { hook(app) } }
+            then(outcome)
+        }
         if (Store.shiftOn(app)) { done(Outcome.ShiftOn); return }
         if (Store.importing) { done(Outcome.Busy); return }
         Store.importing = true
