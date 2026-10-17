@@ -6,8 +6,8 @@ Kısaltmalar dosya başlarında (`K/`, `M/`, `A/`, `RS:` = `app/src/main/java/co
 
 | Dosya | Kapsam |
 |---|---|
-| `R_capture.md` | R1, R2, R3, R16, R19, R20 |
-| `R_orders.md` | R5–R11 (R6, R8 taslak), sipariş akışı, gizlilik notları |
+| `R_capture.md` | R1, R2, R3, R16, R19, R20 (doğrulanmış hâli: R1–R3, R16, R19 → `../CAPTURE.md`, A3.1; R20 → `../CORE.md` 4) |
+| `R_orders.md` | R5–R11 (R6, R8 taslak), sipariş akışı, gizlilik notları (doğrulanmış hâli, R12/R13/R15 dahil: `../ORDERS.md`, A3.1) |
 | `R_economics.md` | R17 (diğerleri yazılmadı) |
 | `R_core_contract.md` | G1, G2, Rawstats kimlik/veritabanı/bildirim kalemleri (doğrulanmış hâli: `../CORE.md`) |
 | `X_protocol.md` | iki uygulama protokolü P0–P11 alan alan (2 telefon mesajlarının temeli) |
