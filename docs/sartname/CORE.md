@@ -182,3 +182,85 @@ Bunlar S2 kararının sonucudur ("ek GPS önlemi yok"); WEEM'de değiştirmek ku
 - Android `:core`: vardiya ön plan servisi (ad serbest, tür `location`), ev izleyici, fix örnekleyici, bildirimler. Vardiya başı/sonu kancaları (`OrderTracker`, `ScooterLink`, `PocketCashPrompt`, `CashPending`, `DailyPack`) `ShiftPort` dinleyicisi olur; ilgili modül kendi aşamasında takar. Aşama 2'de kancalar boş.
 - `ShiftPort` (plan 4.3): `state: StateFlow<ShiftState>`, `start(reason)`, `stop(reason)`; `busy` sağlayıcısı `OrderEvents`'ten (Aşama 3'e kadar false).
 - YolGo'nun "gün"ü (`:map`, Y11/Y17/Y18) `ShiftPort.state`'i izler: başlangıç/bitiş nedeni aynı dizgiler (`manual`, `home_departure`, `home_arrival`); gün açılışı `startedAtMs`, kapanışı `endedAtMs`; aynı vardiya için bir kez (`rawstats_shift_end_test` uyarlaması, Bölüm 6).
+
+## 2. G2 — Ev konumu
+
+### 2.1 Kayıt (RS `HomeRepository.kt:4-47`, `HomePreferences.kt:6-28`)
+
+- Tek kaynak `HomeRepository(storage)`; Android tercihleri bağdaştırıcı. Taslaklar depoya girmez.
+- Tercih anahtarları (`kuryelog`): `home.lat`, `home.lon` (**String**, `Double.toString`), `home.updatedAt` (Long; **yoksa "bilinmiyor"** — eski kurulumlarda uydurulmaz), `home.startBlocked`, `home.endArmed` (Bool). Okuma `HomePreferences.read` (`:7-9`); yazma: `lat` ya da `lon` null → **beş anahtarın hepsi silinir**; değilse ikisi yazılır, `updatedAt` null ise anahtar silinir, iki bool yazılır (`:10-20`).
+- `point()`: `parseHome(lat, lon)` (1.6) geçerliyse `Point(lat, lon, updatedAt)`, değilse null.
+- `set(lat, lon, now)`: `parseHome(lat.toString(), lon.toString())` geçersizse `require` hatası (**geçerli ev silinmez**); yazılan `Saved(lat, lon, updatedAt = max(now, eskiUpdatedAt + 1))` — revizyon tek yönlü artar; iki bool **false** (eski koruyucular düşer); motor önbelleği atılır (`:16-20`).
+- `clear()`: tüm `home.*` silinir (`:21`). `set`/`clear` sonrası (cephe `HomeLocation.changed`, `HomeLocation.kt:32-35`): 5101 bildirimi silinir, izleyici durur, plan sıfırlanır, yeniden denetlenir.
+- `acceptsRevision(r)`: ev var ve `r != null` ve `r == (updatedAt ?: 0)` (`:42-44`) — eski ev için kuyruğa girmiş `HOME_START` reddedilir (aynı milisaniyede kaydedilse bile, `max(now, eski+1)` sayesinde).
+- **Gizlilik:** ev koordinatı yalnız bu tercihlerde ve bellekte; günlüğe, `events.jsonl`'e, dışa aktarmaya, mesaja (`ShiftState`), 2 telefon yüküne yazılmaz (`HomeLocation.kt:16-18`, `HomeShift.kt:9`). Olay ve hata kayıtlarında da yok (`reasonsHaveNoCoordinates`).
+
+### 2.2 Seçim — taslak (RS `HomeDraft.kt`, `HomeFixes.kt`, `HomeFixSampler.kt`)
+
+- `HomeDraft.create(lat, lon, accuracyM?)`: lat/lon null, sonsuz ya da aralık dışı → null; doğruluk varsa sonlu ve ≥0 olmalı (0 geçerli) → yoksa null. `needsWarning` = doğruluk **var ve** > 25 m (doğruluk bilinmiyorsa uyarı yok) (`HomeDraft.kt:5-13`). Taslak oluşturmak ya da atmak tercihe yazmaz.
+- `HomeFixes` (`HomeFixes.kt:4-27`): örnek `(lat, lon, accuracyM?, atMs monoton)`. `add`: doğruluk yok, sonsuz, negatif → red; yaş `now − at` 0…15 000 ms dışı (gelecek dahil) → red; koordinat geçersiz → red; eklemeden önce bayatlar atılır. `best` = en küçük doğruluk, eşitse **en yeni**. `bestAt(now)` önce bayatları atar. Sabitler: `WARN_ACCURACY_M = 25`, `MAX_AGE_MS = 15 000`, `COLLECT_MS = 6 000`; `needsWarning(sample)` doğruluk yoksa **true** (taslağınkinden farklı, ikisi de korunur).
+- `HomeFixSampler` (Android, `HomeFixSampler.kt:21-54`): FINE izni yoksa başlamaz; etkin sağlayıcılar (PASSIVE hariç) yoksa başlamaz; her sağlayıcıdan son bilinen konum + 1 sn'lik güncelleme; hiçbir istek kaydolmazsa iptal; 6 sn sonra en iyi örnek (o anda bayat olanlar atılmış) sonuç; her yeni en iyi örnekte ilerleme (doğruluk) bildirilir; ekran kapanınca iptal.
+- **Ekran (bugünkü Rawstats, `MainActivity.kt:1298-1345`):** "Kayıtlı ev" kartı: koordinat `%.6f, %.6f` (`Locale.US`), "Son güncelleme: `dd.MM.yyyy HH:mm`" (dil yereli) ya da "bilinmiyor"; Düzenle; Sil (onay diyaloğu). Ev yoksa ya da düzenlemede: "Şu anki konumumu kullan" (izin yoksa FINE+COARSE ister; ölçerken "6 saniye ölçülüyor…", canlı "Doğruluk: ±x,x m", 25 m'den kötüyse uyarı rengi ve "Doğruluk 25 m'den kötü; daha açık bir yerde yeniden ölçebilirsin."; sonuç yoksa "Güncel konum alınamadı; dışarıda tekrar dene."; sağlayıcı yoksa "Konumu açıp tekrar dene.") ve haritadan seçme. Taslak kartı "Seçilen konum · taslak": koordinat, doğruluk, uyarı; Kaydet → `set`; İptal. Ekran durumu (açık, ayarlardan mı gelindi, düzenleme, taslak lat/lon/doğruluk) Activity `savedInstanceState` paketinde (`home.ui.*`, `:149-154,187-192`) — **tercih değildir**, veri sözleşmesine girmez.
+- **Haritadan seçme:** bugün YolGo'nun `PICK_HOME` ekranı (OSM, yakınlık 17, sabit merkez iğnesi, 50 m daire, uzun basış noktayı taşır; giriş yoksa yüksek doğruluklu GPS 8 sn; YG `lib/ui/home_picker.dart:14-107`). Dönüş yalnız `Double` lat/lon, sonlu, aralıkta; `RESULT_OK` değilse hiçbir şey seçilmez; sonuç **doğruluğu bilinmeyen** taslaktır (`HomePickContract.parse`, RS `HomePickContract.kt:11-14`). WEEM: aynı ekran `:map`'te (A6), dönüş aynı doğrulamadan geçen `HomeDraft(lat, lon, null)`; A6'ya kadar yalnız GPS ile seçilir.
+
+### 2.3 YolGo tarafı (WEEM'de yok)
+
+YolGo evi Rawstats'tan okur (`SHARE_HOME`, istek 703, 20 sn zaman aşımı, 6 sa/1 sa bayatlık; YG `lib/core/rawstats_home.dart:13-102`) ve `settings.v1.home` önbelleğinde tutar. WEEM'de tek ev olduğu için eşitleme, bayatlık ve iki yönlü paylaşım aktiviteleri yazılmaz (S7). Kalan ilke: **başarısız okuma geçerli evi silmez** (= `set`'in geçersiz değerde `require` hatası vermesi). YolGo'nun eski `settings.v1.home` değeri içe aktarılmaz (S1).
+
+## 3. G4 — Az bildirim
+
+### 3.1 Kurallar (eski davranış korunur)
+
+- **YolGo kökenli bildirimler** (hatırlatıcı, görev, hava) 30 sn sonra kendiliğinden kalkar: `NotifyPolicy.TIMEOUT_MS = 30 000` (`setTimeoutAfter`; YG `YO/NotifyPolicy.kt:6`, `YO/MainActivity.kt:416`, `YO/WeatherWorker.kt:132`); `setOnlyAlertOnce(true)`, `setAutoCancel(true)`.
+- `inAppOnly(foreground, preview) = foreground && !preview`: uygulama ekrandayken hatırlatıcı yalnız uygulama içi kart; "Dene" (önizleme) yine sistem bildirimi atar (`YO/NotifyPolicy.kt:9`). WEEM: "ekranda" = WEEM Activity'si önde (hangi sekme olursa olsun).
+- `weatherDue(notifiedDay, day, lastMs, nowMs) = !(notifiedDay != null && notifiedDay == day && lastMs > 0 && nowMs >= lastMs)`: hava özeti günde bir; saat geri giderse yeniden (`YO/NotifyPolicy.kt:12-13`).
+- YolGo bildirimleri yalnız aktif gün varken (önizleme hariç); gün kapanınca hatırlatıcı, görev ve hava bildirimleri iptal (`YO/TelemetryService.kt:64` `(7100..7310)` aralığını iptal eder). **WEEM:** aralık değil **açık liste** iptal edilir (3.3 `SHIFT_END_CANCEL`), çünkü birleşik uygulamada aralık başka bildirimlere (eski nakit bahşiş havuzu gibi) denk gelebilir.
+- **Rawstats bildirimleri** kendi zaman aşımlarını korur: 5101/5102 15 dk, 5103 yok (dokunana ya da silinene kadar), nakit bahşiş onayı 15 sn (`CashTipPrompt.kt:86`), cepteki nakit onayı 10 sn (`PocketCashPrompt.kt:51`), scooter bağlandı 15 sn (`ScooterLink.kt:51`), teslimat notu (12) vardiya sonunda iptal. Uygulama içi bildirimler (gün başladı/bitti, aşama, ışık toast'ları; YG `shift_controller.dart:683-724`) sistem bildirimi değildir.
+
+### 3.2 Bugünkü numaralar ve çakışmalar
+
+`VERI_SOZLESMESI.md` 8.1 tablosu doğrulandı (RS `AutoStartNotice.kt:18-20`, `ScreenReading.kt:38`, `CashTipPrompt.kt:22`, `PocketCashPrompt.kt:26`, `ScooterLink.kt:32`, `DeliveryReminder.kt:303-308`, `GpsService.kt:174`; NB `RecordingService.java:64-66`, `PairAttention.java:22-24`; YG `reminders.dart:327`, `task_controller.dart:76`, `YO/WeatherWorker.kt:133`, `YO/TelemetryService.kt:26,144`, `YO/DatasetRecordingService.kt:17`, `YO/RoadCalibrationService.kt:21`). İki sorun: **5103** iki sabitte (H4 vardiya ve ekran okuma), **nakit bahşiş** `4000 + (tripId.hashCode() and 0xFFF)` = 4000–8095 aralığı 4901, 4902, 5101–5103, 7100–7102, 7201, 7301, 7400, 7401, 7435'i kapsar.
+
+### 3.3 WEEM `NotificationIds` (A2.4 uygular; `logic/core`, saf)
+
+| No | Ad | Kanal (kimlik aynı) | Önem | Kalkış | Sahibi · aşama |
+|---|---|---|---|---|---|
+| 1 | `SHIFT_FGS` | `shift` | LOW | ongoing | `:core` · A2.4 |
+| 7 | `SCOOTER_FGS` | `recording` | (NB'deki gibi) | ongoing | `:scooter` · A5 |
+| 8 | `PAIRING` | `pairing-attention` | HIGH | (NB'deki gibi) | `:scooter` · A5 |
+| 12 | `DELIVERY_NOTE` | `delivery_notes` | HIGH, titreşim | vardiya sonu iptal | `:orders` · A3 |
+| 4901 | `POCKET_CASH` | `pocket_cash` | HIGH | onay 10 sn | `:orders` · A3 |
+| 4902 | `SCOOTER_LINK` | `scooter_link` | DEFAULT | bağlıysa 15 sn | `:scooter` · A5 |
+| 5101 | `HOME_AUTO_START` | `auto_start` | HIGH | 15 dk | `:core` · A2.4 |
+| 5102 | `SCOOTER_AUTO_START` | `auto_start` | HIGH | 15 dk | `:scooter` · A5 |
+| 5103 | `SHIFT_INTERRUPTED` | `auto_start` | HIGH | yok | `:core` · A2.4 |
+| **5104** | `SCREEN_READING_OFF` (**eskiden 5103**) | `screen_reading` | HIGH, ongoing | ekran okuma dönünce | `:orders`/R19 · A3 |
+| 7100–7102 | `REMINDER(kind)` = 7100 + `water/check/food` sırası | `hatirlatici` | HIGH, titreşim | 30 sn | `:map`/Y20 · A6 |
+| 7201 | `TASK_NEARBY` | `hatirlatici` | HIGH | 30 sn | `:map`/Y20 · A6 |
+| 7301 | `WEATHER` | `duzyol_weather` | DEFAULT | 30 sn; günde bir | `:map`/Y10 · A6 |
+| 7401 | `DATASET_FGS` | `yolgo_offer_dataset` | LOW | ongoing | `:map`/Y19 · A6 |
+| 7435 | `CALIBRATION_FGS` | `yolgo_calibration` | LOW | ongoing | Y14 · sonra |
+| **10000–14095** | `CASH_TIP(tripId)` = 10000 + (`tripId.hashCode() and 0xFFF`) (**eskiden 4000+**) | `cash_tips` | HIGH | onay 15 sn | `:orders` · A3 |
+
+- **7400 kullanılmaz:** YolGo'nun gün kaydı servisi (`yolgo_recording`) vardiya servisiyle birleşir (1 numara). `SHIFT_END_CANCEL = {12, 7100, 7101, 7102, 7201, 7301}`.
+- Numara değişiklikleri (5103→5104, 4000+→10000+) kullanıcıya görünmez: bildirim numarası yalnız sürecin çalışma anında anlamlı; kanal kimlikleri ve ayarları değişmez.
+- Test (`NotificationIdsTest`, yeni): her sabit ve aralık ayrık; aralık formülünün her girdi için aralık içinde kalması (`and 0xFFF`); `SHIFT_END_CANCEL` tabloda; kaynakta (`app/`, modüller) `notify(`/`cancel(` çağrısına düz sayı yazılmaz (yalnız `NotificationIds`).
+- Kanal adları iki dilli (`Text` tablosu, A1.3); YolGo'da kanal adı yalnız Türkçe olanlar ("Hatırlatıcılar", veri seti) WEEM'de TR/AZ olur.
+
+## 4. R20 — Çökme kaydı ve korumalı girişler
+
+### 4.1 Çökme raporu (RS `CrashLog.kt:18-61`, `CrashReport.kt:11-63`, `RawstatsApp.kt:7-12`)
+
+- **Kurulum:** `Application.attachBaseContext` içinde, sağlayıcı/servis/Activity'den önce `CrashLog.install` (bir kez). Varsayılan yakalanmamış istisna işleyicisi: raporu yaz (hata yutulur) → önceki işleyiciye devret; önceki yoksa `killProcess` + `exitProcess(10)`. `Store` kilitleri alınmaz (çöken iş parçacığı tutuyor olabilir); dosya yazımı kendi kilidinde.
+- **Dosya** `filesDir/crashes.jsonl` (gün klasörü değil, `logNames`'te değil): satırlar okunur, boşlar atılır, yeni rapor eklenir, `trim` sonrası tümü yeniden yazılır (`\n` ile, sonda `\n`).
+- **Rapor** `json(at, version, thread, e)`: `{at (ms), version (versionName ya da "?"), thread, error (sınıf tam adı), message (ilk satır, ≤200), stack}`. `stack` = `stackTraceToString` satırları; sekme/boşlukla başlamayan (başlık: "X: mesaj", "Caused by: …") satırlar 200 karaktere kırpılır; toplam ≤ 8 000 (`STACK_CHARS`, `MESSAGE_CHARS`).
+- `trim(lines, maxChars=200 000, keep=10)`: `Σ(uzunluk+1) ≤ maxChars` ise hepsi, değilse son 10.
+- **Android çıkış kayıtları** (API 30+): `getHistoricalProcessExitReasons(pkg, 0, 5)` içinden `exitShown` olan ilki: neden `5` NativeCrash, `6` ANR, `7` InitializationFailure ve `0 ≤ now − at ≤ 3 gün`. `exitJson(at, "?", reason, description, process)` = `{at, version:"?", thread:"android", exit, error: etiket (yoksa "Exit<n>"), message: açıklamanın ilk satırı ≤200, stack: "Android exit reason <n> (<etiket>) · <süreç ya da ?>\n<mesaj>"}`.
+- **Kart:** `unseen` = `last` (dosyadaki en yeni ayrıştırılabilir satır) ve `lastExit` içinden `at > crashSeenAt` olanların en yenisi; Gizle → `crashSeenAt = at` (yeni çökme yeniden görünür). Özet `summary`: `<sınıf kısa adı>[: <mesaj ≤120>][ (<ilk uygulama karesi>)]`; ilk kare deseni `at (?:com\.kuryelog\.app|az\.ninebot\.logger)\.[^(\s]*\(([^)]+)\)` → **WEEM:** `com\.kuryelog\.(?:app|logic)` (WEEM kodu bu iki pakette; Sürüş Paneli paketi kalkar). Paylaşılan metin `"<ad> <sürüm> · <saat> · <thread>\n<stack>"`, ad "Rawstats" → **"WEEM"**. Kartta kopyala, paylaş, Gizle (`MainActivity.kt:367-378`).
+- Çizilemeyen sayfa (`renderFailure`, `MainActivity.kt:345-364`): aynı biçimde kart + `Store.failure("page_<ad>")`; vardiya düğmesi çalışır kalır. WEEM: her sekme kendi hata sınırında; sekmenin çizimi hata verirse sekme yerine kart, alt menü ve vardiya düğmesi çalışır.
+
+### 4.2 Çökmeyen hatalar ve korumalı girişler
+
+- `Store.failure(source, e)` (`Store.kt:28-31`): `lastError = "<source>: <SimpleName>: <message>"`; `errors.jsonl` (gün klasörü) satırı `{t: ts(), source, error: lastError}`. Bugünkü kaynak etiketleri (A3 için liste): `screen_start`, `event`, `screen`, `ocr`, `tick`, `event_scope`, `notification`, `gps`, `gps_orders`, `shift_start`, `shift_resume`, `shift_orders`, `shift_scooter`, `shift_end`, `economics_idle`, `open_waits`, `online_sessions`, `page_<ad>`.
+- **Koruma ilkesi** (16 Eki saha düzeltmesi; `CrashGuardTest`): sistemin çağırdığı her giriş (erişilebilirlik olayı ve tik'i, ekran okuma, OCR geri çağrıları, bildirim dinleyici, konum geri çağrısı, vardiya servisinin başlatma/fix/bitirme adımları, sayfa çizimi ve dokunuşlar) hatayı kaydeder, **fırlatmaz**; tik her durumda yeniden kurulur (`finally`); ön plan diye başlatılan servis reddedilse de `startForeground`'a ulaşır (1.2 adım 4).
+- **WEEM:** tek yardımcı `guarded(source) { … }` (`logic/core`, saf; kayıt hedefi arayüz): `Throwable` yakalar, `VirtualMachineError`'ı yeniden fırlatır (bugünkü `GpsService.guarded`, `:113-115`). Eski kodda bazı girişler `runCatching` kullanıyor (bellek hatasını da yutuyor); WEEM'de hepsi `guarded` — **bilerek küçük fark** (bellek/yığın taşması artık süreci kapatır ve çökme raporu yazılır).
