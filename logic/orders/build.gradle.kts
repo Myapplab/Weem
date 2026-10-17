@@ -3,7 +3,7 @@ plugins {
 }
 
 // Gölge mod raporu (A3.9; ORDERS.md 14.3, CAPTURE.md 6.5): Rawstats ve WEEM `.dev` ZIP'lerini karşılaştıran JVM aracı. Ayrı kaynak
-// seti: uygulamaya (APK) girmez, `internal` tiplere (`RecordJson`) test gibi erişir. Çalıştırma: `./gradlew -p logic :orders:shadowReport --args="…"`.
+// seti: uygulamaya (APK) girmez, `main`in `internal` üyelerine test gibi erişir. Çalıştırma: `./gradlew -p logic :orders:shadowReport --args="…"`.
 val shadow: SourceSet by sourceSets.creating {
     compileClasspath += sourceSets.main.get().output
     runtimeClasspath += sourceSets.main.get().output
