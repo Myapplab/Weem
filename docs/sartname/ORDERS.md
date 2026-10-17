@@ -426,3 +426,67 @@ Her olay için sırayla:
 ### 6.3 WEEM
 
 - Biçim `logic/orders` `OverlayText` (söz dağarcığı `OwnLines`'tan); pencere Android `:orders`'ta (`CaptureHost`), dikdörtgeni `OwnOverlays`'e kaydolur (tüm ekran OCR maskesi, `CAPTURE.md` 3.5). Gölge modda iki uygulamanın rozeti üst üste gelebilir; WEEM `.dev`'in rozeti Daha fazla'dan kapatılabilir (`overlay`).
+
+## 7. R8 — Nakit sipariş ve bahşiş (K31, K32, M16, F4.6–F4.9; RS `CashTips.kt`, `CashTipPrompt.kt`, `TipAmountActivity.kt`, `res/layout/tip_quick.xml`)
+
+### 7.1 Nakit ekranı (`CashPayment`, K31/M16; saf)
+
+- Yalnız Wolt. Satırlar küçük harf (Kotlin `lowercase()` = yerel ayardan bağımsız) ve `[\s\p{Z}]+` tek boşluk. Nakit işaretleri: `^cash order$`, `^collect cash payment$`, `^i have collected the cash` (sözcük sınırlı); adımlar başlığı `^steps to complete the delivery$`. İkisi de yoksa ekran değildir (null).
+- Tutar: satırlar boşlukla birleşik metinde `i have collected the cash (azn|₼ N[.NN])` (yalnız nokta ondalık; > 0). Para üstü: `^no change needed$` → 0,0; değilse `^(total )?change needed$` satırının sonrasındaki, yoksa öncesindeki `[-](azn|₼) N[.NN]`. Kutunun işareti yalnız erişilebilirlikten (OCR göremez) ve yalnız nakit ekranında.
+- `attach(gözlem, ekran)` → `cashOrder, cashAmount, cashStepsSeen, cashChecked, cashChangeAzn` (ayrıştırıcının sözleşmesi değişmesin diye gözleme sonradan yazılır). Siparişe uygulanışı: 3.10.
+- **Kart satırı** (`cardLine`, yalnız nakit sipariş): "Nakit 20.40₼" ya da "Nakit (tutar okunamadı)" · "para üstü yok" / "para üstü N₼" · "kutu ✓ HH:mm" ya da "kutu: görülmedi" (+ AZ: Nağd, qalıq, qutu).
+- **Gün nakdi** (`dayTotal`): teslim sayılan (çıkarımlı dahil) nakit siparişlerin tutar toplamı, 2 hane HALF_EVEN.
+- Bolt'un nakit ekranı hiç görülmedi, tanınmaz.
+
+### 7.2 Bahşiş sorusu ve kaydı (K32; `CashTips`)
+
+- **Ne zaman:** nakit sipariş teslim edildi (`delivered`) ya da doğrulanmamış teslim (`delivered_inferred`), o güne ait cevap yok, bu süreçte sorulmadı (4.4). Doğrulanmamış teslimin sonraki gerçek sinyali ya da D3 nakit satırı yeniden sordurmaz.
+- **Bildirim** (`CashTipPrompt.ask`): kanal `cash_tips` ("Nakit bahşiş sorusu" / "Nağd çaypulu sualı", HIGH); numara Rawstats'ta `4000 + (tripId.hashCode() and 0xFFF)`, **WEEM `NotificationIds.cashTip(tripId)` = 10000 + (aynı)**; başlık "Ne kadar nakit aldın?" / "Nə qədər nağd pul aldın?"; metin `"<Platform> · Nakit: X₼; bahşiş = aldığın − X₼"` ya da (tutar yok) `"<Platform> · nakit sipariş; tutar okunamadı, dokun ve yaz"`, yeniden soruda başta "Sayı okunamadı, örn. 25 veya 25.50. " (+ AZ); kategori mesaj; "Yanıtla" (`RemoteInput` anahtar `cash_received`, etiket "Alınan nakit (₼)"; değiştirilebilir `PendingIntent`, kendi alıcısı, dışa açık değil); tutar biliniyorsa hızlı düğmeler **+1, +2, +3, +5 ₼** ve "Diğer" (özel görünüm `tip_quick`); dokunuş küçük pencereyi açar. Müşteri verisi **yok** (yalnız platform ve tutar).
+- **Cevap:** yazılan tutar `parseInput` (`25`, `25.5`, `25,50`, `25 ₼`, `AZN 25`; 1–4 hane, en çok 2 ondalık) → kayıt; sayı değilse soru ipucuyla yeniden. Hızlı düğme: alınan = nakit + bahşiş (tutar bilinmiyorsa düğme yok). Pencere (`TipAmountActivity`, dışa açık değil, son uygulamalarda görünmez): üstte "<Platform> · Nakit: X ₼" ya da "Nakit tutarı okunamadı — aşağıya yaz"; tutar yoksa "Nakit tutarı (₼), okunamadı" alanı; "Aldığın para (₼)"; canlı "Bahşiş: N ₼" / "Fark: −N ₼ (eksi)" / "Bahşiş: —"; Kaydet (geçerli sayı ve tutar varken) / Vazgeç. Sipariş kartında da aynı giriş (`via = card`, Bölüm 10).
+- **Kayıt** (`recordCashTip` + `CashTips.record`): sipariş bellekte ya da `courier.db`'de, nakit değilse hiçbir şey. `economics-cash-tips.jsonl`'e (siparişin kabul gününe) satır: `schemaVersion` 1, `kind` `cash_tip`, `trip_id`, `pkg`, `platform` (`wolt`/`bolt`), `at`, `via` (`notification`, `notification_quick`, `tip_window`, `card`), `received_azn` (2 hane), `cash_amount_azn` (yoksa null), `cash_amount_source` (pencerede yazılan tutar → `user_manual`; okunan tutar → siparişin `paymentSource`'u ?: `not_observed`), `tip_azn` = alınan − nakit (`BigDecimal` HALF_EVEN, 2 hane; nakit yoksa null), `tip_source` (`user_cash_input` ya da hızlı düğmede `user_quick_tip`; bahşiş yoksa null), `negative_tip`, `delivery` (`delivered`/`delivered_inferred`). Eksi fark **kırpılmaz**, işaretlenir. Sipariş: tutar okunmamış ve yazılmışsa `cashAmount`; bahşiş varsa `tip`, `tipSource`; bellekteyse `persist`, değilse yalnız `courier.db` satırı (gün dosyaları asla yeniden yazılmaz).
+- **Okuma** (`latest`): geçerli (`schemaVersion` 1, `trip_id`, `received_azn`) satırlardan sipariş başına en yenisi (eşit anda sonraki satır).
+- **Onay bildirimi** (`saved`): "Nakit kaydedildi" / "Nağd pul qeyd edildi"; "Alınan X₼ · bahşiş Y₼" ya da "· fark −Y₼ (eksi, kartta kontrol et)" ya da "· nakit tutarı okunamadı, bahşiş hesaplanmadı"; 15 sn sonra kalkar; dokununca uygulama.
+- WEEM: kural ve satır saf (`logic/orders`); bildirim, alıcı (`CashTipReceiver`) ve pencere Android `:orders` (manifestte dışa kapalı). İstek kodları (`PendingIntent`) bildirim numarasından türer (`id`, hızlı düğme `id × 8 + i + 1`).
+
+## 8. R9 — Cepteki nakit (M15) ve Wolt CASH PENDING (M17) (RS `PocketCash.kt`, `PocketCashPrompt.kt`, `CashPending.kt`, `OrderTracker.kt:800-842`)
+
+### 8.1 Vardiya başı cep nakdi (M15)
+
+- Yeni vardiya başında (4.2 `onNewShift`) bildirim **4901**: kanal `pocket_cash` ("Vardiya başı nakit sorusu" / "Növbə əvvəli nağd sualı", HIGH), başlık "Şu an cebinde ne kadar nakit var?" / "İndi cibində nə qədər nağd pul var?", metin "Vardiya başladı. Yaz ya da dokun." (yeniden soruda başta "Sayı okunamadı, örn. 30 veya 12.50. "), "Yanıtla" (`RemoteInput` anahtar `pocket_cash`, ek `shift_start_ms`), dokunuş küçük pencere (`PocketCashActivity`).
+- Cevap `PocketCash.parse` (bahşişle aynı biçimler; **0 geçerli** = boş cep). Kayıt `economics-pocket-cash.jsonl`'e **vardiya başlangıcının gün klasörüne**: `{schemaVersion: 1, shift_start_ms, amount_azn (2 hane), answered_at_ms, via: notification_reply|window}`; vardiya başına en yeni cevap geçerli (düzeltme = yeni satır). Onay "Kaydedildi" + "Vardiya başında cepte: X₼" (10 sn).
+- Okuma: `latest(satırlar, vardiyaBaşı)`, `forDay(satırlar, gün)` (Bakü günü, en eski vardiya önce).
+
+### 8.2 CASH PENDING ve nakit yatırma (M17)
+
+- **Okuma** (Wolt Finances karesi, 4.3 adım 4): bir metin "pending" içeriyorsa satırlar (bölünmüş, küçük harf); `cash pending` ile başlayan satırın kalanında ya da sonraki 2 satırda `[-] (azn|₼) [-] N.NN` (işaret önde ya da arkada; `+` = Wolt'a yatırılacak, `-` = fazla yatırılmış). Son değer tercihte: `cashPending.azn` (String), `cashPending.at` (Long).
+- **Yazma** `economics-cash-pending.jsonl` (`schemaVersion` 1; satırlarda `t` yok, an `observedAtMs`): `pending` `{pending_azn, observedAtMs}` — değer son yazılandan ≥ 0,005 farklıysa ya da son yazım ≥ `REWRITE_MS` (5 dk) önceyse; `offload` `{day, clock, amount_azn, observedAtMs}` — "Cash offload" satırı başına bir kez (bellek), satırın gününe; `shift_start`/`shift_end` `{shiftStartMs, pending_azn?, pendingObservedAtMs?, observedAtMs}` — vardiya başı ve sonu (vardiya başının gününe; değer hiç görülmediyse alan yok); vardiya sonunda vardiyanın her siparişi için `order_snapshot` `{tripId, shiftStartMs, pending_azn?, observedAtMs}` (sipariş kaydı değişmez).
+- **Mutabakat** (`reconcile`): başlangıç (vardiya başı satırı, yoksa vardiyada görülen ilk değer) + toplanan (vardiyanın teslim sayılan nakit siparişlerinin nakdi, `dayTotal` biçimi) − yatırılan (vardiya içindeki tekil yatırma satırları, Bakü saati) = beklenen; fark = son (vardiya sonu satırı, yoksa son görülen) − beklenen; |fark| ≤ 0,01 → tamam. Satır: `"Pending: 8.21 → 12.40₼ · beklenen 12.40₼"` (+ `" · fark 1.20₼"`). Değerlerden biri yoksa mutabakat yok.
+- Not: F8'in "bakiye yazılmaz" kuralı bu tek sayı için kullanıcı isteğiyle değişti (RS `CashPending.kt:6-11`).
+
+## 9. R10 — Boost / Earn extra (K27, D11, D24, M21, E3; RS `BoostLog.kt`) ve R11 — Çevrimiçi süreler (RS `OnlineSessions.kt`)
+
+### 9.1 Boost gözlemi (`BoostLog.seen`, `observe`)
+
+- Yalnız **tam** ve **ekrandan** (bildirim değil) IDLE/OFFLINE/OFFER kareleri. Bolt: tek canlı çarpan (`x`, aktif); birden çok farklı çarpan → gözlem yok. Diğer: `boostPct` ?: `bonusPct` → yüzde (aktif = `bonusPct` var), pencere, "başlar"; teklif kartında boost yoksa gözlem yok (kart ana ekran boost'unu göstermez); IDLE/OFFLINE'da boost yoksa "boost yok" gözlemi (`value` null).
+- **`change` satırı:** platformun gözlem anahtarı (birim, değer, aktif, pencere) değişti ya da gün değişti → `first_seen` (günün ilki), `prev_value`, `prev_unit`, `prev_known`.
+- **`slot` satırı (Bolt):** her 30 dk dilim (`SLOT_MS`) ilk gözlemde `observed: true`; aynı gün içinde ara 2–9 dilimse aradaki dilimler `observed: false` (`at` null; en çok `MAX_GAP_SLOTS` = 8 dilim = 4 saat geriye; uydurulmaz).
+- **`plan` satırı (Wolt, D24/M21):** OFFER dışındaki tam ekran karelerinde `boostSlots`; dilimin günü satırdaki "17/10" (180 günden eskiyse gelecek yıl) ya da bugün (Bakü); başlangıç–bitiş (pencereden; bitiş ≤ başlangıçsa ertesi gün; yalnız "from HH:MM" ise 60 dk, `FROM_SLOT_MIN`); kaynak: karede "coming up later" varsa `earn_extra` (liste), değilse `home_screen`. Aynı dilim aynı yüzdeyle yeniden yazılmaz (yalnız şimdi "Now · Boost" altında görüldüyse plan belleği güncellenir). Satır: `{kind: plan, pkg, platform, at, value (yüzde), unit: pct, active, window, from, slot_start_min, slot_end_min, prev_value, plan_source, slot_day, stage, lat, lon}`; bellek en çok 400 dilim.
+- `economics-boosts.jsonl` (`schemaVersion` 1) satır alanları: `kind`, `pkg`, `platform` (`wolt`/`bolt`), `at`, `value`, `unit` (`pct`/`x`), `active`, `window`, `starts_in_min`, `stage`, `lat`, `lon`, `gps_accuracy_m`, `gps_age_s` (+ türüne göre yukarıdakiler). **Burada null değerler `JSONObject.NULL` olarak yazılır** (anahtar vardır, değer null) — diğer dosyalardan farklı; WEEM aynen. Konum yalnız telefonda (yedek hariç).
+- Saat dilimi `Asia/Baku` (`dayOf`, `minuteOfDay`).
+
+### 9.2 Teklifin boost'u (`atOffer`, 4.3 adım 16)
+
+- Bolt'ta karttaki tek çarpan → `offer_screen`; kartın aktif yüzdesi (`bonusPct`) → `offer_screen`; Wolt planında teklif anını kapsayan dilim (görülme anı ≤ teklif + 60 sn; liste dilimi ana ekranınkini yener; eşitlikte "Now · Boost" okuması) → `wolt_earn_extra` ya da `wolt_plan`; ≤ `FRESH_MS` (30 dk) taze ana ekran gözlemi → aktifse değeriyle, değilse değersiz `home_screen` (duyurulmuş ama başlamamış Wolt boost'u bu teklife uygulanmaz); hiçbiri → `not_observed`.
+- Gün sayfası istatistiği (`stats`): değişim sayısı (`prev_known`), gözlenen/eksik/boost'lu dilim, en yüksek aktif değer ve birimi.
+
+### 9.3 Çevrimiçi oturumlar (R11, `OnlineSessions`)
+
+- **Durumu yalnız olumlu kanıt değiştirir:** tam karede `availability` (`CAPTURE.md` 2.5) ya da görev ekranı (OFFER/PICKUP/DROPOFF → çevrimiçi, kanıt `task_screen`). Talep haritası hiçbir şey söylemez. Platformun son karesinden eski kare (geç OCR) oturum açmaz/kapatmaz.
+- **OCR kanıtı:** Wolt Feedback sayfası dışında, durumu değiştiren OCR kanıtı ancak ikinci bir OCR karesi aynı durumu söyleyince geçerli; geçerlilik anı ilk karenin anı.
+- Çevrimiçi: oturum yoksa açılır (`startObserved` = önce çevrimdışı görülmüştü; kanıt), varsa son çevrimiçi an ileri. Çevrimdışı: platform "çevrimdışı görüldü"; açık oturum kapanır, son = max(an, son çevrimiçi), neden `wolt_feedback_after_go_offline` ya da `offline_screen`, `endObserved: true`.
+- **Sayaçlar** (olaylardan, açık oturumda): `offer` (+ id, en çok 200), `accepted` (+ sipariş id, tekil, en çok 200), `rejected`, `customer_delivered` (+1, sipariş başına sayılır), `delivered` (sipariş müşteri sayısı − önceden sayılan; çıkarımla daha önce sayıldıysa eklemez), `delivered_inferred` (müşteri sayısı − sayılan; sonraki gerçek `delivered` eklemez). Paket teslimatta çift sayım yok.
+- **Vardiya sonu:** açık oturumlar son çevrimiçi ekranda kapanır (`endObserved: false`, neden `shift_stop`); süreç vardiya bittikten sonra öldüyse açılışta `restart_after_shift`.
+- **Kimlik** `"<wolt|bolt|paket sonu>-<başlangıç ms>"` (`bolt` yalnız paket adında "bolt" varsa; `mtakso` → paketin son parçası).
+- **Dosya** `online-sessions.jsonl` (gün klasörü; kapanan her oturum): `{schemaVersion: 2, pkg, sessionId, startAtMs, endAtMs, durationMinutes, startObserved, endObserved, endReason, lastOnlineSeenAtMs, startEvidence, offersSeen, accepted, rejected, delivered, offerIds, tripIds, t (= bitiş)}`; okuyucu v1'i (yalnız sayaçlar) de okur. Açık oturumlar tercih `onlineSessions.v1` (JSON dizi: `pkg, start, startObserved, last, offers, accepted, delivered, id, rejected, offerIds, tripIds, startEvidence`): kapanan oturum varsa ya da zorla, değilse en çok 10 sn'de bir.
+- Rozet durum satırı `known()`/`state()` kullanır (6.1); bugünkü süreler (`onlineToday`): günün dosyası + açık oturumlar (son = max(son çevrimiçi, şimdi), neden `open`).
+- **R11'in eski testi yok:** A3.3 karakterizasyon testi yazar (`OnlineSessionsTest`: olumlu kanıt, OCR çift kare, geç kare, sayaç çift sayımı, vardiya sonu, v1 okuma, kodlama gidiş-dönüş). Rawstats'ta oturum davranışı `DeliveryRecognitionTest` ve `WoltFlowK1K5Test` içindeki birkaç testle dolaylı sınanıyordu (`CAPTURE.md` 8).
