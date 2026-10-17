@@ -350,3 +350,8 @@ Beklentiler Rawstats ile birebir; elle değişenler yalnız aşağıdakiler (`gi
 
 - `logic/orders`: 387 test, **hepsi yeşil** (A3.5'in 47 kırmızısı A3.6 gövdeleriyle yeşile döndü + `OrderFlowTest` +4: resmî toplamlar/CASH PENDING, vardiya kancaları, E14, E16).
 - Kod: Rawstats @ `6388c04`'ten satır satır; farklar `ORDERS.md` 16.2. `logic/capture`'ta tek kırmızı `ScreenReadingE7Test.shiftServiceWarnsAndTheHomeShowsIt` (A3.7).
+
+## A3.7 durumu (17 Ekim 2026)
+
+Android `:capture`/`:orders` katmanı (dal `ccr-e90bca59-fxabvl`). Kaynak taramaları WEEM dosyalarına uyarlandı (`ORDERS.md` 16.3, `CAPTURE.md` 8 "A3.7 durumu"): `logic/capture` `ScreenReadingE7Test.shiftServiceWarnsAndTheHomeShowsIt` yeşile döndü, yeni `NoGestureTest` 4, `CaptureCrashGuardTest` 6; `logic/orders` `CustomerBubbleViewF73Test` 3, `TipNotificationF46Test` 4, `RestaurantBubbleE14Test` +2, `CustomerCardE16Test` +1, `ReadinessE15Test` +1, `OverlayBadgeK35Test` +1, `OrdersWiringTest` 3; `logic/core` `CrashGuardTest` içe aktarma kancası satırı. Sayılar: core 216, capture 139, orders 402 — **hepsi yeşil**. Kök `test lintDebug assembleDebug assembleRelease` yerelde yeşil; `.dev` APK kimliği `ci/check_identity.sh` ile doğru. Kalan taramalar: A3.8 (gün sayfası, sipariş kartı, ayarlar: `RestaurantWaitE2Test.cardAndListShowIt`, `BoostTempE3Test.cardTopShowsIt`, `PlatformTotalsF85Test.dayPageHasTheCard`, `AverageListE1Test.eachAverageOpensItsList`, E14/E16/K35 ayar ve ana sayfa kısımları), A4.3 (yedek/dışa aktarma).
+

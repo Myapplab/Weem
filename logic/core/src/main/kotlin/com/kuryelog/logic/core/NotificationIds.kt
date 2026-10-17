@@ -24,7 +24,7 @@ object NotificationIds {
     const val SCOOTER_AUTO_START = 5102
     /** `:core` H4: Android vardiya servisini yeniden başlatmayı reddetti (kanal `auto_start`, zaman aşımı yok). */
     const val SHIFT_INTERRUPTED = 5103
-    /** `:orders`/R19 ekran okuma kapalı uyarısı (kanal `screen_reading`, ongoing). Eskiden 5103. */
+    /** `:capture`/R19 ekran okuma kapalı uyarısı (kanal `screen_reading`, ongoing). Eskiden 5103. */
     const val SCREEN_READING_OFF = 5104
     /** `:map`/Y20 hatırlatıcılar: 7100 + tür sırası (kanal `hatirlatici`, 30 sn). */
     val REMINDER = 7100..7102
