@@ -1,2 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- R8/R9 (ORDERS.md 7.2, 8.1; RS manifest:97-110): nakit bahşiş ve cep nakdi pencereleri ve bildirim "Yanıtla" alıcıları.
+         Hepsi dışa kapalı; yalnız kendi açık PendingIntent'lerimiz ulaşır. -->
+    <application>
+        <!-- F4.7: the small window a tap on the cash tip question opens (dialog, not the home screen). -->
+        <activity android:name="com.kuryelog.app.orders.TipAmountActivity" android:exported="false" android:excludeFromRecents="true"
+            android:taskAffinity="" android:theme="@android:style/Theme.DeviceDefault.Dialog"
+            android:windowSoftInputMode="stateVisible|adjustResize" />
+        <!-- Ekim planı madde 15: cash in the pocket at the shift start (window + inline reply, own PendingIntents only). -->
+        <activity android:name="com.kuryelog.app.orders.PocketCashActivity" android:exported="false" android:excludeFromRecents="true"
+            android:taskAffinity="" android:theme="@android:style/Theme.DeviceDefault.Dialog"
+            android:windowSoftInputMode="stateVisible|adjustResize" />
+        <receiver
+            android:name="com.kuryelog.app.orders.PocketCashReceiver"
+            android:exported="false" />
+        <!-- K32 inline reply of the cash question (own explicit PendingIntent only). -->
+        <receiver
+            android:name="com.kuryelog.app.orders.CashTipReceiver"
+            android:exported="false" />
+    </application>
+
+</manifest>

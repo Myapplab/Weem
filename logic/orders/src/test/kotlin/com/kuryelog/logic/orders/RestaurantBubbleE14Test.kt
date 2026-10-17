@@ -57,8 +57,28 @@ class RestaurantBubbleE14Test {
     }
 
     // ------------------------------------------------------------------ wiring (source checks; the overlay is telefonda denenmedi)
-    private fun main(): File = listOf("src/main", "app/src/main", "kuryelog/app/src/main").map(::File).firstOrNull { it.isDirectory }
-        ?: error("KuryeLog kaynak klasörü bulunamadı: ${File(".").absolutePath}")
-    private fun src(name: String) = File(main(), "java/com/kuryelog/app/$name").readText()
+    // WEEM (A3.7): `OrderTracker.kt` → `logic/orders` `OrderFlow.kt`, `DeliveryReminder.kt` → Android `:orders`. The width setting
+    // (`RestaurantBubble.WIDTH_KEY` in Ayarlar → Ekran) is checked when the settings screen is written (A3.8).
+    private fun flow() = RepoSource.text("logic/orders/src/main/kotlin/com/kuryelog/logic/orders/OrderFlow.kt")
+
+    @Test fun oldRestaurantTriggerIsReplaced() {
+        val tracker = flow()
+        val loop = tracker.substringAfter("// E14: restaurant bubble").substringBefore("val r = reminder")
+        assertTrue(loop.contains("RestaurantBubble.visible("))
+        assertFalse(loop.contains("ROUTE_TRIGGER_M")); assertFalse(loop.contains("STRAIGHT_TRIGGER_M")); assertFalse(loop.contains("travelEta"))
+        assertFalse(tracker.contains("Restorana rotada yaklaşık"))
+        // The open bubble closes at 150 m too, and a bubble the courier closed stays closed for that pickup.
+        assertTrue(tracker.substringAfter("val r = reminder").contains("RestaurantBubble.visible(true,"))
+        assertTrue(tracker.contains("bubbleDismissed"))
+    }
+
+    @Test fun overlayShowsTheBubbleWithNameAndReadyCircle() {
+        val ui = RepoSource.text("orders/src/main/kotlin/com/kuryelog/app/orders/DeliveryReminder.kt")
+        assertTrue(ui.contains("private fun showBubble("))
+        assertTrue(ui.contains("Readiness.short("))
+        assertTrue(ui.contains("RestaurantBubble.widthPx("))
+        assertTrue(ui.contains("GradientDrawable.OVAL"))
+        assertTrue(ui.contains("RestaurantBubble.WIDTH_KEY"))
+    }
 
 }

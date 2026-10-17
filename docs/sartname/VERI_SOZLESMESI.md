@@ -1,6 +1,6 @@
 # Veri sözleşmesi — WEEM'in koruyacağı adlar ve biçimler
 
-Durum: A0.1, 17 Ekim 2026; A3.1 notları 7.1'de. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c04` (kısaltma **RS** = `app/src/main/java/com/kuryelog/app/`, **NB** = `ninebot-logger/app/src/main/java/az/ninebot/logger/`) ve `yolgo-test` @ `870ab6e` (**YG**). Kural: plan Bölüm 2. Bu belgedeki bir adı değiştirmek kullanıcı kararıdır.
+Durum: A0.1, 17 Ekim 2026; A3.1 notları 7.1'de; A5.1 (scooter) notları 5.2, 5.3, 7.2'de. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c04` (kısaltma **RS** = `app/src/main/java/com/kuryelog/app/`, **NB** = `ninebot-logger/app/src/main/java/az/ninebot/logger/`) ve `yolgo-test` @ `870ab6e` (**YG**). Kural: plan Bölüm 2. Bu belgedeki bir adı değiştirmek kullanıcı kararıdır.
 
 Sütun **WEEM**: `aynı` = harfiyen korunur · `oku` = WEEM eski veriyi okur (ilk açılış/içe aktarma), yeni yazım aynı biçimde · `içe aktar` = YolGo'dan dışa aktarma → WEEM'e alma (Aşama 7) · `kalkar` = tek uygulamada gereksiz (S7, plan Bölüm 8) · `yeni` = WEEM'de eklenir.
 
@@ -115,7 +115,7 @@ Kaynak: RS `Store.kt:46-47` ve anahtarları yazan dosyalar (`rg` ile A2.1'de tar
 
 ### 5.2 Sürüş Paneli — dosya `logger` (eski `MainActivity` dosyasından bir kez göç, `legacy_main_migrated`) — WEEM: **oku + aynı**
 
-`auto_live`, `battery_probe`, `ble_name`, `crypto_mode`, `detailed_diagnostics`, `device`, `device_name`, `export_full`, `export_latest`, `export_location`, `external_bms_boards`, `float_ball_dp`, `float_ball_field`, `float_fields`, `float_h_pct`, `float_text_land_pct`, `float_text_port_pct`, `float_thick_pct`, `float_v_pct`, `float_x`, `float_y`, `floating` (vars. true), `immersive`, `keep_screen_on` (vars. true), `legacy_main_migrated`, `sweep` — NB `LoggerPreferences.java:9-18` ve kullanan dosyalar (`grep -ohE '(get|put)(String|Boolean|Int|Long|Float)\("[a-z_]+"'`).
+`auto_live` (false), `battery_probe` (false), `ble_name`, `crypto_mode` (`gen2_fw`; eski `gen3_zero` aynı anlama okunur), `detailed_diagnostics` (false), `device` (BLE adresi), `device_name`, `external_bms_boards` ("06" gibi), `float_ball_dp` (100), `float_ball_field`, `float_fields`, `float_h_pct` (80), `float_text_land_pct` (100), `float_text_port_pct` (100), `float_thick_pct` (125), `float_v_pct` (60), `float_x`, `float_y`, `floating` (vars. true), `keep_screen_on` (vars. true), `legacy_main_migrated`, `sweep` (false) — NB `LoggerPreferences.java:8-20` ve kullanan dosyalar (`grep -ohE '(get|put)(String|Boolean|Int|Long|Float)\("[a-z_]+"'`). Göç: `device` yoksa `device`/`device_name`/`ble_name` birlikte, `sweep`, `crypto_mode` eski `MainActivity` dosyasından bir kez. **A5.1 düzeltmesi:** `export_full`, `export_latest`, `export_location`, `immersive` tercih değil, `DashboardActivity` örnek durum paketi (NB `DashboardActivity.java:36, 61, 203`). Ayrıntı `SCOOTER.md` 11.1.
 
 ### 5.3 Eşleşme deposu — dosya **`pairing-v1`** + Keystore — WEEM: **aynı** (taşınmazsa scooter yeniden eşleşir)
 
@@ -123,6 +123,7 @@ Kaynak: RS `Store.kt:46-47` ve anahtarları yazan dosyalar (`rg` ile A2.1'de tar
 |---|---|---|
 | SharedPreferences | `pairing-v1` (cihaz başına şifreli eşleşme malzemesi) | NB `KeyVault.java:14` |
 | Android Keystore takma adı | **`NinebotLogger.Pairing.v1`** (AndroidKeyStore; anahtar uygulama kimliğine ve imzaya bağlı) | NB `KeyVault.java:13-15` |
+| Değerler (adres = BLE MAC) | `<adres>` etkin, `<adres>.confirmed` (Bool), `<adres>.pending` aday, `<adres>.previous`, `<adres>.previous.confirmed`; değer `Base64.NO_WRAP(IV12 ‖ AES-GCM(anahtar16)+etiket16)`, AAD = adres UTF-8 (A5.1, `SCOOTER.md` 4.1) | NB `KeyVault.java:15-26` |
 
 ### 5.4 YolGo — `FlutterSharedPreferences` (her anahtar `flutter.` önekli) — WEEM: **aktarılmaz** (S1: eski YolGo'ya dışa aktarma eki yok; WEEM başka paketin verisini okuyamaz)
 
@@ -187,7 +188,7 @@ Diğer: dışa aktarma ZIP'i `YYYY-MM-DD/<dosya>` + kökte `restaurants.json` (`
 
 ### 7.2 Sürüş Paneli
 
-Dışa aktarma ZIP'i: `manifest.json` (`schema` 1, `app` "Sürüş Paneli", `version`, `full_diagnostics`, `location_included`, `latest_session_only` …) + filtreli sürüş örnekleri (NB `LogExport.java:15,52-53`). WEEM: aynı biçim.
+Dışa aktarma ZIP'i `NinebotLogger-<ms>.zip`: `manifest.json` (`schema` 1, `app` "Sürüş Paneli", `version`, `decoder_available`, `device_verified`, `utc_export_ms`, `wire_transcript_sensitive`, `full_diagnostics`, `location_included`, `latest_session_only`, `note`) + `sessions.jsonl` + `events.jsonl` (filtreli ZIP'te izin listesi, `device` null; NB `LogStore.java:45-75`, `LogExport.java:7-34`, `DashboardActivity.java:194`). `sessions.state` değerleri ve `events.kind` listesi: `SCOOTER.md` 11.2. WEEM: aynı biçim.
 
 ### 7.3 YolGo (Android yolları: `app_flutter/` = documents, `files/` = support) — WEEM: **içe aktar** ya da yeniden üret
 

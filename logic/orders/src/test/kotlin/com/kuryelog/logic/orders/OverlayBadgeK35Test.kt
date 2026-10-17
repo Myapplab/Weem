@@ -35,4 +35,13 @@ class OverlayBadgeK35Test {
             assertFalse(l, OwnLines.isOwn(l))
     }
 
+    // ------------------------------------------------------------------ wiring (source check; the badge is telefonda denenmedi)
+    // WEEM (A3.7): the badge window moved from `WatchService` to Android `:orders` `OrdersHost` (CaptureHost). The home's names
+    // (`names = true`) are checked with the orders tab (A3.8).
+    @Test fun overlayUsesTheNamelessLines() {
+        val host = RepoSource.text("orders/src/main/kotlin/com/kuryelog/app/orders/OrdersHost.kt")
+        assertTrue(host.contains("badgeLines(names = false)"))
+        assertTrue(host.contains("WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT"))
+        assertTrue(RepoSource.text("logic/orders/src/main/kotlin/com/kuryelog/logic/orders/OverlayText.kt").contains("else tripStatus(platform(it.pkg), it.phase, tl)"))
+    }
 }

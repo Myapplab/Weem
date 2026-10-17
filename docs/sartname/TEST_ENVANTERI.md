@@ -163,6 +163,8 @@ Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **
 | `TimingTest` | 10 | zamanlama/yeniden deneme | S1 S6 | :scooter |
 | `TripMeterTest` | 20 | yolculuk sayacı | S4 | :scooter |
 
+**A5.1 notu (17 Ekim, `SCOOTER.md` 13):** "Sayı" = `grep -c 'check('` satır sayısı (dosyanın `check` tanım satırı dahil). Çağrı yeri 336 (`Timing` 9, `Protocol` 55, `Link` 23, `PairFlow` 26, `Sweep` 21, `PowerCadence` 22, `SpeedCadence` 22, `BatteryProbe` 64, `Dashboard` 14, `EventQueue` 6, `LogPolicy` 13, `Energy` 20, `TripMeter` 19, `Floating` 22); çalışma sayıları (suitin bastığı; JDK 21'de hepsi yeşil): 9, 408, 33, 37, 24, 49, 61, 854, 14, 13, —, 20, 19, 22. Çeviri kabulü: çağrı yeri ve çalışma sayısı suit başına aynı. Yeşil olacağı görev: A5.2 `Timing`, `Protocol`, `Link`, `PairFlow`, `Sweep`, `PowerCadence`, `SpeedCadence`, `BatteryProbe`, `Dashboard`; A5.3 `EventQueue`, `LogPolicy`, `Energy`, `TripMeter`; A5.4 `Floating`. Rawstats tarafı: `ScooterFeedTest`'in 2 testi (`pathMatchesYolGoReader`, `scooterReaderStillNeedsAllGates`) çevrilmez (S7, sağlayıcı kalkar), 3'ü `ScooterLiveMapper`'a uyarlanır; `ScooterSamplesTest.fileIsBackedUpAndExported` `:core`/A4.3'e. Cihaz: `KeyVaultInstrument` → `:scooter` `androidTest`; `LogExportTest` → JVM. Özet tablodaki `:scooter` 344 bu nedenle A5.2'de 341'e iner (betikle güncellenir).
+
 ### YolGo Dart — `test/` (`^\s*(test|testWidgets)\(` sayısı) — 83 dosya, 564
 
 | Test dosyası | Sayı | Neyi doğrular | Özellik | Hedef |
@@ -350,3 +352,8 @@ Beklentiler Rawstats ile birebir; elle değişenler yalnız aşağıdakiler (`gi
 
 - `logic/orders`: 387 test, **hepsi yeşil** (A3.5'in 47 kırmızısı A3.6 gövdeleriyle yeşile döndü + `OrderFlowTest` +4: resmî toplamlar/CASH PENDING, vardiya kancaları, E14, E16).
 - Kod: Rawstats @ `6388c04`'ten satır satır; farklar `ORDERS.md` 16.2. `logic/capture`'ta tek kırmızı `ScreenReadingE7Test.shiftServiceWarnsAndTheHomeShowsIt` (A3.7).
+
+## A3.7 durumu (17 Ekim 2026)
+
+Android `:capture`/`:orders` katmanı (dal `ccr-e90bca59-fxabvl`). Kaynak taramaları WEEM dosyalarına uyarlandı (`ORDERS.md` 16.3, `CAPTURE.md` 8 "A3.7 durumu"): `logic/capture` `ScreenReadingE7Test.shiftServiceWarnsAndTheHomeShowsIt` yeşile döndü, yeni `NoGestureTest` 4, `CaptureCrashGuardTest` 6; `logic/orders` `CustomerBubbleViewF73Test` 3, `TipNotificationF46Test` 4, `RestaurantBubbleE14Test` +2, `CustomerCardE16Test` +1, `ReadinessE15Test` +1, `OverlayBadgeK35Test` +1, `OrdersWiringTest` 3; `logic/core` `CrashGuardTest` içe aktarma kancası satırı. Sayılar: core 216, capture 139, orders 402 — **hepsi yeşil**. Kök `test lintDebug assembleDebug assembleRelease` yerelde yeşil; `.dev` APK kimliği `ci/check_identity.sh` ile doğru. Kalan taramalar: A3.8 (gün sayfası, sipariş kartı, ayarlar: `RestaurantWaitE2Test.cardAndListShowIt`, `BoostTempE3Test.cardTopShowsIt`, `PlatformTotalsF85Test.dayPageHasTheCard`, `AverageListE1Test.eachAverageOpensItsList`, E14/E16/K35 ayar ve ana sayfa kısımları), A4.3 (yedek/dışa aktarma).
+
