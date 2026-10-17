@@ -21,3 +21,38 @@ NOT_ORDERS = {
  'CourierFlowTest': ['automaticAndStickyStartsCannotCreateShift','captureNeedsManualSessionOnly'],
 }
 ORDERS_FILES = ['CourierFlowTest','DeliveryRecognitionTest','WoltFlowK1K5Test','SahaTekrarTest','WoltDeliverySliderTest','WoltSliderSpinnerK33Test','WoltOfferFeeK37Test','OcrPaceD6Test','BoltBubbleR2Test','ParserEconomicsTest','CashScreenM16Test']
+
+# --- A3.3 (ORDERS.md 15.2): para, platform, rozet, balon, gün sayfası. Değer = çevrilmeyen testler (kaynak taraması ya da başka modül).
+A33 = {
+ 'CashOrderK31K32Test': [],
+ 'TipRecordF48Test': [],
+ 'TipNotificationF46Test': ['messageStyleWithReplyQuickButtonsAndWindow','quickButtonGoesToTheReceiver','layoutHasFourQuickButtonsAndOther','windowIsASmallDialogNotTheHomeScreen'],
+ 'PocketCashM15Test': ['theLogIsBackedUpAndExported'],
+ 'CashPendingM17Test': ['theLogIsBackedUpAndExported'],
+ 'CashReconcileM17Test': [],
+ 'BoostLogK27Test': [],
+ 'BoostListM21Test': [],
+ 'BoostTempE3Test': ['cardTopShowsIt'],
+ 'OfferWeatherK28Test': [],
+ 'PlatformHistoryK36Test': [],
+ 'PlatformListD15Test': [],
+ 'PlatformTotalsF82Test': [],
+ 'PlatformTotalsF83Test': ['fileIsBackedUpAndExported'],
+ 'PlatformTotalsF84Test': [],
+ 'PlatformTotalsF85Test': ['dayPageHasTheCard'],
+ 'OverlayBadgeK35Test': ['overlayUsesTheNamelessLinesAndHomeKeepsNames'],
+ 'DualOfferStatusK30Test': [],
+ 'OfferNetLineTest': ['analysisExportButtonSitsUnderKayitlarNextToTheFullExport','accessibilityDescriptionSaysTheNumberStaysOnThePhone'],
+ 'RestaurantBubbleE14Test': ['oldRestaurantTriggerIsReplaced','overlayShowsTheBubbleWithNameAndReadyCircle'],
+ 'CustomerCardE16Test': ['oldNotificationTriggerIsGone'],
+ 'CustomerBubbleF72Test': [],
+ 'CustomerBubbleViewF73Test': None,   # 3 test de tarama (A3.7)
+ 'PhoneK25Test': [],
+ 'AverageListE1Test': ['eachAverageOpensItsList'],
+ 'OrderHistoryTest': [],
+ 'TodayAveragesTest': [],
+ 'RecordPagesTest': [],
+ 'OfferFeedV2Test': ['v1IsByteIdenticalForOffersOnScreen','e8ChangeKeyOverTheRealPayloads'],
+ 'AutoStartNoticeTest': None,         # core, A2.4
+}
+A33_CAPTURE = ['NoteFieldsF71Test']
