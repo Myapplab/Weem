@@ -8,7 +8,7 @@ Kurallar: `AGENTS.md` → "Birden çok Claude hesabı". Durumlar: `bekliyor` · 
 
 - **Son yapılan:** 17 Ekim — A0.1 planın son hâli: `docs/sartname/` (özellik haritası, veri sözleşmesi, test envanteri, ham bulgular), plan mimarisi (4.1–4.7: modül sınırları, arayüzler, 2 telefon mesajları), bu iş listesi oturumluk görevlere bölündü, açık sorular.
 - **Sıradaki iş:** A1.1 (Gradle iskeleti, `logic/` ayrı build) — Opus · high. Açık sorular A1'i engellemez; S2 A2.4'ten, S1/S3 Aşama 6–7'den önce yanıtlanmalı.
-- **Devam eden (yarım) iş:** yok
+- **Devam eden (yarım) iş:** A0.2 (dal `ccr-2e70dcaf-vhiw6n`)
 - **Kullanıcıdan beklenen:** "Açık sorular" (S1–S13) yanıtları; K0.1 kodsuz saha denemesi; uygulama simgesi; Receiver (scooter) telefonu; her hesabın ortam ağ ayarında `dl.google.com` izni (Android'i yerelde derlemek için).
 
 ## Aşama 0 — Planın son hâli
@@ -16,7 +16,7 @@ Kurallar: `AGENTS.md` → "Birden çok Claude hesabı". Durumlar: `bekliyor` · 
 | No | İş | Bitti sayılır | Model · effort | Bağımlı | Durum |
 |---|---|---|---|---|---|
 | A0.1 | Planın son hâli: `docs/sartname/OZELLIK_HARITASI.md`, `VERI_SOZLESMESI.md`, `TEST_ENVANTERI.md`, `bulgular/`; plan mimarisi ve arayüzler; iş listesi; açık sorular | Belgeler `main`'de | Opus · xhigh + ultracode | — | bitti (`5fd61fc`; çok ajanlı okuma usage nedeniyle yarıda durduruldu, eksikler şartname görevlerine yazıldı) |
-| A0.2 | (K) Açık soruları yanıtla (bu dosyanın sonu); kararlar `WEEM_PLANI.md` Bölüm 8'e tarihle yazılır | Kararlar plan Bölüm 8'de | Sonnet · medium (yazma) | A0.1 | bekliyor |
+| A0.2 | (K) Açık soruları yanıtla (bu dosyanın sonu); kararlar `WEEM_PLANI.md` Bölüm 8'e tarihle yazılır | Kararlar plan Bölüm 8'de | Sonnet · medium (yazma) | A0.1 | sürüyor (17 Ekim 2026) |
 | K0.1 | (K) Kodsuz saha denemesi, 1–2 vardiya: yedek telefon scooter'da (Sürüş Paneli + YolGo, hedef elle), Pixel'de Wolt + Bolt + Rawstats, Pixel'deki Sürüş Paneli kapalı. Bakılacak: scooter Bluetooth'u kopuyor mu, ısınma, güneşte okunma, hotspot'un Pixel piline etkisi, **Pixel cepteyken teklifler okunuyor mu**, scooter yedek telefonla eşleşince Pixel'in eşleşmesi düşüyor mu | Kullanıcı sonuçları yazar | — | — | bekliyor |
 
 ## Aşama 1 — İskelet
