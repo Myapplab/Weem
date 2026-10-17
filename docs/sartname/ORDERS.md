@@ -736,7 +736,7 @@ Satır satır kopyalanan (değişiklik yalnız paket satırı ve importlar): `De
 - WEEM: `EconomicsLogs.platformOf` / `stage` → `Platforms.of` / `stage` (13.3); `PlatformHistory`'deki dört çağrı buna döndü.
 - WEEM: `Store.parseTs` / `Store.day` → `logic/core` `LogTime.parseTs` / `LogTime.day` (`LegacyRecords`, `RecordJson`; biçim ve varsayılan saat dilimi aynı).
 - WEEM: `BoostLog.observe` — `b.window`/`b.from` yerel değişkene alındı (tip `:capture`'ta, Kotlin akıllı dönüşüm yapmıyor); davranış aynı.
-- WEEM: `OrderHistory.boostTempLine` — "YolGo'dan hava gelmedi" → "hava bilgisi gelmedi" / AZ "hava məlumatı gəlmədi" (16; AZ metni kullanıcı onayı 17 Ekim, plan S18).
+- WEEM: `OrderHistory.boostTempLine` — "YolGo'dan hava gelmedi" → "hava bilgisi gelmedi" / AZ "hava məlumatı gəlmədi" (16; AZ metni kullanıcı onayı 17 Ekim, plan S19).
 - WEEM: `OverlayText` — söz dağarcığı ve tanıma `logic/capture` `OwnLines`'ta (CAPTURE.md 2.10), burada yalnız biçimlendiriciler; `TripPhase` → `OwnLines.PHASES` anahtarı enum adı. `OverlayTextOwnLinesTest` her biçimlenen satırın `OwnLines.isOwn` olduğunu denetler.
 - WEEM: `TripStages.feed/trip/events/outcome/endedAt` → `OrderStages.of/trip/…`, JSON yerine `logic/core` `TripStages` tipi; `attach` (feed v2'ye ekleme) yok (S7). Sınırlar `TripStages.MAX_ACTIVE/MAX_ENDED/ENDED_KEEP_MS` (aynı değerler).
 - WEEM: `YolGoNav.pickupOf/preferred` + `ScreenTrail` → `NavBinding` (aynı kural); hedef `RouteStatus.Target` (`origin`/`kind` enum), yük okuyucusu (`parse`, URI, imza) yok (4.9). `yolgo_venue`, `nav_yolgo`, `gps_*_yolgo_target` dizgileri korunur.
