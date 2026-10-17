@@ -34,6 +34,8 @@ object KuryelogPrefs {
     const val CRASH_SEEN_AT = CrashFile.SEEN_KEY
     /** String: WEEM'in yeni cihaz kimliği (CORE.md 1.10). */
     const val DEVICE_ID = "weem.deviceId"
+    /** Bool (true): vardiya bitince günün anonim analiz ZIP'i (R17, [DailyPack]; RS `DailyPack.PREF`). */
+    const val DAILY_PACK = "dailyPack"
 
     /** `kuryelog` tercihleri; Android'de `SharedPreferences` bağdaştırıcısı, testlerde bellekte. */
     interface Values {
