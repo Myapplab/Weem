@@ -50,6 +50,30 @@ class ScooterGuardTest {
         assertEquals(listOf("NinebotSession.kt: val wire = crypto.encrypt(NinebotFrames.request(board, command, index, payload))"), hits)
     }
 
+    /** 2.6: on Android the scooter receives only frames from the one write pump (after the session's guard) and the CCCD
+     *  subscription; no other GATT write exists in `:scooter`. */
+    @Test fun gattWritesOnlyInThePumpAndTheSubscription() {
+        val android = RepoSource.scooterSources().filter { "/logic/" !in it.invariantSeparatorsPath }
+        assertTrue(android.any { it.name == "BleLink.kt" })
+        fun lines(pattern: String) = android.flatMap { f -> RepoSource.code(f).filter { pattern in it }.map { "${f.name}: ${it.trim()}" } }
+        assertEquals(
+            listOf(
+                "BleLink.kt: val ok = if (Build.VERSION.SDK_INT >= 33) g.writeCharacteristic(w.c, w.bytes, w.type) == BluetoothStatusCodes.SUCCESS else legacyWrite(g, w)",
+                "BleLink.kt: return g.writeCharacteristic(w.c)",
+            ),
+            lines("writeCharacteristic("),
+        )
+        assertEquals(
+            listOf(
+                "BleLink.kt: val ok = if (Build.VERSION.SDK_INT >= 33) g.writeDescriptor(d, value) == BluetoothStatusCodes.SUCCESS else legacyWriteDescriptor(g, d, value)",
+                "BleLink.kt: return g.writeDescriptor(d)",
+            ),
+            lines("writeDescriptor("),
+        )
+        assertEquals(listOf("BleLink.kt: writes.add(Write(chars[GattPlan.WRITE]!!, wire, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE))"), lines("writes.add("))
+        assertEquals(listOf("BleLink.kt: val d = c.getDescriptor(cccd)"), lines("getDescriptor("))
+    }
+
     /** 12.5 (öneri): `:scooter` talks only to the scooter over Bluetooth; no network class in its code. */
     @Test fun noNetworkClassInScooterCode() {
         val files = RepoSource.scooterSources()
