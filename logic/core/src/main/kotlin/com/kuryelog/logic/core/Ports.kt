@@ -1,7 +1,10 @@
 package com.kuryelog.logic.core
 
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /*
@@ -32,6 +35,13 @@ interface OrderEvents {
     }
 }
 
+/**
+ * 1 Hz scooter örnekleri arasındaki enerji adımı (RS `ScooterSamples.Step`; `OrderFlow` → `DeliveryCore.addEnergy`'e gider).
+ * [usedWh] bataryalardan çıkan, [recoveredWh] içine giren (şarj ya da harici paketin iç paketi beslemesi; G3'te geri kazanım yok),
+ * [ms] adımın süresi, [complete] false = harici paket bilindiği hâlde bu adımda okunmadı (D10: Wh değil, yalnız ölçüm boşluğu).
+ */
+data class EnergyStep(val usedWh: Double, val recoveredWh: Double, val ms: Long, val complete: Boolean = true)
+
 /** Scooter (`:scooter` → `:orders`, `:economics`, `:map`). [energy] uzakta yanıt gelene dek askıda kalır. */
 interface ScooterBridge {
     fun orderAccepted(tripId: String, atWallMs: Long)
@@ -41,6 +51,8 @@ interface ScooterBridge {
     /** İç batarya %, kare ≤15 sn tazeyse; yoksa null. */
     fun batteryPct(): Double?
     val live: StateFlow<ScooterLive?>
+    /** Bağlantı okurken her saniye bir adım (A5.3, SCOOTER.md 12.2); `:orders` vardiyadayken toplar. `NONE` adım üretmez. */
+    val steps: SharedFlow<EnergyStep>
 
     object NONE : ScooterBridge {
         override fun orderAccepted(tripId: String, atWallMs: Long) {}
@@ -48,6 +60,7 @@ interface ScooterBridge {
         override suspend fun energy(fromWallMs: Long, toWallMs: Long): EnergyBlock? = null
         override fun batteryPct(): Double? = null
         override val live: StateFlow<ScooterLive?> = MutableStateFlow<ScooterLive?>(null).asStateFlow()
+        override val steps: SharedFlow<EnergyStep> = MutableSharedFlow<EnergyStep>().asSharedFlow()
     }
 }
 
