@@ -291,3 +291,24 @@ Eksik: Sürüş Paneli ve YolGo için saha kaydı tabanlı altın test yok (YolG
 - **Çevrilmez (10 dosya, 54):** `FeedSignerTest`, `OfferFeedAccessTest`, `YolGoButtonE5Test`, `HomeShareTest`, `app_version_test`, `ci_apk_workflow_test`, `offer_navigation_removed_test`, `native_telemetry_test`, `rawstats_home_sync_test`, `rawstats_home_stale_test` — davranışları WEEM'de yok; 2 telefon eşleştirme/izin testleri A8'de yeniden yazılır.
 - **Sonra (13 dosya, 100):** Y13/Y14 testleri. Y12 testleri (6 dosya, 45; `ww_clean_run_test` ve `ww_no_problem_green_test` zaten `:map`) 17 Ekim'de `:map`'e alındı (S3; A6.2a, A6.11).
 - **Uyarlanır (6 dosya, 48):** Rawstats ↔ YolGo eşitleme testleri (`rawstats_shift_end_test`, `rawstats_signals_test`, `RawstatsObserverTest`, `CourierFeedPayloadTest`, `LogFeedV3Test`, `HomePickContractTest`): tek uygulamada iç arayüz, 2 telefon modunda `:link` mesajı olarak yeniden yazılır.
+
+## A3.2 çeviri durumu (17 Ekim 2026)
+
+Rawstats testleri `tools/test-translate/` betikleriyle bölündü ve çevrildi (kaynak `rawstats` @ `6388c04`); `./gradlew -p logic compileTestKotlin` yeşil, kök Android `:capture`/`:orders` derlemesi bozulmadı. Üretim sınıfları iskelet imza (`TODO("A3.4")`/`TODO("A3.5")`): `:capture` ve `:orders` testleri **kırmızı** (333 testten 4'ü yeşil: modül kimliği ×2, `karelerYuklenirVeKisiselVeriYok`, `noRegexConstructAndroidRejects`), `:core`'a giden 4 test yeşil (kod A2'de vardı).
+
+| Hedef | Hedef (belge) | Çevrilen | Dosya |
+|---|---:|---:|---|
+| `logic/capture` | 93 | **93** | 14 dosya (`CAPTURE.md` 8); `ScreenReadingE7Test` 3 + 1 uyarlanan kaynak taraması, `IcuRegexTest` 2 (tüm modülleri tarar), `OfferCapture`/`OcrPace`/`OfferRules`/`ScreenDeduper`/`SliderSpinner`/`ScreenReading`/`NoteFields`/`NavDistance`/`OwnLines`/`NameMatch`/`Dialer` iskeletleri |
+| `logic/orders`, `CAPTURE.md` 8 payı | 100 | **100** | `CourierFlowTest` 27, `DeliveryRecognitionTest` 13, `WoltFlowK1K5Test` 20, `SahaTekrarTest` 10, `WoltDeliverySliderTest` 6, `WoltSliderSpinnerK33Test` 7, `WoltOfferFeeK37Test` 4, `OcrPaceD6Test` 2, `BoltBubbleR2Test` 1, `ParserEconomicsTest` 3, `CashScreenM16Test` 7 |
+| `logic/orders`, `ORDERS.md` 15.1 | 136 (M20 = 2) | **138** | `CoreLifecycleV2Test` 15, `CustomerStageK34*` 10+10+7+5, `CustomerStageK34RecordTest` 7 (6 + uyarlanan `feedV2ShowsOneOrderAtTheCustomer` → `OrderStages`/`TripStages`), `DeliveryCountD3Test` 9, `VenueArrivalD9Test` 10, `VenueNearM18Test` 5, `CustomerNearM19Test` 5, `ArrivalDistanceM20Test` 4, `StuckCustomerM22Test` 8, `RestaurantWaitE2Test` 5, `ReadinessE15Test` 4, `WoltSameCustomerR1Test` 5, `CustomerMatchK21Test` 5, `DeliveryDeadlineK29Test` 4, `TripStagesE8Test` 4 (`logic/core` `TripStages` tipine), `YolGoNavE8Test` 10 (`NavBinding`/`ScreenTrail`/`RouteStatus.Target`), `RecordJsonTest` 6 |
+| `logic/core` | 4 | **4** | `ManualSessionPolicyTest` 2, `BackupRestoreTest` 2 (yeşil) |
+| Çevrilmez | 6 | 0 | `MotionGate` 4, `OfferIdentity` 2 (`RecordingPolicyTest`) |
+
+**Sapmalar (kaynağı: `ORDERS.md` 15.1 sayıları):**
+- `ArrivalDistanceM20Test` belgede "orders (M20'den 2 kaynak taraması)" diyordu; dosyada kaynak taraması yok, 4 test de saf. **Dördü de `logic/orders`'a çevrildi** (+2). `googleMapsSummaryGivesMetres` yalnız `:capture`'ın `NavDistance`'ini dener; dosya bölünmesin diye `ArrivalDistanceM20Test` ile kaldı.
+- Kaynak taraması testleri bu görevde **yazılmadı** (Android dosya adları A3.7/A3.8'de belli olur): `RestaurantWaitE2Test.cardAndListShowIt`, `ReadinessE15Test.restaurantNotificationUsesTheCounterAndFollowsIt` (ve A3.3 listesindekiler). Yalnız E7'nin uyarlanan taraması (`CAPTURE.md` 8) yazıldı.
+- `CustomerStageK34LateDeliveryTest` (7 test): Rawstats testi ekonomi kaydedicisini (`EconomicsRecorder`) sürüyordu; kaydedicisiz kopya (ORDERS.md 15.1 `CustomerStageK34RecordTest` kuralı), altı `legs` satırı ifadesi (`assertEquals(1, r.legs(w.id).size)` vb.) çıkarıldı → **A4.1'e** (`EconomicsRecorder` testlerine) taşınacak.
+- `TripStagesE8Test` (4 test) ve `CustomerStageK34RecordTest.feedV2ShowsOneOrderAtTheCustomer`: Rawstats JSON `TripStages.feed/trip` yerine `logic/core` `TripStages` tipini üreten **`OrderStages.of/trip`** (yeni ad; A3.5 yazar).
+- `YolGoNavE8Test`: `YolGoNav.pickupOf/preferred` → **`NavBinding.pickupOf/preferred`** (yeni ad; kayıt dizgileri `yolgo_venue`, `nav_yolgo`, `gps_*_yolgo_target` aynı), `YolGoNav.Target` → `RouteStatus.Target`, `TARGET_MAX_AGE_MS` → `RouteStatus.TARGET_MAX_AGE_MS`.
+- `SahaTekrarTest` (capture 6 + orders 10): `olcumRaporu` belgenin listesine göre `logic/orders`'ta (yalnız ayrıştırıcı kullanıyor ama listede capture'ın 6'sında yok); saha yükleyicisi `SahaFrames` (testFixtures, `SahaFrame`), kareler `logic/capture/src/testFixtures/resources/saha/` (bayt bayt kopya).
+- Ekonomi payı (`CoreLifecycleV2Test` 8, `VenueArrivalD9Test` 1, `CustomerStageK34RecordTest` 1, `RestaurantWaitE2Test`/`ReadinessE15Test` taramaları, `TripStagesE8Test` 2) ve `core` (R18) 2 test A4.1/A4.3'te.
