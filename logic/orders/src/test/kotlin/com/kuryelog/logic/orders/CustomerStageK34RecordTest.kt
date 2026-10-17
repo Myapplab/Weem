@@ -100,6 +100,13 @@ class CustomerStageK34RecordTest {
         assertEquals(100_000 / 60000.0, OrderHistory.waitBeforeOffer(p, listOf(a, u, m, p))!!, 1e-9)
         assertEquals(1.0, OrderHistory.waitBeforeOffer(trip("x", 160_000, done = 170_000), listOf(a))!!, 1e-9)
     }
+    /** Rawstats read this from the feed v2 `courierState.activeTrips`; WEEM: `OrderEvents.stages` (`OrderStages`, ORDERS.md 13.2, 15.1). */
+    @Test fun feedV2ShowsOneOrderAtTheCustomer() {
+        val d = day()
+        val trips = OrderStages.of(d.core.trips.values, { null }, 1_200_000L).trips.filter { it.active }
+        assertEquals(1, trips.size); assertEquals(d.bolt.id, trips[0].tripId)
+        assertEquals(TripStages.Stage.TO_DROPOFF, trips[0].stage)
+    }
     @Test fun theCourierCanStillConfirmTheDeliveryByHand() {
         val d = day()
         val e = d.core.confirmDelivered(d.wolt.id, 1_300_000).single()
