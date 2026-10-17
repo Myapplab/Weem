@@ -1,0 +1,50 @@
+# PR denetimi: saf Kotlin testleri (logic/), Android birim testleri, lint, .dev + release derleme ve kimlik denetimi.
+# Actions dakikası kısıtlı (ayda 2.000, kurye_nav ile ortak): yalnız PR ve elle; .md ve docs/ hariç.
+name: CI
+
+on:
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Android SDK
+        run: bash tools/setup-android-sdk.sh
+      - name: Kimlik betiği (kabuk sözdizimi)
+        run: bash -n ci/check_identity.sh
+      - name: logic/ testleri (saf Kotlin)
+        run: ./gradlew -p logic test --console=plain
+      - name: Android birim testleri, lint, derleme
+        run: ./gradlew test lintDebug assembleDebug assembleRelease --console=plain
+      - name: Kimlik denetimi (.dev)
+        run: ci/check_identity.sh app/build/outputs/apk/debug/app-debug.apk com.kuryelog.app.dev
+      - name: Kimlik denetimi (release)
+        run: ci/check_identity.sh app/build/outputs/apk/release/app-release.apk com.kuryelog.app
+      - name: Raporlar (hata olursa)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: raporlar
+          path: |
+            **/build/reports/
+            **/build/test-results/
+          retention-days: 7

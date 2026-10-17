@@ -2,6 +2,11 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-17 — A1.4 CI (Claude; dal `ccr-49f4c0da-gcd3vx`, PR #1, `main`'e birleşti)
+- Yapılan: `.github/workflows/ci.yml` (PR + elle; `.md`/`docs/` hariç; `logic/` testleri, Android `test lintDebug assembleDebug assembleRelease`, iki APK'da `ci/check_identity.sh`), `apk.yml` (`weem-v*` etiketi ya da elle → yalnız `.dev` APK, `gh release create`; elle koşuda `weem-dev-<no>` önsürüm), `lint.xml` (sürüm ve yazım uyarıları kapalı; simge uyarısı açık) + `abortOnError`.
+- Doğrulama: yerelde hepsi yeşil; GitHub'da PR #1 koşusu yeşil (3 dk 24 sn). `apk.yml` henüz koşmadı (etiket/elle gerekir); telefonda denenmedi.
+- Açık kalan: A1.3 kabuk. Runner'da `ANDROID_HOME` hazır SDK'yı kullanır, `setup-android-sdk.sh` eksikleri tamamlar. Simge hâlâ kullanıcıdan.
+
 ## 2026-10-17 — A1.2 kimlik ve imza (Claude; dal `ccr-2794f98b-53t67j`, `main`'e birleşti)
 - Yapılan: `ci/kuryelog-test.keystore` (Rawstats'tan), `app/build.gradle.kts` signingConfig `kuryelog` → debug (`.dev`, `-dev`, etiket "WEEM dev") ve release (`com.kuryelog.app`); sürüm `gradle.properties` `weem.versionCode=34`, `weem.versionName=0.1.0` (>33 derlemede `require`). Manifest: izinler (`VERI_SOZLESMESI` 3), `allowBackup=false` + Rawstats `data_extraction_rules.xml`. `:capture`: `com.kuryelog.app.WatchService` / `NotifService` boş gövde + Rawstats `accessibility_config.xml`, `acc_desc`.
 - `ci/check_identity.sh <apk> <paket>`: aapt2 (paket, sürüm, min/target), apksigner (SHA-256 = sabit pin = keystore), manifestte iki servis ve yedek ayarı. `tools/setup-android-sdk.sh`: kanca bunu zaten çağırıyordu ama dosya yoktu; SDK 36 + `local.properties`.
