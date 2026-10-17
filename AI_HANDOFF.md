@@ -2,6 +2,13 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-17 — A3.3 testleri çevir: orders para, platform, rozet, balon, gün sayfası (Claude Sonnet · high; dal `ccr-e90bca59-fxabvl`)
+- Yapılan: 141 Rawstats testi çevrildi — `logic/orders` 135, `logic/capture` 6 (`NoteFieldsF71Test`). Betikler `tools/test-translate/` (`cfg.py` `A33`, `gen_a33.py`, `patch_a33.py`, `fixup_a33.py`). Yeni iskeletler (`TODO`): `PocketCash`, `CashPending`, `PlatformTotals`, `RestaurantBubble`, `CustomerCard`, `CustomerBubble`, `RecordPages` (A3.6), `OfferSummaries.of(active, offers, now, startedAtMs)` (A3.5; `OrderEvents.offers`).
+- Sapmalar (`TEST_ENVANTERI` "A3.3 çeviri durumu"): 20 kaynak taraması yazılmadı (A3.7/A3.8; "yedeğe girer" üçü `:core`); `AnalysisExport` ifadeleri (`kindOf`, `isPanelLine`, `screen`, `missed_by_kuryeplus` dışa aktarımı) A4.3'e; `YolGoNav` → `RouteStatus.fromNavFeed`/`RouteStatus.Route`; "(YolGo)" → "(WEEM)", "Rawstats:" → "WEEM:", "hava bilgisi gelmedi" (AZ "hava məlumatı gəlmədi": ben seçtim, onay bekliyor); `OfferFeedV2Test` 4 test `OfferSummaries`'e, 2 test çevrilmedi (v1 bayt eşitliği, E8 değişim anahtarı).
+- Doğrulama: `./gradlew -p logic compileTestKotlin` yeşil; `-p logic test` capture 100 (97 kırmızı), orders 374 (371 kırmızı), core 216 yeşil; kök Android `:orders`/`:capture` `compileDebugKotlin` yeşil. CI/telefon yok (`[skip ci]`).
+- **`main`'e birleşmedi** (testler bilerek kırmızı). Dal `ccr-e90bca59-fxabvl` (kod `cd9a845`); `main`'e yalnız `WEEM_ISLER.md` + bu not gider.
+- Açık kalan: A3.4 (Opus · high) sırada. A3.6 "A3.3 testleri yeşil" = balon/rozet/gün sayfası kodu dahil. S15–S17 açık (engel değil).
+
 ## 2026-10-17 — A3.2 testleri çevir: capture + orders sipariş akışı (Claude Sonnet · high; dal `ccr-e90bca59-fxabvl`)
 - Yapılan: 335 Rawstats testi çevrildi — `logic/capture` 93, `logic/orders` 238, `logic/core` 4 (yeşil). Testler derlenir, `:capture`/`:orders` kırmızı. Ortak yardımcılar `logic/capture` `testFixtures` (`SahaFrames`, `RepoSource`, saha kareleri). İskelet imzalar `TODO("A3.4"/"A3.5")` (`stubber.py` ile Rawstats'tan; gövde yok). Betikler `tools/test-translate/` (README; A3.3 için aynı hat).
 - Yeni adlar (A3.5 uygular): `OrderStages.of/trip` (`TripRecord` → `logic/core` `TripStages`), `NavBinding.pickupOf/preferred` + `ScreenTrail` (`RouteStatus.Target`), `NameMatch` (capture), `OwnLines`.
