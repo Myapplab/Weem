@@ -1,6 +1,6 @@
 # Özellik haritası — 63 özellik → eski kod, testler, veri, bağımlılık, WEEM modülü
 
-Durum: A0.1, 17 Ekim 2026. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c04` (**RS** = `app/src/main/java/com/kuryelog/app/`, **NB** = `ninebot-logger/app/src/main/java/az/ninebot/logger/`) ve `yolgo-test` @ `870ab6e` (**YG**). Kapsam ve kararlar: `docs/WEEM_PLANI.md` Bölüm 3 ve 8. Test adları ve sayıları `TEST_ENVANTERI.md` ile aynı betikten (elle yazılmadı). Veri adları: `VERI_SOZLESMESI.md`.
+Durum: A0.1, 17 Ekim 2026; Aşama 3 satırlarının (R1–R3, R5–R13, R15, R16, R19) Ayrıntı bağlantıları A3.1'de `CAPTURE.md`/`ORDERS.md`'ye çevrildi. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c04` (**RS** = `app/src/main/java/com/kuryelog/app/`, **NB** = `ninebot-logger/app/src/main/java/az/ninebot/logger/`) ve `yolgo-test` @ `870ab6e` (**YG**). Kapsam ve kararlar: `docs/WEEM_PLANI.md` Bölüm 3 ve 8. Test adları ve sayıları `TEST_ENVANTERI.md` ile aynı betikten (elle yazılmadı). Veri adları: `VERI_SOZLESMESI.md`.
 
 **Nasıl kullanılır:** bir modüle başlamadan önce o modülün satırlarındaki eski dosyalar ve testler o aşamanın şartname görevinde (A2.1, A3.1, A5.1, A6.1) okunur; davranış ayrıntısı (eşikler, durum geçişleri) varsa `bulgular/` dosyasındadır. `bulgular/` ham ve kısmidir (çok ajanlı okuma usage nedeniyle yarıda durduruldu); boş kalan özelliklerin ayrıntısı şartname görevinde çıkarılır.
 
@@ -47,7 +47,7 @@ Durum: A0.1, 17 Ekim 2026. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c0
 | R16 | Başka navigasyon uygulamasından mesafe | `:capture` `logic/` · 3 (A3.4) | 4 |
 | R17 | Yedek ve geri yükleme | `:core` · 4 (A4.3) | 17 |
 | R18 | Anonim analiz dışa aktarımı | `:core` · 4 (A4.3) | 30 |
-| R19 | Uyarılar | `:orders` + `:core` · 3 (A3.7) | 5 |
+| R19 | Uyarılar | `:capture` + `:app` + `:core` · 3 (A3.4, A3.7) | 5 |
 | R20 | Çökme kaydı | `:core` + `:app` · 2 (A2.3) | 17 |
 | S1 | Scooter bağlantısı | `:scooter` `logic/` + BLE · 5 (A5.2) | 138 |
 | S2 | Canlı panel | `:scooter` · 5 (A5.3) | 82 |
@@ -221,7 +221,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `screens.jsonl`, `events.jsonl`; ML Kit OCR (yerel)
 - **Bağımlı:** —
 - **WEEM:** `:capture` `logic/` + servis · 3 (A3.4)
-- **Ayrıntı:** `bulgular/R_capture.md` §R1
+- **Ayrıntı:** `CAPTURE.md` 1 (servis), 2 (ayrıştırıcı), 3 (OCR tempo, ekran görüntüsü, maskeleme), 6.1 (`screens.jsonl`), 8 (test eşlemesi)
 
 ### R2 Bildirim okuma
 - **Eski kod:** RS `NotifService.kt`
@@ -229,7 +229,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `notifs.jsonl`
 - **Bağımlı:** R3, R5, R16
 - **WEEM:** `:capture` · 3 (A3.4)
-- **Ayrıntı:** `bulgular/R_capture.md` §R2
+- **Ayrıntı:** `CAPTURE.md` 4.1 (bildirim dinleyici), 6.2 (`notifs.jsonl`)
 
 ### R3 Teklif kaydı
 - **Eski kod:** RS `CourierParser.parse`, `DeliveryCore.kt` (teklif yaşam döngüsü, `OfferState`), `OrderTracker.kt`
@@ -237,7 +237,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `courier.db` `offers`, `economics-offers.jsonl`
 - **Bağımlı:** R1, R4, R10, R15
 - **WEEM:** `:capture` + `:orders` · 3 (A3.5)
-- **Ayrıntı:** `bulgular/R_capture.md` §R3
+- **Ayrıntı:** `CAPTURE.md` 2.4–2.6 (ücret, kabul, aşama, alanlar); `ORDERS.md` 2 (teklif yaşam döngüsü), 10.1 (kayıt biçimi), 13.2 (`OfferSummary`)
 
 ### R4 Teklif puanı
 - **Eski kod:** RS `EconomicsV2.kt`, `EconomicsV2Estimators.kt`, `EconomicsLogs.kt`, `OfferScore.kt`, `OfferGeo.kt`, `ShadowEvaluator.kt`; `docs/ekonomi-v2/` (`ref.py`, SPEC 2.1.0)
@@ -252,7 +252,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `courier.db` `trips`/`session`, `orders.jsonl`, `economics-waits/legs.jsonl`
 - **Bağımlı:** R1, R3, R16, Y4 (nav hedefi), R14
 - **WEEM:** `:orders` `logic/` · 3 (A3.5)
-- **Ayrıntı:** `bulgular/R_orders.md` §R5
+- **Ayrıntı:** `ORDERS.md` 1 (veri modeli), 3 (durum makinesi), 4 (sipariş akışı; 4.8 varış kuralları, 4.9 navigasyon bağı), 13.2 (`TripStages`), 15.1 (test eşlemesi)
 
 ### R6 Restoran ve müşteri balonları
 - **Eski kod:** RS `DeliveryReminder.kt`, `CustomerBubble.kt`, `CustomerCard.kt`, `RestaurantBubble.kt`, `NoteFields.kt`, `Dialer.kt`
@@ -260,7 +260,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** bildirim 12 `delivery_notes`; `customerCard*`, `restaurantBubbleWidthPct`
 - **Bağımlı:** R5, R16, Y4
 - **WEEM:** `:orders` · 3 (A3.7)
-- **Ayrıntı:** `bulgular/R_orders.md` §R6
+- **Ayrıntı:** `ORDERS.md` 5 (hatırlatıcı, pencereler, bildirim 12), 15.2 (test eşlemesi); gizlilik 14.2
 
 ### R7 Kurye uygulaması üstünde gösterge
 - **Eski kod:** RS `OverlayText.kt`, `OrderTracker.badgeLines`, `WatchService` rozet penceresi
@@ -268,15 +268,15 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `overlay`, `commission*`
 - **Bağımlı:** R1, R5, R11
 - **WEEM:** `:orders` + `:capture` · 3 (A3.7)
-- **Ayrıntı:** `bulgular/R_orders.md` §R7
+- **Ayrıntı:** `ORDERS.md` 6 (rozet metni ve pencere); pencere yönetimi `CAPTURE.md` 1.6, `CaptureHost` 7.1
 
 ### R8 Nakit ve bahşiş
 - **Eski kod:** RS `CashTips.kt`, `CashTipPrompt.kt`, `TipAmountActivity.kt`, `res/layout/tip_quick.xml`
 - **Testler:** `CashScreenM16Test` (7); `CashOrderK31K32Test` (16); `TipNotificationF46Test` (4); `TipRecordF48Test` (5) — **32**
-- **Veri:** `economics-cash-tips.jsonl`; kanal `cash_tips` (numara çakışması)
+- **Veri:** `economics-cash-tips.jsonl`; kanal `cash_tips` — bildirim numaraları **10000–14095** (eskiden 4000–8095; çakışma çözüldü, `CORE.md` 3.3)
 - **Bağımlı:** R1, R5
 - **WEEM:** `:orders` · 3 (A3.6)
-- **Ayrıntı:** `bulgular/R_orders.md` §R8
+- **Ayrıntı:** `ORDERS.md` 7 (7.1 nakit ekranı K31/M16, 7.2 bahşiş sorusu ve kaydı K32), 13.6 (bildirimler)
 
 ### R9 Cepteki nakit
 - **Eski kod:** RS `PocketCash.kt`, `PocketCashPrompt.kt`, `CashPending.kt`
@@ -284,7 +284,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `economics-pocket-cash.jsonl`, `economics-cash-pending.jsonl`, `cashPending.*`; kanal `pocket_cash` 4901
 - **Bağımlı:** R8, R13, G1
 - **WEEM:** `:orders` · 3 (A3.6)
-- **Ayrıntı:** `bulgular/R_orders.md` §R9
+- **Ayrıntı:** `ORDERS.md` 8 (8.1 vardiya başı cep nakdi M15, 8.2 CASH PENDING ve yatırma M17)
 
 ### R10 Boost / Earn extra
 - **Eski kod:** RS `BoostLog.kt`
@@ -292,7 +292,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `economics-boosts.jsonl`
 - **Bağımlı:** R1, R3, R4
 - **WEEM:** `:orders` · 3 (A3.6)
-- **Ayrıntı:** `bulgular/R_orders.md` §R10
+- **Ayrıntı:** `ORDERS.md` 9.1 (boost gözlemi), 9.2 (teklifin boost'u)
 
 ### R11 Çevrimiçi süreler
 - **Eski kod:** RS `OnlineSessions.kt`
@@ -300,7 +300,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `online-sessions.jsonl` (v2), `onlineSessions.v1`
 - **Bağımlı:** R1, R7
 - **WEEM:** `:orders` · 3 (A3.6)
-- **Ayrıntı:** `bulgular/R_orders.md` §R11
+- **Ayrıntı:** `ORDERS.md` 9.3 (oturumlar; eski testi yok, `OnlineSessionsTest` yeni: 15.3)
 
 ### R12 Siparişler ve gün sayfaları
 - **Eski kod:** RS `MainActivity.kt` (gün sayfası), `RecordPages.kt`, `OrderHistory.kt`, `DailyRecords.kt`, `RecordJson.kt`
@@ -308,6 +308,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `courier.db`, gün klasörü, arşiv
 - **Bağımlı:** R5, R13, G1
 - **WEEM:** `:orders` + `:app` · 3 (A3.8)
+- **Ayrıntı:** `ORDERS.md` 10 (10.1 kayıt biçimi, 10.2 gün ve sipariş özetleri, 10.3 ekranlar)
 
 ### R13 Resmî değerlerle karşılaştırma
 - **Eski kod:** RS `PlatformTotals.kt`, `PlatformHistory.kt`, `CourierParser.statsPeriod`
@@ -315,6 +316,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `economics-platform-totals.jsonl`, `economics-platform-history.jsonl`
 - **Bağımlı:** R1, R12, R9
 - **WEEM:** `:orders` · 3 (A3.6)
+- **Ayrıntı:** `ORDERS.md` 11 (11.1 platform kazanç listesi, 11.2 nakit tahsilat satırları, 11.3 resmî toplamlar, 11.4 karşılaştırma ve gün kartı)
 
 ### R14 Sipariş başına enerji
 - **Eski kod:** RS `ScooterBridge.kt`, `ScooterLink.kt`, `ScooterSamples.kt`, `EnergySegments.kt`; NB `ScooterEnergy.java`
@@ -330,7 +332,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** teklif satırında `weather_*`; yük `weather/current`
 - **Bağımlı:** Y10, R3
 - **WEEM:** `:orders` · 3 (A3.6) — Y10 Aşama 6'da gelir
-- **Ayrıntı:** `bulgular/X_protocol.md` §P9
+- **Ayrıntı:** `ORDERS.md` 12 (kaynak `WeatherPort`, 13.5); ham: `bulgular/X_protocol.md` §P9 (YolGo hava akışı; WEEM'de yok, S7)
 
 ### R16 Başka navigasyon uygulamasından mesafe
 - **Eski kod:** RS `NavDistance.kt` (0.25.1 ICU hatası), `NotifService.kt:28-35`
@@ -338,7 +340,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** bellek (`navSummary`)
 - **Bağımlı:** R2, R5
 - **WEEM:** `:capture` `logic/` · 3 (A3.4)
-- **Ayrıntı:** `bulgular/R_capture.md` §R16
+- **Ayrıntı:** `CAPTURE.md` 4.2 (`NavDistance`); mesafenin varış kuralındaki kullanımı `ORDERS.md` 4.8 (`ArrivalDistance`)
 
 ### R17 Yedek ve geri yükleme
 - **Eski kod:** RS `BackupFiles.kt`, `LogImporter.kt`, `LegacyRecords.kt`, `DailyPack.kt`, `MainActivity.renderRecordTools`
@@ -358,10 +360,10 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 ### R19 Uyarılar
 - **Eski kod:** RS `ScreenReading.kt`, `AutoStartNotice.kt`, `GpsService.kt:117-155`
 - **Testler:** `ScreenReadingE7Test` (4); `AutoStartNoticeTest` (1) — **5**
-- **Veri:** kanallar `screen_reading`, `auto_start` (5103 çakışması)
+- **Veri:** kanallar `screen_reading` (bildirim **5104**, eskiden 5103; çakışma çözüldü), `auto_start` (5101 ev, 5103 vardiya kesildi: A2.4; 5102 scooter: A5)
 - **Bağımlı:** R1, G1, S1
-- **WEEM:** `:orders` + `:core` · 3 (A3.7)
-- **Ayrıntı:** `bulgular/R_capture.md` §R19
+- **WEEM:** `:capture` (E7 kuralı ve uyarı dinleyicisi) + `:app` (izinler kartı, vardiya kartı satırı) + `:core` (5101/5103 bildirimleri, A2.4) · 3 (A3.4 kural; A3.7 Android)
+- **Ayrıntı:** `CAPTURE.md` 5 (E7 ekran okuma uyarısı); `ORDERS.md` 13.7 (izinler kartı, pil bilgi satırı, otomatik başlatma bildirimleri)
 
 ### R20 Çökme kaydı
 - **Eski kod:** RS `RawstatsApp.kt`, `CrashLog.kt`, `CrashReport.kt`, `Store.failure`
