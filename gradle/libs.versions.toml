@@ -4,9 +4,15 @@
 agp = "9.1.0"
 kotlin = "2.4.0"
 junit = "4.13.2"
+compose-bom = "2026.02.01"
+activity-compose = "1.13.0"
 
 [libraries]
 junit = { module = "junit:junit", version.ref = "junit" }
+compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose-bom" }
+compose-ui = { module = "androidx.compose.ui:ui" }
+compose-material3 = { module = "androidx.compose.material3:material3" }
+activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity-compose" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

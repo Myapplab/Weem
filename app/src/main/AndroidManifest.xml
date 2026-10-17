@@ -30,6 +30,18 @@
         tools:ignore="DataExtractionRules"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
-        android:label="${appLabel}" />
+        android:label="${appLabel}"
+        android:theme="@style/Theme.Weem">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
 
 </manifest>

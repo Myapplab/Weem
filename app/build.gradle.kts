@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
@@ -63,6 +64,12 @@ kotlin {
 }
 
 dependencies {
+    // Kabuğun saf mantığı (sekmeler, dil, tema, palet): logic/app.
+    implementation("com.kuryelog.logic:app")
+    implementation(platform(libs.compose.bom))
+    implementation(libs.compose.ui)
+    implementation(libs.compose.material3)
+    implementation(libs.activity.compose)
     // Kabuk her modüle bağlanır (WEEM_PLANI.md 4.2).
     listOf("core", "capture", "orders", "economics", "scooter", "map", "link", "remote").forEach {
         implementation(project(":$it"))

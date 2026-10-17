@@ -19,4 +19,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "logic"
-include(":core", ":capture", ":orders", ":economics", ":scooter", ":map", ":link", ":remote")
+include(":app", ":core", ":capture", ":orders", ":economics", ":scooter", ":map", ":link", ":remote")
