@@ -17,18 +17,18 @@ Durum: A0.1, 17 Ekim 2026. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c0
 | Hedef | Dosya | Test/denetim |
 |---|---:|---:|
 | :app | 4 | 10 |
-| :capture | 15 | 203 |
-| :core | 23 | 148 |
-| :economics | 11 | 101 |
+| :capture | 15 | 202 |
+| :core | 24 | 149 |
+| :economics | 12 | 106 |
 | :link | 1 | 8 |
 | :map | 64 | 414 |
-| :orders | 53 | 331 |
+| :orders | 50 | 320 |
 | :scooter | 18 | 344 |
 | sonra | 13 | 100 |
 | uyarlanır | 6 | 48 |
-| çevrilmez | 10 | 54 |
+| çevrilmez | 11 | 60 |
 
-Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **1.607** (sonra 100 ve çevrilmez 54 hariç; uyarlanır 48 dahil). A2.1 (17 Ekim) `:core` satırlarını test gövdelerine göre kesinleştirdi: 4 dosya başka modüle, 3 dosya çevrilmeze (`CORE.md` Bölüm 6); dosya içinde kısmen çevrilmeyen testler orada. Satır tahmini plan Bölüm 6'da.
+Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **1.601** (sonra 100 ve çevrilmez 60 hariç; uyarlanır 48 dahil). A2.1 (17 Ekim) `:core` satırlarını test gövdelerine göre kesinleştirdi: 4 dosya başka modüle, 3 dosya çevrilmeze (`CORE.md` Bölüm 6). A3.1 (17 Ekim) `:capture` ve `:orders` satırlarını kesinleştirdi (`CAPTURE.md` 8, `ORDERS.md` 15): ilk hedefi değişen 5 dosya (`CashScreenM16Test` → `:orders`, `NoteFieldsF71Test` → `:capture`, `WaitObservationProcessDeathTest` → `:economics`, `AutoStartNoticeTest` → `:core`, `offer_feed_versions_test` → çevrilmez); karışık dosyalar test başına bölünür (sayılar hedef sütununda), dosya içinde çevrilmeyen 9 test (`MotionGate` 4, `OfferIdentity` 2, feed/sağlayıcı 3) şartnamelerde. Satır tahmini plan Bölüm 6'da.
 
 ## Test listesi
 
@@ -39,21 +39,21 @@ Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **
 | `BrandingK26Test` | 3 | K26 paket ve tercihler aynı; simge ve ad | G5 | :app |
 | `I18nCoverageTest` | 2 | TR/AZ çeviri kapsamı | G3 | :app |
 | `RawPaletteContrastTest` | 2 | tema renk karşıtlığı | Y1 | :app |
-| `BoltBubbleR2Test` | 5 | R2 Bolt alış ekranı "N min" → hazır süresi | R1 R6 | :capture |
-| `CashScreenM16Test` | 7 | M16 Wolt nakit ekranı, para üstü, kutu ✓ | R8 | :capture |
-| `OcrPaceD6Test` | 11 | D6 OCR temposu | R1 | :capture |
-| `ParserEconomicsTest` | 23 | parser ekonomi alanları | R1 R3 | :capture |
-| `RecordingPolicyTest` | 12 | kayıt politikası, tekrar süzgeci | R1 | :capture |
-| `ScreenReadingE7Test` | 4 | E7 ekran okuma kapalı uyarısı | R19 | :capture |
-| `WoltDeliverySliderTest` | 9 | Wolt teslim kaydırıcısı | R1 R5 | :capture |
-| `WoltOfferFeeK37Test` | 6 | K37 Wolt teklif ücreti yeniden okuma | R1 R3 | :capture |
-| `WoltSliderSpinnerK33Test` | 9 | K33 kaydırıcı dönen gösterge | R1 R5 | :capture |
+| `BoltBubbleR2Test` | 5 | R2 Bolt alış ekranı "N min" → hazır süresi | R1 R6 | :capture :orders (A3.1: 4 / 1; `CAPTURE.md` 8) |
+| `CashScreenM16Test` | 7 | M16 Wolt nakit ekranı, para üstü, kutu ✓ | R8 | :orders (A3.1: 7, `CashPayment` `:orders`'ta; `CAPTURE.md` 8) |
+| `OcrPaceD6Test` | 11 | D6 OCR temposu | R1 | :capture :orders (A3.1: 9 / 2) |
+| `ParserEconomicsTest` | 23 | parser ekonomi alanları | R1 R3 | :capture :orders (A3.1: 20 / 3) |
+| `RecordingPolicyTest` | 12 | kayıt politikası, tekrar süzgeci | R1 | :capture (A3.1: 4; 2 `:core` `BackupFiles`; 6 çevrilmez: `MotionGate`, `OfferIdentity` ölü kod) |
+| `ScreenReadingE7Test` | 4 | E7 ekran okuma kapalı uyarısı | R19 | :capture (A3.1: 3 + 1 kaynak taraması) |
+| `WoltDeliverySliderTest` | 9 | Wolt teslim kaydırıcısı | R1 R5 | :capture :orders (A3.1: 3 / 6) |
+| `WoltOfferFeeK37Test` | 6 | K37 Wolt teklif ücreti yeniden okuma | R1 R3 | :capture :orders (A3.1: 2 / 4) |
+| `WoltSliderSpinnerK33Test` | 9 | K33 kaydırıcı dönen gösterge | R1 R5 | :capture :orders (A3.1: 2 / 7) |
 | `WoltStatsF81Test` | 6 | F8.1 Wolt Stats dönemi ve tutarlar | R13 | :capture |
-| `IcuRegexTest` | 2 | ICU'da derlenmeyen desen yasağı (0.25.1 hatası) | R1 | :capture (tüm modüller) |
-| `CourierFlowTest` | 44 | uçtan uca kurye akışı: ekran kareleri → teklif/sipariş kaydı | R1 R3 R5 | :capture :orders |
-| `DeliveryRecognitionTest` | 24 | teslim tanıma: Wolt müşteri kartı, kaydırıcı, bekleme | R1 R5 | :capture :orders |
-| `SahaTekrarTest` | 16 | 11–12 Ekim saha kareleri tekrarı (altın) | R1 R3 R5 | :capture :orders |
-| `WoltFlowK1K5Test` | 25 | K1–K5 Wolt akışı | R1 R3 R5 | :capture :orders |
+| `IcuRegexTest` | 2 | ICU'da derlenmeyen desen yasağı (0.25.1 hatası) | R1 | :capture (tüm modüller; A3.1: + JDK 21 sınır testleri, `CAPTURE.md` 7.5) |
+| `CourierFlowTest` | 44 | uçtan uca kurye akışı: ekran kareleri → teklif/sipariş kaydı | R1 R3 R5 | :capture :orders (A3.1: 15 / 27; 2 `:core` `ManualSessionPolicy`) |
+| `DeliveryRecognitionTest` | 24 | teslim tanıma: Wolt müşteri kartı, kaydırıcı, bekleme | R1 R5 | :capture :orders (A3.1: 11 / 13) |
+| `SahaTekrarTest` | 16 | 11–12 Ekim saha kareleri tekrarı (altın) | R1 R3 R5 | :capture :orders (A3.1: 6 / 10; kareler `testFixtures`) |
+| `WoltFlowK1K5Test` | 25 | K1–K5 Wolt akışı | R1 R3 R5 | :capture :orders (A3.1: 5 / 20) |
 | `AnalysisExportTest` | 13 | anonim analiz dışa aktarımı: takma ad, alan izin listesi, gizleme | R18 | :core |
 | `CrashGuardTest` | 10 | korumalı girişler; hata errors.jsonl'a, süreç ölmez | R20 | :core |
 | `CrashReportTest` | 7 | crashes.jsonl biçimi, ApplicationExitInfo süzgeci | R20 | :core |
@@ -84,7 +84,7 @@ Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **
 | `ShadowEvaluatorTest` | 11 | gölge değerlendirme (shadow corpus) | R4 | :economics |
 | `FeedChangesE8Test` | 8 | E8 içerik anahtarı, 200 ms aralık, kalp atışı | N1 | :link |
 | `ArrivalDistanceM20Test` | 4 | M20 varış mesafesi kaynağı (YolGo nav / Maps bildirimi / GPS payı) | R5 R16 | :orders |
-| `AutoStartNoticeTest` | 1 | otomatik başlatma bildirimi | R19 G1 | :orders |
+| `AutoStartNoticeTest` | 1 | otomatik başlatma bildirimi | R19 G1 | :core (A3.1: kaynak taraması A2.4 bildirimlerine; scooter kısmı A5; `ORDERS.md` 15.2) |
 | `AverageListE1Test` | 6 | E1 ortalamalar listesi | R12 | :orders |
 | `BoostListM21Test` | 4 | M21 Earn extra listesi: gün, dilim, liste kazanır | R10 | :orders |
 | `BoostLogK27Test` | 7 | K27 boost değişimi ve Bolt 30 dk dilimleri | R10 | :orders |
@@ -92,22 +92,22 @@ Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **
 | `CashOrderK31K32Test` | 16 | K31/K32 nakit sipariş ve bahşiş sorusu | R8 | :orders |
 | `CashPendingM17Test` | 5 | M17 Wolt CASH PENDING kaydı | R9 | :orders |
 | `CashReconcileM17Test` | 5 | M17 nakit mutabakatı (başlangıç + toplanan − yatırılan) | R9 | :orders |
-| `CoreLifecycleV2Test` | 23 | teklif/sipariş yaşam döngüsü v2 (pencere sonu zaman aşımı ≠ ret) | R3 R5 | :orders |
+| `CoreLifecycleV2Test` | 23 | teklif/sipariş yaşam döngüsü v2 (pencere sonu zaman aşımı ≠ ret) | R3 R5 | :orders :economics (A3.1: 15 / 8 `WaitObservation`) |
 | `CustomerBubbleF72Test` | 7 | F7.2 müşteri balonu satırları | R6 | :orders |
 | `CustomerBubbleViewF73Test` | 3 | F7.3 balon kaydırma/açma kararları | R6 | :orders |
-| `CustomerCardE16Test` | 6 | E16 müşteri kartı | R6 | :orders |
+| `CustomerCardE16Test` | 6 | E16 müşteri kartı | R6 | :orders (A3.1: 3 uyarlanır `RouteStatus`, metin "(WEEM)"; 1 kaynak taraması) |
 | `CustomerMatchK21Test` | 5 | K21 müşteri eşleştirme | R5 | :orders |
 | `CustomerNearM19Test` | 5 | M19 müşteriye ≤10 m varış | R5 | :orders |
 | `CustomerStageK34ClosedCardTest` | 10 | K34 kapanan kartta müşteri aşaması | R5 | :orders |
 | `CustomerStageK34LateDeliveryTest` | 7 | K34 geç teslim | R5 | :orders |
-| `CustomerStageK34RecordTest` | 10 | K34 kayıt alanları | R5 | :orders |
+| `CustomerStageK34RecordTest` | 10 | K34 kayıt alanları | R5 | :orders (A3.1: 6; 1 `:economics`, 2 `:core` R18, 1 uyarlanır `OrderEvents`) |
 | `CustomerStageK34RoutingTest` | 5 | K34 müşteriye yönlendirme | R5 | :orders |
 | `CustomerStageK34Test` | 10 | K34 müşteri aşaması temel akış | R5 | :orders |
 | `DeliveryCountD3Test` | 9 | D3 teslim sayımı (çıkarımlı dahil, çift sayım yok) | R5 R12 | :orders |
 | `DeliveryDeadlineK29Test` | 4 | K29 platform teslim saati | R5 | :orders |
 | `DualOfferStatusK30Test` | 3 | K30 iki platform durum satırı | R3 R7 | :orders |
-| `NoteFieldsF71Test` | 6 | F7.1 bina/kat/daire/kod notları | R6 | :orders |
-| `OfferFeedV2Test` | 6 | teklif özeti v2 alanları | R3 N1 | :orders |
+| `NoteFieldsF71Test` | 6 | F7.1 bina/kat/daire/kod notları | R6 | :capture (A3.1: `NoteFields` `:capture`'ta; `CAPTURE.md` 2.8) |
+| `OfferFeedV2Test` | 6 | teklif özeti v2 alanları | R3 N1 | :orders (A3.1: 4 uyarlanır `OrderEvents.offers`; 2 çevrilmez: feed v1, değişim anahtarı) |
 | `OfferNetLineTest` | 6 | net = brüt − filo komisyonu | R7 N4 | :orders |
 | `OfferWeatherK28Test` | 2 | K28 teklif anının havası | R15 | :orders |
 | `OrderHistoryTest` | 9 | günlük sipariş geçmişi, brüt/net | R12 | :orders |
@@ -128,12 +128,12 @@ Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **
 | `TipNotificationF46Test` | 4 | F4.6 bahşiş hızlı cevap bildirimi | R8 | :orders |
 | `TipRecordF48Test` | 5 | F4.8 bahşiş kaydı | R8 | :orders |
 | `TodayAveragesTest` | 2 | bugünün ortalamaları (yalnız ölçülen) | R12 | :orders |
-| `TripStagesE8Test` | 6 | E8 sipariş aşamaları yükü | R5 N1 | :orders |
-| `VenueArrivalD9Test` | 11 | D9 restoran varışı 60 m / 20 sn | R5 | :orders |
+| `TripStagesE8Test` | 6 | E8 sipariş aşamaları yükü | R5 N1 | :orders :economics (A3.1: 4 / 2 `courierState`) |
+| `VenueArrivalD9Test` | 11 | D9 restoran varışı 60 m / 20 sn | R5 | :orders (A3.1: 10; 1 `:economics` bacak satırı) |
 | `VenueNearM18Test` | 5 | M18 restorana ≤5 m varış | R5 | :orders |
-| `WaitObservationProcessDeathTest` | 5 | bekleme gözlemi süreç ölümünde | R5 | :orders |
+| `WaitObservationProcessDeathTest` | 5 | bekleme gözlemi süreç ölümünde | R5 | :economics (A3.1: bekleme gözlemi `:economics`'in; `ORDERS.md` 15.1) |
 | `WoltSameCustomerR1Test` | 5 | R1 aynı müşteriye çoklu teslim | R5 | :orders |
-| `YolGoNavE8Test` | 13 | YolGo nav hedefi/kalan yol tüketimi | Y4 R5 N1 | :orders |
+| `YolGoNavE8Test` | 13 | YolGo nav hedefi/kalan yol tüketimi | Y4 R5 N1 | :orders (A3.1: 10 uyarlanır `RouteStatus`/`NavPort`; 2 A2.5 `MessagesTest`'te; 1 çevrilmez) |
 | `ScooterBridgeTest` | 6 | ScooterBridge arayüzü, korumalı çağrılar | R14 N1 | :scooter |
 | `ScooterFeedTest` | 5 | canlı scooter yükü | S2 N1 | :scooter |
 | `ScooterReconnectM23Test` | 4 | M23 veri kesildi/geldi bildirimi | S6 | :scooter |
@@ -227,7 +227,7 @@ Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **
 | `ww_no_problem_green_test` | 5 | "Evet, sorun"/Ses− geçiş kararları | Y8 Y12 | :map |
 | `yolgo_rules_test` | 4 | sapma 8 sn, sipariş JSON, yüzey/ışık, hava | Y4 Y11 Y10 | :map |
 | `yolgo_sade_2_test` | 10 | gün kartı düğmeleri | G1 Y1 | :map |
-| `offer_feed_versions_test` | 6 | teklif feed sürüm uyumu | N1 R3 | :orders |
+| `offer_feed_versions_test` | 6 | teklif feed sürüm uyumu | N1 R3 | çevrilmez (A3.1: uygulamalar arası okuyucu, S7; sürüm/boyut denetimi `:link` A8; `ORDERS.md` 15.3) |
 | `day_contributions_test` | 3 | gün katkıları defteri | Y12 | :map |
 | `quality_test` | 9 | yol kalitesi ön tahmin/öğrenilen skor (rota seçimini etkiler) | Y12 Y3 | :map |
 | `road_learner_test` | 9 | yol öğrenme | Y12 | :map |

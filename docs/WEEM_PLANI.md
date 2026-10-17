@@ -41,7 +41,7 @@ Kaynak: seçim sayfası <https://claude.ai/artifact/5RTwBJxg8JHXCgUTbLAGyD> (kay
 
 ## 4. Mimari
 
-Şartname belgeleri: `docs/sartname/OZELLIK_HARITASI.md` (63 özellik → eski kod, test, veri, modül), `VERI_SOZLESMESI.md` (korunacak adlar), `TEST_ENVANTERI.md` (1.761 eski test/denetim, 1.607'si çevrilir), aşama şartnameleri (`CORE.md`: Aşama 2). Ham okuma notları: `docs/sartname/bulgular/` (kısmi).
+Şartname belgeleri: `docs/sartname/OZELLIK_HARITASI.md` (63 özellik → eski kod, test, veri, modül), `VERI_SOZLESMESI.md` (korunacak adlar), `TEST_ENVANTERI.md` (1.761 eski test/denetim, 1.601'i çevrilir; A3.1'de güncellendi), aşama şartnameleri (`CORE.md`: Aşama 2; `CAPTURE.md`, `ORDERS.md`: Aşama 3). Ham okuma notları: `docs/sartname/bulgular/` (kısmi).
 
 ### 4.1 Katmanlar ve derleme
 
@@ -78,7 +78,7 @@ Bağımlılık yönü tek: `:core` ← diğerleri; modüller birbirini yalnız `
 | `WeatherPort` | `current(): WeatherNow?` (≤90 dk) | `:map` → `:orders` (R15), `:economics` | `weather/current` |
 | `NotifyPort` | `post(id: NotificationId, …)`, `cancel(id)` | hepsi → `:core` | dağınık `notify(n)` |
 
-A2.5'te kesinleşen farklar: `ShiftPort.start/stop` nedeni varsayılan `manual` (evden çıkış/eve dönüş kuralın kendisi); `OrderEvents.busy()` (açık sipariş, ev kuralına gider); `NotifyPort.post(Notify)` (numara `NotificationIds` tablosundan, değilse hata); modüllerin vardiya başı/sonu işleri `ShiftListeners`'a takılır; üreticisi yazılmamış arayüzün `NONE` uygulaması veri uydurmaz. Tek telefonda bu arayüzler aynı süreçte doğrudan çağrılır. 2 telefon modunda `:link` aynı arayüzün **uzak** uygulamasını takar (Provider'da `ScooterBridge` uzak, Receiver'da `OrderEvents` uzak); modüller farkı görmez. `energy()` her iki durumda da askıya alınan çağrıdır; uzakta yanıt gelene kadar kayıt "bekleniyor" durur.
+A2.5'te kesinleşen farklar: `ShiftPort.start/stop` nedeni varsayılan `manual` (evden çıkış/eve dönüş kuralın kendisi); `OrderEvents.busy()` (açık sipariş, ev kuralına gider); `NotifyPort.post(Notify)` (numara `NotificationIds` tablosundan, değilse hata); modüllerin vardiya başı/sonu işleri `ShiftListeners`'a takılır; üreticisi yazılmamış arayüzün `NONE` uygulaması veri uydurmaz. A3.1'de eklenen modül arayüzleri (`:core` dışında tanımlı, izinli yönde): `CaptureSink`/`CaptureHost` (`:capture` tanımlar, `:orders` uygular), `OrderObserver`/`OfferAnnotator` (`:orders` tanımlar, `:economics` uygular), Android `:core`'da `OwnOverlays` (kendi pencerelerimizin dikdörtgeni, OCR maskesi); `:app` bağlar, bağlanmamışsa `NONE` (`CAPTURE.md` 7.1, `ORDERS.md` 4.14, 13). Tek telefonda bu arayüzler aynı süreçte doğrudan çağrılır. 2 telefon modunda `:link` aynı arayüzün **uzak** uygulamasını takar (Provider'da `ScooterBridge` uzak, Receiver'da `OrderEvents` uzak); modüller farkı görmez. `energy()` her iki durumda da askıya alınan çağrıdır; uzakta yanıt gelene kadar kayıt "bekleniyor" durur.
 
 ### 4.4 Mesajlar (tek telefonda iç olay, 2 telefon modunda `:link` yükü)
 
@@ -218,5 +218,6 @@ Toplam 48 oturumluk görev (`docs/WEEM_ISLER.md`; aksamalarla kabaca 50–55 otu
 | 2026-10-17 | A1.3 kabuk (alt menü, tema, TR/AZ) + A1.5 kullanıcı onayı: Aşama 1 tamam | Claude | `90475d2`; `.dev` APK yedek telefonda denendi |
 | 2026-10-17 | A2.1 Aşama 2 şartnamesi `docs/sartname/CORE.md`: tek vardiya kuralı (Rawstats `HomeShift`), YolGo farkları senaryo senaryo, ev, `NotificationIds` (5103 ve bahşiş çakışması çözümü), çökme kaydı, depolama, test eşlemesi; veri sözleşmesi tercih listesi tamamlandı, test envanteri hedefleri kesinleşti (1.607 çevrilir) | Claude | yalnız belge |
 | 2026-10-17 | A2.3–A2.5: depolama ve R20 (`LogStore`, `LogImporter`, `courier.db` şeması, çökme kartı, sekme hata sınırı, Kayıtlar/ZIP içe aktarma), tek vardiya (`ShiftMachine`, `ShiftService`, ev izleyici, `NotificationIds`, vardiya kartı, ev ekranı), modüller arası arayüzler ve mesaj tipleri | Claude | `logic/core` 212 test; kök test+lint+iki APK yerelde yeşil; telefonda denenmedi |
+| 2026-10-17 | A3.1 Aşama 3 şartnamesi `docs/sartname/CAPTURE.md` (ekran/bildirim okuma, ayrıştırıcı, OCR temposu, R16, E7 uyarısı, ağ yasağı, ICU ve JDK 21 sınır farkı, test eşlemesi) ve `ORDERS.md` (veri modeli, teklif yaşam döngüsü, `DeliveryCore` durum makinesinin tamamı, sipariş akışı ve `:economics` sınırı, R6–R13, R15, R19, arayüzler, gizlilik, gölge mod kuralları, test eşlemesi); test envanteri hedefleri kesinleşti (1.601 çevrilir) | Claude (Opus · max, tek ajan; S14) | yalnız belge |
 
 **Sıradaki:** `docs/WEEM_ISLER.md` → "Şu an".
