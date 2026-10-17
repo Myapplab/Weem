@@ -1,6 +1,6 @@
 # ORDERS — Aşama 3 şartnamesi (`:orders`: R3 yaşam döngüsü, R5–R13, R15, R19)
 
-Durum: A3.1, 17 Ekim 2026 (Claude Opus · max, tek ajan; S14) — **yazılıyor, bölüm bölüm**. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c04`; satır numaraları bu commit'te açılıp doğrulandı. `bulgular/R_orders.md`'nin yerini alır.
+Durum: A3.1, 17 Ekim 2026 (Claude Opus · max, tek ajan; S14) — bölüm 0–16 yazıldı. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c04`; satır numaraları bu commit'te açılıp doğrulandı. `bulgular/R_orders.md`'nin yerini alır.
 
 Kısaltmalar: **RS** = `app/src/main/java/com/kuryelog/app/`, **RT** = `app/src/test/java/com/kuryelog/app/` (rawstats). Ekran okuma, ayrıştırıcı ve gözlem tipi (`CourierObservation`): `CAPTURE.md`. Davranış metni kodun söylediğidir; "WEEM" satırları bu şartnamenin kararıdır.
 
@@ -605,3 +605,125 @@ Her olay için sırayla:
 - **İzinler kartı** (`:app`, G5 ilk açılış ve Daha fazla): erişilebilirlik (ayar `ENABLED_ACCESSIBILITY_SERVICES`'te `"<paket>/"`), bildirim dinleyici (`enabled_notification_listeners`'ta `"<paket>/"`; "Bildirim okuma izni, navigasyon bildirimindeki kalan rota mesafesini okumak için de kullanılır (kaydedilmez)."), konum, arka plan konumu (ev ayarlıysa "her zaman" izni açıklaması), Android 12+'da scooter seçiliyse Bluetooth; eksik varsa başlık kırmızı "! n/m" ve kart açık gelir. Pil optimizasyonu yalnız bilgi satırı ("isteğe bağlı"; `ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS`), ayrı bildirim yok; "Kısıtlı ayarlar" açılır bölümü (uygulama bilgisi, tüm uygulamalar). Metin anahtarları `battery_free`, `battery_restricted`, `battery_help`, `restricted_title`, `restricted_help`.
 - Otomatik başlatma bildirimleri: 5101 (ev) ve 5103 (vardiya kesildi) A2.4'te yazıldı; 5102 (scooter) A5. `AutoStartNoticeTest` (1) A2.4'te karşılandıysa çevrilmez, karşılanmadıysa `:core`'a (Bölüm 15).
 - E7 ekran okuma uyarısı: `CAPTURE.md` 5.
+
+## 14. Veri, gizlilik ve gölge mod
+
+### 14.1 `:orders`'ın yazdıkları (ad, alan, anlam aynı; `VERI_SOZLESMESI` 5.1, 6, 7.1)
+
+| Yer | İçerik | Bölüm |
+|---|---|---|
+| `orders.jsonl` | olay satırları; `record_snapshot` | 4.4, 4.5 |
+| `courier.db` `trips`, `offers` (`result`), `session` (`k='active'`) | `RecordJson` payload'u (telefon yalnız `trips`'te) | 4.5, 10.1 |
+| `online-sessions.jsonl` (v2) | kapanan oturumlar | 9.3 |
+| `platforms.jsonl` | bekleme/çevrimdışı/çarpan durumu | 4.3 adım 19 |
+| `economics-boosts.jsonl` | `change`, `slot`, `plan` (null'lar açık) | 9.1 |
+| `economics-cash-tips.jsonl`, `economics-pocket-cash.jsonl`, `economics-cash-pending.jsonl` | K32, M15, M17 | 7, 8 |
+| `economics-platform-totals.jsonl`, `economics-platform-history.jsonl` | F8.3, K36 | 11 |
+| `events.jsonl` | `notification_hint`, `customer_coordinate_unavailable`, `yolgo_venue`, `cancellation_user_reported` | 13.6, 4.10, 4.9, 4.13 |
+| `errors.jsonl` kaynakları | `database`, `online_sessions`, `shift_orders`, `gps_orders`, `shift_start`, `shift_end` (+ ekonomi: `economics_idle`, `open_waits`, `shadow_verdict`, `offer_score`) | 4 |
+| `kuryelog` tercihleri | `onlineSessions.v1`, `cashPending.azn`/`.at`, `commission`, `commission:<pkg>`, `customerCard`, `customerCardSizePct`, `restaurantBubbleWidthPct`, `overlay`, `bx`, `by`, `structuredMigration07` (+ ekonomi: `economicsIdle.v1`, `openWaits.v1`, `economics.vehicle/zone/appMode`) | — |
+
+- Ekonomi dosyaları (`economics-offers/legs/idle/penalties/waits/exposure/offer-scores/offer-ratings/energy.jsonl`) `OrderObserver` ile `:economics`'te (A4.1); A3'te yazılmaz.
+- Gün klasörü: kaydın yerel günü; istisnalar adlı gün klasörüne yazar: cep nakdi ve CASH PENDING vardiya satırları **vardiya başının günü**, bahşiş cevabı **siparişin kabul günü**, yatırma ve platform satırları **satırın kendi günü**, gün dönemi toplamları o güne.
+
+### 14.2 Gizlilik
+
+| Veri | Nerede | Nerede değil |
+|---|---|---|
+| Müşteri **telefonu** | `courier.db` `trips` (`withPhone`), bellek, kart/balon "Ara" düğmesi, bildirim 12 büyük metni | JSONL, `record_snapshot`, yedek/ZIP, dışa aktarma, Receiver |
+| Müşteri **adı** | `courier.db`, `orders.jsonl` (`record.customers[].details.name`, `latest.customer.name`), kart başlığı, bildirim 12 başlığı | rozet (K35), `TripStages`, `OfferSummary`, dışa aktarma (gizlenir), Receiver |
+| Adres, not, talimat, adres detayı | `courier.db` ve `orders.jsonl`'de **`redact`'li** (telefon `[tel]`) | — |
+| Müşteri koordinatı, adres metni | `courier.db`; `OfferSummary.dropoffAddress` | — (S5: Receiver'a **gider**) |
+| Kurye konumu | teklif ve boost satırları, `loc` alanları (telefonda) | dışa aktarma (gizlenir), Receiver'a ham satır olarak |
+
+- 2 telefon modunda Receiver'a giden yalnız `OrderEvents` mesajlarıdır (`OfferSummary`, `TripStages`, `DaySummary`); balon, kart ve bildirim 12 yalnız Provider'da.
+
+### 14.3 Gölge mod (A3.9) — karşılaştırma kuralları
+
+- Sipariş ve teklif kimlikleri iki uygulamada **farklıdır** (`trip-<kabul anı>-<sıra>`: kare anı milisaniyeyle değişir, sıra süreç başına sıfırdan). Eşleme: platform + restoran (`sameRestaurant`) + kabul anı ± 60 sn (teklif için ilk görülüş ± 60 sn ve ücret).
+- **Sert fark** (sıfır olmalı): gün başına sipariş sayısı, teslim/çıkarım/doğrulanamayan sonuçları, brüt ve net toplamları, sipariş ücreti, ödeme türü, doğrulama (`verifiedBy`), teklif sonuçlarının türü (kabul/ret/zaman aşımı), boost/plan satırlarının kümesi, platform toplamları ve liste satırları (anahtarla), CASH PENDING değerleri.
+- **Yumuşak fark** (raporda süre farkı olarak): olay anları, varış anları (D9 kalışı fix'lere bağlı), `feeAt`/`feeGapMs`/`feeOcrMs`, OCR tempo ölçüleri, `record_snapshot` sıklığı.
+- **Beklenen fark** (sayılmaz): ekonomi dosyaları (A4.1'e kadar yalnız Rawstats'ta), bildirim numaraları (5104, 10000+), `click.text` `redact`'i, ad metinleri (WEEM), YolGo kökenli alanlar (WEEM'in kendi navigasyonu A6'ya kadar yok: `nav_yolgo` kaynakları, `yolgo_venue`, rota tetikli müşteri kartı), hava (A6'ya kadar WEEM'de yok), scooter pili/enerjisi (A5'e kadar yok).
+- Gölge modda iki uygulama da soru sorar (nakit bahşiş, cep nakdi) ve pencere çizer (rozet, balonlar): Bölüm 16.
+
+## 15. Test eşlemesi (A3.2, A3.3)
+
+Kaynak: `TEST_ENVANTERI` `:orders` hedefli **52 dosya, 325 test** (Rawstats; envanterdeki "53 / 331" bir YolGo Dart dosyasını da sayıyordu, aşağıda) + `CAPTURE.md` 8'den gelen **100** sipariş akışı testi. Sınıflandırma test gövdeleri ve kullandıkları sınıf/yardımcılarla yapıldı (A3.1 betiği), karışık dosyalar elle denetlendi. "Kaynak taraması" = eski testin Android kaynağında dizgi araması; WEEM'de aynı denetim WEEM dosyalarına yeniden yazılır ve Android kodu gelene (A3.7/A3.8) kadar kırmızı kalır.
+
+### 15.1 A3.2 — sipariş akışı (`logic/orders`)
+
+| Dosya | Test | Yer | Not |
+|---|---:|---|---|
+| `CourierFlowTest`, `DeliveryRecognitionTest`, `WoltFlowK1K5Test`, `SahaTekrarTest`, `WoltDeliverySliderTest`, `WoltSliderSpinnerK33Test`, `WoltOfferFeeK37Test`, `OcrPaceD6Test`, `BoltBubbleR2Test`, `ParserEconomicsTest`, `CashScreenM16Test` (orders payı) | 100 | orders | `CAPTURE.md` 8 (dosya başına sayılar); saha kareleri `logic/capture` `testFixtures`'tan |
+| `CoreLifecycleV2Test` | 23 | orders 15 · **economics 8** | economics: `waitWhileTheOtherAppIsBusyIsFlagged`, `bannerPopupHourAndDemandStayInsideOneSpell`, `aLongUnreadableStretchStillEndsTheSpell`, `ocrOfferAtTheSameInstantAsAnUnreadableFrameIsTheEvent`, `offlineScreenEndsTheWaitAsWentOffline`, `vehicleChangeStillSplits`, `midnightSpellIsFiledUnderItsStartDay`, `segmentsSurviveProcessDeath` (`WaitObservation`, A4.1) |
+| `CustomerStageK34Test`, `…ClosedCardTest`, `…LateDeliveryTest`, `…RoutingTest` | 10, 10, 7, 5 | orders | |
+| `CustomerStageK34RecordTest` | 10 | orders 6 · economics 1 · core 2 · uyarlanır 1 | yardımcı `day()` ekonomi kaydedicisini sürer; orders'ta kaydedicisiz kopya. economics: `legsRowIsNeverADelivery`; core (R18, A4.3): `analysisExportKeepsTheFlagAndDropsTheCustomer`, `analysisExportKeepsTheOrderEvent`; uyarlanır: `feedV2ShowsOneOrderAtTheCustomer` → `OrderEvents.offers/stages` |
+| `DeliveryCountD3Test` | 9 | orders | |
+| `VenueArrivalD9Test`, `VenueNearM18Test`, `CustomerNearM19Test`, `ArrivalDistanceM20Test` | 11, 5, 5, 4 | orders (D9'dan 1 economics: `legsAveragesAndRecordsKeepTheGpsArrival`; M20'den 2 kaynak taraması) | |
+| `StuckCustomerM22Test` | 8 | orders | |
+| `RestaurantWaitE2Test` | 6 | orders 5 · tarama 1 (`cardAndListShowIt`) | |
+| `ReadinessE15Test` | 5 | orders 4 · tarama 1 (`restaurantNotificationUsesTheCounterAndFollowsIt`) | |
+| `WoltSameCustomerR1Test` | 5 | orders | |
+| `CustomerMatchK21Test` | 5 | orders | `NameMatch` `:capture`'tan |
+| `DeliveryDeadlineK29Test` | 4 | orders | |
+| `TripStagesE8Test` | 6 | orders 4 · economics 2 | economics: `activeOrderCarriesEveryStageWithItsRealTime`, `attachingKeepsTheClosedCourierStateSchema` (`courierState`); orders testleri `logic/core` `TripStages` tipine yazılır |
+| `YolGoNavE8Test` | 13 | uyarlanır 10 · A2.5'te karşılandı 2 · çevrilmez 1 | `pickupOf`, `ScreenTrail`, koordinat önceliği, varış ve düzeltme → `RouteStatus.Target` ile orders; yük okuma (`payloadIsRead…`, `anythingElse…`) `MessagesTest` `RouteStatus.fromNavFeed`'te; `pathsMatchYolGoProvider` çevrilmez (sağlayıcı yok) |
+| `WaitObservationProcessDeathTest` | 5 | **economics** (A4.1) | bekleme gözlemi `:economics`'in |
+| `RecordJsonTest` | 6 | orders | `CORE.md` 6.1'den |
+
+### 15.2 A3.3 — para, platform, rozet, balon, gün sayfası (`logic/orders`)
+
+| Dosya | Test | Yer |
+|---|---:|---|
+| `CashOrderK31K32Test` | 16 | orders |
+| `TipRecordF48Test` | 5 | orders |
+| `TipNotificationF46Test` | 4 | **tarama 4** (mesaj stili + `RemoteInput` + hızlı düğmeler + pencere; `tip_quick` düzeni) — A3.7 |
+| `PocketCashM15Test`, `CashPendingM17Test`, `CashReconcileM17Test` | 4, 5, 5 | orders (M15/M17'den birer tarama: "günlük yedeğe ve dışa aktarmaya girer" → `BackupFiles.logNames`/`AnalysisExport` denetimi, `:core`) |
+| `BoostLogK27Test`, `BoostListM21Test` | 7, 4 | orders |
+| `BoostTempE3Test` | 5 | orders 4 · tarama 1 (`cardTopShowsIt`); beklenen metin "YolGo'dan hava gelmedi" → "hava bilgisi gelmedi" |
+| `OfferWeatherK28Test` | 2 | orders (`WeatherNow` → `OfferWeather`, `weather_source` değeri aynı) |
+| `PlatformHistoryK36Test`, `PlatformListD15Test` | 10, 5 | orders |
+| `PlatformTotalsF82Test`, `F83Test`, `F84Test`, `F85Test` | 6, 5, 7, 3 | orders (F83'ten 1 tarama: yedek/dışa aktarma; F85'ten 1 tarama: gün sayfasında kart — A3.8); F85 satırında "Rawstats:" → "WEEM:" |
+| `OverlayBadgeK35Test` | 4 | orders 3 · tarama 1 (`overlayUsesTheNamelessLinesAndHomeKeepsNames`) |
+| `DualOfferStatusK30Test`, `OfferNetLineTest` | 3, 6 | orders (OfferNet'ten 2 tarama: dışa aktarma düğmesinin yeri (A4.3), `acc_desc` sözü (A3.7)) |
+| `RestaurantBubbleE14Test` | 6 | orders 4 · tarama 2 |
+| `CustomerCardE16Test` | 6 | uyarlanır 3 (`RouteStatus`; metin "(WEEM)") · orders 2 · tarama 1 (`oldNotificationTriggerIsGone`) |
+| `CustomerBubbleF72Test` | 7 | orders |
+| `CustomerBubbleViewF73Test` | 3 | **tarama 3** (A3.7) |
+| `NoteFieldsF71Test` | 6 | **capture** (`NoteFields` `:capture`'ta) |
+| `PhoneK25Test` | 3 | orders |
+| `AverageListE1Test` | 6 | orders 5 · tarama 1 |
+| `OrderHistoryTest`, `TodayAveragesTest`, `RecordPagesTest` | 9, 2, 2 | orders |
+| `OfferFeedV2Test` | 6 | uyarlanır 4 (`OrderEvents.offers`: 90 sn hayalet kuralı, yeniden başlatma öncesi teklif, en çok 8, v2 alan eşlemesi) · çevrilmez 2 (`v1IsByteIdenticalForOffersOnScreen`, `e8ChangeKeyOverTheRealPayloads`: feed ve değişim anahtarı yok) |
+| `AutoStartNoticeTest` | 1 | **core** tarama (A2.4 `Notices`/`HomeWatch`/`ShiftService`'e; scooter kısmı A5) |
+
+### 15.3 Toplamlar ve öbürleri
+
+- 52 dosya, 325 test: **orders 253** (+ capture'dan gelen 100 = 353), kaynak taraması 24 (orders 19, core 3, capture 0, A4.3'e 2), economics 14 (`CoreLifecycleV2Test` 8, `WaitObservationProcessDeathTest` 5, D9 1) + 3 (`TripStagesE8Test` 2, K34 kayıt 1), core (R18) 2, uyarlanır 18, çevrilmez 3 (`pathsMatchYolGoProvider`, feed v1 ve değişim anahtarı), A2.5'te karşılanan 2, capture 6 (`NoteFieldsF71Test`). (Sayılar betik çıktısıdır; A3.2/A3.3 test gövdesini okuyunca küçük kaymalar `TEST_ENVANTERI`'ne işlenir.)
+- **YolGo Dart `offer_feed_versions_test` (6):** uygulamalar arası okuyucunun v2→v1 geri düşüşü, imza reddi, paylaşım kapalı → **çevrilmez** (tek uygulama, S7); "v2 sürüm, oturum, boyut, teklif biçimi ve sınırı" denetimi 2 telefon mesajlarının çözümünde (`:link`, A8) karşılık bulur.
+- **Eski testi olmayanlar için yeni testler** (A3.3/A3.5; karakterizasyon, beklenen = Rawstats kodunun çıktısı): `OnlineSessionsTest` (9.3), `OrderFlowOrderTest` (4.3 kare sırası: liste karesi erken biter, teklif anı eklentileri yalnız `offer` olayında, olay işleme alanları), `PersistTest` (değişen satır, `record_snapshot` kuralı, telefon yalnız `courier.db`), `RebuildRecordsTest` (4.12), `OfferSummaryFromOrdersTest` (13.2), `ShiftHooksOrderTest` (4.2 sırası), `OrderObserverCallsTest` (4.14: kanca noktaları ve sırası, `NONE` ile dosya yazılmaz), `PlatformsTest` (`Platforms.of/stage`), `OfferWindowsTest` (`:economics` A4.1'de `PRIORS` eşitliği).
+
+## 16. Açık noktalar, riskler ve bilerek farklar
+
+**Kullanıcıya sorulacaklar (A3.1'i bekletmez; ilgili görevden önce sorulur):**
+1. **Bildirim 12'de müşteri telefonu** (5.3): bugün büyük metin `display()` ile telefonu da gösterir; bildirim yansıtma (saat, bilgisayar, öteki telefon) varsa numara oraya gider. Seçenek: aynen kalsın (varsayılan, davranış aynı) ya da bildirimden telefon satırı çıksın (kartta kalır). — A3.7'den önce.
+2. **Gölge modda çift soru ve pencere** (14.3): `.dev` ile Rawstats aynı anda nakit bahşiş ve cep nakdi sorar, iki rozet ve iki balon çizer. Öneri: `.dev`'de "gölge mod" anahtarı (soruları ve pencereleri kapatır, kaydı sürdürür); bahşiş farkları beklenen fark sayılır. — A3.9'dan önce.
+3. (`CAPTURE.md` 9) ML Kit ve ağ.
+
+**Varsayılan olarak seçilenler (bilerek farklar; gölge mod "beklenen fark" sayar):**
+- Nakit bahşiş bildirimleri 4000–8095 → **10000–14095**; ekran okuma uyarısı 5103 → 5104 (`CORE.md` 3.3).
+- Kullanıcı metninde uygulama adı **WEEM** ("Rawstats" ve "KuryePlus" yerine); kaynak olarak "(YolGo)" → "(WEEM)"; "YolGo'dan hava gelmedi" → "hava bilgisi gelmedi". Testlerin beklenen dizgileri buna göre (15.2).
+- YolGo ile konuşan her yol (feed v1/v2, `stages`, değişim duyurusu, YolGo nav ve hava sağlayıcı okuyucuları, YolGo paylaşım anahtarı) yazılmaz; yerine `OrderEvents`, `NavPort`, `WeatherPort` (S7).
+- `weather_source` kayıt değeri `yolgo_open_meteo` **korunur**; `nav_yolgo`, `gps_dwell_yolgo_target`, `gps_near_yolgo_target`, `yolgo_venue` adları korunur (kayıt dizgileri).
+- `OfferWindows` (ret penceresi 60 dk, teklif penceresi 60 sn) ve `Platforms.of/stage` `:orders`'a taşındı; `:economics` buradan kullanır.
+- `busy()` doğrudan çekirdekten.
+- Ekonomi kayıtları A4.1'e kadar yazılmaz (`OrderObserver.NONE`).
+
+**Riskler (doğrulanmadı):**
+4. `OrderTracker`'ın saf `OrderFlow` + Android'e bölünmesi en büyük taşıma riski: sıra (4.3) ve kalıcılık zamanlaması (4.5) testlerle kilitlenmeli; `SahaTekrarTest` uçtan uca güvencedir.
+5. `:economics`'in kanca sırası (4.14) A4.1'de Rawstats'la birebir olmalı; aksi hâlde ekonomi satırlarının içeriği (önceki bekleyen teklifler, açık oturumlar) değişir.
+6. Android `Geocoder` cihazda ağ ve Google hizmeti ister; yoksa müşteri/restoran koordinatı gelmez (Rawstats'ta da). E14/E16 ve D9/M19 buna bağlı; WEEM'in kendi rotası (A6) gelince rota tetikleri devreye girer.
+7. Wolt/Bolt metinlerine bağlı kurallar (saha 11–12 Ekim, Wolt 2.202.6); platform güncellemesi gölge modda yakalanır.
+8. JDK 21 `\b` farkı `:orders` desenlerinde de taranır (`CAPTURE.md` 7.5; ör. `PlatformHistory`, `CashPayment`, `CashPending` açık sınıf kullanıyor, `DeliveryCore.readinessNotice` ASCII).
+
+**Ham notlardaki düzeltmeler (`bulgular/R_orders.md`):** bildirim 12 büyük metninde telefonun olduğu doğrulandı (`DeliveryReminder.kt:301-310` → `DeliveryDetails.display`); restoran varışı (D9/M18) **yalnız Wolt** siparişlerinde, müşteri varışı (M19) her platformda; M18/M20 navigasyon varışının nedeni de `nav_*` olabilir; R9 "çağıran yer doğrulanacak" kapandı (vardiya başı `GpsService.kt:89-90`, sonu `:283`); `economics-*.jsonl` satırlarında `t` yok (`observedAtMs`/`at`); boost satırlarında null alanlar `JSONObject.NULL` ile yazılır.
