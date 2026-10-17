@@ -48,3 +48,12 @@ data class OfferWeather(val tempC: Double?, val feelsC: Double?, val rainMm: Dou
         else -> tl("açık", "açıq")
     } }
 }
+
+/**
+ * WEEM (ORDERS.md 12): kaynak `WeatherPort.current()` (`logic/core` `WeatherNow`); Rawstats YolGo'nun hava akışını okuyordu
+ * ([OfferWeather.parse]). Teklife yazılan alanlar ve `weather_source` değeri (`yolgo_open_meteo`) aynı; [OfferWeather.MAX_AGE_MS]
+ * dışındaki (eski ya da gelecekteki) değer yazılmaz.
+ */
+fun OfferWeather.Companion.from(w: WeatherNow, now: Long): OfferWeather? =
+    if (now - w.fetchedAtMs !in 0..MAX_AGE_MS) null
+    else OfferWeather(w.tempC, w.feelsC, w.rainMm, w.rainPct, w.windKmh, w.gustKmh, w.code, w.fetchedAtMs, SOURCE_YOLGO)
