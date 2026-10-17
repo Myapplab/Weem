@@ -1,6 +1,6 @@
 # CAPTURE — Aşama 3 şartnamesi (`:capture`: R1, R2, R16; R3 alanları; R19 ekran okuma uyarısı)
 
-Durum: A3.1, 17 Ekim 2026 (Claude Opus · max, tek ajan; S14) — **yazılıyor, bölüm bölüm**. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c04` (Rawstats 0.25.1, versionCode 33); satır numaraları bu commit'te açılıp doğrulandı. `bulgular/R_capture.md`'nin yerini alır (oradaki düzeltilen kalemler 9. bölümde).
+Durum: A3.1, 17 Ekim 2026 (Claude Opus · max, tek ajan; S14) — bölüm 0–9 yazıldı. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c04` (Rawstats 0.25.1, versionCode 33); satır numaraları bu commit'te açılıp doğrulandı. `bulgular/R_capture.md`'nin yerini alır (oradaki düzeltilen kalemler 9. bölümde).
 
 Kısaltmalar: **RS** = `app/src/main/java/com/kuryelog/app/`, **RT** = `app/src/test/java/com/kuryelog/app/`, **RR** = `app/src/test/resources/` (rawstats). Davranış metni kodun söylediğidir; "WEEM" satırları bu şartnamenin kararıdır.
 
@@ -385,13 +385,13 @@ Satır yalnız `ScreenDeduper` imzası değiştiğinde yazılır (2.9); `:orders
 
 | `type` | Ek alanlar | Kaynak |
 |---|---|---|
-| `click` | `pkg`, `text` (tekil etiketler boşlukla; **redact yok** — tıklanan düğmenin metni) | `WatchService.kt:89` |
+| `click` | `pkg`, `text` (tekil etiketler boşlukla; Rawstats `redact` etmez, **WEEM eder**, aşağıdaki not) | `WatchService.kt:89` |
 | `screenshot_unavailable` | `pkg`, `code` (Android hata kodu), `display` (tüm ekran mıydı) | `:229` |
 | `screen_reading_off` / `screen_reading_on` | — | `GpsService.kt:122` (WEEM: `:capture` uyarı dinleyicisi) |
 
 `Store.event` ek alanlardan sonra `t`, `type`, `loc` ekler. `errors.jsonl`: `{t, source, error}` (1.8).
 
-Not (gizlilik): `click.text` müşteri kartındaki bir düğmenin metni olabilir (ör. "Call"); Rawstats onu `redact` etmeden yazar. WEEM aynı yazar (veri sözleşmesi); dışa aktarma `AnalysisExport` alan izin listesiyle süzer (A4.3).
+Not (gizlilik, **WEEM farkı**): `click.text` müşteri kartındaki bir öğenin metni olabilir (dokunulan telefon numarası dahil); Rawstats onu `redact` etmeden yazıyordu. Bu, "müşteri telefonu JSONL'e girmez" kuralının (`VERI_SOZLESMESI` 9, `PhoneK25Test`) açık kalmış bir deliğidir: WEEM `text`'i de `NoteFields.redact`'ten geçirir (yalnız telefon `[tel]` olur; `:orders`'a giden etiketler bellekte ham kalır). Gölge modda fark yalnız telefon içeren tıklama satırlarında çıkar.
 
 ### 6.4 Tercihler ve bellek
 
@@ -464,3 +464,63 @@ Kullanıcıya görünen her `:capture` metni (`OCR ekranı okunamadı…`, `Roze
 - **Yasak yapılar** (RT `IcuRegexTest.kt:25-39`, WEEM'de **tüm modüller**: `logic/*/src/main`, Android modülleri, `app`): satır içi `(?U)` (ve `U` içeren bayrak grupları), `UNICODE_CHARACTER_CLASS`, `CANON_EQ`, `\p{java…}`. Yorum satırları sayılmaz. Gerekçe: Android her deseni ICU'ya verir; ICU bunları tanımaz, sınıf yüklenemez (0.25.0'da ilk bildirimde uygulama kapandı).
 - **Sınıf anlamı farkı (yeni bulgu, 17 Ekim):** JDK 19'dan beri `\b` yalnız ASCII sözcük karakterlerine bakar (`\w` ile tutarlı); Android ICU'da `\b`, `\w`, `\d`, `\s` Unicode'dur. Rawstats testleri JDK 17'de koşuyordu (orada `\b` Unicode harfini sözcük sayardı); WEEM testleri JDK 21'de koşar. Bu ortamda denendi: `\b\d+\s*(?:min|мин|ч)\b` "3 мин · 1,2 км"de JDK 21'de **eşleşmez** (ICU'da eşleşir); `кв\b` "кв 5"te eşleşmez; `этаж\s*(\d{1,3})\b` "этаж 5й"de eşleşir (ICU'da eşleşmez).
 - **Kural (WEEM):** ASCII olmayan metin görebilen desenlerde `\b` yerine açık sınır `(?<![\p{L}\p{N}_])` / `(?![\p{L}\p{N}_])` (Rawstats'ın `NavDistance.durationU` ve boost sözcüğünde zaten kullandığı biçim), boşlukta NBSP olabilecek yerde `[\s\p{Z}]`. Cihaz davranışı değişmez (ICU'nun `\b`'si bunun karşılığıdır); JVM testi cihazdaki sonucu verir. Bilinen yerler: `NavDistance` `duration` (`summary`), `NoteFields` `:16-45` (`\b` rakamdan sonra/önce) ve `otherFieldWord` `:108` (`\bkv\b`, `кв\b`, `\bkat\b`), `ScreenDeduper` `clock`/`metric`, `CourierParser.isAccept` (`\b\d+\s*(min|deq|dk)\b`) ve parser'daki diğer `\b`'ler. A3.4 bütün `Regex(` kurulumlarını (birleştirilerek kurulanlar dahil) tarar, gerekenleri çevirir ve her çevrilen desen için Kiril/NBSP girdili bir JVM testi ekler (beklenen = ICU sonucu). Taramanın sonucu bu bölüme liste olarak eklenir.
+
+## 8. Test eşlemesi (A3.2 bunu izler)
+
+Kural: `logic/capture` testleri `:orders` sınıflarını göremez (bağımlılık yönü). Bu yüzden `TEST_ENVANTERI`'nde `:capture` hedefli 15 dosyanın testleri **gövdelerine göre** bölünür: yalnız ayrıştırıcıya ve saf `:capture` sınıflarına dokunan test `logic/capture`'a; `DeliveryCore`, `OrderTracker`, `RecordJson`, `OnlineSessions`, `CashPayment`, `Readiness`, `OrderHistory`, `BoostLog`, `PlatformHistory` ya da `OverlayText` biçimlendiricisine dokunan test `logic/orders`'a (aynı dosya adı, iki modülde). Ortak yardımcılar (kare kurucular, saha kareleri yükleyicisi) `logic/capture`'ın **`testFixtures`**'ında (Gradle `java-test-fixtures`); `logic/orders` testleri oradan alır. Sınıflandırma test gövdeleri ve kullandıkları sınıf/yardımcı alanlarıyla yapıldı (A3.1 betiği), sonra elle denetlendi.
+
+| Eski dosya (RT) | Test | `logic/capture` | `logic/orders` | Başka | Not |
+|---|---:|---:|---:|---|---|
+| `BoltBubbleR2Test` | 5 | 4 | 1 | | orders: `restaurantBubbleCountsDownFromTheBlueBubble` (`Readiness`) |
+| `CashScreenM16Test` | 7 | — | 7 | | `CashPayment` (K31/M16) `:orders`'ta (`ORDERS.md` R8) |
+| `OcrPaceD6Test` | 11 | 9 | 2 | | orders: `offerRecordsWhenItsFeeWasRead`, `lateFrameWithTheFeeFillsItsTime`; `sahaCardsWithoutAFeeFirstAreHot` saha karelerini kullanır |
+| `ParserEconomicsTest` | 23 | 20 | 3 | | orders: `ocrOfferWithBadgeFeedsTheTripWithTheCardFee`, `panelFormatsMatchTheFieldBadge`, `everyPanelLineIsRecognisedInBothLanguages`; yalnız tanıma yapan `ocrVariantsOfPanelLinesAreRecognised`, `courierAppLinesAreNeverPanelLines` `OwnLines` ile capture'da |
+| `RecordingPolicyTest` | 12 | 4 | — | core 2, çevrilmez 6 | capture: `OfferRules` 2, `ScreenDeduper` 2; core: `restoreOnlyAcceptsKnownLogsInsideAnActualDay`, `reimportKeepsNewRowsAndDoesNotDoubleOldOrders` (`BackupFiles`, A2.3 kodu; WEEM'de henüz testi yok); çevrilmez: `MotionGate` 4, `OfferIdentity` 2 (2.9) |
+| `ScreenReadingE7Test` | 4 | 3 + 1 uyarlanır | — | | uyarlanan `shiftServiceWarnsAndTheHomeShowsIt` kaynak taraması: `:capture` uyarı dinleyicisinde `ScreenReadingGuard(`, metin tablosundaki başlık, `ACTION_ACCESSIBILITY_SETTINGS`, `setOngoing(true)`, `TYPE_APPLICATION_OVERLAY`; elle vardiya başlatma ekran okumaya bakmaz; vardiya kartı uyarıyı gösterir; `WatchService` bağlılığı yazar; iki serviste `HomeWatch.refresh(` |
+| `WoltDeliverySliderTest` | 9 | 3 | 6 | | |
+| `WoltOfferFeeK37Test` | 6 | 2 | 4 | | capture: `theSyntheticFramesAreOfferCardsWithoutAFee`, `ocrFallsBackToTheDisplayAfterAnInvalidWindow` |
+| `WoltSliderSpinnerK33Test` | 9 | 2 | 7 | | capture: `onlyTheProgressBarClassIsASpinner`, `aRoundIndicatorOnTheSliderRowCountsALinearBarDoesNot` |
+| `WoltStatsF81Test` | 6 | 6 | — | | `statsPeriod` testleri saat dilimini `Asia/Baku` verir |
+| `IcuRegexTest` | 2 | 2 | — | | tarama **tüm modüllerde** (7.5); Kiril `metres` testi aynen |
+| `CourierFlowTest` | 44 | 15 | 27 | core 2 | core: `automaticAndStickyStartsCannotCreateShift`, `captureNeedsManualSessionOnly` (`ManualSessionPolicy`; WEEM'de henüz testi yok) |
+| `DeliveryRecognitionTest` | 24 | 11 | 13 | | capture: müşteri kartı aşaması, destek/istatistik sayfaları, bekleme paneli, iki çevrimdışı ekran, not alanları (5), `truncatedNoteDoesNotReplaceTheFullOne`, `routeDistanceComesOnlyFromATripSummary` |
+| `SahaTekrarTest` | 16 | 6 | 10 | | **altın.** capture: `karelerYuklenirVeKisiselVeriYok`, `d22HazirEtiketleri`, `d19BeklemeKarelerininEnAz95iTaninir`, `d5BolunmusEkranKarelerininHepsiBekleme`, `d1KartKazanciOkunurParaUstuAsla`, `d21ExpectedEarningsTekBasinaTeklifIsareti` |
+| `WoltFlowK1K5Test` | 25 | 5 | 20 | | capture: `demandMapAloneIsNoAvailabilityEvidence`, `ocrSliderVariantsAreRead`, `waitingSheetWithToolbarIconIsNotTheSideMenu`, `woltBuildingNameAndColumnOrderedRow`, `ocrRowOrderEntranceFloorApartment` |
+| **Toplam** | **203** | **93** | **100** | core 4, çevrilmez 6 | |
+
+Karışık dosyalarda capture'a düşen test adları (geri kalanı orders): `CourierFlowTest` — `pricedBoltButtonIsAccept`, `woltOfferHasDistinctStopAndOrderCounts`, `plusCodeIsRetainedAsRestaurantAddress`, `customerAddressInOfferIsCaptured`, `readyTimeIsSeparateFromDeliveryEstimate`, `negativeClockIsNotTravelEta`, `woltCollectTranslationIsNotDelivery`, `customerDetailsCaptureSparseFieldsOnly`, `notesContainingPhoneStayOriginal`, `longDirectionsStayComplete`, `checkIdRequirementCaptured`, `sliderIsContextualArrivalNotCollection`, `futureBonusIsRecordedWithStartTimeNotAnOffer`, `woltBanIsOfflineNotAnOrder`, `multiplierIsNotMoney`. `DeliveryRecognitionTest` — `woltCustomerCardIsDropoffWithDeliverySlider`, `supportStatsAndSettingsPagesAreNotOrderScreens`, `woltWaitingPanelWithQuickLinksIsStillWaiting`, `bothOfflineScreensAreOffline`, `emptyFieldsAreFilledFromTheCustomerNote`, `platformFieldWinsOverTheNote`, `azerbaijaniNoteWordsAreRecognised`, `phoneNumbersInNotesAreFound`, `ordinaryNumbersAreNotPhones`, `truncatedNoteDoesNotReplaceTheFullOne`, `routeDistanceComesOnlyFromATripSummary`. `OcrPaceD6Test` — iki orders testi dışındakiler.
+
+**Saha kaynakları:** RR `saha/saha_kareleri_2026-10-11_12.jsonl.gz` (6.481 kare, kişisel veriden temizlenmiş; satır `{gun, t, pkg, bounds, src, texts, actions}`) ve `saha/saha_beklenen_2026-10-11_12.json` (`surum, kaynak, fixture, gunler, ozel_durumlar, kabul_olcutleri`) **bayt bayt** `logic/capture/src/testFixtures/resources/saha/`'ya kopyalanır (iki modülün testleri de okur). `karelerYuklenirVeKisiselVeriYok` kopyanın bütünlüğünü de doğrular (6.481 kare, telefon yok).
+
+**Eski testi olmayan davranışlar için yeni testler** (A3.4; karakterizasyon, beklenen = Rawstats kodunun çıktısı):
+
+- `TargetAppsTest`: kendiliğinden ekleme kuralı (Wolt partner/courier/kuryer; Bolt/mtakso + courier/food/driver/kuryer/partner; yalnız ekler; `userPicked`'te hiçbir şey), elle seçim sırası.
+- `NotificationDedupTest` (R2'nin eski testi yok): aynı anahtar + aynı içerik yazılmaz; içerik değişince yazılır; "removed" anahtarı siler (izin yokken de); izin yokken süzgeç boşalır; navigasyon paketleri hiç yazılmaz; hedef dışı paket yok sayılır; satır alanları ve `redact`.
+- `OcrAcceptanceTest`: 1 800 ms bayatlık sınırı (1 799 kabul, 1 800 atılır), pencere gitti, vardiya değişti, satır yok; erişilebilirlik PICKUP/DROPOFF iken OCR OFFER/IDLE/OFFLINE atılır, OCR DROPOFF kabul edilir; "vardım" eylemi yalnız `slide to confirm` varken türetilir.
+- `CaptureTimingTest`: 180 ms ikinci okuma, 500/2 000 ms tik, 5 sn ev tiki sabitleri tek yerde.
+- `RegexPortabilityTest` (7.5): `NavDistance.summary(["3 мин · 1,2 км"])` = satırın kendisi; `NoteFields.holdsOtherFields("кв 5")` = true; `NoteFields.extract("этаж 5й").floor` = null; NBSP'li "22 min" kabul etiketi; çevrilen her desen için bir satır.
+- `NoNetworkTest` (7.3) ve `NoGestureTest` (7.4): kaynak taramaları; `:capture` sınıf yolu izin listesi (Android build'inde, A3.7).
+- `CaptureTextCoverageTest` (7.2).
+- Kayıt satırları: `ScreenRowTest`, `NotifRowTest` (6.1–6.3 alanları, null alanın yazılmaması, `click.text` `redact`'i).
+
+## 9. Açık noktalar, riskler ve bilerek farklar
+
+**Kullanıcıya sorulabilecek (şimdi değil; olursa):**
+1. **ML Kit ve ağ** (7.3): telemetri arka ucu çıkarılınca OCR cihazda çalışmazsa seçim kullanıcının: OCR'sız (yalnız erişilebilirlik; Wolt kartları okunmaz) ya da ML Kit'in ölçüm göndermesine izin. Varsayılan: çıkar ve dene (A3.4/A3.7).
+
+**Riskler (doğrulanmadı):**
+2. Pixel 10 Pro (API 36) üzerinde `takeScreenshotOfWindow`, ekran görüntüsü aralığı (333 ms) ve erişilebilirlik ağacının bugünkü Wolt 2.202.6 / Bolt sürümlerinde aynı davranması; ayrıştırıcı bugünkü ekran metinlerine bağlı (saha kareleri 11–12 Ekim). Wolt/Bolt güncellemesi bozarsa gölge mod (A3.9–A3.10) yakalar.
+3. JDK 21 `\b` farkı (7.5): A3.4 taraması tamamlanana kadar JVM'de geçen bir ayrıştırıcı testi cihazda farklı sonuç verebilir (Kiril, NBSP).
+4. Restoran/müşteri balonları tüm ekran görüntüsünde maskelenmez (Rawstats'ta da); balon metni OCR satırlarına karışabilir. Saha karelerinde görülmedi; gölge modda izlenir.
+5. Gölge modda iki uygulamanın pencereleri birbirinin tüm ekran görüntüsüne girebilir (6.5).
+
+**Bilerek farklar (WEEM ≠ Rawstats; gölge mod raporu bunları "beklenen fark" sayar):**
+- Ekran okuma uyarısı bildirimi 5103 → **5104** (`CORE.md` 3.3); metindeki servis adı "WEEM ekran kaydı".
+- `click.text` `redact`'lenir (6.3).
+- `ScooterLink.publish` tikten çıkar (YolGo içeride).
+- `MotionGate`, `OfferIdentity` yazılmaz (2.9).
+- ASCII dışı metin gören desenlerde açık sınır (7.5; cihaz sonucu aynı).
+- Koruma (`guarded`) `VirtualMachineError` dışındaki her `Throwable`'ı yakalar (1.8).
+- Manifest `<queries>`'de `az.duzyol.app` yok (S7).
+
+**Ham notlardaki düzeltmeler (`bulgular/R_capture.md`):** "Wolt kartında km yalnız tam satır" yanlış — tam satır yoksa her karede olduğu gibi metnin ilk `N km`'si (2.6). "R16 kapsamı kullanıcı kararı" kapandı: R16 ilk sürüm listesinde, kalır; YolGo kaynağının yerini `NavPort` alır (4.2). "Rozet `:orders`, servis `:capture` ayrımı kararı gerekir" kapandı: `CaptureHost` (7.1). E7 metinlerinin Azerbaycanca karşılıkları eklendi (5.2). Vardiyada her tikte okuma kurulduğu (1.6) ve bildirim olayının ikinci (180 ms) okuma kurmadığı (1.3) eklendi.
