@@ -213,5 +213,6 @@ Toplam 48 oturumluk görev (`docs/WEEM_ISLER.md`; aksamalarla kabaca 50–55 otu
 | 2026-10-17 | A0.2 açık soruların yanıtı (S1–S13) Bölüm 8'e; Y12 1.0'a alındı; AGENTS.md'ye ultracode/paralel ajan kuralı ve devam promptu | Claude | dal `ccr-2e70dcaf-vhiw6n` |
 | 2026-10-17 | A1.1 Gradle iskeleti: `logic/` ayrı build (8 modül, testler yeşil), kök Android build (9 boş modül), modül yönü denetimi | Claude | `6776b9a`; Android katmanı yerelde derlenmedi (`dl.google.com` kapalı) |
 | 2026-10-17 | A1.2 kimlik ve imza: Rawstats anahtarı, `.dev` debug + `com.kuryelog.app` release, tek kaynak sürüm, yedek kuralları, `WatchService`/`NotifService`, izinler, `ci/check_identity.sh` | Claude | `7dd7b6a`; Android katmanı ilk kez yerelde derlendi, kimlik denetimi yeşil; CI ve telefon yok |
+| 2026-10-17 | A1.4 CI: `ci.yml` (PR: logic + Android testleri, lint, derleme, kimlik denetimi), `apk.yml` (.dev APK → Release), `lint.xml` | Claude | PR #1; ilk GitHub koşusu yeşil; `apk.yml` koşmadı, telefon yok |
 
 **Sıradaki:** `docs/WEEM_ISLER.md` → "Şu an".
