@@ -4,10 +4,17 @@ Kurallar: `AGENTS.md` → "Birden çok Claude hesabı". Durumlar: `bekliyor` · 
 
 ## Şu an
 
-- **Son yapılan:** 17 Ekim — proje kuruldu: plan, kurallar, iş listesi, oturum başlangıç kancası.
-- **Sıradaki iş:** A1.1
+- **Son yapılan:** 17 Ekim — proje kuruldu ve Myapplab'a taşındı; son plan kontrolü yapıldı.
+- **Sıradaki iş:** A0.1 (planın son hâli, ultracode, yeni hesapta). Ardından A1.1.
 - **Devam eden (yarım) iş:** yok
-- **Kullanıcıdan beklenen:** uygulama simgesi; Receiver (scooter) telefonu; her hesabın ortam ağ ayarında `dl.google.com` izni (Android'i yerelde derlemek için).
+- **Kullanıcıdan beklenen:** K0.1 kodsuz saha denemesi; uygulama simgesi; Receiver (scooter) telefonu; her hesabın ortam ağ ayarında `dl.google.com` izni (Android'i yerelde derlemek için).
+
+## Aşama 0 — Planın son hâli
+
+| No | İş | Bitti sayılır | Model · effort | Durum |
+|---|---|---|---|---|
+| A0.1 | Planın son hâli (kullanıcı isteği): `docs/sartname/OZELLIK_HARITASI.md` (63 özellik → eski kod, testler, veri, bağımlılık, modül, aşama), `VERI_SOZLESMESI.md` (korunacak bileşen, izin, tercih, veritabanı, dosya, şema, anahtar adları), `TEST_ENVANTERI.md` (eski testler ve hedef modülleri); `WEEM_PLANI.md` mimari ve arayüzleri ayrıntılandırılır (Bölüm 8 kararları değişmez); bu iş listesi oturumluk görevlere bölünür; sonda "Açık sorular". Kod yazılmaz | Belgeler `main`'de; kullanıcı açık soruları yanıtladı | Opus (yoksa Sonnet) · xhigh + ultracode | bekliyor |
+| K0.1 | (K) Kodsuz saha denemesi, 1–2 vardiya: yedek telefon scooter'da (Sürüş Paneli + YolGo, hedef elle), Pixel'de Wolt + Bolt + Rawstats, Pixel'deki Sürüş Paneli kapalı. Bakılacak: scooter Bluetooth'u kopuyor mu, ısınma, güneşte okunma, hotspot'un Pixel piline etkisi, **Pixel cepteyken teklifler okunuyor mu** | Kullanıcı sonuçları yazar | — | bekliyor |
 
 ## Aşama 1 — İskelet
 
@@ -103,9 +110,10 @@ Kurallar: `AGENTS.md` → "Birden çok Claude hesabı". Durumlar: `bekliyor` · 
 | No | İş | Bitti sayılır | Model · effort | Durum |
 |---|---|---|---|---|
 | A10.1 | Optimizasyon: pil, bellek, APK boyutu, arka planda kalma | Ölçümler belgede | Opus · high | bekliyor |
-| A10.2 | Büyük denetim: güvenlik, izinler, `/code-review xhigh` | Bulgular kapandı | Ultracode · xhigh | bekliyor |
-| A10.3 | Geri yükleme provası, geçiş rehberi | Belge + deneme | Sonnet · high | bekliyor |
-| A10.4 | (K) Geçiş: ZIP yedek → WEEM Rawstats'ın üstüne → YolGo içe aktar | İş telefonlarında WEEM | — | bekliyor |
+| A10.2 | Kod sadeleştirme: tekrar eden kod, gereksiz katman, ölü kod (`/simplify`); davranış aynı, testler yeşil | Testler yeşil, satır sayısı belgede | Opus · high | bekliyor |
+| A10.3 | Büyük denetim: güvenlik, izinler, `/code-review xhigh` | Bulgular kapandı | Ultracode · xhigh | bekliyor |
+| A10.4 | Geri yükleme provası, geçiş rehberi | Belge + deneme | Sonnet · high | bekliyor |
+| A10.5 | (K) Geçiş: ZIP yedek → WEEM Rawstats'ın üstüne → YolGo içe aktar | İş telefonlarında WEEM | — | bekliyor |
 
 ## Aşama 11 — Sonrası
 

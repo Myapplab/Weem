@@ -56,7 +56,12 @@ Kaynak: seçim sayfası <https://claude.ai/artifact/5RTwBJxg8JHXCgUTbLAGyD> (kay
 | `:remote` | Uzaktan kullanım: ekran yakalama + H.264, ayrı erişilebilirlik servisi, yalnız Wi-Fi |
 
 - Modüller arası **dar arayüzler** (bugünkü `ScooterBridge` gibi: `orderAccepted`, `orderDone`, `energy(from, to)`, `batteryPct`). Mesaj yükleri bugünkü JSON şemaları (feed v2 `stages`, `scooter/v1/live`, `nav/v1/current`, `economics-energy` satırı): aynı mesaj tek telefonda modüller arası, 2 telefon modunda bağlantı üstünden gider.
-- **2 telefon modu** (kararlar 16–17 Ekim): Provider = Wolt/Bolt telefonu (bugün Pixel): okuma, siparişler, kazanç, net kazanç. Receiver = scooter telefonu: harita, Sürüş Paneli, saniyelik scooter verisi, enerji kartı. Provider → Receiver: sipariş olayları, teklif özeti, rota hedefi, vardiya. Receiver → Provider: sipariş başına enerji sonucu, batarya özeti, rota durumu, hava. Saniyelik veri Receiver'dan çıkmaz; müşteri adı/telefonu Receiver'a gitmez. Receiver'ın interneti Provider'ın hotspot'u.
+- **2 telefon modu** (kararlar 16–17 Ekim). Ayarlar → "2 telefon modu: Kapalı / Provider / Receiver"; kapalıyken tek telefon her şeyi yapar. Her telefon her rolü alabilir; sekmeler iki telefonda da aynıdır, veri asıl kaynağından gelir.
+  - **Provider** = Wolt/Bolt telefonu (bugün Pixel 10 Pro, sürüşte çoğunlukla cepte): ekran ve bildirim okuma, siparişler, kazanç, gün sonu, net kazanç, yedek. Scooter Bluetooth'u kapalı.
+  - **Receiver** = scooter'a sabit telefon: harita ve navigasyon, Sürüş Paneli (scooter'a tek Bluetooth bağlantısı), saniyelik scooter verisi, enerji kartı. Ekran okuma yok; müşteri adı/telefonu saklanmaz.
+  - **Provider → Receiver (seyrek):** sipariş olayları (kabul saati, restorana/müşteriye gidiş, teslim/iptal), teklif özeti (Receiver'da sesli teklif kartı; kabul her zaman Provider'da Wolt/Bolt'ta, otomatik kabul yok), rota hedefi (Wolt "Navigasyon" bağlantısını Provider'daki WEEM yakalar, Receiver'da rota kendiliğinden açılır; unutulursa okunan adres yazısından arama; Receiver'a ulaşılamazsa rota Provider'da açılır), vardiya başla/bitir, gün özeti.
+  - **Receiver → Provider (seyrek):** sipariş/bekleme parçası başına enerji sonucu (`ScooterBridge` arayüzü bağlantı üstünden, eşzamansız; gelene kadar "bekleniyor"), anlık batarya özeti, rota durumu, hava. Saniyelik veri Receiver'dan çıkmaz.
+  - **Bağlantı:** Provider'ın hotspot'u üstünden Wi-Fi (Receiver'ın interneti de buradan), yoksa Bluetooth (yalnız küçük mesajlar; scooter bağlantısını bozmaması denenir). QR ile bir kez eşleştirme, şifreli, kimlikli mesaj, kuyruk ve yeniden gönderme, bağlanışta saat farkı ölçümü ve sürüm denetimi. Provider'da "Hotspot'u otomatik kapat" kapalı olmalı.
 - Bağımlılıklar az ve sabit sürümlü (Compose BOM, Play Services Location, Maps SDK, WorkManager, coroutines; OSM görünümü için kütüphane Aşama 6'da seçilir). Sunucu, analitik, reklam yok.
 
 ## 5. Kurallar (ZORUNLU)
@@ -76,7 +81,7 @@ Her aşama: testler yeşil → `.dev` APK → telefonda gölge mod denemesi (kul
 
 | Aşama | İçerik | Bitti sayılır | Süre |
 |---|---|---|---|
-| 0 | Kapsam seçimi | Bölüm 3 | bitti |
+| 0 | Kapsam seçimi (bitti); planın son hâli: şartname haritası, veri sözleşmesi, test envanteri, ayrıntılı iş listesi (ultracode, kullanıcı isteği); kullanıcının kodsuz saha denemesi | `docs/sartname/` belgeleri + güncel iş listesi | 1 |
 | 1 | Gradle iskeleti (`logic/` ayrı build) ve modüller; alt menü kabuğu, tema, dil; imza, sürüm, `.dev`; CI | Boş sekmeli `.dev` APK kurulur | 1–2 |
 | 2 | `:core`: depolama, eski Rawstats verisini okuma, vardiya/gün/ev tek kural, saat/cihaz kimliği, bildirim tablosu | Eski kayıtlar WEEM'de okunur | 2–3 |
 | 3 | `:capture` + `:orders` (R1–R3, R5–R13, R15–R16, R19–R20) | Pixel'de gölge mod: WEEM ile Rawstats aynı günü aynı kaydeder | 5–8 |
@@ -86,17 +91,21 @@ Her aşama: testler yeşil → `.dev` APK → telefonda gölge mod denemesi (kul
 | 7 | YolGo verisini içe aktarma; G1–G5 bütünlüğü | Yedek telefonda YolGo'dan tam taşıma | 1–2 |
 | 8 | `:link` 2 telefon modu (N1) + hırsızlık koruması (N6) | İki telefonla gerçek vardiya | 4–6 |
 | 9 | `:remote` uzaktan kullanım (N2) | Yakınken öteki telefon kullanılır | 3–5 |
-| 10 | Optimizasyon (pil, bellek, APK boyutu, arka planda kalma), güvenlik, geri yükleme provası; **WEEM 1.0**; geçiş: ZIP yedek → WEEM Rawstats'ın üstüne → YolGo içe aktar | İş telefonlarında WEEM | 1–2 |
+| 10 | Optimizasyon (pil, bellek, APK boyutu, arka planda kalma), kod sadeleştirme (`/simplify`), güvenlik ve büyük denetim, geri yükleme provası; **WEEM 1.0**; geçiş: ZIP yedek → WEEM Rawstats'ın üstüne → YolGo içe aktar | İş telefonlarında WEEM | 2–3 |
 | 11 | `BEKLEYEN_OZELLIKLER.md` kullanıcıya sorulur | Kullanıcı kararı | — |
 
 Toplam kabaca 30–45 oturum + telefon denemeleri. Ara `.dev` sürümleri gölge modda sahada denenir; geçiş yalnız WEEM 1.0 ile.
 
-## 7. Riskler
+**Satır tahmini (kabaca):** bugün ana kod ~45.300 satır (YolGo Dart 24.352 + Kotlin 4.566, Rawstats 14.423, Sürüş Paneli 1.980), test ~24.200. WEEM 1.0: ana kod ~40–48 bin satır, tamamı Kotlin; test ~26–30 bin. Satır sayısı amaç değil; asıl kazanç tek dil, tek kural kaynağı.
+
+## 7. Riskler ve donanım
 
 - Süre uzun ve WEEM 1.0 tüm ilk sürüm özellikleriyle geliyor → iş telefonundaki geçiş geç olur. Önlem: her aşama gölge modda sahada.
 - İkinci harita görünümü (Y2) ve uzaktan kullanım (N2) ek iş; Android 14+ ekran yakalama onayı, Play Protect, Xiaomi arka plan kısıtları.
 - Yeniden yazımda sahada düzeltilmiş durumların kaçması → testler ve gölge mod karşılaştırması.
 - Harici batarya enerjisi hâlâ ölçülmüyor (açık sorun).
+- **En kritik bilinmeyen:** Pixel cepteyken ve ekranı kapalıyken Wolt/Bolt tekliflerinin okunup okunmadığı. Kodsuz saha denemesinde ölçülür (iş listesi K0.1).
+- **Receiver telefonu:** GPS şart (birçok Wi-Fi tablette yok), güneşte okunur ekran, IP67/68, scooter ya da powerbank beslemesi, %80 şarj sınırı (sürekli şarj), ısınmaya dayanım, hırsızlığa karşı hızlı çıkarılır tutucu ve uygulama sabitleme. Yeni almadan önce yedek S22 ya da Poco X3 ile denenir.
 
 ## 8. Kullanıcı kararları
 
@@ -114,6 +123,9 @@ Toplam kabaca 30–45 oturum + telefon denemeleri. Ara `.dev` sürümleri gölge
 | Veri bölüşümü | Provider sipariş olaylarını gönderir; scooter verisi ve enerji kartı Receiver'da; net kazanç Provider'da — 17 Ekim |
 | Bağlantı | Wi-Fi (hotspot) + Bluetooth — 17 Ekim |
 | Arayüz | Altta 4–5 sekme, sekme durumu korunur — 17 Ekim |
+| Uzaktan kullanım | WEEM içinde modül (AnyDesk benzeri), yalnız telefonlar yakınken — 17 Ekim |
+| Ekran paylaşımlı düzen | "Her şey scooter telefonunda + ekran paylaşımı" seçilmedi — 17 Ekim |
+| Çalışma düzeni | 2–3 Claude hesabı sırayla; repo `Myapplab/Weem` (eski repo şartname); planın son hâli ultracode ile yeni oturumda — 17 Ekim |
 | Receiver telefonu | _bekliyor_ (önce yedek Poco/S22 ile deneme) |
 
 ## 9. İlerleme
@@ -124,5 +136,6 @@ Toplam kabaca 30–45 oturum + telefon denemeleri. Ara `.dev` sürümleri gölge
 | 2026-10-10 | Rawstats araç yükseltmesi: Gradle 9.3.1, AGP 9.1.0, Kotlin 2.4.0, SDK 36 | Codex + Claude | `rawstats`'ta; WEEM aynı sürümlerle başlar |
 | 2026-10-17 | Native sıfırdan kararı; kapsam seçimi (58 ilk sürüm, 4 sonra, 1 çıkar); bu plan | Claude | `kurye_nav` oturum dalı `ccr-4d54acb0-ohiz3j` |
 | 2026-10-17 | Repo `Myapplab/Weem` kuruldu: kurallar (hesaplar arası devam, model/effort), iş listesi, oturum başlangıç kancası | Claude | İlk commit |
+| 2026-10-17 | Repo kullanıcı tarafından Myapplab'a taşındı; son plan kontrolü: 2 telefon akışı, donanım, kritik deneme, sadeleştirme, satır tahmini | Claude | Bu commit |
 
 **Sıradaki:** `docs/WEEM_ISLER.md` → "Şu an".
