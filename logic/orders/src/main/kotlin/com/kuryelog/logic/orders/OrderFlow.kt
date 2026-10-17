@@ -58,7 +58,7 @@ interface OrderObserver {
  *
  * WEEM farkları (ORDERS.md 16.1): YolGo akışları (`OfferFeed`, `FeedChanges`, `YolGoNavReader`, hava önbelleği) yok, yerine
  * `OrderEvents` için [offers]/[stages] ve `NavPort.route` ([navigation]), `WeatherPort` ([Env.weather]); ekonomi kaydedicileri
- * [OrderObserver]; A3.6 parçaları (resmî toplamlar, CASH PENDING, cep nakdi, balon ve kart kararları) "A3.6" notlu yerlerde gelir.
+ * [OrderObserver]; resmî toplamlar, CASH PENDING, cep nakdi, balon ve kart kararları (A3.6) Rawstats'taki yerlerinde.
  */
 class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
     /** Android'in ve öbür modüllerin verdikleri. */
@@ -79,6 +79,10 @@ class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
         fun geocode(address: String, done: (DoubleArray?) -> Unit) {}
         /** K32: nakit bahşiş sorusu (`CashTipPrompt.ask`, Android). */
         fun askCashTip(trip: TripRecord) {}
+        /** M15: yeni vardiyanın başında "Şu an cebinde ne kadar nakit var?" (`PocketCashPrompt.ask`, Android); cevap [recordPocketCash]'e gelir. */
+        fun askPocketCash(shiftStartMs: Long) {}
+        /** E14/E16: bildirim 12 (`DeliveryReminder.notify`, Android); [update] true = sessiz güncelleme. Pencereler [reminder]'ı okur. */
+        fun notifyReminder(reminder: Reminder, update: Boolean = false) {}
     }
 
     val core = DeliveryCore()
@@ -220,12 +224,21 @@ class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
     @Synchronized fun hasOpenOrder(): Boolean = core.trips.values.any { it.active }
 
     // ------------------------------------------------------------------ ShiftMachine.Hooks (ORDERS.md 4.2)
-    // A3.6: onNewShift → cep nakdi sorusu (M15) ve CASH PENDING başı (M17); onEnd → CASH PENDING sonu, sonra (DailyPack) stop.
+    // `onNewShift`/`onEnd`'in cep nakdi ve CASH PENDING işleri [cashPendingHooks]'ta: `:app` önce onu, `core.dailyPack`'ten sonra bunu
+    // kaydeder (ORDERS.md 4.2: CASH PENDING sonu günlük paketten önce, `stop` ondan sonra).
     override fun onRunning() = start()
     override fun onFix(fix: GpsFix, speedMps: Double?, nowMs: Long) { location(fix, speedMps, nowMs); tick(nowMs) }
     override fun onDistance(m: Double) = distance(m)
     override fun busy(): Boolean = hasOpenOrder()
     override fun onEnd(startMs: Long, nowMs: Long, reason: String) = stop()
+    /** Rawstats `GpsService`: yeni vardiyada cep nakdi sorusu (M15, bildirim 4901) ve CASH PENDING başı (M17); bitişte CASH PENDING sonu. */
+    val cashPendingHooks: ShiftMachine.Hooks = object : ShiftMachine.Hooks {
+        override fun onNewShift(nowMs: Long, reason: String) {
+            try { env.askPocketCash(nowMs) } catch (e: Exception) { failure("shift_start", e) }
+            runCatching { cashPendingShift(CashPending.SHIFT_START, nowMs, nowMs) }
+        }
+        override fun onEnd(startMs: Long, nowMs: Long, reason: String) { runCatching { cashPendingShift(CashPending.SHIFT_END, startMs, nowMs) } }
+    }
 
     // ------------------------------------------------------------------ CaptureSink (ORDERS.md 4.3; CAPTURE.md 7.1)
     override fun onScreen(pkg: String, texts: List<String>, actions: List<String>, at: Long, source: String,
@@ -242,18 +255,20 @@ class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
         if (!canRecordScreen()) return
         init()
         seen[pkg] = now
-        // A3.6: F8.3 the platforms' own day totals (Wolt Daily details, cash collected, Bolt day headers) — PlatformTotals.
+        // F8.3: the platforms' own day totals (Wolt Daily details, cash collected, Bolt day headers).
+        platformTotals(PlatformTotals.woltDaily(pkg, texts) + PlatformTotals.boltDays(pkg, texts) + cashTotals(pkg, texts), now)
         // K36: the platform's own earnings list is verified history, never an offer or order screen.
         if (platformHistory(pkg, texts, now, source)) return
         // D3(d): Wolt Finances "Cash collection" rows give the handover time of cash orders (the frame is parsed as usual too).
         cashCollections(pkg, texts, now)
-        // A3.6: M17 Finances "CASH PENDING" and "Cash offload" rows (numbers only) — CashPending.
+        // M17: Finances "CASH PENDING" and "Cash offload" rows (numbers only).
+        cashPending(pkg, texts, now)
         // K33: the slider spinner comes from the accessibility node classes, not from the texts.
         // K31: Wolt's delivery steps screen (cash step and amount) is read here, so the parser's harness contract is unchanged.
         val o = (parsed?.takeIf { it.pkg == pkg && it.at == now && it.source == source && it.complete == complete } ?: CourierParser.parse(pkg, texts, actions, now, source, complete))
             .let { if (spinner) it.copy(deliverSpinner = true) else it }
             .let { CashPayment.attach(it, CashPayment.parse(pkg, texts, checked)) }
-        // A3.6: F8.1/F8.4 PlatformTotals.fromStats(o).
+        PlatformTotals.fromStats(o)?.let { platformTotals(listOf(it), now) }
         // D21: while an offer card is on screen the badge moves off Wolt's Decline (top right) and Accept/card (bottom).
         if (o.stage == ScreenStage.OFFER) offerVisibleUntil = now + OFFER_VISIBLE_MS
         else if (o.complete && o.stage != ScreenStage.UNKNOWN) offerVisibleUntil = 0L
@@ -354,6 +369,12 @@ class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
         return true
     }
 
+    /** F8.5: the newest platform totals of [day] ([PlatformTotals.FILE]; empty when none were read). */
+    fun platformTotals(day: String): List<PlatformTotals.Total> = try {
+        val f = dayFile(day, PlatformTotals.FILE)
+        if (!f.exists()) emptyList() else f.useLines { PlatformTotals.latest(it.asIterable()) }
+    } catch (e: Exception) { emptyList() }
+
     /** K36 rows of [day] for the order cards (empty when none were read). */
     fun platformHistoryRows(day: String): List<JSONObject> = jsonRows(day, PlatformHistory.FILE)
     private fun jsonRows(day: String, name: String): List<JSONObject> = try {
@@ -361,6 +382,21 @@ class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
         if (!f.exists()) emptyList() else f.useLines { s -> s.mapNotNull { runCatching { JSONObject(it) }.getOrNull() }.toList() }
     } catch (e: Exception) { emptyList() }
 
+    /** F8.3: the last total written per [PlatformTotals.key] (an unchanged one is not written again), and the cash rows seen
+     *  per day (a day's total is the sum of every row read in this process, so a scroll adds the rest). */
+    private val totalsWritten = HashMap<String, PlatformTotals.Total>()
+    private val cashSeen = HashMap<String, LinkedHashSet<PlatformHistory.CashRow>>()
+    private fun cashTotals(pkg: String, texts: List<String>): List<PlatformTotals.Total> =
+        PlatformHistory.cashRows(pkg, texts).onEach { cashSeen.getOrPut(it.day) { LinkedHashSet() }.add(it) }.map { it.day }.distinct()
+            .flatMap { PlatformTotals.woltCash(cashSeen.getValue(it).toList()) }
+    private fun platformTotals(totals: List<PlatformTotals.Total>, now: Long) {
+        for (t in totals) {
+            val k = PlatformTotals.key(t)
+            if (totalsWritten[k] == t) continue
+            totalsWritten[k] = t
+            env.log.append(PlatformTotals.FILE, PlatformTotals.record(t, now).toString(), PlatformTotals.dayOf(t.period) ?: day(now))
+        }
+    }
     /** Texts of the last Finances frame whose cash rows were applied (an unchanged screen is not matched again). */
     private var cashHash = 0
     /** D3(d): each "Cash collection" row of a Wolt Finances frame corrects or completes the delivery of its cash order. */
@@ -474,19 +510,96 @@ class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
     @Synchronized fun tick(now: Long) {
         if (!shiftOn() || !core.running) { reminder = null; return }
         bindNavTarget(now)
-        // A3.6: E16 müşteri kartı (CustomerCard), E14 restoran balonu (RestaurantBubble) açılışı ve açık hatırlatıcının güncellenmesi.
+        val l = env.log.lastLocation
+        // WEEM: Loc'ta `hasAccuracy` yok; Android bilinmeyen doğruluğu 0 verir, gerçek fix hep > 0 (ORDERS.md 16.1).
+        val acc = l?.accM?.takeIf { it > 0.0 }
+        // E16: the customer card opens on whichever comes first: 300 m to the address in a straight line, 300 m left on the
+        // route or its last 2 turns (WEEM `NavPort.route`; Rawstats: YolGo's E8 payload). Replaced the 1,000 m / 700 m trigger of the Google Maps/Waze notification.
+        for (t in core.trips.values.filter { it.active && (it.phase == TripPhase.TO_CUSTOMER || it.phase == TripPhase.AT_CUSTOMER) }) {
+            val c = t.customers[t.currentCustomer] ?: continue
+            if (c.reminderAt != null || c.deliveredAt != null) continue
+            val leg = CustomerCard.routeFor(route, legStart(t), now)
+            // The navigation target is the place the courier app's "Navigate" sent (sharper than the address geocode).
+            val target = leg?.let { route?.target }
+            val straight = l?.let { CustomerCard.straight(it.atMs, it.lat, it.lon, acc, target?.lat ?: c.lat, target?.lon ?: c.lon, now) }
+            val why = CustomerCard.trigger(straight, leg) ?: continue
+            c.reminderAt = now
+            reminder = Reminder(t.id, c.id, "${platform(t.pkg)} · ${c.details.name ?: c.id}", c.details.copy(),
+                CustomerCard.reason(why, straight, leg) { tr, az -> tl(tr, az) }, c.detailsAt,
+                deadlineAt = c.deadlineAt, orders = 1 + t.sameDropoff.count { core.trips[it]?.active == true })
+            env.notifyReminder(reminder!!); persist(true)
+        }
+        // E14: restaurant bubble — 50 m straight from the restaurant (D9's coordinate: the navigation target, else the geocode) or its
+        // arrival seen; until Collect or 150 m away. Replaced the 1,000 m route / 700 m straight / ≤3 min trigger. The first
+        // opening per pickup posts the restaurant notification ([PickupRecord.reminderAt]); a bubble the courier closed stays closed.
+        for (t in core.trips.values.filter { it.active && (it.phase == TripPhase.TO_RESTAURANT || it.phase == TripPhase.WAITING) }) {
+            val i = t.pickups.indexOfLast { it.pickedAt == null }; if (i < 0) continue
+            val p = t.pickups[i]
+            val key = "${t.id}:$i"
+            if (p.address != null && restaurantCoords[key] == null) resolveRestaurant(key, p.address!!)
+            val open = reminder?.let { it.kind == "restaurant" && it.trip == t.id && it.customer == "pickup-$i" } == true
+            if (open || key in bubbleDismissed) continue
+            val d = venueDistance(t, i, now)
+            if (!RestaurantBubble.visible(false, d, p.arrivedAt != null, false)) continue
+            val first = p.reminderAt == null
+            if (first) p.reminderAt = now
+            reminder = restaurantReminder(t, i, live(now) ?: placeText(d, p.arrivedAt != null), now)
+            if (first) env.notifyReminder(reminder!!)
+            persist(true)
+        }
         val r = reminder
         if (r != null) {
             val t = core.trips[r.trip]
             if (r.kind == "restaurant") {
                 val i = r.customer.removePrefix("pickup-").toIntOrNull()
                 val p = if (t != null && i != null) t.pickups.getOrNull(i) else null
-                if (t == null || i == null || p == null || !t.active || p.pickedAt != null || (t.phase != TripPhase.TO_RESTAURANT && t.phase != TripPhase.WAITING)) reminder = null
+                if (t == null || i == null || p == null || !t.active || p.pickedAt != null || (t.phase != TripPhase.TO_RESTAURANT && t.phase != TripPhase.WAITING)) {
+                    reminder = null
+                } else if (!RestaurantBubble.visible(true, venueDistance(t, i, now), p.arrivedAt != null, false)) {
+                    reminder = null // E14: 150 m away from the restaurant without Collect: the bubble closes (it may open again at 50 m)
+                } else {
+                    val next = restaurantReminder(t, i, live(now) ?: r.estimate, r.revision)
+                    if (next != r) {
+                        // E15: the counter moved (a minute passed, "now", "ready"): the notification follows, silently.
+                        if (next.headline != r.headline) env.notifyReminder(next, update = true)
+                        reminder = next
+                    }
+                }
             } else if (t == null || !t.active || t.currentCustomer != r.customer || t.customers[r.customer]?.deliveredAt != null) {
                 reminder = null
+            } else {
+                // E16: the route's remaining metres and turns while it leads to this customer, else the navigation notification's line.
+                val l2 = CustomerCard.routeFor(route, legStart(t), now)?.let { CustomerCard.live(it) { tr, az -> tl(tr, az) } } ?: live(now)
+                if (l2 != null && l2 != r.estimate) reminder = r.copy(estimate = l2)
             }
         }
         persist()
+    }
+    /** E14: straight-line metres from the courier's fresh fix to pickup [i]'s restaurant (D9's coordinate), or null. */
+    private fun venueDistance(t: TripRecord, i: Int, now: Long): Double? = env.log.lastLocation?.let { l ->
+        RestaurantBubble.distance(l.atMs, l.lat, l.lon, l.accM.takeIf { it > 0.0 }, venueOf(t, i), now)
+    }
+    private fun placeText(d: Double?, arrived: Boolean): String = when {
+        arrived -> tl("Restorandasın", "Restorandasan")
+        d != null -> tl("Restorana yaklaşık ${d.toInt()} m (kuş uçuşu)", "Restorana təxminən ${d.toInt()} m (düz xətt)")
+        else -> tl("Restorana yakınsın", "Restorana yaxınsan")
+    }
+    /** Remaining route from the navigation notification, refreshed live; null when not recent. */
+    private fun live(now: Long): String? = navSummary?.takeIf { now - navSummaryAt in 0..20_000 }?.let { tl("Kalan: $it", "Qalıb: $it") }
+    private fun restaurantReminder(t: TripRecord, i: Int, estimate: String, revision: Long): Reminder {
+        val p = t.pickups[i]
+        val order = (listOfNotNull(p.code) + p.items).takeIf { it.isNotEmpty() }?.joinToString(" · ")
+        val body = listOfNotNull(p.note?.let { tl("Restoran notu: ", "Restoran qeydi: ") + it },
+            order?.let { tl("Sipariş: ", "Sifariş: ") + it }, p.address).joinToString("\n\n")
+        val now = now()
+        return Reminder(t.id, "pickup-$i", "${platform(t.pkg)} · ${p.restaurant ?: tl("Restoran", "Restoran")}", DeliveryDetails(), estimate, revision,
+            "restaurant", readiness(p, now), body, p.restaurant ?: tl("Restoran", "Restoran"), Readiness.of(p, now))
+    }
+    /** First line of the restaurant card and notification: the E15 ready counter ([Readiness.headline]: minutes left, time up, ready). */
+    private fun readiness(p: PickupRecord, now: Long): String = Readiness.headline(Readiness.of(p, now)) { tr, az -> tl(tr, az) }
+    private fun resolveRestaurant(key: String, address: String) {
+        if (!geocodes.add("restaurant:$key:$address")) return
+        env.geocode(address) { result -> if (result != null) synchronized(this) { restaurantCoords[key] = doubleArrayOf(result[0], result[1]) } }
     }
     private fun resolve(tripId: String, customerId: String, address: String) {
         val key = "$tripId:$customerId:$address"; if (!geocodes.add(key)) return
@@ -600,6 +713,42 @@ class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
     }
     @Synchronized fun setTip(id: String, tip: Double) { core.trips[id]?.let { it.tip = tip; it.tipSource = "user_manual"; persist(true) } }
 
+    private var pendingWritten: Pair<Double, Long>? = null
+    private val offloadsWritten = HashSet<String>()
+    /** M17: the last Wolt "CASH PENDING" seen (value to wall clock), kept across restarts; null when never seen. */
+    fun lastPending(): Pair<Double, Long>? = env.prefs.let { p ->
+        p.getString(PREF_PENDING, null)?.toDoubleOrNull()?.let { it to p.getLong(PREF_PENDING_AT, 0L) } }
+    private fun cashPending(pkg: String, texts: List<String>, now: Long) {
+        CashPending.pending(pkg, texts)?.let { v ->
+            env.prefs.put(mapOf(PREF_PENDING to v.toString(), PREF_PENDING_AT to now))
+            if (CashPending.shouldWrite(pendingWritten, v, now) && env.log.append(CashPending.FILE, CashPending.pendingRow(v, now).toString())) pendingWritten = v to now
+        }
+        for (r in PlatformHistory.offloadRows(pkg, texts)) {
+            if (offloadsWritten.add("${r.day} ${r.clock} ${r.amount}")) env.log.append(CashPending.FILE, CashPending.offloadRow(r, now).toString(), r.day)
+        }
+    }
+    /**
+     * M17: the shift's start or end ([kind]) with the last known cash pending; at the end also one snapshot row per order of the
+     * shift (the order records are not changed). Written to the shift start's day folder.
+     */
+    @Synchronized fun cashPendingShift(kind: String, shiftStartMs: Long, now: Long) {
+        init()
+        val last = lastPending()
+        val day = day(shiftStartMs)
+        env.log.append(CashPending.FILE, CashPending.shiftRow(kind, shiftStartMs, last?.first, last?.second, now).toString(), day)
+        if (kind != CashPending.SHIFT_END) return
+        for (t in core.trips.values.filter { it.acceptedAt >= shiftStartMs }) env.log.append(CashPending.FILE, CashPending.orderSnapshot(t.id, shiftStartMs, last?.first, now).toString(), day)
+    }
+    /** M17: every [CashPending.FILE] row of [day]; empty when missing or unreadable. */
+    fun cashPendingRows(day: String): List<JSONObject> = jsonRows(day, CashPending.FILE)
+    /** M15: every [PocketCash.FILE] row of [day] (the shift start's day folder); empty when missing or unreadable. */
+    fun pocketCashRows(day: String): List<JSONObject> = jsonRows(day, PocketCash.FILE)
+    /** M15: the courier's answer to "how much cash is in your pocket?" for the shift started at [shiftStartMs]. */
+    fun recordPocketCash(shiftStartMs: Long, amount: Double, via: String): JSONObject? {
+        val row = PocketCash.row(shiftStartMs, amount, now(), via)
+        return row.takeIf { env.log.append(PocketCash.FILE, it.toString(), day(shiftStartMs)) }
+    }
+
     /** K32 newest cash answer of [trip] (its acceptance day's [CashTips.FILE]), or null. */
     fun cashTipFor(trip: TripRecord): JSONObject? = cashTipRows(day(trip.acceptedAt))[trip.id]
     /** K27 boost rows of [day] (for the day page statistics); empty when missing or unreadable. */
@@ -706,6 +855,8 @@ class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
         const val NOTIFY_TO_CARD_MS = 30_000L
         const val PHONE_WINDOW_MS = 60_000L
         const val OPEN_SESSIONS = "onlineSessions.v1"
+        const val PREF_PENDING = "cashPending.azn"
+        const val PREF_PENDING_AT = "cashPending.at"
         const val MIGRATION_07 = "structuredMigration07"
         const val ORDERS_FILE = "orders.jsonl"
         const val PLATFORMS_FILE = "platforms.jsonl"

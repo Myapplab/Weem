@@ -42,6 +42,14 @@ class OrderFlowTest {
         override fun phoneBattery() = 77
         val asked = ArrayList<String>()
         override fun askCashTip(trip: TripRecord) { asked += trip.id }
+        val pocketAsked = ArrayList<Long>()
+        override fun askPocketCash(shiftStartMs: Long) { pocketAsked += shiftStartMs }
+        /** Bildirim 12 istekleri: (hatırlatıcı, sessiz güncelleme mi). */
+        val notified = ArrayList<Pair<OrderFlow.Reminder, Boolean>>()
+        override fun notifyReminder(reminder: OrderFlow.Reminder, update: Boolean) { notified += reminder to update }
+        /** Her adres bu koordinata çözülür (null: çözülmez). */
+        var geocoded: DoubleArray? = null
+        override fun geocode(address: String, done: (DoubleArray?) -> Unit) { geocoded?.let { done(it) } }
     }
 
     private fun shiftOn() = KuryelogPrefs.Memory().also {
@@ -181,5 +189,141 @@ class OrderFlowTest {
         feed(flow, env, day("2026-10-11").take(300))
         assertTrue(flow.core.trips.isEmpty() && flow.core.pending.isEmpty())
         assertFalse(env.log.logsRoot.walk().any { it.isFile })
+    }
+
+    // ------------------------------------------------------------------ A3.6: para ve platform (ORDERS.md 7–12)
+    @Test fun officialTotalsAndCashPendingComeFromTheFieldScreens() {
+        val env = Env(tmp.newFolder())
+        val flow = OrderFlow(env).also { it.start() }
+        feed(flow, env, frames)
+        // F8.3: Wolt Stats of the day (newest per key wins), Bolt's day header, Wolt's cash collected.
+        val wolt = flow.platformTotals("2026-10-12").filter { it.source == PlatformTotals.WOLT_STATS }
+        assertEquals(1, wolt.size)
+        val totals = env.log.dayDir("2026-10-12").resolve(PlatformTotals.FILE).readLines().map(::JSONObject)
+        val newest = totals.last { it.optString("source_screen") == PlatformTotals.WOLT_STATS }
+        assertEquals(newest.getInt("deliveries"), wolt.single().deliveries); assertEquals(newest.optDouble("earnings_azn", Double.NaN), wolt.single().earnings ?: Double.NaN, 1e-9)
+        assertTrue(totals.first { it.optString("source_screen") == PlatformTotals.WOLT_STATS }.getInt("deliveries") < wolt.single().deliveries!!)
+        // The day's cash is the sum of every row read so far (a scroll adds the rest): 60.65 at first, more later.
+        val cash = env.log.dayDir("2026-10-11").resolve(PlatformTotals.FILE).readLines().map(::JSONObject).filter { it.optString("source_screen") == PlatformTotals.WOLT_CASH }
+        assertEquals(60.65, cash.first().getDouble("cash_azn"), 1e-9)
+        assertEquals(cash.last().getDouble("cash_azn"), flow.platformTotals("2026-10-11").single { it.source == PlatformTotals.WOLT_CASH }.cash!!, 1e-9)
+        assertTrue(cash.last().getDouble("cash_azn") > 60.65)
+        assertEquals(7, flow.platformTotals("2026-10-08").single { it.source == PlatformTotals.BOLT_DAYS }.deliveries)
+        // An unchanged total is not written again: no two consecutive rows of one key carry the same figures.
+        for ((a, b) in totals.zipWithNext()) assertNotEquals(a.without("observedAtMs").toString(), b.without("observedAtMs").toString())
+        // M17: the first CASH PENDING of 11 Oct, the cash offload row in its own day, the last value kept in the prefs across restarts.
+        val pending = flow.cashPendingRows("2026-10-11")
+        assertEquals(21.54, pending.first { it.optString("kind") == CashPending.KIND_PENDING }.getDouble("pending_azn"), 1e-9)
+        assertEquals(70.0, flow.cashPendingRows("2026-10-08").single { it.optString("kind") == CashPending.KIND_OFFLOAD }.getDouble("amount_azn"), 1e-9)
+        val last = flow.lastPending()!!
+        assertEquals(8.24, last.first, 1e-9)
+        assertEquals(last, OrderFlow(Env(tmp.newFolder(), env.prefs)).lastPending())
+        // A frame read twice writes nothing twice: the offload row is deduped by its day, clock and amount.
+        val before = flow.cashPendingRows("2026-10-08").size
+        feed(flow, env, frames.filter { it.day == "2026-10-08" && CashPending.pending(it.pkg, it.texts) != null || PlatformHistory.offloadRows(it.pkg, it.texts).isNotEmpty() }.take(5))
+        assertEquals(before, flow.cashPendingRows("2026-10-08").size)
+    }
+
+    private fun JSONObject.without(key: String) = JSONObject(toString()).also { it.remove(key) }
+
+    @Test fun shiftHooksAskForThePocketCashAndWriteTheCashPendingRows() {
+        val fs = day("2026-10-12")
+        val env = Env(tmp.newFolder())
+        val flow = OrderFlow(env).also { it.start() }
+        val start = fs.first().at - 60_000
+        env.clockImpl.now = start
+        flow.cashPendingHooks.onNewShift(start, "shift_start")
+        assertEquals(listOf(start), env.pocketAsked)
+        val dayOfShift = env.log.day(start)
+        val begin = flow.cashPendingRows(dayOfShift).single()
+        assertEquals(CashPending.SHIFT_START, begin.getString("kind"))
+        // M15: the answer lands in the shift start's day folder; a correction appends and the newest row wins.
+        env.clockImpl.now = start + 5_000
+        assertNotNull(flow.recordPocketCash(start, 30.0, PocketCash.VIA_REPLY))
+        env.clockImpl.now = start + 9_000
+        assertNotNull(flow.recordPocketCash(start, 12.5, PocketCash.VIA_WINDOW))
+        assertEquals(12.5, PocketCash.latest(flow.pocketCashRows(dayOfShift), start)!!, 1e-9)
+        assertEquals(listOf(start to 12.5), PocketCash.forDay(flow.pocketCashRows(dayOfShift), dayOfShift))
+        // The shift reads an order and a CASH PENDING screen, then ends: end row with that value, one snapshot per order.
+        for (f in fs) { env.clockImpl.now = f.at; flow.onScreen(f.pkg, f.texts, f.actions, f.at, f.src) }
+        val end = fs.last().at + 1_000
+        val seen = flow.lastPending()!!.first
+        env.clockImpl.now = end
+        flow.cashPendingHooks.onEnd(start, end, "manual")
+        val rows = flow.cashPendingRows(dayOfShift)
+        val closing = rows.single { it.optString("kind") == CashPending.SHIFT_END }
+        assertEquals(seen, closing.getDouble("pending_azn"), 1e-9)
+        assertEquals(seen, rows.last { it.optString("kind") == CashPending.KIND_PENDING }.getDouble("pending_azn"), 1e-9)
+        assertEquals(flow.core.trips.values.count { it.acceptedAt >= start }, rows.count { it.optString("kind") == CashPending.KIND_ORDER })
+        assertTrue(CashPending.shifts(rows).any { it.first == start && it.second != null })
+    }
+
+    /** Restoran aşamasındaki ilk açık sipariş: ([flow], [env]) ve alışın adresi çözülmüş. */
+    private fun atRestaurant(): Triple<OrderFlow, Env, TripRecord> {
+        val env = Env(tmp.newFolder()).also { it.geocoded = doubleArrayOf(40.4000, 49.8500) }
+        val flow = OrderFlow(env).also { it.start() }
+        for (f in day("2026-10-12")) {
+            env.clockImpl.now = f.at; flow.onScreen(f.pkg, f.texts, f.actions, f.at, f.src)
+            val t = flow.core.trips.values.firstOrNull { it.active && it.pickups.any { p -> p.pickedAt == null && p.address != null } && (it.phase == TripPhase.TO_RESTAURANT || it.phase == TripPhase.WAITING) }
+            if (t != null) return Triple(flow, env, t)
+        }
+        fail("no order reached its restaurant stage"); throw IllegalStateException()
+    }
+
+    private fun fix(env: Env, northM: Double, accuracy: Double = 10.0) {
+        env.log.lastLocation = LogStore.Loc(40.4000 + northM / 111_195.08, 49.8500, accuracy, env.clockImpl.now)
+    }
+
+    @Test fun restaurantBubbleOpensAt50mClosesPast150mAndNotifiesOnce() {
+        val (flow, env, t) = atRestaurant()
+        val i = t.pickups.indexOfLast { it.pickedAt == null }
+        val notified = env.notified.size
+        // 80 m: not yet; no fix: nothing opens.
+        fix(env, 80.0); flow.tick(env.clockImpl.now)
+        assertNull(flow.reminder)
+        // 40 m: the bubble opens and the first opening posts bildirim 12 once.
+        fix(env, 40.0); flow.tick(env.clockImpl.now)
+        assertEquals("restaurant", flow.reminder!!.kind); assertEquals("pickup-$i", flow.reminder!!.customer)
+        assertEquals(notified + 1, env.notified.size); assertFalse(env.notified.last().second)
+        flow.tick(env.clockImpl.now)
+        assertEquals(notified + 1, env.notified.size)
+        // 100 m: stays open (hysteresis); 200 m: closes; 40 m again: reopens but does not notify a second time.
+        fix(env, 100.0); flow.tick(env.clockImpl.now); assertNotNull(flow.reminder)
+        fix(env, 200.0); flow.tick(env.clockImpl.now); assertNull(flow.reminder)
+        fix(env, 40.0); flow.tick(env.clockImpl.now); assertNotNull(flow.reminder)
+        assertEquals(notified + 1, env.notified.size)
+        // The courier closes it: it does not open again for this pickup.
+        flow.dismissReminder(); flow.tick(env.clockImpl.now)
+        assertNull(flow.reminder)
+        // An inaccurate or old fix measures nothing.
+        val (flow2, env2, _) = atRestaurant()
+        fix(env2, 10.0, accuracy = 80.0); flow2.tick(env2.clockImpl.now); assertNull(flow2.reminder)
+        env2.log.lastLocation = LogStore.Loc(40.4000, 49.8500, 10.0, env2.clockImpl.now - 60_000); flow2.tick(env2.clockImpl.now); assertNull(flow2.reminder)
+    }
+
+    @Test fun customerCardOpensOnceWithin300mOfTheAddress() {
+        val env = Env(tmp.newFolder()).also { it.geocoded = doubleArrayOf(40.4000, 49.8500) }
+        val flow = OrderFlow(env).also { it.start() }
+        var trip: TripRecord? = null
+        for (f in day("2026-10-12")) {
+            env.clockImpl.now = f.at; flow.onScreen(f.pkg, f.texts, f.actions, f.at, f.src)
+            trip = flow.core.trips.values.firstOrNull { it.active && it.phase == TripPhase.TO_CUSTOMER && it.customers[it.currentCustomer]?.lat != null }
+            if (trip != null) break
+        }
+        val t = trip ?: run { fail("no order reached its customer stage with a geocoded address"); throw IllegalStateException() }
+        val c = t.customers.getValue(t.currentCustomer!!)
+        assertNull(c.reminderAt)
+        val notified = env.notified.size
+        fix(env, 500.0); flow.tick(env.clockImpl.now)
+        assertNull(flow.reminder)
+        fix(env, 250.0); flow.tick(env.clockImpl.now)
+        val r = flow.reminder!!
+        assertEquals("customer", r.kind); assertEquals(c.id, r.customer)
+        assertEquals("Adrese yaklaşık 250 m (kuş uçuşu)", r.estimate)
+        assertEquals(env.clockImpl.now, c.reminderAt)
+        assertEquals(notified + 1, env.notified.size)
+        // Closed by the courier: it stays closed (reminderAt remains), no second notification.
+        flow.dismissReminder(); flow.tick(env.clockImpl.now)
+        assertNull(flow.reminder); assertEquals(notified + 1, env.notified.size)
     }
 }
