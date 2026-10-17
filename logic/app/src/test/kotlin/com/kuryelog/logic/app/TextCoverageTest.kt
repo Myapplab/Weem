@@ -26,7 +26,7 @@ class TextCoverageTest {
 
     @Test fun azerbaijaniLettersAppearWhereTextIsTranslated() {
         // Çeviri unutulmuşsa (tr == az) yalnız bilinçli aynı olanlar geçer: marka/dil adları ve ortak kelimeler.
-        val same = setOf("TAB_SCOOTER", "SETTINGS_TITLE", "SETTINGS_LANGUAGE", "SETTINGS_THEME", "LANG_TR", "LANG_AZ", "THEME_LIGHT", "BACK")
+        val same = setOf("TAB_SCOOTER", "SETTINGS_TITLE", "SETTINGS_LANGUAGE", "SETTINGS_THEME", "LANG_TR", "LANG_AZ", "THEME_LIGHT", "BACK", "HOME_DELETE")
         val identical = Text.entries.filter { it.tr == it.az }.map { it.name }.toSet()
         assertEquals(emptySet<String>(), identical - same)
     }

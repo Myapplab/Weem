@@ -9,7 +9,7 @@ import org.junit.Test
  * change (HomeShiftK38Test). Outside a shift the watcher asks for GPS fixes only after leaving home is likely
  * ([HomeWatchPlan]), so a phone lying at home does not keep its GPS on. Synthetic positions north of a made-up home.
  */
-/* WEEM: `watcherAndSettingsFollowTheRule` (Rawstats kaynak taraması) WEEM ev izleyicisi yazılınca A2.4'te eklenir (CORE.md 6.1). */
+/* WEEM: `watcherAndSettingsFollowTheRule` WEEM'in Android izleyicisini tarar; ayar metninin sayıları logic/app `HomeTextsTest`'te (CORE.md 6.1). */
 class HomeShiftE6Test {
     private val homeLat = 40.4093
     private val homeLon = 49.8671
@@ -103,5 +103,16 @@ class HomeShiftE6Test {
         assertEquals(HomeWatchPlan.Mode.HIGH, q.onFix(400.0, 40.0, 12.0 / 3.6, 6 * min))
         // Unknown accuracy says nothing about leaving.
         assertEquals(HomeWatchPlan.Mode.LOW, HomeWatchPlan().onFix(500.0, null, null, 0))
+    }
+
+    @Test fun watcherAndSettingsFollowTheRule() {
+        val watch = RepoSource.text("core/src/main/kotlin/com/kuryelog/app/core/HomeWatch.kt")
+        assertTrue(watch.contains("HomeWatchCore("))
+        assertTrue(RepoSource.text("logic/core/src/main/kotlin/com/kuryelog/logic/core/HomeWatchCore.kt").contains("private val plan = HomeWatchPlan()"))
+        assertTrue(watch.contains("LocationManager.GPS_PROVIDER, HomeWatchPlan.HIGH_INTERVAL_MS"))
+        assertTrue(watch.contains("if (loc.hasSpeed()) loc.speed.toDouble() else null"))
+        val ui = RepoSource.text("app/src/main/kotlin/com/kuryelog/app/HomeScreen.kt")
+        assertTrue(ui.contains("HomeTexts.rule(lang)"))
+        assertFalse(ui.contains("200 m"))
     }
 }

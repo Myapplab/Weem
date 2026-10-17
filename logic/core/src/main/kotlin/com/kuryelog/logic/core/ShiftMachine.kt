@@ -17,6 +17,8 @@ class ShiftMachine(
     private val importing: () -> Boolean = { false },
     private val lang: () -> Lang = { Lang.TR },
     distance: (GpsFix, GpsFix) -> Double = GpsFix::haversineM,
+    /** D8 birikimi süreç boyunca (Rawstats `Store.distanceM`): servis yeniden yaratılsa da aynı süreçte kalır. */
+    val track: GpsTrack = GpsTrack(distance),
 ) {
     /** Android'in yaptıkları. Hata fırlatabilecekler belirtilmiş; gerisi fırlatmamalı (fırlatırsa makine kaydeder ve sürer). */
     interface Platform {
@@ -58,7 +60,6 @@ class ShiftMachine(
 
     enum class StartResult { STICKY, NOT_STICKY }
 
-    val track = GpsTrack(distance)
     private var lastSave = 0L
 
     fun shiftOn(): Boolean = KuryelogPrefs.shiftOn(prefs)

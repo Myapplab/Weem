@@ -23,7 +23,7 @@ class CoreTextTest {
         File(RepoSource.root, "core/src/main").walkTopDown().filter { it.extension == "kt" }.forEach { file ->
             file.readLines().forEachIndexed { i, line ->
                 val code = line.substringBefore("//").trimStart()
-                if (code.startsWith("*")) return@forEachIndexed
+                if (code.startsWith("*") || code.startsWith("/*")) return@forEachIndexed
                 for (m in literal.findAll(code)) if (localLetters.containsMatchIn(m.groupValues[1])) missing += "${file.name}:${i + 1}: ${m.groupValues[1]}"
             }
         }

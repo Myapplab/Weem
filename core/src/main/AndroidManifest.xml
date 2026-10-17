@@ -1,2 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Vardiya GPS'i, ev izleyici ve ev seçimi (uygulama manifestinde de var; birleşince aynı). -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <application>
+        <!-- G1 vardiya servisi (CORE.md 1.2; RS GpsService): ad serbest, tür location. -->
+        <service
+            android:name="com.kuryelog.app.core.ShiftService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+    </application>
+</manifest>

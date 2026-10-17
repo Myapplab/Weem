@@ -79,10 +79,11 @@ fun WeemApp(
             crash?.let { j -> CrashCard(j, lang) { CrashLog.hide(ctx, j); crash = null } }
             holder.SaveableStateProvider(selected.key) {
                 GuardedPage(selected.key, lang, build = {}) {
-                    if (selected == Tab.MORE) {
-                        MoreScreen(lang, langSetting, theme, versionName, onLangSetting, onTheme)
-                    } else {
-                        PlaceholderScreen(selected, lang)
+                    when (selected) {
+                        Tab.MORE -> MoreScreen(lang, langSetting, theme, versionName, onLangSetting, onTheme)
+                        // G1: vardiya düğmesi açılış sekmesinde (harita A6'da gelir).
+                        Tab.MAP -> Column { ShiftCard(lang); PlaceholderScreen(selected, lang) }
+                        else -> PlaceholderScreen(selected, lang)
                     }
                 }
             }
@@ -120,13 +121,21 @@ private fun MoreScreen(
     onTheme: (ThemeMode) -> Unit,
 ) {
     var records by rememberSaveable { mutableStateOf(false) }
+    var home by rememberSaveable { mutableStateOf(false) }
     if (records) {
         RecordsScreen(lang) { records = false }
+        return
+    }
+    if (home) {
+        HomeScreen(lang) { home = false }
         return
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Text(Str.SETTINGS_TITLE.get(lang), style = MaterialTheme.typography.headlineMedium)
 
+        Section(Str.HOME_TITLE.get(lang)) {
+            TextButton(onClick = { home = true }) { Text(Str.HOME_OPEN.get(lang)) }
+        }
         Section(Str.RECORDS_TITLE.get(lang)) {
             TextButton(onClick = { records = true }) { Text(Str.RECORDS_OPEN.get(lang)) }
         }

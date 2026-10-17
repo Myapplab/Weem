@@ -47,6 +47,41 @@ enum class Text(override val tr: String, override val az: String) : Bilingual {
     RECORDS_DAY("%d dosya · %s", "%d fayl · %s"),
     RECORDS_ARCHIVED("Arşivde", "Arxivdə"),
     BACK("Geri", "Geri"),
+    SAVE("Kaydet", "Yadda saxla"),
+    CANCEL("İptal", "Ləğv et"),
+
+    // G1 vardiya kartı (CORE.md 1.2; RS `I18n` shift_start/shift_stop).
+    SHIFT_START("▶  Vardiyayı BAŞLAT", "▶  Növbəni BAŞLAT"),
+    SHIFT_STOP("■  Vardiyayı BİTİR", "■  Növbəni BİTİR"),
+    SHIFT_ON("Vardiya açık · başlangıç %s", "Növbə açıqdır · başlanğıc %s"),
+    SHIFT_OFF("Vardiya kapalı", "Növbə bağlıdır"),
+    SHIFT_INTERRUPTED("GPS kaydı durdu; sürdürmek için başlat düğmesine dokun.", "GPS qeydi dayandı; davam etmək üçün başlat düyməsinə toxun."),
+    SHIFT_NEEDS_LOCATION("Vardiya kaydı için konum izni gerekli.", "Növbə qeydi üçün məkan icazəsi lazımdır."),
+
+    // G2 ev konumu (CORE.md 2.2; RS ev ekranı metinleri).
+    HOME_TITLE("Ev konumu", "Ev məkanı"),
+    HOME_OPEN("Ev konumu ve otomatik vardiya", "Ev məkanı və avtomatik növbə"),
+    HOME_SAVED("Kayıtlı ev", "Saxlanılmış ev"),
+    HOME_NONE("Ev konumu seçilmedi", "Ev məkanı seçilməyib"),
+    HOME_UPDATED("Son güncelleme: %s", "Son yenilənmə: %s"),
+    HOME_UNKNOWN("bilinmiyor", "bilinmir"),
+    HOME_EDIT("Düzenle", "Düzəliş et"),
+    HOME_DELETE("Sil", "Sil"),
+    HOME_DELETE_ASK("Ev konumunu sil?", "Ev məkanını sil?"),
+    HOME_PICK("Ev konumunu seç", "Ev məkanını seç"),
+    HOME_USE_CURRENT("Şu anki konumumu kullan", "Hazırkı məkanımı istifadə et"),
+    HOME_MEASURING("%d saniye ölçülüyor…", "%d saniyə ölçülür…"),
+    HOME_ACCURACY("Doğruluk: ±%s m", "Dəqiqlik: ±%s m"),
+    HOME_DRAFT("Seçilen konum · taslak", "Seçilmiş məkan · qaralama"),
+    HOME_WARN("Doğruluk %d m'den kötü; daha açık bir yerde yeniden ölçebilirsin.", "Dəqiqlik %d m-dən pisdir; daha açıq yerdə yenidən ölçə bilərsən."),
+    HOME_NO_FIX("Güncel konum alınamadı; dışarıda tekrar dene.", "Cari məkan alınmadı; çöldə yenidən cəhd et."),
+    HOME_NO_PROVIDER("Konumu açıp tekrar dene.", "Məkanı açıb yenidən cəhd et."),
+    HOME_BACKGROUND("Otomatik vardiya için konum iznini \"Her zaman izin ver\" yap.", "Avtomatik növbə üçün məkan icazəsini \"Həmişə icazə ver\" et."),
+    HOME_BACKGROUND_BUTTON("İzni aç", "İcazəni aç"),
+    HOME_RULE(
+        "Ev ayarlıysa: evden kuş uçuşu %d m uzaklaşıp GPS hızı en az %d km/s olunca (art arda iki ölçüm, doğruluk ≤%d m) vardiya kendiliğinden başlar; eve (%d m) dönüp %d saniye yerinde kalınca biter (açık sipariş varken bitmez). Elle başlat/bitir her zaman çalışır. Ev konumu yalnız bu telefonun ayarlarında saklanır; kayıtlara ve dışa aktarmaya yazılmaz.",
+        "Ev təyin olunubsa: evdən düz xətt %d m uzaqlaşıb GPS sürəti ən azı %d km/s olanda (ardıcıl iki ölçmə, dəqiqlik ≤%d m) növbə özü başlayır; evə (%d m) qayıdıb %d saniyə yerində qalanda bitir (açıq sifariş varkən bitmir). Əl ilə başlat/bitir həmişə işləyir. Ev məkanı yalnız bu telefonun ayarlarında saxlanılır; qeydlərə və ixraca yazılmır.",
+    ),
 }
 
 val Tab.label: Text
