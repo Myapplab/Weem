@@ -44,7 +44,9 @@ fi
 
 # 4) Saf Kotlin mantığın bağımlılıklarını önceden indir (Android'siz build: logic/)
 if [ -x ./gradlew ] && [ -f logic/settings.gradle.kts ]; then
-  if timeout 600 ./gradlew -p logic --no-daemon -q testClasses >/dev/null 2>&1; then
+  # Maven Central proxy üstünden ara sıra 429 verir: tek işçiyle, bir kez yeniden dene.
+  warm() { timeout 600 ./gradlew -p logic --no-daemon -q --max-workers=1 testClasses >/dev/null 2>&1; }
+  if warm || { sleep 10; warm; }; then
     echo "logic/: bağımlılıklar hazır, derleniyor"
   else
     echo "logic/: hazırlık başarısız; ilk iş './gradlew -p logic test' ile bak"
