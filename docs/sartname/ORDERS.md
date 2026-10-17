@@ -562,3 +562,46 @@ Her olay için sırayla:
 - Rawstats: YolGo'nun cihaz içi hava akışı (`content://az.duzyol.app.weather/weather/current`, tek satır `json`; `schemaVersion` 1, `source` `yolgo_open_meteo`, `fetched_at`, `temp_c, feels_c, rain_mm, rain_pct, wind_kmh, gust_kmh, code`), en çok 2 dk'da bir arka planda okunan önbellek; teklif anında önbellekteki değer ≤ `MAX_AGE_MS` (90 dk) ise teklife yazılır, değilse yazılmaz ("gözlenmedi"; asla eski değer).
 - **WEEM:** kaynak `WeatherPort.current()` (≤ 90 dk taze `WeatherNow`, Y10 `:map`; A6'ya kadar `NONE` → null). Teklife yazılan alanlar **aynı**: `weather_source`, `weather_fetched_at`, `weather_temp_c`, `weather_feels_c`, `weather_rain_mm`, `weather_rain_pct`, `weather_wind_kmh`, `weather_gust_kmh`, `weather_code` (null'lar `JSONObject.NULL`); `weather_source` değeri **`yolgo_open_meteo` korunur** (kayıt değeri: eski ve yeni kayıtlar aynı okunur, `fromRecord` yalnız bunu tanır, analiz araçları ve `EnergySegments` bunu bekler; kaynak yine Open-Meteo, WEEM'in YolGo kısmı çeker). Önbellek ve içerik sağlayıcı okuyucusu yazılmaz.
 - Kartta: "Hava (teklif anı)": sıcaklık, his, yağış %, yağış mm, rüzgâr km/s, hamle; WMO kodu grubu (`kind`: ≥ 95 gök gürültülü, 71–77/85/86 karlı, ≥ 51 yağmurlu, 45/48 sisli, ≥ 2 bulutlu, diğer açık + AZ); yoksa "yok (son 90 dk'da hava bilgisi gelmedi)".
+
+## 13. Arayüzler ve bağlantılar (plan 4.3–4.4; A2.5 `Ports.kt`)
+
+### 13.1 `:capture` → `:orders`
+
+- `CaptureSink` (`CAPTURE.md` 7.1): `onScreen` → 4.3, `onClick` → 4.13/3.9, `onNotification` → 13.6, `onNavigation` → navigasyon özeti (`CAPTURE.md` 4.2), `awaitingPhone`/`onDialer` → 4.11. `CaptureHost` → hatırlatıcı ve rozet pencereleri (Bölüm 5–6), tik (4.6).
+- Gözlem tipleri (`CourierObservation`, `ScreenStage`, `DeliveryDetails`, `BoostSlot`) ve yardımcılar (`NoteFields`, `NameMatch`, `OwnLines`, `Dialer`, `CourierParser.norm/isAccept/isDecline/isCollect/isDeliver/isCall/isArrive`, `CourierParser.WOLT`) `:capture`'tan.
+
+### 13.2 `:orders` → başkaları: `OrderEvents` (üretici `:orders`)
+
+- **`offers: StateFlow<List<OfferSummary>>`** — Rawstats feed v2 tekliflerinin karşılığı (RS `OfferFeed.kt:70-116`, `EconomicsLogs.kt:75-89, 140-153`): çekirdek çalışıyorken, `now − lastSeenAt ≤ MAX_UNSEEN_MS` (90 sn; K21: hayalet teklif yok) ve son görülüş süreç başlangıcından sonra olan teklifler, en çok 8, platformu bilinen (`wolt`/`bolt`). Alanlar: `offerKey` = teklif id; `platform`; `firstSeenAtMs`; `lastSeenAtMs` = max(son, ilk); `visibleNow` = son görülüş ≤ 5 sn önce; `expiresAtMs` = ilk görülüş + belgeli pencere (60 sn; doğrulanmamış üst sınır) ya da null; `displayedFeeAzn` = ücret; `platformDistanceKm` = km; `restaurant` (≤ 200); `dropoffKnown` = müşteri adresi okundu (Bolt kartı göstermez, K8); `dropoffAddress` = müşteri adres metni (≤ 1 000; S5: Receiver'a gider); `shown` = {`minLo, minHi, km, stops, readyInMin, approachMin, deliveryMin`, `totalMin` (Bolt'ta `minLo = minHi` ise o), `multiplier` (tek çarpan), `boostPct` (= aktif `bonusPct`)}; `pickupZone`/`dropoffZone`, `score`, `netAzn` → `OfferAnnotator` (`:economics`; yoksa `unknown`/null); `dropoffLat/Lon` → çözülmüşse (teklif anında yok; null). Değişince (veri sınıfı eşitliği) yayınlanır: her kare, dokunuş ve tikten sonra.
+- **`stages: StateFlow<TripStages>`** (E8; RS `TripStages.kt`): en çok 3 açık (kabul sırasına göre son 3) + son 10 dk'da biten en çok 3 sipariş; her biri `tripId, platformPackage, active, stage` (açıkken `to_pickup | at_pickup | to_dropoff | at_dropoff`, `Platforms.stage(faz)`), `outcome` (`delivered`, `delivered_unverified` (çıkarım), `cancelled` (hiç alış yok), `unconfirmed`), `endedAtMs` (kaydın kendi anı, yoksa kapanış olayının anı), `events[{stage, atMs, pickup?, source? gps|screen}]` — kabul (`to_pickup`, alış 0), her alışın varışı (`at_pickup`) ve alınışı (sonraki alışa `to_pickup` ya da `to_dropoff`), müşteriler teslim sırasıyla (`at_dropoff` varış, sonraki müşteriye `to_dropoff`); zamanı görülmemiş aşama yazılmaz. **Müşteri verisi yok.** WEEM tipi `logic/core` `TripStages` (A2.5).
+- **`day: StateFlow<DaySummary?>`** (yeni; plan 4.4): bugünün `OrderHistory.Day`'inden platform başına `orders`, `grossAzn`, `netAzn`, `onlineMin` (bugünkü oturumlar) ve `cashAzn` (`CashPayment.dayTotal`); bir sipariş bitince, en çok dakikada bir.
+- **`busy()`**: aktif sipariş var — `:orders` bunu `stages` akışından değil doğrudan çekirdekten verir (akışın gecikmesi ev kuralını etkilemesin; RS `hasOpenOrder`).
+- Tüketiciler: `:map` (görev kartları Y20, veri seti Y19, istatistik Y17), `:economics` (R4, N4), `:link` (Receiver'a, plan 4.5). Rawstats'ın içerik sağlayıcıları (feed v1/v2, `stages`, `changedAtMs`, değişim duyurusu `FeedChanges`/`FeedNotify`, imza kapısı) **yazılmaz** (S7).
+
+### 13.3 `:economics` ↔ `:orders`
+
+- `:economics` → `:orders` bağımlıdır (kayıt tipleri). `:orders` iki arayüz tanımlar, `:economics` uygular, `:app` bağlar: **`OrderObserver`** (4.14: ekonomi kayıtlarının bütün kancaları) ve **`OfferAnnotator`** (teklif bölgeleri, puan, net). İkisinin `NONE`'u veri uydurmaz.
+- `:orders`'ın bugün `:economics`'ten aldığı saf yardımcılar `:orders`'a taşınır, `:economics` onları buradan kullanır: `EconomicsLogs.platformOf` → `Platforms.of(pkg)` (`wolt` / `bolt`(+`mtakso`) / null), `EconomicsLogs.stage` → `Platforms.stage(faz)`, `EconomicsV2.PRIORS`'tan iki değer → `OfferWindows` (2.13). `OfferGeo` (bölge) ve `courierState` `:economics`'te kalır.
+- E4 teklif puanı ekranı ("Teklif puanı" seçicisi, `rateOffer`, puan/değerlendirme dosyaları) `:economics`'indir (A4.1); Siparişler sekmesindeki yeri A3.8'de boş bırakılır (sekme seçicisi A4.1'de eklenir).
+
+### 13.4 `:scooter` (`ScooterBridge`, A5)
+
+- `orderAccepted(tripId, an)` kabulde, `orderDone(tripId, an)` siparişin sonunda (4.4); `batteryPct()` teklif anında (≤ 15 sn taze); enerji adımları `core.addEnergy` (scooter'ın 1 Hz örneği; Rawstats `ScooterLink` → `OrderTracker.scooterEnergy`) — A5.3 bağlar. Sipariş başına enerji satırları (`economics-energy.jsonl`, R14) `:economics`'in `OrderObserver`'ındadır. A5'e kadar `NONE`: pil ve enerji yok.
+
+### 13.5 `:map` (`NavPort`, `WeatherPort`)
+
+- `NavPort.route` → 4.9 (YolGo nav yükünün yerine). `NavPort.open(NavTarget)` `:orders`'tan çağrılmaz (Rawstats'ta sipariş tarafı navigasyon açmıyordu; görev kartındaki "Rota Oluştur" `:map`'in kendisi, S9).
+- `WeatherPort.current()` → Bölüm 12.
+
+### 13.6 `:core` (`NotifyPort`, `ShiftListeners`, depolama)
+
+- Bildirimler `NotifyPort.post(Notify(…))` ile: 12 (`DELIVERY_NOTE`), 4901 (`POCKET_CASH`), `cashTip(tripId)` (10000–14095). Kanal kimlikleri aynı (`delivery_notes`, `pocket_cash`, `cash_tips`).
+- Vardiya kancaları `ShiftListeners` (4.2, kayıt sırası dahil).
+- **Bildirim ipucu** (`OrderTracker.notification`, RS `:501-509`): kayıt izni; `events.jsonl` `notification_hint {pkg, text (redact), observed_at}`; platformun son bildirim anı (ileri; D6 `notifiedAt` için); `core.readinessNotice` (3.11). Bildirim kabul, ücret ya da ret kanıtı **değildir**.
+- Depolama: gün satırları `LogStore.append` (A2.3), `courier.db` `CourierDb` (A2.3; şema 1), tercihler `kuryelog`.
+
+### 13.7 R19'un kalanı (izinler ve pil; RS `MainActivity.kt:1186-1210`, `AutoStartNotice.kt`)
+
+- **İzinler kartı** (`:app`, G5 ilk açılış ve Daha fazla): erişilebilirlik (ayar `ENABLED_ACCESSIBILITY_SERVICES`'te `"<paket>/"`), bildirim dinleyici (`enabled_notification_listeners`'ta `"<paket>/"`; "Bildirim okuma izni, navigasyon bildirimindeki kalan rota mesafesini okumak için de kullanılır (kaydedilmez)."), konum, arka plan konumu (ev ayarlıysa "her zaman" izni açıklaması), Android 12+'da scooter seçiliyse Bluetooth; eksik varsa başlık kırmızı "! n/m" ve kart açık gelir. Pil optimizasyonu yalnız bilgi satırı ("isteğe bağlı"; `ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS`), ayrı bildirim yok; "Kısıtlı ayarlar" açılır bölümü (uygulama bilgisi, tüm uygulamalar). Metin anahtarları `battery_free`, `battery_restricted`, `battery_help`, `restricted_title`, `restricted_help`.
+- Otomatik başlatma bildirimleri: 5101 (ev) ve 5103 (vardiya kesildi) A2.4'te yazıldı; 5102 (scooter) A5. `AutoStartNoticeTest` (1) A2.4'te karşılandıysa çevrilmez, karşılanmadıysa `:core`'a (Bölüm 15).
+- E7 ekran okuma uyarısı: `CAPTURE.md` 5.
