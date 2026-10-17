@@ -2,6 +2,13 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-17 — A3.6 `:orders` para ve platform (Claude Sonnet · high; dal `ccr-e90bca59-fxabvl`, `9f892d2`)
+- Yapılan: `PlatformTotals`, `CashPending`, `PocketCash`, `RecordPages`, `RestaurantBubble`, `CustomerBubble`, `CustomerCard` Rawstats'tan satır satır (`CustomerCard` `RouteStatus`, "(WEEM)"; `PlatformTotals` "WEEM:"); `OrderFlow` bağlandı: resmî toplamlar, CASH PENDING/offload, `cashPendingHooks` (cep nakdi + başı/sonu satırı), E14/E16 açılışı, restoran adres çözümü, okuyucular; `Env.askPocketCash`/`notifyReminder`. Farklar `ORDERS.md` 16.2.
+- Doğrulama: `logic/orders` 387/387 yeşil (47 A3.6 testi + `OrderFlowTest` +4: saha ekranlarından toplamlar/CASH PENDING, kancalar, E14, E16); `logic/capture` 128/129 (kalan `ScreenReadingE7Test` = A3.7), core yeşil. CI yok (`[skip ci]`), telefonda denenmedi.
+- **`main`'e birleşmedi** (E7 testi kırmızı); `main`'e yalnız `WEEM_ISLER.md` + `WEEM_PLANI.md` + bu not.
+- Karar: AZ hava metni "hava məlumatı gəlmədi" kullanıcıca onaylandı → plan S18.
+- Açık kalan: A3.7 (Opus · high): Android katmanı (servisler, OCR, rozet/balon/kart pencereleri, `PocketCashPrompt`, bildirim 12, uyarılar, tarama testleri, `ScreenReadingE7Test`). Konum doğruluğu: `LogStore.Loc.accM <= 0` "bilinmiyor" sayılıyor (ORDERS.md 16.2).
+
 ## 2026-10-17 — A3.5 `:orders` çekirdek (Claude Opus · high; dal `ccr-e90bca59-fxabvl`, `c192b40`)
 - Yapılan: `DeliveryCore` + yardımcılar (Readiness, DeliveryDeadline, ArrivalDistance, VenueArrival, LegacyRecords, RecordJson, PlatformHistory, CashPayment/CashTips, OnlineSessions, OfferWeather, BoostLog, OrderHistory) satır satır `logic/orders`'a; uyarlananlar `OfferWindows`, `Platforms`, `OverlayText` (`OwnLines` sabitleri), `OrderStages`, `NavBinding`, `OfferSummaries`, `OfferWeather.from(WeatherNow)`; `OrderTracker` → saf `OrderFlow` (`Env`: LogStore, prefs, `CourierRecords`, Clock, ScooterBridge, WeatherPort, `OrderObserver`), `CaptureSink` + `ShiftMachine.Hooks` uygular. Farklar `ORDERS.md` 16.1.
 - Doğrulama: `logic/orders` 383 test, 336 yeşil (A3.2 sipariş testleri, `SahaTekrarTest` 10/10, yeni `OrderFlowTest` 7, `OverlayTextOwnLinesTest` 2); kalan 47 = A3.6 iskeletleri (PlatformTotals 19, CashReconcile 5, CashPending 3, PocketCash 3, RecordPages 2, RestaurantBubble 4, CustomerBubble 6, CustomerCard 5). capture 128/129, core 216 yeşil; kök `:orders`/`:capture` derlenir. CI yok (`[skip ci]`), telefonda denenmedi.

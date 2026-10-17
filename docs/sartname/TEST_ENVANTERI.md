@@ -345,3 +345,8 @@ Beklentiler Rawstats ile birebir; elle değişenler yalnız aşağıdakiler (`gi
 - `logic/orders`: 383 test, **336 yeşil** (A3.2/A3.3'ten 374 + A3.5'te yazılan 9: `OverlayTextOwnLinesTest` 2, `OrderFlowTest` 7). A3.2 sipariş akışı testleri ve `SahaTekrarTest` (10/10) yeşil.
 - Kırmızı kalan 47, hepsi A3.6 iskeleti (`TODO("A3.6")`): `PlatformTotalsF82Test` 6, `F83Test` 4, `F84Test` 7, `F85Test` 2, `CashReconcileM17Test` 5, `CashPendingM17Test` 3, `PocketCashM15Test` 3, `RecordPagesTest` 2, `RestaurantBubbleE14Test` 4, `CustomerBubbleF72Test` 6, `CustomerCardE16Test` 5.
 - Kod: Rawstats @ `6388c04`'ten satır satır; farklar `ORDERS.md` 16.1. `logic/capture` 128/129 (kalan A3.7), `logic/core` 216 yeşil; kök `:orders`/`:capture` `compileDebugKotlin` yeşil.
+
+## A3.6 kod durumu (17 Ekim 2026)
+
+- `logic/orders`: 387 test, **hepsi yeşil** (A3.5'in 47 kırmızısı A3.6 gövdeleriyle yeşile döndü + `OrderFlowTest` +4: resmî toplamlar/CASH PENDING, vardiya kancaları, E14, E16).
+- Kod: Rawstats @ `6388c04`'ten satır satır; farklar `ORDERS.md` 16.2. `logic/capture`'ta tek kırmızı `ScreenReadingE7Test.shiftServiceWarnsAndTheHomeShowsIt` (A3.7).

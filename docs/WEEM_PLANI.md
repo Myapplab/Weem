@@ -200,6 +200,7 @@ Toplam 48 oturumluk görev (`docs/WEEM_ISLER.md`; aksamalarla kabaca 50–55 otu
 | S12 Uzaktan kullanım | İki yönlü ve tam: yanındaki telefondaki (Pixel ↔ Poco) her şey yönetilebilir — 17 Ekim |
 | S13 Usage | Ultracode yalnız gerekli yerlerde (Aşama 3 ve 6 şartnameleri, son büyük denetim); paralel ajan en çok 2–3, çıktı bölüm bölüm repoya + push; kalite en yüksek (kural `AGENTS.md`) — 17 Ekim |
 | S14 A3.1 çalışma biçimi | A3.1 (Aşama 3 şartnamesi) tek ajanla, **Opus · max**; ultracode ve paralel ajan yok. S13'teki ultracode listesinden A3.1 çıkar (ultracode artık yalnız A6.1 ve A10.3). Şartname yine bölüm bölüm yazılır, her bölümde commit + push — 17 Ekim |
+| S18 AZ hava metni | Teklif havası gelmediğinde AZ metni "hava məlumatı gəlmədi" (TR "hava bilgisi gelmedi"; `BoostTempE3Test`, `OrderHistory.boostTempLine`) — 17 Ekim, A3.6 oturumunda kullanıcı onayı |
 
 ## 9. İlerleme
 
@@ -219,5 +220,6 @@ Toplam 48 oturumluk görev (`docs/WEEM_ISLER.md`; aksamalarla kabaca 50–55 otu
 | 2026-10-17 | A2.1 Aşama 2 şartnamesi `docs/sartname/CORE.md`: tek vardiya kuralı (Rawstats `HomeShift`), YolGo farkları senaryo senaryo, ev, `NotificationIds` (5103 ve bahşiş çakışması çözümü), çökme kaydı, depolama, test eşlemesi; veri sözleşmesi tercih listesi tamamlandı, test envanteri hedefleri kesinleşti (1.607 çevrilir) | Claude | yalnız belge |
 | 2026-10-17 | A2.3–A2.5: depolama ve R20 (`LogStore`, `LogImporter`, `courier.db` şeması, çökme kartı, sekme hata sınırı, Kayıtlar/ZIP içe aktarma), tek vardiya (`ShiftMachine`, `ShiftService`, ev izleyici, `NotificationIds`, vardiya kartı, ev ekranı), modüller arası arayüzler ve mesaj tipleri | Claude | `logic/core` 212 test; kök test+lint+iki APK yerelde yeşil; telefonda denenmedi |
 | 2026-10-17 | A3.1 Aşama 3 şartnamesi `docs/sartname/CAPTURE.md` (ekran/bildirim okuma, ayrıştırıcı, OCR temposu, R16, E7 uyarısı, ağ yasağı, ICU ve JDK 21 sınır farkı, test eşlemesi) ve `ORDERS.md` (veri modeli, teklif yaşam döngüsü, `DeliveryCore` durum makinesinin tamamı, sipariş akışı ve `:economics` sınırı, R6–R13, R15, R19, arayüzler, gizlilik, gölge mod kuralları, test eşlemesi); test envanteri hedefleri kesinleşti (1.601 çevrilir) | Claude (Opus · max, tek ajan; S14) | yalnız belge |
+| 2026-10-17 | A3.6 `:orders` para ve platform: `PlatformTotals`, `CashPending`, `PocketCash`, `RecordPages`, `RestaurantBubble`, `CustomerBubble`, `CustomerCard` + `OrderFlow` bağlantıları (`ORDERS.md` 16.2); orders 387/387 yeşil | Claude | dal `ccr-e90bca59-fxabvl`, `main`'e girmedi |
 
 **Sıradaki:** `docs/WEEM_ISLER.md` → "Şu an".
