@@ -2,7 +2,9 @@
 
 **Work Efficient, Earn More** — kurye için tek Android uygulaması: harita ve navigasyon (eski YolGo), Wolt/Bolt sipariş ve kazanç kaydı (eski Rawstats), scooter paneli (eski Sürüş Paneli). Kotlin + Jetpack Compose ile sıfırdan yazılıyor.
 
-**Durum:** plan, şartname ve iş listesi hazır; kod Aşama 1'de (iskelet) başlıyor. Henüz kurulabilir sürüm yok.
+**Durum:** plan, şartname ve iş listesi hazır; Aşama 1 (iskelet) sürüyor. Henüz kurulabilir sürüm yok.
+
+**Derleme:** saf Kotlin mantık `logic/` ayrı build'de, her ortamda: `./gradlew -p logic test`. Android (`:app` ve modüller) Android SDK ve `dl.google.com` ister: `./gradlew assembleDebug`. Modüller arası izinli bağımlılıklar: `gradle/module-graph.properties`.
 
 | Dosya | Ne için |
 |---|---|

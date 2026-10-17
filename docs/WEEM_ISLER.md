@@ -6,9 +6,9 @@ Kurallar: `AGENTS.md` → "Birden çok Claude hesabı". Durumlar: `bekliyor` · 
 
 ## Şu an
 
-- **Son yapılan:** 17 Ekim — A0.2: açık soruların yanıtı (S1–S13) plan Bölüm 8'de; Y12 WEEM 1.0'a alındı (A6.11); AGENTS.md'ye ultracode/paralel ajan kuralı ve "Devam promptu".
-- **Sıradaki iş:** A1.1 (Gradle iskeleti, `logic/` ayrı build) — Opus · high.
-- **Devam eden (yarım) iş:** A1.1 (dal `ccr-2e70dcaf-vhiw6n`)
+- **Son yapılan:** 17 Ekim — A0.2 (açık soruların yanıtı plan Bölüm 8'de; Y12 1.0'a, A6.11; AGENTS.md'ye paralel ajan kuralı ve "Devam promptu") ve A1.1 (Gradle 9.3.1 / AGP 9.1.0 / Kotlin 2.4.0, `gradle/libs.versions.toml`, `logic/` ayrı build 8 modül + örnek testler, kök Android build `includeBuild("logic")` + 9 boş modül, modül yönü denetimi `gradle/module-graph.properties`).
+- **Sıradaki iş:** A1.2 (kimlik ve imza) — Opus · high. Öneri: A1.2'yi A1.4 (CI) ile aynı oturumda yap; Android katmanı burada derlenmiyor, ilk doğrulama CI'da (tek koşu, Actions dakikası az).
+- **Devam eden (yarım) iş:** yok
 - **Kullanıcıdan beklenen:** K0.1 kodsuz saha denemesi; uygulama simgesi; kalıcı Receiver telefonu (bugün Poco); her hesabın ortam ağ ayarında `dl.google.com` izni (Android'i yerelde derlemek için; nasıl: `AGENTS.md` → "Ortam").
 
 ## Aşama 0 — Planın son hâli
@@ -23,7 +23,7 @@ Kurallar: `AGENTS.md` → "Birden çok Claude hesabı". Durumlar: `bekliyor` · 
 
 | No | İş | Bitti sayılır | Model · effort | Bağımlı | Durum |
 |---|---|---|---|---|---|
-| A1.1 | Gradle iskeleti: wrapper 9.3.1, AGP 9.1.0, Kotlin 2.4.0 (Rawstats ile aynı), sürüm kataloğu. `logic/` ayrı build (Android eklentisi yok; alt projeler `core capture orders economics scooter map link remote`), kök build `includeBuild("logic")`; Android modülleri `:app :core :capture :orders :economics :scooter :map :link :remote` (boş). Oturum başlangıç kancası `logic` önbelleğini ısıtır (zaten yazılı) | Yerelde `./gradlew -p logic test` yeşil (modül başına örnek test); bağımlılık yönü testi (4.2) | Opus · high | A0.1 | sürüyor (17 Ekim 2026) |
+| A1.1 | Gradle iskeleti: wrapper 9.3.1, AGP 9.1.0, Kotlin 2.4.0 (Rawstats ile aynı), sürüm kataloğu. `logic/` ayrı build (Android eklentisi yok; alt projeler `core capture orders economics scooter map link remote`), kök build `includeBuild("logic")`; Android modülleri `:app :core :capture :orders :economics :scooter :map :link :remote` (boş). Oturum başlangıç kancası `logic` önbelleğini ısıtır (zaten yazılı) | Yerelde `./gradlew -p logic test` yeşil (modül başına örnek test); bağımlılık yönü testi (4.2) | Opus · high | A0.1 | bitti (`a1eb8bc`, `6776b9a`; Android katmanı yerelde derlenmedi, ilk derleme A1.4 CI'da) |
 | A1.2 | Kimlik: `applicationId` `com.kuryelog.app`, debug `.dev`; imza = `rawstats` `ci/kuryelog-test.keystore` (alias ve şifre Rawstats `app/build.gradle.kts`'teki gibi); sürüm kodu tek kaynaktan, >33; minSdk 29, target/compile 36; `allowBackup=false` + Rawstats `data_extraction_rules.xml`; manifestte `com.kuryelog.app.WatchService` ve `NotifService` (boş gövde), izinler (`VERI_SOZLESMESI` Bölüm 3) | CI'da `aapt2 dump badging`: paket, sürüm, imza SHA-256 Rawstats ile aynı | Opus · high | A1.1 | bekliyor |
 | A1.3 | Kabuk: tek Activity + Compose alt menü (Harita · Siparişler · Scooter · Uzaktan · Daha fazla), sekme durumu korunur, açılış Harita; gece/gündüz teması (renk karşıtlığı testi, `RawPaletteContrastTest` karşılığı); dil TR/AZ (G3) ve çeviri kapsam testi (`I18nCoverageTest` karşılığı) | Kabuk testleri yeşil; `.dev` APK derlenir | Sonnet · high | A1.1 | bekliyor |
 | A1.4 | CI: `ci.yml` (PR: `logic` testleri + Android birim testleri + lint + `assembleDebug`; Gradle önbelleği; `.md` hariç) ve `apk.yml` (`weem-v*` etiketi ya da elle → Release) | Bir yeşil koşu | Sonnet · high | A1.2 | bekliyor |

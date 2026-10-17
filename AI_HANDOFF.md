@@ -2,6 +2,13 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-17 — A0.2 açık soruların yanıtı + A1.1 Gradle iskeleti (Claude; dal `ccr-2e70dcaf-vhiw6n`, `main`'e birleşti)
+- Yapılan: S1–S13 kararları plan Bölüm 8'e; plan, iş listesi, `sartname/` ve `BEKLEYEN_OZELLIKLER` güncellendi (Y12 1.0'da → A6.11; YolGo'ya ek yok; MapLibre; hava her telefonda; scooter yalnız Receiver'a; net/hedef tanımı). `AGENTS.md`: paralel ajan en çok 2–3 + bölüm bölüm push, "Devam promptu", "Ortam" (`dl.google.com`).
+- A1.1: wrapper 9.3.1 (Rawstats'tan), `gradle/libs.versions.toml` (AGP 9.1.0, Kotlin 2.4.0, JUnit 4.13.2), `logic/` (8 modül, paket `com.kuryelog.logic.*`, grup `com.kuryelog.logic`, JVM 17), kök build `includeBuild("logic")` + `:app` ve 8 ince Android modülü (her biri `com.kuryelog.logic:<ad>`'a bağlı). Modül yönü: `gradle/module-graph.properties` + `gradle/module-graph.gradle.kts` (iki build ortak; `test`/`check` öncesi `checkModuleGraph`).
+- Doğrulama: `./gradlew -p logic test` yeşil (8 test + grafik denetimi); yasak bağımlılık ve döngü denemede yakalandı; composite bağlama boş bir kopya projede denendi. Android katmanı derlenmedi (`dl.google.com` kapalı); CI yok.
+- Not: Maven Central proxy üstünden ara sıra 429 veriyor → `--max-workers=1` ya da yeniden dene (kanca bunu yapıyor).
+- Açık kalan: A1.2 + A1.4 (CI ilk derleme; kök Android betikleri ilk kez orada doğrulanır). `app` sürüm kodu geçici 34.
+
 ## 2026-10-17 — A0.1 planın son hâli: şartname + mimari + iş listesi (Claude; dal `claude/weem-plan-specification-dq4yxx`)
 - Yapılan: `docs/sartname/OZELLIK_HARITASI.md` (63 özellik → eski kod, test, veri, bağımlılık, modül/aşama), `VERI_SOZLESMESI.md` (bileşen, izin, tercih, veritabanı, dosya, Keystore, bildirim no; 5103 ve 4000–8095 çakışması), `TEST_ENVANTERI.md` (1.761 test/denetim, 1.582'si çevrilir; betikle sayıldı), `bulgular/` (ham). Plan 4.1–4.7: `logic/` ayrı build, modül sınırları, `:core` arayüzleri, 2 telefon mesajları alan alan. İş listesi 47 oturumluk göreve bölündü; Açık sorular S1–S13.
 - Önemli bulgular: YolGo'da ayar/sokak/ışık/POI için dışa aktarma yok (S1); Y12 rota maliyetini etkiliyor (S3); Rawstats'ta INTERNET izni kaldırılmış (WEEM internetli, `:capture` ağsız).
