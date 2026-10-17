@@ -156,7 +156,6 @@ class ShiftMachine(
         if (!track.fresh(f, clock.monoMs())) return
         val derived = track.derivedSpeed(f)
         val speed = if (f.hasSpeed) f.speed.toDouble() else derived
-        // A3: ekran okuma hareket kapısı (MotionGate) max(hız, türetilmiş) ile beslenir.
         track.seen(f)
         log.lastLocation = LogStore.Loc(f.lat, f.lon, f.accuracy.toDouble(), f.timeMs)
         // K38: eve dönüş vardiyayı bitirir (yarıçap dışına bir kez çıktıktan sonra); bitiş fix'i gps.csv'ye yazılmaz.

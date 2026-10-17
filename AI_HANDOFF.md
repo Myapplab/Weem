@@ -2,6 +2,13 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-17 — A3.4 `:capture` kodu (Claude Opus · high; dal `ccr-e90bca59-fxabvl`, `aea4f62`)
+- Yapılan: Rawstats ayrıştırıcısı + yardımcılar satır satır `logic/capture`'a; saf yeni parçalar `CaptureText`, `CaptureTiming`, `OcrAcceptance`, `NotificationDedup`, `TargetApps`, `CaptureRows`, `CaptureSink`; JDK 21/ICU `\b` → açık Unicode sınırı, norm'da NBSP (`CAPTURE.md` 7.5); ağ yasağı: `NoNetworkTest`, `:capture:verifyRuntimeAllowlist` (`capture/runtime-allowlist.txt`, `preBuild`), ML Kit 16.0.1.
+- S17: `transport-backend-cct` dışlanamaz (ML Kit `CCTDestination.INSTANCE`'a doğrudan bakar → `NoClassDefFoundError`); onun yerine `TransportBackendDiscovery` meta-data'sı `tools:node="remove"` → arka uç yok, olaylar gönderilmeden silinir. Birleşik manifestte doğrulandı.
+- Doğrulama: `logic/capture` 129 test, 128 yeşil (kalan `ScreenReadingE7Test.shiftServiceWarnsAndTheHomeShowsIt` = A3.7 Android); `logic/orders` 374 (365 kırmızı); core yeşil; kök `:capture`/`:orders` `compileDebugKotlin` yeşil, `:capture:lintDebug` temiz. CI yok (`[skip ci]`), telefonda denenmedi (OCR ve ağsızlık A3.7).
+- **`main`'e birleşmedi** (orders kırmızı); `main`'e yalnız `WEEM_ISLER.md` + bu not.
+- Açık kalan: A3.5 (Opus · high) sırada. `ShiftMachine.kt` MotionGate notu silindi. A3.6 sonunda bile birleşme için A3.7'deki E7 testi gerekir (ya da kullanıcı kararı).
+
 ## 2026-10-17 — A3.3 testleri çevir: orders para, platform, rozet, balon, gün sayfası (Claude Sonnet · high; dal `ccr-e90bca59-fxabvl`)
 - Yapılan: 141 Rawstats testi çevrildi — `logic/orders` 135, `logic/capture` 6 (`NoteFieldsF71Test`). Betikler `tools/test-translate/` (`cfg.py` `A33`, `gen_a33.py`, `patch_a33.py`, `fixup_a33.py`). Yeni iskeletler (`TODO`): `PocketCash`, `CashPending`, `PlatformTotals`, `RestaurantBubble`, `CustomerCard`, `CustomerBubble`, `RecordPages` (A3.6), `OfferSummaries.of(active, offers, now, startedAtMs)` (A3.5; `OrderEvents.offers`).
 - Sapmalar (`TEST_ENVANTERI` "A3.3 çeviri durumu"): 20 kaynak taraması yazılmadı (A3.7/A3.8; "yedeğe girer" üçü `:core`); `AnalysisExport` ifadeleri (`kindOf`, `isPanelLine`, `screen`, `missed_by_kuryeplus` dışa aktarımı) A4.3'e; `YolGoNav` → `RouteStatus.fromNavFeed`/`RouteStatus.Route`; "(YolGo)" → "(WEEM)", "Rawstats:" → "WEEM:", "hava bilgisi gelmedi" (AZ "hava məlumatı gəlmədi": ben seçtim, onay bekliyor); `OfferFeedV2Test` 4 test `OfferSummaries`'e, 2 test çevrilmedi (v1 bayt eşitliği, E8 değişim anahtarı).
