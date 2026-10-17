@@ -8,7 +8,7 @@ Kurallar: `AGENTS.md` → "Birden çok Claude hesabı". Durumlar: `bekliyor` · 
 
 - **Son yapılan:** 17 Ekim — A1.3 kabuk bitti, A1.5 kullanıcı onayladı (`.dev` APK yedek telefonda): Aşama 1 tamam.
 - **Sıradaki iş:** A2.1 (Aşama 2 şartnamesi `docs/sartname/CORE.md`) — Opus · high, tek ajan.
-- **Devam eden (yarım) iş:** yok
+- **Devam eden (yarım) iş:** A2.1 — dal `claude/weem-continuation-pmd9q3`; başlandı, `docs/sartname/CORE.md` bölüm bölüm yazılıyor
 - **Kullanıcıdan beklenen:** K0.1 kodsuz saha denemesi; uygulama simgesi; kalıcı Receiver telefonu (bugün Poco); her hesabın ortam ağ ayarında `dl.google.com` izni (Android'i yerelde derlemek için; nasıl: `AGENTS.md` → "Ortam").
 
 ## Aşama 0 — Planın son hâli
@@ -33,7 +33,7 @@ Kurallar: `AGENTS.md` → "Birden çok Claude hesabı". Durumlar: `bekliyor` · 
 
 | No | İş | Bitti sayılır | Model · effort | Bağımlı | Durum |
 |---|---|---|---|---|---|
-| A2.1 | Şartname `docs/sartname/CORE.md`: G1, G2, G4, R20 ve depolama — kaynak `bulgular/R_core_contract.md`, `Y_tracking.md` §G1–G4 + eksikler (Rawstats `Store`, `CourierDb`, `DailyRecords`, `RecordJson`, `HomeShift`, `GpsService`; YolGo `home_day`, `shift_engine`); eşikler ve durum geçişleri kaynak satırıyla; tek vardiya kuralı = bugünkü Rawstats F4.5b (S2, ek GPS önlemi yok), YolGo kuralıyla farklar belgelenir | Belge; tek kural yazılı | Opus · high (tek ajan) | A0.1 | bekliyor |
+| A2.1 | Şartname `docs/sartname/CORE.md`: G1, G2, G4, R20 ve depolama — kaynak `bulgular/R_core_contract.md`, `Y_tracking.md` §G1–G4 + eksikler (Rawstats `Store`, `CourierDb`, `DailyRecords`, `RecordJson`, `HomeShift`, `GpsService`; YolGo `home_day`, `shift_engine`); eşikler ve durum geçişleri kaynak satırıyla; tek vardiya kuralı = bugünkü Rawstats F4.5b (S2, ek GPS önlemi yok), YolGo kuralıyla farklar belgelenir | Belge; tek kural yazılı | Opus · high (tek ajan) | A0.1 | sürüyor (17 Ekim 15:45) |
 | A2.2 | `:core` testlerini çevir: `TEST_ENVANTERI` hedefi `:core` (27 dosya, 172) + uyarlanır `rawstats_shift_end_test`, `rawstats_home_*`, `HomePickContractTest` | Testler derlenir, kırmızı | Sonnet · high | A2.1, A1.1 | bekliyor |
 | A2.3 | Depolama: gün klasörü ve `logNames`, JSONL yazma/okuma, `courier.db` (şema 1), `kuryelog` tercihleri, eski göç işaretleri; çökme kaydı (R20: `crashes.jsonl`, korumalı girişler) | A2.2 depolama ve R20 testleri yeşil | Opus · high | A2.2 | bekliyor |
 | A2.4 | Vardiya / gün / ev tek kural (G1, G2; bitiş bugünkü F4.5b kuralı, S2), saat ve cihaz kimliği, bildirim tablosu (`NotificationIds`, çakışma testi; G4 `NotifyPolicy`) | A2.2 testleri yeşil; 5103 ve 4000–8095 çakışması testle yok | Opus · high | A2.2 | bekliyor |
