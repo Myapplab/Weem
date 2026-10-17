@@ -35,12 +35,27 @@ object KuryelogPrefs {
     /** String: WEEM'in yeni cihaz kimliği (CORE.md 1.10). */
     const val DEVICE_ID = "weem.deviceId"
 
-    /** Göçün okuduğu ve yazdığı tercihler; Android'de `SharedPreferences` bağdaştırıcısı. */
+    /** `kuryelog` tercihleri; Android'de `SharedPreferences` bağdaştırıcısı, testlerde bellekte. */
     interface Values {
         fun getBoolean(key: String, default: Boolean): Boolean
         fun getInt(key: String, default: Int): Int
-        /** Hepsi tek seferde yazılır (`SharedPreferences.Editor.apply`). */
-        fun put(values: Map<String, Any>)
+        fun getLong(key: String, default: Long): Long
+        fun getFloat(key: String, default: Float): Float
+        fun getString(key: String, default: String?): String?
+        /** Hepsi tek seferde yazılır (`SharedPreferences.Editor.apply`); null değer anahtarı siler. */
+        fun put(values: Map<String, Any?>)
+    }
+
+    /** Bellekte (testler ve saf araçlar). */
+    class Memory(val map: MutableMap<String, Any> = mutableMapOf()) : Values {
+        override fun getBoolean(key: String, default: Boolean) = map[key] as? Boolean ?: default
+        override fun getInt(key: String, default: Int) = map[key] as? Int ?: default
+        override fun getLong(key: String, default: Long) = map[key] as? Long ?: default
+        override fun getFloat(key: String, default: Float) = map[key] as? Float ?: default
+        override fun getString(key: String, default: String?) = map[key] as? String ?: default
+        @Synchronized override fun put(values: Map<String, Any?>) {
+            for ((k, v) in values) if (v == null) map.remove(k) else map[k] = v
+        }
     }
 
     /**

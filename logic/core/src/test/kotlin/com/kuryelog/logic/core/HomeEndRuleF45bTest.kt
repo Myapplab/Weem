@@ -8,7 +8,7 @@ import org.junit.Test
  * for at least 30 s. While an order is open the home rule never ends the shift (30 s near a customer next to home would).
  * The start rule (E6) does not change. Synthetic positions north of a made-up home.
  */
-/* WEEM: `serviceTellsTheRuleWhetherAnOrderIsOpen` (kaynak taraması) A2.4'te `ShiftMachine` saf testi olur: `busy` sağlayıcısı ev kuralına geçer (CORE.md 6.1). */
+/* WEEM: `serviceTellsTheRuleWhetherAnOrderIsOpen` Rawstats'ta kaynak taramasıydı; burada `ShiftMachine` davranışı: `busy` sağlayıcısı ev kuralına geçer, A3'te `OrderEvents` bağlanır (CORE.md 6.1). */
 class HomeEndRuleF45bTest {
     private val homeLat = 40.4093
     private val homeLon = 49.8671
@@ -60,5 +60,26 @@ class HomeEndRuleF45bTest {
         val (at, d) = stay(h, 302, 400, 20.0, 0.0)!!   // order closed: a fresh 30 s window
         assertEquals(HomeShift.Decision.END, d)
         assertTrue(at >= 332)
+    }
+
+    @get:org.junit.Rule val temp = org.junit.rules.TemporaryFolder()
+
+    @Test fun serviceTellsTheRuleWhetherAnOrderIsOpen() {
+        val r = ShiftRig(temp.root)
+        r.machine.onStartCommand(ShiftMachine.ACTION_START, null)
+        for (m in listOf(400.0, 300.0, 200.0, 100.0)) r.drive(m, 20.0, dtS = 5.0) // out once: the end is armed
+        r.busy = true
+        repeat(40) { r.drive(20.0, 0.0, dtS = 2.0) }
+        assertTrue("an open order: 80 s at home do not end the shift", r.machine.shiftOn())
+        r.busy = false
+        val lines = r.gpsLines().size
+        var n = 0
+        while (r.machine.shiftOn() && n < 30) { r.drive(20.0, 0.0, dtS = 2.0); n++ }
+        assertFalse(r.machine.shiftOn())
+        assertEquals("30 s still, fixes every 2 s", 16, n)
+        assertEquals("home_arrival", r.events().last().getString("reason"))
+        assertEquals("home_arrival", r.prefs.map["shiftEndReason"])
+        assertEquals("the ending fix is not written", lines + n - 1, r.gpsLines().size)
+        assertFalse("not a manual stop: no start block", r.home.engine()!!.startBlocked)
     }
 }

@@ -47,9 +47,13 @@ object Store {
     private class PrefValues(private val p: SharedPreferences) : KuryelogPrefs.Values {
         override fun getBoolean(key: String, default: Boolean) = p.getBoolean(key, default)
         override fun getInt(key: String, default: Int) = p.getInt(key, default)
-        override fun put(values: Map<String, Any>) {
+        override fun getLong(key: String, default: Long) = p.getLong(key, default)
+        override fun getFloat(key: String, default: Float) = p.getFloat(key, default)
+        override fun getString(key: String, default: String?) = p.getString(key, default)
+        override fun put(values: Map<String, Any?>) {
             val e = p.edit()
             for ((k, v) in values) when (v) {
+                null -> e.remove(k)
                 is Boolean -> e.putBoolean(k, v)
                 is Int -> e.putInt(k, v)
                 is Long -> e.putLong(k, v)

@@ -5,11 +5,10 @@ import org.junit.Test
 
 /** CORE.md 1.1, 5.4: `kuryelog` anahtarları Rawstats'la aynı; `ensureManualMode` göçü bir kez (A2.3). */
 class KuryelogPrefsTest {
-    private class Fake(val map: MutableMap<String, Any> = mutableMapOf()) : KuryelogPrefs.Values {
+    private class Fake(val map: MutableMap<String, Any> = mutableMapOf(), private val inner: KuryelogPrefs.Memory = KuryelogPrefs.Memory(map)) :
+        KuryelogPrefs.Values by inner {
         var writes = 0
-        override fun getBoolean(key: String, default: Boolean) = map[key] as? Boolean ?: default
-        override fun getInt(key: String, default: Int) = map[key] as? Int ?: default
-        override fun put(values: Map<String, Any>) { writes++; map.putAll(values) }
+        override fun put(values: Map<String, Any?>) { writes++; inner.put(values) }
     }
 
     @Test fun oldAutomaticSessionsAreClosedOnceAfterUpgrade() {
