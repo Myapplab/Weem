@@ -243,3 +243,133 @@ Yalnız **tam** kare. Platformun ilk bekleme karesi (`since`) saklanır; IDLE is
 | `penalty_offline` | `declines_in_window=<n>` |
 
 `ORDER_ENDS` = `delivered`, `delivered_inferred`, `end_unconfirmed` (siparişin sonu: enerji kapanır, scooter köprüsüne bildirilir, 4.4).
+
+## 4. Sipariş akışı (`OrderTracker`, RS `OrderTracker.kt:1-927`) — WEEM: saf `OrderFlow` + Android katmanı
+
+`OrderTracker` tek nesnedir; her girişi `@Synchronized` (tek kilit) ve ana iş parçacığındadır. İçinde: `DeliveryCore`, `OnlineSessions` (R11), `BoostLog` (R10), `VenueArrival` (D9), `ScreenTrail` (E8), hatırlatıcılar (R6), ekonomi kaydedicileri (`EconomicsRecorder`, `WaitObservation`, `ShadowMode`, `OfferScore`, `EnergySegments`: `:economics`), YolGo akışları (`OfferFeed`, `FeedChanges`, `YolGoNavReader`: WEEM'de yok).
+
+### 4.1 Açılış ve geri yükleme (`init`, `:237-274`)
+
+1. (Rawstats: `ScooterLink.install`; WEEM'de `:scooter` kendi `ScooterBridge`'ini kaydeder.) `ensureManualMode`; `courier.db` açılır.
+2. Bugünün **ve dünün** `trips` satırlarından `RecordJson.restorable` olanlar belleğe (gece yarısından önce kabul edilen sipariş yeniden başlatmadan sonra da bitebilsin ve vardiya sonu onu kapatabilsin).
+3. `session` satırındaki bekleyen teklifler: ilk görülüşü bugün ve vardiya açık ise geri gelir, değilse "düşen" listesine; düşen varsa `session` yeniden yazılır. (Ekonomi: `econ.restart(now, bekleyen, düşen)` satırları — süreç ölümünde bekleyen teklif K21 gereği yeniden görülene kadar dışa verilmez, sonucu "gözlenmedi" (SPEC 17.2 `recording_stopped`).)
+4. Vardiya açıksa çekirdek başlar.
+5. (Ekonomi: açık boşta dönemi `economicsIdle.v1` ve açık beklemeler `openWaits.v1` tercihlerden geri yüklenip "sansürlü" satır olarak yazılır, tercih silinir.)
+6. Açık çevrimiçi oturumlar `onlineSessions.v1`'den; vardiya kapalıysa hepsi `restart_after_shift` ile kapatılır (son çevrimiçi ekranda, Bölüm 9).
+7. `structuredMigration07` false ise **kayıtların yeniden kurulması** (4.12) ve işaret true. Her adım ayrı korunur (`database`, `economics_idle`, `open_waits`, `online_sessions`).
+
+### 4.2 Vardiya kancaları (RS `GpsService.kt:84-100, 208-250, 278-292`) → WEEM `ShiftListeners` (A2.5)
+
+| `ShiftMachine.Hooks` | Rawstats çağrısı (sıra korunur) |
+|---|---|
+| `onNewShift(now, neden)` | `PocketCashPrompt.ask(now)` (R9, 4901) → `cashPendingShift(SHIFT_START, now, now)` (M17) |
+| `onRunning()` (yapışkan yeniden başlatma dahil) | `start`: `init`; çekirdek başlar; hatırlatıcı, kapatılan balonlar, varış düzeltmeleri, ekran izi, YolGo bağı sıfırlanır; `persist(force)` |
+| `onFix(fix, hız, now)` | `location(fix, hız, now)` (4.7) → `tick(now)` (4.6) |
+| `onDistance(m)` | `distance(m)`: `core.addDistance(m)` (+ ekonomi `econ.distance`) |
+| `busy()` | `hasOpenOrder()` = aktif sipariş var (F4.5b; A2.5'te `OrderEvents.busy`) |
+| `onEnd(başlangıç, now, neden)` | `cashPendingShift(SHIFT_END, başlangıç, now)` → (`:core` `DailyPack.afterShift`, A4.3) → `stop` (4.3 sonu) |
+
+- **Kayıt sırası (WEEM, `:app`):** `orders.cashPending` → `core.dailyPack` → `orders.tracker` → `scooter`. Böylece `onEnd`'de CASH PENDING sonu günlük paketten, günlük paket siparişlerin kapanmasından önce yazılır (Rawstats sırası). Bildirim **12**'nin vardiya sonunda iptali `:core` vardiya servisinde (A2.4, `SHIFT_END_CANCEL`).
+- `stop`: oturumlar kapanır ve yazılır (zorla); (ekonomi: beklemeler, açık beklemeler, `econ.stop`, açık boşta dönemi); `core.stop` olayları `process`; hatırlatıcı yok; `persist(force)`.
+
+### 4.3 Kare akışı (`onScreen`, `:300-381`) — sıra korunur
+
+Girdi: `:capture`'ın her karesi (`CaptureSink.onScreen`). Kayıt izni yoksa hiçbir şey; `init`.
+
+1. **F8.3 resmî toplamlar:** `PlatformTotals.woltDaily` + `boltDays` + Wolt nakit satırları (`cashTotals`) → değişen toplam `economics-platform-totals.jsonl`'e (Bölüm 11).
+2. **K36 kazanç listesi:** kare Wolt Finances / Bolt All deliveries listesiyse yeni satırlar `economics-platform-history.jsonl`'e, D15 ek bekleme/bahşiş, D3(c) doğrulama (Bölüm 11) ve **kare burada biter** (liste ekranı asla teklif/sipariş ekranı değildir).
+3. **D3(d):** Wolt "Cash collection" satırları → `core.cashCollected` (3.11).
+4. **M17:** "CASH PENDING" ve "Cash offload" satırları (Bölüm 8).
+5. Ayrıştırma: `:capture`'ın gözlemi (aynı paket, an, kaynak, `complete`), yoksa yeniden `parse`; erişilebilirlik göstergesi → `deliverSpinner = true`; `CashPayment.attach(gözlem, CashPayment.parse(pkg, metinler, checked))` (K31/M16, Bölüm 7).
+6. **F8.1/F8.4:** `PlatformTotals.fromStats(gözlem)` → toplam yazımı.
+7. **D21:** OFFER → `offerVisibleUntil` = now + 2 500 ms; tam ve UNKNOWN olmayan başka kare → 0 (rozet kaçışı, Bölüm 6).
+8. **R11:** `sessions.observe(gözlem)` (kapanan oturum yazılacak).
+9. `before` = bekleyen tekliflerin kopyası; `events = core.observe(gözlem)` + `pickupArrivals` (yeni `picked_up` olaylarının D9 varışı, `VenueArrival.collected`, 4.8).
+10. **E8 ekran izi:** tam ve UNKNOWN olmayan kare → `trail.record(now, pkg, aşama, görev aşamasında shown siparişin id'si)`.
+11. **D6:** bu kare teklifin (bekleyen ya da açık siparişinkinin) ücretini getirdiyse (`feeAt == now`) `feeOcrMs` = şimdi − kare anı.
+12. Her olay: `linkSession` (teklif → o anki oturum id; kabul → teklifinkiyle ya da o anki), `sessions.event(olay, müşteri sayısı, çıkarım mı)`; oturumlar yazılır (olay varsa ya da açık oturum sayısı değiştiyse zorla).
+13. (Ekonomi: `delivered` → bekleme nedeni `after_delivery_observed`; `rejected` → son 30 sn'de ret dokunuşu varsa `after_decline_observed`, değilse `after_offer_disappearance`; `waitCore.observe(gözlem, araç, bölge, Bakü saati)`; açık beklemeler; platform başına ≥ 5 sn'de bir ya da olay varken `economics-exposure.jsonl` satırı `{at, pkg, stage, complete, source, demand, vehicleMode, zone, bakuHour, dispatchAvailabilityVerified: false}`.)
+14. (Rawstats: `OfferFeed.refreshGrant`; IDLE'da hava önbelleği tazelenir. WEEM: ikisi de yok — YolGo izni kalktı (S7), hava `WeatherPort`'tan anında okunur.)
+15. **K27 boost:** `boosts.observe(gözlem, gün, konum)` satırları `economics-boosts.jsonl`'e (Bölüm 9) — teklif son boost'u almadan önce.
+16. **Teklif anı (yalnız bu karede `offer` olayı varsa):** telefon pili; `notifiedAt` = platformun son bildirimi (teklifin ilk karesinden en çok 30 sn önce); scooter pili (`ScooterBridge.batteryPct()`, ≤ 15 sn taze; anı ve kaynak); hava (`WeatherPort.current()`, Bölüm 12); boost (`boosts.atOffer`: değer, birim, kaynak, görülme anı); son konum (enlem, boylam, doğruluk, yaş).
+17. (Ekonomi: gölge karar `shadow.frame` ilk tam teklif karesinde ve ücret/km değişince; `econ.frame(gözlem, olaylar, before, …)` satırları; açık boşta dönemi.)
+18. `process(olaylar)` (4.4).
+19. **`platforms.jsonl`:** IDLE/OFFLINE ya da çarpanlı kare → `{pkg, stage, demand, bonus_pct, bonus_from, multipliers, offline_until}`; içerik özeti platform için değiştiyse `t` eklenip yazılır.
+20. **Koordinat ve kart:** platformun `shown` siparişinin şimdiki müşterisi koordinatsız ve adresliyse çözülür (4.10); açık müşteri kartı bu müşteriyse ayrıntı, revizyon ve son tarih tazelenir.
+21. `persist(olay varsa zorla)`; `tick(now)`.
+
+### 4.4 Olayların işlenmesi (`process`, `:511-545`)
+
+Her olay için sırayla:
+- `accepted` (sipariş var): `commissionPct` = tercih `commission:<pkg>` (yoksa `commission`, Float, %); `priceIsNet = false`; `ScooterBridge.orderAccepted(tripId)`.
+- `ORDER_ENDS` (`delivered`, `delivered_inferred`, `end_unconfirmed`): `core.closeEnergy(trip)`; `ScooterBridge.orderDone(tripId)`; sipariş artık aktif değilse bitiş anı (E8 `stages` için) saklanır.
+- **`orders.jsonl` satırı:** `t` (olay anı), `type`, `pkg`, `offer_id`, `id` (sipariş), `reason`, `session_id` (sipariş ?: o teklif ?: platformun o anki oturumu); sipariş varsa `record` (= `RecordJson.trip`, telefonsuz, `latest` dahil), `gross`, `net`, `total_min`, `wait_min`, `km` (= `distanceM`/1000), `restaurant` (ilk alış); olay bekleyen teklifinse `offer` (= `RecordJson.offer`) ve teklif `courier.db`'ye; `offer` dışı her olayın teklifi `courier.db`'de bulunursa `result` = olay tipi; `loc`; `phone_battery_pct`. Null alan yazılmaz.
+- `offer`: tanı sayaçları (son teklif anı, platformun teklif sayısı; `:capture` tanı kartı bunları gösterir).
+- **K32:** `delivered`/`delivered_inferred` ∧ `CashTips.shouldAsk(trip)` ∧ siparişin günündeki bahşiş cevabı yok ∧ bu süreçte sorulmamış → `CashTipPrompt.ask` (Bölüm 7). (Bellek: yeniden başlatmada bir kez daha sorabilir.)
+
+### 4.5 Kalıcılık (`persist`, `:547-573`)
+
+- Zorla değilse en çok 1,5 sn'de bir. Tek `courier.db` işleminde yalnız **değişen** satırlar: her sipariş `trips` (= `RecordJson.trip(t, withPhone = true)` — **müşteri telefonu yalnız burada**; `allowBackup=false`, cihaz aktarımı yok), her bekleyen teklif `offers`, `session` = `{pending: [RecordJson.offer…]}`.
+- `orders.jsonl` **`record_snapshot`** satırı `{t, type: record_snapshot, record}`: siparişin `latest`'siz içeriği değiştiyse ve (zorla ∨ `now % 10 000 < 2 000`) — en çok ~10 sn'de bir anlık görüntü; ham kare `screens.jsonl`'dedir.
+- Hata: bellekteki "yazıldı" kayıtları silinir (sonraki seferde hepsi yeniden yazılır), `database` hatası.
+
+### 4.6 Tik (`tick`, `:574-641`)
+
+- Rawstats: önce YolGo akışları duyurulur (`publishFeeds`). WEEM: `OrderEvents` akışları her değişiklikte güncellenir (Bölüm 13); duyuru yok.
+- Vardiya ya da çekirdek yoksa hatırlatıcı kalkar; dön.
+- Rawstats: YolGo navigasyon okuyucusu tiki + hedef bağı. WEEM: `NavPort.route` değişince bağ (4.9).
+- **E16 müşteri kartı açılışı** ve **E14 restoran balonu** kararları, açık hatırlatıcının güncellenmesi: Bölüm 5.
+- Son: `persist` (zorlamasız).
+- Tik iki yerden gelir: ekran okuma servisinin tiki (vardiyada 500 ms, `CAPTURE.md` 1.6) ve her GPS fix'i (4.2).
+
+### 4.7 Konum (`location`, `:704-716`)
+
+- Vardiya ve çekirdek yoksa hiçbir şey. Fix'in duvar saati anı = şimdi − (monotonik saatle fix yaşı) (ekran kareleriyle aynı saat). `VenueArrival.Fix(an, enlem, boylam, doğruluk, hız km/sa)` belleğe (hız: fix'in kendi hızı ya da öncekinden türetilen, A2.4 `GpsTrack`).
+- Olaylar = `venues.live(...)` (Wolt restoran varışları, 4.8) + `venues.customers(...)` (müşteri varışları); varsa (ekonomi: `econ.events(idleUpdate = false)`), `process`, `persist(force)`.
+
+### 4.8 Varış kuralları (`VenueArrival`, RS `VenueArrival.kt:1-166`; `ArrivalDistance.kt:1-38`)
+
+- **Fix belleği:** sonlu koordinat ve artan an; `KEEP_MS` = 90 dk'dan eskisi atılır. Doğruluk > `MAX_ACCURACY_M` (60 m) olan fix "kullanılamaz".
+- **Kalış (D9, `stayStart`):** [`from`, `to`] arasında, restorana ≤ `RADIUS_M` (60 m) ve hızı < `STOP_KMH` (3 km/sa) (hızsız fix duruyor sayılır) ilk fix kalışı başlatır; sonraki fix'ler 60 m içinde ve < `RIDE_KMH` (10 km/sa) kaldıkça sürer (kırmızı ışık kalış değil, yürüyerek girmek kalış); başlangıçtan `DWELL_MS` (20 sn) sonra hâlâ sürüyorsa varış = başlangıç. Alışta (`atPickup`) kalış son fix'ten alışa kadar sürmüş sayılabilir (içeride GPS kaybı): alış − başlangıç ≥ 20 sn.
+- **Pencere:** alış `i`'nin penceresi siparişin kabulünden (ilk alış) ya da önceki alışın `pickedAt`'ından başlar.
+- **`live` (her fix; yalnız Wolt siparişleri, alınmamış son alış):** varışı platformdan/kuryeden (kalış olmayan kaynakla) yazılmışsa atla. Önce **M18/M20 yakınlık:** taze (≤ `FRESH_MS` 30 sn, pencere içinde) navigasyon mesafesi ≤ `RESTAURANT_M` (5 m) ve son fix yavaş (< `SLOW_KMH` 10 km/sa) → o an, kaynak `nav_yolgo`/`nav_google_maps`; yoksa restoran koordinatına GPS yakınlığı (`nearAt`: ilk yavaş fix, mesafe − min(doğruluk, 20 m) ≤ 5 m; doğruluk > 30 m hiçbir şey söylemez) → kaynak `gps_near_yolgo_target`/`gps_near_geocode`. Yakınlık, önceki kalış varışının yerine geçer (`replace`). Yoksa kalış varışı yoksa `stayStart` → kaynak koordinatın kaynağı (`gps_dwell_yolgo_target`/`gps_dwell_geocode`).
+- **`collected` (alış anında, `picked_up` olayıyla):** yalnız Wolt; varış platform/kurye kaynaklıysa hiçbir şey. Kuryenin alıştan önceki son kullanılabilir fix'i (≤ `PICKUP_FIX_MAX_AGE_MS` 5 dk). Restoran koordinatı bu fix'ten > `VENUE_MISMATCH_M` (150 m) ise yanlış sayılır (geocode edilmiş sokak) ve kullanılmaz. Koordinatlı varış zaten var ve koordinat doğruysa dokunulmaz. Değilse kalış koordinatta, yoksa kuryenin alış noktasında (`gps_dwell_pickup_point`) aranır; bulunamazsa varış silinir (`restaurant_arrival_corrected` / `gps_venue_mismatch`).
+- **`customers` (her fix; her platform, TO_CUSTOMER):** bacak başlangıcı (son alış ya da önceki müşteri teslimi; yoksa kabul) sonrası; taze navigasyon mesafesi ≤ `CUSTOMER_M` (10 m) ∧ yavaş → o an ve kaynak; yoksa müşteri koordinatına GPS yakınlığı (≤ 10 m, aynı pay) → `gps_near` → `customerArrived` (3.11).
+- **`ArrivalDistance.pick(yolgo, maps, gps, now)`:** taze (≤ 30 sn) navigasyon değerlerinin en yenisi, yoksa GPS. `near(kaynak, sınır)`: navigasyon değeri doğrudan; GPS'te doğruluk yoksa doğrudan, varsa yukarıdaki pay. `slow(hız)` = hız yok ∨ < 10 km/sa.
+- Mesafe `VenueArrival.metres`: büyük çember, yarıçap 6 371 008,8 m.
+
+### 4.9 Navigasyon bağı (E8; RS `YolGoNav.kt:1-108`, `OrderTracker.kt:27-56, 717-740`)
+
+- **Rawstats:** YolGo'nun `nav/v1/current` yükü (`schemaVersion` 1, `source` `yolgo`, `generatedAtMs`, `updatedAtMs`, `target{lat, lon, kind restaurant|customer|unknown, origin intent|clipboard|search|map|order, requestedAtMs, sourcePackage}`, `route{remainingM 0–500 000, remainingTurns 0–1 000, measuredAtMs}`) içerik sağlayıcıdan okunur.
+- **WEEM:** aynı bilgi `NavPort.route: StateFlow<RouteStatus?>` (`RouteStatus.target`/`route` aynı alanlar; A2.5 `RouteStatus.fromNavFeed` bugünkü yükü okur). Kaynak adları korunur: navigasyon mesafesi `nav_yolgo`, restoran koordinatı `gps_dwell_yolgo_target`/`gps_near_yolgo_target` (kayıtlarda geçen dizgiler; gölge modla karşılaştırılabilsin). Hedef değişince 4.9'daki bağ kurulur.
+- **`pickupOf(hedef, siparişler, iz, now)`:** yalnız `origin = intent` (kurye uygulamasının "Navigate" isteği) ve istek −60 sn ile `TARGET_MAX_AGE_MS` (90 dk) arasında. Adaylar: aktif Wolt siparişleri (gönderen paket biliniyorsa o paket), alış penceresi isteği kapsayan alış. İstek anında platformun ekranı (`ScreenTrail`, ≤ `TRAIL_MAX_GAP_MS` 2 dk önceki son değişim): DROPOFF ise yok; PICKUP ise o ekrandaki siparişin (ya da tek) adayı; ekran bilinmiyorsa yalnız `kind = restaurant` ve tek aday. Bağlanınca restoran koordinatı = hedef (geocode'dan önce gelir, `preferred`); olay `events.jsonl` `yolgo_venue {trip, pickup, kind, source_package, geocode_gap_m}` (koordinat yazılmaz); açık alış hemen yeniden denetlenir (`venues.live`). WEEM: olay adı `yolgo_venue` korunur.
+- **`ScreenTrail`:** platform başına aşama değişimleri (an, aşama, sipariş id), 30 dk; eski an ya da aynı (aşama, sipariş) tekrar yazılmaz.
+- **Navigasyon mesafesi seçimi:** restoran için hedef bu alışa bağlıysa rota mesafesi (`nav_yolgo`), sipariş restoran aşamasındaysa başka uygulamanın bildirim özeti (`nav_google_maps`, `CAPTURE.md` 4.2); müşteri için hedef `customer` ve bu bacakta istenmişse rota, sipariş TO_CUSTOMER'da ise bildirim özeti; `ArrivalDistance.pick`. Müşteri koordinatı: bu bacakta istenmiş müşteri hedefi, yoksa çözülmüş adres (4.10).
+
+### 4.10 Adres → koordinat (Android `Geocoder`, RS `OrderTracker.kt:664-697`)
+
+- Restoran: alış adresi (sipariş:alış:adres başına bir kez), arka planda `getFromLocationName(adres, 3)` ilk koordinatlı sonuç → bellekte (`restaurantCoords`). Müşteri: (sipariş:müşteri:adres başına bir kez) sonuç varsa ve son fix yoksa ya da sonuç ona < 50 km ise `lat/lon`, `coordinateSource = android_geocoder_address_estimate`, `persist(force)`; sonuç yoksa `events.jsonl` `customer_coordinate_unavailable {trip, customer}`. Adres o arada değiştiyse sonuç atılır.
+- `Geocoder` sistem servisidir (ağı sistem kullanır). Kapsam listesindeki "adı olmayan eski davranış" (S9: kalır); `:orders`'ta, `:capture` ağsız kalır. WEEM'in kendi adres bulması (Y6, `:map`) bunun yerine geçmez (davranış aynı kalsın; değişiklik ancak kullanıcı kararıyla).
+
+### 4.11 Telefon numarası (K25; RS `OrderTracker.kt:757-771`)
+
+- `awaitingPhone(now)` = çekirdek çalışıyor ∧ (son 60 sn'de (`CALL_TO_DIALER_MS`) arama düğmesine basılmış, teslim edilmemiş müşteri var ∨ müşteri aşamasında bir siparişin platform ekranı son 60 sn'de (`PHONE_WINDOW_MS`) okunmuş).
+- `dialerPhone(metinler, now)`: kayıt izni; metinlerdeki ilk telefon (`NoteFields.phones`); müşteri = arama hedefi, yoksa müşteri aşamasındaki ve platform ekranı 60 sn'de okunmuş siparişlerin son görüleninin şimdiki müşterisi; numara aynıysa dur; `details.phone` (bellek → `courier.db`), açık kart güncellenir.
+- WEEM: "platform ekranı son okunma anı" `:orders`'ın kendi tuttuğu değerdir (her `CaptureSink.onScreen` karesinde paket için an; Rawstats `Store.seen` ile aynı anlam).
+
+### 4.12 Kayıtların yeniden kurulması (`rebuildRecords`, `:910-926`; ZIP içe aktarma sonrası `reloadImportedStats`)
+
+- `courier.db`, bellekteki siparişler, teklifler, anlık görüntü özetleri silinir. Gün klasörleri ada göre sırayla; her `orders.jsonl` satırı: `record` (yoksa `LegacyRecords.delivered(satır)` → `RecordJson.trip`) sipariş başına **en yenisi**; `offer` teklif başına en yenisi; `offer` dışı olayların `offer_id` → sonuç (en yenisi). Siparişler ve sonuçlu teklifler `courier.db`'ye; bugünün siparişleri belleğe.
+- A2.3 `LogImport` ZIP'ten sonra bunu çağırır (A2.6'da Rawstats ZIP'i içe aktarıldı; sipariş tarafı A3'te bağlanır).
+
+### 4.13 Elle işlemler ve okuyucular
+
+- `confirmDelivered(id)` (kart "Teslim edildi") → 3.7; `setTip(id, tutar)` → `tip`, `tipSource = user_manual`; `showDetails(id)` → kartı açar ("Teslimat bilgileri"); `dismissReminder()` (restoran balonu kapatıldı → o alış için bir daha açılmaz, bellek); `markCancellationObservation(pkg)` (kullanıcı iptal bildirdi: ekonomi beklemesi kırılır + `events.jsonl` `cancellation_user_reported {pkg, platformActionPerformed: false}`); `rateOffer` (E4, `:economics`).
+- Okuyucular: `today` (bugün kabul edilenler, yeniden eskiye), `stored` (tüm `courier.db` siparişleri; bozuk satır atlanır), `stats` (Bölüm 10), `onlineToday` (Bölüm 9), `badgeLines` (Bölüm 6), `platform(pkg)` (`wolt` → "Wolt"; `bolt`/`mtakso` → "Bolt Food"; diğer → paketin son parçası), `commission(pkg)`, gün dosyası okuyucuları (`cashTipRows`, `boostRows`, `cashPendingRows`, `pocketCashRows`, `platformTotals`, `platformHistoryRows`, `offerScores/Ratings`): dosya yoksa ya da okunamıyorsa boş.
+
+### 4.14 WEEM yerleşimi ve `:economics` sınırı
+
+- **`logic/orders` `OrderFlow` (saf):** 4.1–4.13'ün karar ve sırası; durum (`DeliveryCore`, `OnlineSessions`, `BoostLog`, `VenueArrival`, `ScreenTrail`, hatırlatıcı, D21 penceresi, navigasyon bağı, resmî değer ve nakit eşlemeleri). Dış dünyaya: `OrderStore` (gün satırı ekleme, `courier.db` satırları, tercihler; Android'de `:core` `Store`/`CourierDb`), `Clock`, `Geocode` (istek; sonuç geri çağrıyla), bildirim/pencere istekleri (`NotifyPort`, R6 penceresi), `ScooterBridge`, `NavPort`, `WeatherPort`. JVM'de sahte uygulamalarla test edilir (`SahaTekrarTest` gibi uçtan uca testler buna dayanır).
+- **Android `:orders`:** `OrderFlow`'un Android uygulamaları (`Geocoder`, `courier.db`, bildirimler, `CashTipPrompt`/`PocketCashPrompt`/`TipAmountActivity`, rozet ve balon pencereleri `CaptureHost` üstünden).
+- **`OrderObserver` (`:orders` tanımlar, `:economics` uygular, `:app` bağlar; bağlı değilse `NONE`):** Rawstats'ta `OrderTracker`'ın ekonomi kaydedicilerine yaptığı her çağrı burada **aynı noktada ve sırada** bir kancadır: açılış (`econ.restart`, açık boşta dönemi ve beklemelerin geri yüklenmesi), her kare (4.3 adım 13 ve 17: bekleme nedenleri, `waitCore.observe`, `economics-exposure.jsonl`, gölge karar, `econ.frame`), olay üreten diğer girişler (dokunuş, nakit toplama, konum, navigasyon bağı, elle teslim: `econ.events`), yol (`econ.distance`), vardiya sonu (`waitCore.stop`, `econ.stop`), iptal bildirimi. Kanca, olayları, olaydan önceki bekleyen teklifleri, salt okunur sipariş görünümünü, açık oturumları, kaba bölgeyi (`OfferGeo.coarseZone`, son 2 dk'lık fix) ve ücret tabanını (`commission` ayarlıysa `gross_before_park`, değilse `unknown`) alır. A4.1 bunları uygular; A3.5–A3.7'de kanca boştur ve ekonomi dosyaları yazılmaz (gölge modda bilinen fark, Bölüm 14).
+- **Teklif özeti için ekonomi** (`OfferSummary.score`, `netAzn`): `:orders` `OfferAnnotator` arayüzü (teklif id → puan, net), `:economics` uygular; yoksa null (veri uydurulmaz, A2.5 kuralı).
