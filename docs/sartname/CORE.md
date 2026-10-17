@@ -359,7 +359,7 @@ Aşama 2 toplamı: 79 test (+ yeni `guarded`, `NotificationIdsTest`, `ShiftMachi
 ## 7. Açık noktalar ve riskler
 
 - **Kullanıcıya sorulacak (engel değil):** (1) İki km ölçüsü (Rawstats D8 `shift_end.km` ve YolGo gün km'si) bir ekranda yan yana görünecek (Y17 istatistik, R12 gün sayfası); hangisi gösterilsin ya da ikisi mi — A6.1'de sorulur, o zamana kadar ikisi de eski yerinde. (2) 1.9'daki farklar S2 kararının sonucu; saha denemesinde (K0.1, gölge mod) "evde tek sapan fix vardiyayı kurdu" gibi bir bulgu çıkarsa kural kullanıcı kararıyla değişir.
-- **Doğrulanmadı:** ev izleyicinin ve H4'ün telefonda davranışı (Rawstats'ta da "telefonda denenmedi" notu, `HomeShiftE6Test.kt:106`); 1.3'teki Android `Location.distanceTo` ile saf haversine farkı (A2.4 seçimi, gölge modda denetlenir).
+- **Doğrulanmadı:** ev izleyicinin ve H4'ün telefonda davranışı (Rawstats'ta da "telefonda denenmedi" notu, `HomeShiftE6Test.kt:107`); 1.3'teki Android `Location.distanceTo` ile saf haversine farkı (A2.4 seçimi, gölge modda denetlenir).
 - **Bilerek küçük farklar:** bildirim numaraları 5103→5104 (ekran okuma) ve 4000+→10000+ (nakit bahşiş); `runCatching` → `guarded` (bellek hatası artık çökme raporu); çökme metninde "Rawstats" → "WEEM". Hepsi kullanıcıya görünmez ya da yalnız metin.
 - `VERI_SOZLESMESI.md` düzeltildi: `manualPolicy` Int, `home.*` lat/lon String, `home.ui.*` tercih değil, eksik anahtarlar (5.6), 5103 ve bahşiş için WEEM numaraları (8.2).
 - `bulgular/R_core_contract.md` satır numaralarının bir kısmı yanlıştı (ör. `HomePreferences.kt:54-74`, dosya 28 satır); bu belge doğrularını verir.
