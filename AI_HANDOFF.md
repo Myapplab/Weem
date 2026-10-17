@@ -2,6 +2,14 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-17 — A3.1 Aşama 3 şartnamesi (Claude Opus · max yazdı, kalan 6 adımı Sonnet · medium bitirdi; dal `ccr-26498e7e-jg66o9`)
+- Yapılan: `docs/sartname/CAPTURE.md` (R1, R2, R16, R19 E7; 526 satır) ve `ORDERS.md` (R3 yaşam döngüsü, R5–R13, R15, `DeliveryCore` durum makinesi, `OrderTracker` → saf `OrderFlow` + Android; 729 satır). Kaynak Rawstats @ `6388c04` satır satır doğrulandı; ham `bulgular/R_capture.md`/`R_orders.md`'nin yerini aldı (README işaretlendi).
+- Güncellendi: `TEST_ENVANTERI` (hedefler; 1.601 çevrilir), `WEEM_PLANI`, `OZELLIK_HARITASI` (Aşama 3 Ayrıntı bağlantıları; R19 modülü `:capture` + `:app` + `:core`; R8 bildirim 10000–14095, R19 5104), `VERI_SOZLESMESI` 7.1 A3.1 notları.
+- Bilerek farklar (gölge mod "beklenen fark" sayar): bildirim 5103→5104 ve 4000–8095→10000–14095; `click.text` `redact`'lenir (Rawstats yazmıyordu: telefon JSONL'e girebiliyordu); `MotionGate`/`OfferIdentity` yazılmaz; ekranda "WEEM" adı. `weather_source` `yolgo_open_meteo` ve `nav_yolgo` dizgileri korunur; boost/hava null'ları `JSONObject.NULL`.
+- Kararlar: `:capture` testleri bölünür (203 testten 93 capture, 100 orders); ortak yardımcılar `logic/capture` `testFixtures`. `OrderTracker` bölünmesi en büyük taşıma riski (`SahaTekrarTest` güvence). `:economics` kanca sırası A4.1'de birebir olmalı.
+- Doğrulama: yalnız belge; kod, test ve CI yok (`[skip ci]`). Telefonda denenecek bir şey yok.
+- Açık kalan: kullanıcı soruları S15 (bildirim 12'de telefon), S16 (gölge modda çift soru), S17 (ML Kit ağı) → `WEEM_ISLER.md` "Açık sorular". Sıradaki A3.2 (Sonnet · high); önce `/code-review high` önerilir.
+
 ## 2026-10-17 — A2.3, A2.4, A2.5 ard arda (Claude Opus · high, tek ajan; dal `claude/weem-a2-3-4-5-cl7hm8`, `main`'e birleşti)
 - A2.3: saf `LogStore` (tek kilit, gün klasörü, olay/hata satırı), `LogTime`, `LogImporter` (önce hepsi denetlenir), `CourierSchema` (DDL birebir), `CrashFile`, `guarded`/`attempt`, `KuryelogPrefs`; `Lang` `logic/core`'a taşındı (+`CoreText`). Android: `Store`, `CourierDb`, `CrashLog`, `LogImport`, `WeemApplication`, çökme kartı, `GuardedPage` sekme sınırı, Daha fazla → Kayıtlar.
 - A2.4: saf `ShiftMachine` (1.2–1.5 sırası, H4), `HomeWatchCore`, `GpsTrack` (D8; mesafe Android'de `Location.distanceBetween`), `NotificationIds`, `DeviceId`, `Clock`; Android `ShiftService`, `HomeWatch`, `HomeFixSampler`, `Home`, `Notices`; Harita sekmesinde vardiya kartı, Daha fazla → Ev konumu. Testler: controller 1–3 uçtan uca (izleyici → servis), H4, F45b `busy`, kaynak taramaları.
