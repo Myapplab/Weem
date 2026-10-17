@@ -420,11 +420,11 @@ Her 1 Hz örnekte (`sample`, Sürüş Paneli'nin yazıcı iş parçacığında):
 
 1. Önceki örnek saklanır; canlı yük duyurulur (`publish`, YolGo paylaşımı açıksa; S7 ile kalkar).
 2. Vardiyada kayıt izni yoksa (`Store.canRecordScreen`) `false` (bir şey yazılmaz).
-3. Enerji adımı `ScooterSamples.step(önceki mono, önceki güç, mono, güç, 3.000, önceki.bothPacks && şimdiki.bothPacks)` (37-42): `dt ≤ 0`, `> 3.000`, güç eksik/sonsuz → `null`; `wh = ort(güç) × dt / 3.600.000` (panel işareti, + şarj); `usedWh = max(0, −wh)`, `recoveredWh = max(0, wh)`, `complete`. → `OrderTracker.scooterEnergy` → `core.addEnergy` (yalnız vardiyada; `ORDERS.md` 4.11, `addEnergy`).
+3. Enerji adımı `ScooterSamples.step(önceki mono, önceki güç, mono, güç, 3.000, önceki.bothPacks && şimdiki.bothPacks)` (37-42): `dt ≤ 0`, `> 3.000`, güç eksik/sonsuz → `null`; `wh = ort(güç) × dt / 3.600.000` (panel işareti, + şarj); `usedWh = max(0, −wh)`, `recoveredWh = max(0, wh)`, `complete`. → `OrderTracker.scooterEnergy` → `core.addEnergy` (yalnız vardiyada; `ORDERS.md` 3.11 `addEnergy`).
 4. D8 odometre (`ShiftDistance.observe`; bellek + tercih `shiftOdoFirstKm`, `shiftOdoLastKm` (m), `shiftOdoLastAt`; ilk değer değişmedikçe en sık 30 sn'de bir yazılır; vardiya başı/sonu sıfırlanır; `CORE.md` 1.4 D8).
 5. Satır **`economics-scooter.jsonl`** (gün klasörü, örneğin duvar saatinin günü; `ScooterSamples.row`, 44-51): `schemaVersion: 1`, `kind: "scooter_sample"`, `wall_ms`, `mono_ns` (= mono ms × 10⁶), `source: "surus_paneli"`, `scooter_id` (tercih `economics.scooterId`, yoksa `scooter-1`), `scooter_id_source` (`settings` / `default_single_scooter`), `power_verified: false`, `speed_kmh` (1 ondalık), **`vxa_w`** = −panel gücü (tüketim pozitif, 1), `int_pct` (0), `int_v`, `int_a` (2; BMS işareti), `ext_pct` (0), `ext_v`, `ext_a` (2), `temp_c` (1), `odometer_km` (1); eksik/sonsuz `null`, `−0.0` yazılmaz (21-26). Konum yok (`gps.csv`'de). `true` dönerse panel "Rawstats vardiyası kaydediyor" der.
 
-Teklif anında scooter pili: `ScooterBridge.batteryPct()` = taze (≤15 sn, `ScooterLink.FRESH_MS`) karenin `batteryPct`'i, sonlu ve 0–100 (RS `ScooterBridge.kt:39`, `ScooterLink.kt:27, 79, 84`; `ORDERS.md` 4.1 adım 16).
+Teklif anında scooter pili: `ScooterBridge.batteryPct()` = taze (≤15 sn, `ScooterLink.FRESH_MS`) karenin `batteryPct`'i, sonlu ve 0–100 (RS `ScooterBridge.kt:39`, `ScooterLink.kt:27, 79, 84`; `ORDERS.md` 4.3 adım 16).
 
 **WEEM:** 8.1–8.3 saf ve aynen (`EnergyTest`, `TripMeterTest`, `ScooterSamplesTest`, `ScooterOrderEnergyTest`, `ScooterBridgeTest`); `energy(from, to)` `logic/core` `EnergyBlock` döndürür (`not_measured` aynı kural). `economics-scooter.jsonl` adı, şeması ve yuvarlamaları aynı; `source` `surus_paneli` korunur (analiz araçları ayırt etmek için `scooter_id_source` yeter). Sipariş enerjisi akışı 12.2.
 
@@ -478,3 +478,78 @@ Daha önce yanıtlamış harici kart (`7` ve `0x16` değil) 3 ardışık zaman a
 - `tools/reference/nb_crypto.py` — **lisans:** Apache License 2.0, `NootNooot/segway-ninebot-ble-cli` @ `bb6f3d325237fa91e683df27f2197f9cb771e841` (2026-10-03), SHA-256 `1302a7c864a95471a73a3c9f6be9892bfc09a3a324c0f1211dc35e71d775607c`, değiştirilmemiş; `LICENSE` ve `NOTICE` (Copyright 2026 NootNooot; Segway/Ninebot ile ilişkisiz, birlikte çalışabilirlik için tersine mühendislik) yanında (NR `PROVENANCE.md`). Modülün kendi tekrar denetimi kapalı; çalıştırıcı katı RX denetimleri ekler. Eşitlik testi Java şifrelemesini, parola üretimini ve sentetik PRE_COMM / SET_PWD / AUTH / ilk okuma dizilerini buna karşı sınar; G3 uyumluluğu ya da gerçek el sıkışma kanıtı değildir.
 
 **WEEM:** `sweep`, `detailed_diagnostics` ve tam ZIP aynı tercih adları ve sınırlarla (`SweepTest`, `LogPolicyTest`); Scooter sekmesinde "Tanı" altında. `nb_crypto.py` WEEM reposuna **yalnız test referansı** olarak, `LICENSE` + `NOTICE` + `PROVENANCE.md` ile birlikte değiştirilmeden kopyalanır (Apache-2.0 koşulu: lisans ve bildirim korunur); APK'ya girmez. Python araçları CI'da çalışmaz (bugünkü gibi); `ProtocolTest` sabit vektörleri JVM'de yeter (13).
+
+## 11. Veri sözleşmesi (`VERI_SOZLESMESI` 5.2, 5.3, 6, 7.2, 8 ile aynı; A5.1 düzeltmeleri işaretli)
+
+### 11.1 Tercihler
+
+- **`logger`** (`LoggerPreferences.get`, NB `LoggerPreferences.java:8-20`): ilk açılışta eski `MainActivity` dosyasından **bir kez** göç: `device` yoksa `device`, `device_name`, `ble_name` birlikte (yeni seçimle eski BLE adı karışmasın), `sweep`, `crypto_mode`; sonra `legacy_main_migrated=true`. Anahtarlar (tür, varsayılan): `auto_live` (Bool, false), `battery_probe` (Bool, false), `ble_name` (String, yayın adı), `crypto_mode` (String, `gen2_fw`), `detailed_diagnostics` (Bool, false), `device` (String, BLE adresi), `device_name` (String, "<ad> • <adres> • <rssi> dBm"), `external_bms_boards` (String, "06" gibi), `float_ball_dp` (Int, 100), `float_ball_field` (String), `float_fields` (String), `float_h_pct` (80), `float_text_land_pct` (100), `float_text_port_pct` (100), `float_thick_pct` (125), `float_v_pct` (60), `float_x`, `float_y` (Int), `floating` (Bool, **true**), `keep_screen_on` (Bool, **true**), `legacy_main_migrated` (Bool), `sweep` (Bool, false).
+- **A5.1 düzeltmesi:** `export_full`, `export_latest`, `export_location`, `immersive` **tercih değildir**: `DashboardActivity` örnek durum paketi (`onSaveInstanceState`, NB `DashboardActivity.java:36, 61, 203`). `VERI_SOZLESMESI` 5.2 listesinden çıkarıldı.
+- **`kuryelog`** (Rawstats): `scooter.autoConnect` (Bool, true), `scooter.shiftLink` (Bool), `shiftOdoFirstKm`, `shiftOdoLastKm` (Long m, −1), `shiftOdoLastAt` (Long ms), `economics.scooterId` (String; yoksa `scooter-1`).
+- **`pairing-v1`** + Keystore `NinebotLogger.Pairing.v1`: 4.1 (beş anahtar biçimi, AAD, IV düzeni).
+
+### 11.2 `ninebot-logger.db` (7.3)
+
+Ad, sürüm 1, WAL, iki tablo ve dizin aynı. `sessions.state`: `recording`, `interrupted`, `stopped`, `stopped_with_log_gaps`, `failed`. `events.kind` (kaynakta yazılan bütün türler): `session_start`, `sample`, `gps_fix`, `gps_state`, `gps_cadence`, `log_backpressure`, `log_summary`, `sweep_config_rejected`, `pair_attention`, `pair_attention_notification`, `ble_connected`, `ble_state`, `ble_mtu`, `ble_subscribed`, `ble_priority`, `ble_raw`, `ble_write`, `ble_write_result`, `ble_measurement`, `ble_reassembly_rejected`, `ble_key_error`, `gatt_inventory`, `local_key_state`, `battery_config`, ve oturum notları (yük `{"detail": "<anahtar=değer; …>"}`): `handshake_started`, `pre_comm_attempt`, `pre_comm_ok`, `pair_started`, `pair_reply`, `pair_first_reply`, `pair_to_auth`, `pair_resumed`, `pair_window_expired`, `auth_reply`, `auth_failed`, `authenticated`, `protocol_tx`, `protocol_rejected`, `protocol_state`, `read_timeout`, `read_disabled`, `measurement_rejected`, `battery_boards`, `battery_probe_candidate`, `battery_probe_reject`, `battery_probe_timeout`, `battery_probe_miss`, `battery_probe_found`, `battery_probe_partial`, `battery_probe_done`, `battery_quiet`, `battery_quiet_timeout`, `battery_back`. `battery_lost` dışa aktarma izin listesinde var ama bugün yazılmıyor (eski veritabanları için). `detail` metninin biçimi (`;` ile ayrılmış `anahtar=değer`) testlerde alt dize olarak denetlenir → **birebir**.
+
+### 11.3 Gün klasörü ve olaylar (Rawstats)
+
+- `economics-scooter.jsonl` (8.4; `BackupFiles.logNames` içinde, analiz dışa aktarmasında `KEEP_ALL`, konum alanı yok).
+- `events.jsonl` `type: "scooter_link"`, `action` ∈ `skip` (`reason` ∈ `auto_off`, `already_active`, `no_scooter`, `not_paired`, `no_bluetooth_permission`, `check_failed`), `start`, `failed` (`reason` = sınıf adı ya da `refused`), `kept_recording`, `stop`, `stop_failed`, `scooter_data_back`, `scooter_data_missing` (`reason: null`). **WEEM ek:** `skip` `reason: "role_provider"` (S11, 2 telefon modunda Provider; yeni değer, eski araçlar bilinmeyen nedeni yok sayar).
+- `economics-energy.jsonl` `energy` bloğu (8.2): `:economics` yazar (A4.1), `:scooter` üretir.
+- Eski `scooter.jsonl`, `scooter_events.jsonl`, `scooter_averages.jsonl`: yalnız okunur (`VERI_SOZLESMESI` 7.1).
+
+### 11.4 Bildirimler (`CORE.md` 3.3 tablosu)
+
+| No | Kanal | Önem | Ne | Kaynak |
+|---|---|---|---|---|
+| 7 | `recording` "Scooter kaydı" | LOW, sürekli (FGS) | servis bildirimi (6.2) | NB `RecordingService.java:64-66, 178-186` |
+| 8 | `pairing-attention` "Eşleştirme onayı" | HIGH, sessiz | eşleştirme uyarısı (4.2) | NB `PairAttention.java:11, 22-24` |
+| 4902 | `scooter_link` "Scooter bağlantısı" | DEFAULT | M23 (5.2) | RS `ScooterLink.kt:31-52` |
+| 5102 | `auto_start` | HIGH | "Scooter bağlanmadı" (5.3) | RS `AutoStartNotice.kt:19, 34-38` |
+
+### 11.5 Canlı değer mesajları (`logic/core`, A2.5)
+
+`ScooterLive` v1 (`ScooterMessages.kt`; bugünkü `scooter/v1/live` alanları: `schemaVersion`, `generatedAtMs`, `source`, `linkActive`, `ageMs`, `scooter{internalPct, externalPct, speedKmh, powerW, voltageV, currentA, rangeKm, tempC, odometerKm}`, `trip{wh, pctUsed, avgMovingKmh, km, movingMs, startedAtMs}`; `source` WEEM'de `weem_surus_paneli`), `BatterySummary` v1, `EnergyRequest`/`EnergyResult` v1, `EnergyBlock`. Doldurma kuralı (RS `ScooterLink.liveValues`, 66-76): `linkActive` = bağlantı servisi çalışıyor; `ageMs` = son kare yaşı (bağlantı yoksa `null`); değerler son kareden (bayatsa da; tazelik `ageMs ≤ 15 sn` ile okunur); `trip` yalnız bağlantı varken; hata → `linkActive=false`, hepsi `null`. Sağlayıcı (`content://com.kuryelog.app.economics/scooter/v1/live`) kalkar (S7).
+
+### 11.6 Serbest (iç) adlar
+
+Servis eylemleri `az.ninebot.logger.STOP`/`RECORD`, niyet ekstraları (`device`, `pair`, `live_only`, `sweep_*` …), iş parçacığı adları, uyandırma kilidi etiketi, `SurusPaneli` dış yüzü: dışa açık değil (`exported=false`) → WEEM'de ad serbest (`VERI_SOZLESMESI` 2: ad serbest, tür aynı `location|connectedDevice`).
+
+## 12. WEEM yerleşimi
+
+### 12.1 Modüller
+
+| Yer | İçerik | Görev |
+|---|---|---|
+| `logic/scooter` (saf Kotlin) | `NinebotCrypto`, `NinebotFrames`, `NinebotSession` (+ `Port`), `NinebotMetrics`, `NinebotMode`, `NinebotLink`, `SessionKey`, `Timing`, `ScooterReconnect` (M23), `PairingRules` (KeyVault aday/etkin/önceki kuralları, depo arayüzü `PairingStore`) | A5.2 |
+| `logic/scooter` | `NinebotDashboard`, `ScooterEnergy`, `TripMeter`, `PackPresence`, `NinebotEventQueue`, `NinebotLogPolicy`, `NinebotGpsPolicy`, `LogExport` (org.json), `ScooterSamples`, `ScooterLiveMapper` (kare + sayaç → `ScooterLive`), `ScooterLinkRules` (5.3 vardiya aç/kapat kararları, saf) | A5.3 |
+| `logic/scooter` | `FloatGeometry`, `PanelField` | A5.4 |
+| `:scooter` (Android) | `BleCapture` (GATT), `ScooterService` (bugünkü `RecordingService`; FGS türü `location\|connectedDevice`), `KeyVault` (Keystore, `pairing-v1`), `PairAttention`, `LoggerPreferences` (göç dahil), `LogStore` (`ninebot-logger.db`), `ScooterBridgeImpl` (`logic/core` `ScooterBridge`), vardiya dinleyicisi (`ShiftListeners`'a takılır: başta `open`, sonda `close`) | A5.2–A5.3 |
+| `:scooter` + `:app` | Compose Scooter sekmesi (canlı panel, tarama, eşleştirme, ayarlar, tanı, dışa aktarma), yüzen panel (`TYPE_APPLICATION_OVERLAY`; WEEM'in kendi ekranları açıkken gizli), PiP | A5.4 |
+
+Bağımlılık: `:scooter` → yalnız `:core` (plan 4.2). `:orders` ve `:economics` scooter'ı yalnız `ScooterBridge` üstünden görür.
+
+### 12.2 `ScooterBridge` ve sipariş enerjisi
+
+- `logic/core` `ScooterBridge` (A2.5): `orderAccepted(tripId, atWallMs)` → `TripMeter.reset(tripId)`; `orderDone(tripId, atWallMs)` → `TripMeter.end(tripId)`; `energy(from, to)` → `ScooterEnergy.block` → `EnergyBlock` (açık/ters pencere `not_measured`, hata `not_measured`); `batteryPct()` → taze (≤15 sn) kare `batteryPct`, 0–100; `live` → `ScooterLive` akışı (her kare ve bağlantı değişimi).
+- **Eksik arayüz (A5.3 ekler):** Rawstats'ta `:orders`'ın `core.addEnergy` beslemesi her 1 Hz örnekten gelen `ScooterSamples.Step`'tir (8.4). `logic/core`'a `ScooterBridge.steps: SharedFlow<EnergyStep>` (`usedWh`, `recoveredWh`, `ms`, `complete`) eklenir; `:orders` vardiyadayken toplar (`OrderFlow` → `DeliveryCore.addEnergy`). `NONE` adım üretmez.
+- Tek telefon: hepsi aynı süreçte, bugünkü gibi.
+- 2 telefon (A8): saniyelik veri Receiver'dan çıkmaz (plan 4.4) → Provider'daki `addEnergy` beslenemez. Öneri (A8.1 kesinleştirir): Receiver, `:link` üstünden gelen `OrderEvents` (uzak) ile aynı atamayı yapar ve sipariş kapanınca sipariş enerjisini (`wh`, `inWh`, `coveredMs`, `partialMs`, `shared`) tek mesajla Provider'a yollar; bacak/bekleme blokları `EnergyRequest`/`EnergyResult` ile (plan 4.4). Bu A5'i engellemez (14, R-S5).
+
+### 12.3 Roller ve bağlantı sahibi (S11)
+
+- `:scooter` BLE'yi yalnız **tek telefon** modunda ya da **Receiver** rolünde açar; Provider rolünde vardiya başı `open` `skip role_provider` yazar, Scooter sekmesi "Scooter Receiver telefonuna bağlı" der (canlı değerler `BatterySummary` ile).
+- Receiver'da vardiya bağlantısı: vardiya durumu `:link`'ten gelir (A8); bağlantı kopukken Receiver'da Scooter sekmesi ve `auto_live` ile bağlantı açılabilir (bugünkü Sürüş Paneli davranışı). Kesin kural A8.1'de.
+
+### 12.4 Metinler
+
+TR/AZ ikili metinler (`ScooterLink`, `ScooterReconnect` bildirimleri) aynen; Sürüş Paneli metinleri yalnız TR (bugün) → AZ karşılıkları A5.4'te eklenir (G3 dil kuralı, `scooter_language_section_test`). Ekranda "Rawstats" → "WEEM" (A3.1 kuralı); "Sürüş Paneli" adı Scooter sekmesinin başlığında kalabilir (A5.4 kararı); kayıt içi dizgiler (`app: "Sürüş Paneli"`, `source: "surus_paneli"`, `NinebotLogger-<ms>.zip`) değişmez.
+
+### 12.5 Kesişen kurallar
+
+- **Salt okuma** (2.6) + kaynak taraması testi.
+- **Ağsız (öneri, kullanıcı kuralı değil):** `:scooter`'ın ağa ihtiyacı yok (BLE dışında iletişim yok); ağ sınıfı kullanmadığı `NoNetworkTest` benzeri bir kaynak taramasıyla korunabilir (A5.2; `CAPTURE.md` 7.3 yöntemi).
+- **ICU:** `NinebotMetrics.exportable` deseni `bms_[0-9a-f]{2}_(…)` ICU güvenli; bütün desenler `RegexPortabilityTest`'e girer.
+- **Anahtar gizliliği:** anahtar baytları kullanımdan sonra sıfırlanır; anahtar hiçbir zaman olay/ZIP'e yazılmaz (yalnız tam teşhis ZIP'indeki tel kayıtlarından çıkarılabilir; uyarı metni aynı).
+- **Müşteri verisi:** scooter tarafına sipariş kimliği (`tripId`) dışında bir şey gitmez; `trip.label` = `tripId` (bugünkü gibi).
