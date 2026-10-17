@@ -384,3 +384,97 @@ Olay politikası (`NinebotLogPolicy.java:9-21`): sık türler `ble_raw`, `ble_wr
 - Tam teşhis: bütün yükler, `device` ve konum dahil.
 
 **WEEM:** dosya adı, şema, durum değerleri, olay türleri ve alanları, politika sabitleri, ZIP biçimi ve izin listesi **aynı** (`VERI_SOZLESMESI` 7–8; eski ZIP'leri okuyan araçlar çalışır). `LogExport` ve politikalar `logic/scooter`'da saf (`LogPolicyTest`, `EventQueueTest`, androidTest `LogExportTest` → JVM testine). Dosya adı `NinebotLogger-<ms>.zip` ve `app: "Sürüş Paneli"` korunur (analiz araçları; değiştirmek kullanıcı kararı, 14). GPS kaydı: 2 telefonda yalnız Receiver'da (scooter orada).
+
+## 8. S4 — Yolculuk sayacı ve R14 — sipariş başına enerji
+
+### 8.1 1 Hz örnek (NB `ScooterEnergy.java:27-47`, `BleCapture.java:74`)
+
+`Sample(wallMs, monoMs, intPct, intV, intA, extPct, extV, extA, powerW, tempC, speedKmh, odometerKm, externalKnown)` — `ScooterEnergy.sample(values, wall, mono, harici kart)`: `intPct` = `bms_07_percent`, yoksa `battery_percent` (15 sn); `intV`/`intA` iç paket (3 sn); harici kart >0 ise `extPct` (15 sn), `extV`/`extA` (3 sn); `powerW` = `NinebotMetrics.powerW` (3 sn); `tempC` (15 sn), `speedKmh` (3 sn), `odometerKm` (15 sn); `externalKnown` = harici kart biliniyor (taze olmasa da). Harici kart = `external_bms_boards`'un **ilk** kartı. `bothPacks()` = harici bilinmiyor ya da `extV` ve `extA` var (D10). `empty()` = `intV, intA, powerW, speedKmh, intPct, extV` hepsi null. Değer yoksa örnek de yok (`latestValues` boş → null).
+
+Servis tiki her saniye örneği `energy` deposuna, `trip` sayacına ve ana uygulamanın `SampleSink`'ine verir (`RecordingService.java:118-119`).
+
+### 8.2 Enerji bloğu (NB `ScooterEnergy.java`, saf)
+
+Sabitler: `SOURCE = "surus_paneli"` (13), `MAX_STEP_MS = 3.000` (15), `MIN_COVERAGE = 0,8` (17), `CAPACITY = 43.200` (~12 sa; 19), `FEEDING_A = −0,1` A (21), `EDGE_MS = 15.000` (24). `add` boş, sırasız (`monoMs ≤ son`) örneği atar; kapasite aşılınca en eski düşer (47).
+
+`block(from, to)` (51-66; pencere duvar saatiyle, kapalı aralık):
+- `source` = örnek yoksa `not_measured`, varsa `surus_paneli`; `power_verified = false`.
+- Adım (ardışık iki örnek): `0 < dt ≤ 3.000` ms, iki güç de var ve iki örnek de `bothPacks` ise `covered += dt`, `wh += −ort(güç) × dt / 3.600.000` (tüketim pozitif), `wSum += ort × dt`.
+- `enough` = `span > 0` ve `covered ≥ 0,8 × span`.
+- `internal`/`external` = `{pct_start, pct_end, v_avg, a_avg}`: uçlar `edge` (pencere ucuna en yakın değerli örnek, uca **≤15 sn** değilse `null`), ortalamalar yalnız `enough` ise.
+- `external_attached` = herhangi bir harici değer varsa `true`, yoksa `null`; `external_feeding` = harici değer varsa (`extA < −0,1` olan örnek var mı), yoksa `null`.
+- `vxa_w_avg` = `enough` ve `wMs>0` ise `−wSum/wMs` (tüketim pozitif); `wh` = `enough` ise; `esc_w_avg` = `null` (kaynak yok); `temp_c` = bütün örneklerin ortalaması (her zaman); `scooter_speed_kmh_avg` = `enough` ise; `odometer_km_start/end` = `edge`.
+- Anahtar ve iç içe yapı Rawstats `EnergySegments.energy()` ile aynı (RS `EnergySegments.kt:28-56`); Rawstats `energyFrom` yalnız şema anahtarlarını, sonlu sayıları ve bilinen `source`'u (`not_measured`, `surus_paneli`, `surus_paneli_ble`, `manual`) alır, yoksa tüm blok `not_measured`.
+- RS `ScooterBridge.energy(from, to?)` (33-37): kaynak yoksa ya da pencere açık/ters (`to == null || to ≤ from`) ise `not_measured` (kısmi rakam bütün gibi görünmesin); hata `not_measured`.
+
+### 8.3 Yolculuk sayacı (NB `TripMeter.java`, saf)
+
+- `MOVING_KMH = 1,0` (14); `reset(label, wall)` (37); `end(label, wall)`: etiket eşitse etiketsiz sıfırlar ve `true` (başka siparişin sayacına dokunmaz; 40).
+- `add(s)` (41-50): boş/sırasız atılır; ilk örnekte başlangıç zamanı; pil başlangıç/son (iç ve harici ayrı); `externalKnown` yapışkan; `powerW` son değer; `dt ≤ 3.000` ms ise: iki güç var ve iki örnek `bothPacks` → `e = −ort × dt/3.600.000`, `e ≥ 0` ise `wh += e`, değilse `inWh −= e` (giren enerji ayrı), `coveredMs += dt`; iki güç var ama paket eksik → `partialMs += dt`; iki hız ≥1 km/s → `movingMs += dt`, `km += ort hız × dt/3.600.000`.
+- `stats()` (51-53): `wh`/`inWh` hiç tam adım yoksa `null`; `pctUsed` = iç + harici düşüş (ikisi de varsa), harici bilinmiyorsa yalnız iç, harici bilinip yüzdesi okunmadıysa `null`; `max(0, …)`; `avgMovingKmh` = `km / (movingMs sa)` (hareket yoksa `null`); `km`, `movingMs`, son `powerW`.
+- Sıfırlama: bağlantı başında (`RecordingService.java:75`, etiket boş), Rawstats'ta sipariş kabulünde `resetTrip(tripId)`, teslimde `endTrip(tripId)` (RS `ScooterLink.kt:80-81`, `OrderTracker.kt:517-519`).
+
+### 8.4 Rawstats: saniyelik satır ve siparişe enerji (RS `ScooterLink.kt:154-200`, `ScooterSamples.kt`)
+
+Her 1 Hz örnekte (`sample`, Sürüş Paneli'nin yazıcı iş parçacığında):
+
+1. Önceki örnek saklanır; canlı yük duyurulur (`publish`, YolGo paylaşımı açıksa; S7 ile kalkar).
+2. Vardiyada kayıt izni yoksa (`Store.canRecordScreen`) `false` (bir şey yazılmaz).
+3. Enerji adımı `ScooterSamples.step(önceki mono, önceki güç, mono, güç, 3.000, önceki.bothPacks && şimdiki.bothPacks)` (37-42): `dt ≤ 0`, `> 3.000`, güç eksik/sonsuz → `null`; `wh = ort(güç) × dt / 3.600.000` (panel işareti, + şarj); `usedWh = max(0, −wh)`, `recoveredWh = max(0, wh)`, `complete`. → `OrderTracker.scooterEnergy` → `core.addEnergy` (yalnız vardiyada; `ORDERS.md` 4.11, `addEnergy`).
+4. D8 odometre (`ShiftDistance.observe`; bellek + tercih `shiftOdoFirstKm`, `shiftOdoLastKm` (m), `shiftOdoLastAt`; ilk değer değişmedikçe en sık 30 sn'de bir yazılır; vardiya başı/sonu sıfırlanır; `CORE.md` 1.4 D8).
+5. Satır **`economics-scooter.jsonl`** (gün klasörü, örneğin duvar saatinin günü; `ScooterSamples.row`, 44-51): `schemaVersion: 1`, `kind: "scooter_sample"`, `wall_ms`, `mono_ns` (= mono ms × 10⁶), `source: "surus_paneli"`, `scooter_id` (tercih `economics.scooterId`, yoksa `scooter-1`), `scooter_id_source` (`settings` / `default_single_scooter`), `power_verified: false`, `speed_kmh` (1 ondalık), **`vxa_w`** = −panel gücü (tüketim pozitif, 1), `int_pct` (0), `int_v`, `int_a` (2; BMS işareti), `ext_pct` (0), `ext_v`, `ext_a` (2), `temp_c` (1), `odometer_km` (1); eksik/sonsuz `null`, `−0.0` yazılmaz (21-26). Konum yok (`gps.csv`'de). `true` dönerse panel "Rawstats vardiyası kaydediyor" der.
+
+Teklif anında scooter pili: `ScooterBridge.batteryPct()` = taze (≤15 sn, `ScooterLink.FRESH_MS`) karenin `batteryPct`'i, sonlu ve 0–100 (RS `ScooterBridge.kt:39`, `ScooterLink.kt:27, 79, 84`; `ORDERS.md` 4.1 adım 16).
+
+**WEEM:** 8.1–8.3 saf ve aynen (`EnergyTest`, `TripMeterTest`, `ScooterSamplesTest`, `ScooterOrderEnergyTest`, `ScooterBridgeTest`); `energy(from, to)` `logic/core` `EnergyBlock` döndürür (`not_measured` aynı kural). `economics-scooter.jsonl` adı, şeması ve yuvarlamaları aynı; `source` `surus_paneli` korunur (analiz araçları ayırt etmek için `scooter_id_source` yeter). Sipariş enerjisi akışı 12.2.
+
+## 9. S5 — Harici batarya ("Battery 2")
+
+### 9.1 Yoklama (NB `NinebotSession.java:57-69, 151-166`; `NinebotMetrics.java:31-36`)
+
+- Tercih `battery_probe` (ayar "Harici batarya taraması", varsayılan false; "Bir kerelik, salt-okunur arama"): açıksa sonraki bağlantıda aday kartlar yoklanır, bitince `false` yazılır (NB `BleCapture.java:56`).
+- Adaylar `EXTERNAL_BMS_CANDIDATES` (31 kart, sırayla): `08, 06, 09, 05, 0a, 03, 0b, 01, 0c, 0d, 0e, 0f, 10, 11, 12, 13, 14, 15, 17, 18, 19, 1a, 1b, 1c, 1d, 1e, 1f, 20, 21, 24, 25` (bilinen `00/16` VCU, `02` MCU, `04` BLE, `07` iç BMS ve her zaman okunan `22/23` yok).
+- `batteryBoards(known, probe)` (63-69; AUTH bitmeden): bilinen kartların voltajı iç paket voltajının **hemen arkasına** (G3'te hep sessiz `22/23`'ün önüne), yoklama kartları sona; `0x16` ve `4` ile zaten listedekiler atlanır; not `battery_boards {known, probe, tries}`; yoklanacak kart kalmadıysa hemen `batteryProbeDone(false)`.
+- Her turda **bir** yoklama okuması (2.5 tur sırası); yanıt: voltaj `30 ≤ V ≤ 60` ise aday (`battery_probe_candidate`, kartın batarya registerları eklenir), değilse kart düşer (`battery_probe_reject {board, raw_hex}`). Zaman aşımı kart başına `PROBE_TRIES = 2` (`battery_probe_timeout` / `battery_probe_miss`); yoklama zaman aşımı kayıp bağlantı sayılmaz.
+- Adayın yüzdesi (`0x8f`) yanıtlarsa **onay** (`battery_probe_found {board, board_hex}`; `port.batteryFound` → `external_bms_boards = addBoard(…)`), kalan yoklama ve diğer adaylar biter (`battery_probe_partial reason=other_pack_confirmed`; tek harici paket beklenir). Yüzde sınır dışı/sessiz → aday düşer (`reason=percent_out_of_range` / `percent_silent`).
+- Bitiş (`maybeProbeDone`): not `battery_probe_done {found, boards}`, durum "G3 bağlı • harici batarya bulundu (kart kk)" / "G3 bağlı • harici batarya bulunamadı".
+- Olay `battery_config {probe, known_boards}` bağlantı başında (NB `BleCapture.java:60-61`).
+- Saha: kullanıcının scooter'ında harici paket **`0x06`** (9 Ekim; `docs/FIELD_TEST_2026-10-09.md`), voltaj 49,0–49,8 V, akım deşarjda eksi.
+
+### 9.2 Sessiz paket (D12, NB `NinebotSession.java:45-51, 124-127, 162-163`)
+
+Daha önce yanıtlamış harici kart (`7` ve `0x16` değil) 3 ardışık zaman aşımında **düşmez**: sessiz olur (`battery_quiet {board, timeouts, retry_ms}`), değerleri bayatlar, yalnız voltajı **15 sn'de bir** turun dışında sorulur; sessiz okumalar kayıp bağlantıya sayılmaz; ilk yanıtta bütün registerları geri gelir (`battery_back`). `quietPacks()` panel ve testler için.
+
+### 9.3 Güç ve enerjide harici paket
+
+- Güç toplamına yalnız yüzdesi ≤60 sn önce okunmuş harici paket girer (`PACK_CONFIRM_MS`; 3.2).
+- Harici paket sürüşte iç paketi besler (9 Ekim): yalnız iç paket okunursa tüketim eksik (~%40) ya da negatif görünür; bu yüzden enerji ve sayaçta yalnız iki paketin gücü olan adımlar sayılır (D10; 8.2–8.4). InfoSheet metni bunu kullanıcıya söyler (NB `InfoSheet.java`).
+
+### 9.4 Bağlandı / koptu duyurusu (NB `PackPresence.java`, saf; `RecordingService.java:41-47`)
+
+- `STABLE_MS = 60.000` (10). `observe(present, now)` (15-23): yeni durum 60 sn sürmeden konuşmaz; aynı durumu tekrar söylemez; hiç görülmemiş paket "koptu" denmez. `linkDown(now)` (25): bağlantı ≥60 sn kopuk kalırsa sonraki kare **yeni bağlantı** (B3: tekrar söylenir); kısa kopma (3–5 sn) aynı bağlantı.
+- Servis her karede (`present` = `extBatteryPct != null`); `null` kare → `linkDown`. Toast (uzun): "İkinci batarya bağlı • %<p>" / "İkinci batarya 60 sn'dir okunmuyor".
+
+**WEEM:** aday listesi, eşikler, yoklama sırası ve D12 aynen (`BatteryProbeTest` 64 satır / 854 çalışma denetimi); `external_bms_boards` ve `battery_probe` tercihleri aynı. Toast yerine Scooter sekmesinde kısa bildirim çubuğu olabilir (metin aynı; A5.4 kararı, davranış aynı).
+
+## 10. S8 — Tanı araçları
+
+### 10.1 Register keşfi (sweep)
+
+- Tercih `sweep` (ayar "Register keşif (sweep) modu", "Salt-okunur teşhis • normal sürüşte kapalı tut", varsayılan false; bağlantı yokken değişir).
+- Kapsam sabit: kart `0x16`, `0x00…0xc0` (193 register; `RecordingService.java:40`), her biri 2 bayt işaretli ham (`sweep_16_xx`, 3.1); `Sweep` doğrulaması: kart 0–255, `0 ≤ from ≤ to ≤ 255`, aralık ≤255; hatalı tanım `sweep_config_rejected` ile atlanır (`NinebotMetrics.java:47-51`, `RecordingService.java:76`).
+- Her turda **bir** sweep okuması; sweep zaman aşımı register düşürmez ve kayıp bağlantıya sayılmaz; sweep değerleri panelde, güçte, dışa aktarmada yok (`exportable`, `packBoards`).
+
+### 10.2 Ayrıntılı teşhis ve tam ZIP
+
+- `detailed_diagnostics` (ayar "Ayrıntılı teşhis", "Sonraki kaydın ilk 10 dakikası"): sık olaylar (`ble_raw`, `ble_write`, `ble_write_result`, READING `protocol_tx`, `ble_measurement`) yazılır (7.3); kapalıyken satır nesnesi hiç kurulmaz (`frequent` + `Supplier`).
+- Tam teşhis ZIP (7.4): ham tel, el sıkışma, adres, konum; tel kayıtlarından eşleşme anahtarı çıkarılabilir (`wire_transcript_sensitive: true`).
+- Ayar ekranı durum paneli (`summaryWatched`): saniyede bir "KAYIT AÇIK • N dk / GPS … / <BLE durumu> / GPS: N ölçüm • BLE: M paket / <ölçümler>" ya da "CANLI PANEL • …" (`RecordingService.java:122-124`).
+- Bilgi sayfası (`InfoSheet.java`): "Bağlantı bilgisi", "Eşleştirme", "Gelişmiş bağlantı", "Güç nasıl hesaplanır?", "Harici batarya", "Register keşfi", "GPS, Bluetooth ve pil", "Canlı panel ve küçük pencere", "Rawstats vardiyası" bölümleri (metinler kaynakta).
+
+### 10.3 Dizüstü araçları (NB üstü `tools/`, CI dışı)
+
+- `tools/g3_readonly.py` (222 satır; `bleak 3.0.2`, `pycryptodome 3.23.0`): aynı UUID'ler ve `gen2_fw`; izin verilen çerçeveler `(4,0x5b,0,0)`, `(4,0x5d,0,14)`, `--pair` ile `(4,0x5c,0,16)`, ve yalnız sabit 7 okuma (`16:55`, `16:5f`, `16:62`, `16:6b`, `07:8c`, `22:8c`, `23:8c`).
+- `tools/reference/nb_crypto.py` — **lisans:** Apache License 2.0, `NootNooot/segway-ninebot-ble-cli` @ `bb6f3d325237fa91e683df27f2197f9cb771e841` (2026-10-03), SHA-256 `1302a7c864a95471a73a3c9f6be9892bfc09a3a324c0f1211dc35e71d775607c`, değiştirilmemiş; `LICENSE` ve `NOTICE` (Copyright 2026 NootNooot; Segway/Ninebot ile ilişkisiz, birlikte çalışabilirlik için tersine mühendislik) yanında (NR `PROVENANCE.md`). Modülün kendi tekrar denetimi kapalı; çalıştırıcı katı RX denetimleri ekler. Eşitlik testi Java şifrelemesini, parola üretimini ve sentetik PRE_COMM / SET_PWD / AUTH / ilk okuma dizilerini buna karşı sınar; G3 uyumluluğu ya da gerçek el sıkışma kanıtı değildir.
+
+**WEEM:** `sweep`, `detailed_diagnostics` ve tam ZIP aynı tercih adları ve sınırlarla (`SweepTest`, `LogPolicyTest`); Scooter sekmesinde "Tanı" altında. `nb_crypto.py` WEEM reposuna **yalnız test referansı** olarak, `LICENSE` + `NOTICE` + `PROVENANCE.md` ile birlikte değiştirilmeden kopyalanır (Apache-2.0 koşulu: lisans ve bildirim korunur); APK'ya girmez. Python araçları CI'da çalışmaz (bugünkü gibi); `ProtocolTest` sabit vektörleri JVM'de yeter (13).
