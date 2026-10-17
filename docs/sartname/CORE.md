@@ -264,3 +264,133 @@ YolGo evi Rawstats'tan okur (`SHARE_HOME`, istek 703, 20 sn zaman aşımı, 6 sa
 - `Store.failure(source, e)` (`Store.kt:28-31`): `lastError = "<source>: <SimpleName>: <message>"`; `errors.jsonl` (gün klasörü) satırı `{t: ts(), source, error: lastError}`. Bugünkü kaynak etiketleri (A3 için liste): `screen_start`, `event`, `screen`, `ocr`, `tick`, `event_scope`, `notification`, `gps`, `gps_orders`, `shift_start`, `shift_resume`, `shift_orders`, `shift_scooter`, `shift_end`, `economics_idle`, `open_waits`, `online_sessions`, `page_<ad>`.
 - **Koruma ilkesi** (16 Eki saha düzeltmesi; `CrashGuardTest`): sistemin çağırdığı her giriş (erişilebilirlik olayı ve tik'i, ekran okuma, OCR geri çağrıları, bildirim dinleyici, konum geri çağrısı, vardiya servisinin başlatma/fix/bitirme adımları, sayfa çizimi ve dokunuşlar) hatayı kaydeder, **fırlatmaz**; tik her durumda yeniden kurulur (`finally`); ön plan diye başlatılan servis reddedilse de `startForeground`'a ulaşır (1.2 adım 4).
 - **WEEM:** tek yardımcı `guarded(source) { … }` (`logic/core`, saf; kayıt hedefi arayüz): `Throwable` yakalar, `VirtualMachineError`'ı yeniden fırlatır (bugünkü `GpsService.guarded`, `:113-115`). Eski kodda bazı girişler `runCatching` kullanıyor (bellek hatasını da yutuyor); WEEM'de hepsi `guarded` — **bilerek küçük fark** (bellek/yığın taşması artık süreci kapatır ve çökme raporu yazılır).
+
+## 5. Depolama (A2.3)
+
+### 5.1 Yerler
+
+| Yer | İçerik | Sahibi · aşama |
+|---|---|---|
+| `filesDir/logs/YYYY-MM-DD/` | gün klasörü; `logNames` dosyaları + `.archived`, `.archived-<ad>` işaretleri | `:core` · A2.3 |
+| `filesDir/crashes.jsonl` | çökme raporları (4.1) | `:core` · A2.3 |
+| `filesDir/restaurants.json` | restoran öğrenmesi (JSON nesne; anahtar başına `n` sayacı) | `:orders` · A3 (içe aktarma birleştirmesi A2.3) |
+| `databases/courier.db` | 5.5 | `:core` şema · A2.3; satırlar `:orders` · A3 |
+| `shared_prefs/kuryelog.xml` | 5.6 | anahtar sahibine göre |
+| `noBackupFilesDir/economics-day-secrets-v3/<gün>` | 32 bayt gün sırrı; yedeğe girmez | `:core` · A4.3 |
+| `logger`, `pairing-v1` tercihleri; `ninebot-logger.db`; Keystore | Sürüş Paneli | `:scooter` · A5 |
+
+### 5.2 Satır ekleme ve olaylar (RS `Store.kt:56-88`)
+
+- `append(name, line, day = null): Boolean` — **tek kilit** (`@Synchronized`, tüm dosyalar): `day` verilmişse `\d{4}-\d{2}-\d{2}` olmalı (değilse hata → aşağıdaki gibi false), o klasöre; yoksa `day(now)`. Klasör yoksa açılır; `line + "\n"` eklenir; aynı klasörde `.archived` ve `.archived-<name>` **silinir** (yeni kayıt günü arşivden çıkarır). Ad `LogFeedV3.names` içindeyse gün değişikliği duyurulur (WEEM: iç olay `DayLogChanged(day)`, gün başına en çok 5 sn'de bir; `:map` Y19 dinler). Hata → `lastError = "Kayıt yazılamadı: <mesaj>"` / "Qeyd yazılmadı: …", **false**, fırlatmaz.
+- `event(type, extra?)` → `events.jsonl`: `extra` nesnesine `t = ts()`, `type`, son konum varsa `loc = {lat, lon, acc, age_s}` (`age_s` = (şimdi − fix duvar zamanı)/1000, tam sayı). Vardiya olayları (A2.4): `shift_start {auto, reason}`, `shift_end {km, km_gps, km_scooter, km_from_scooter, min, reason}`, `shift_interrupted {err}`, `shift_resumed {interruptedAt}`, `gps_error {err}`, `gps_no_permission`, `gps_disabled`, `home_watch_no_permission`, `home_watch_error {err}`, `home_auto_start_failed {err}`.
+- `errors.jsonl`: 4.2. `gps.csv`: 1.3 adım 5.
+- **JSON:** org.json API (Android'de platformunki; `logic/` testlerinde `org.json:json:20240303`, Rawstats'ın test bağımlılığı). Eşitlik **ayrıştırılmış değerle** ölçülür (alan sırası ve kaçış biçimi önemsiz; Android `/` karakterini `\/` yazar, JVM kütüphanesi yazmaz). Gölge mod karşılaştırması da böyle.
+
+### 5.3 Gün kayıtları (RS `BackupFiles.kt:5-48`, `DailyRecords.kt:7-52`)
+
+- **`logNames`** (27 ad, tek kaynak; listede olmayan dosya dışa/içe aktarma ve gün silmede yok sayılır): `screens.jsonl`, `notifs.jsonl`, `events.jsonl`, `orders.jsonl`, `gps.csv`, `scooter.jsonl`, `scooter_events.jsonl`, `scooter_averages.jsonl`, `platforms.jsonl`, `errors.jsonl`, `economics-waits.jsonl`, `economics-exposure.jsonl`, `online-sessions.jsonl`, `economics-offers.jsonl`, `economics-legs.jsonl`, `economics-idle.jsonl`, `economics-penalties.jsonl`, `economics-platform-history.jsonl`, `economics-platform-totals.jsonl`, `economics-cash-tips.jsonl`, `economics-pocket-cash.jsonl`, `economics-cash-pending.jsonl`, `economics-boosts.jsonl`, `economics-energy.jsonl`, `economics-scooter.jsonl`, `economics-offer-scores.jsonl`, `economics-offer-ratings.jsonl`. WEEM yeni gün dosyası eklerse bu listeye girer (`everyFileWrittenByTheAppIsInTheBackupList` WEEM kaynağını tarar).
+- `DailyRecords(root)`: tarih `\d{4}-\d{2}-\d{2}` ve `LocalDate.parse` geçerli olmalı (yoksa `require`/parse hatası — yol geçişi reddi). `days()`: klasörler, tanınan dosyası olmayan gün yok, `Day(date, bytes = Σ boyut, archived = .archived var, files ad sırasıyla)`, tarihe göre **yeniden eskiye**. `files(date)`: yalnız `logNames` içindeki dosyalar. `archived(date, name)` = `.archived-<name>` var. `archive(date, name?, enabled)`: klasör olmalı; işaret yazılır/silinir (içerik hiç değişmez). `delete(date)`: yalnız tanınan dosyalar ve bizim işaretlerimiz; bilinmeyen dosya kalır; klasör boşaldıysa silinir. `delete(date, name)`: o dosya ve işareti.
+- **İçe aktarma** (`LogImporter.restore`, RS `LogImporter.kt:10-66`) — **A2.3'e alınır** (A2.6'da `.dev` eski veriyi ancak Rawstats ZIP'iyle okuyabilir; başka paketin dosyası okunamaz): vardiya açıkken başlatılmaz; sürerken `importing = true` (vardiya başlatma ve ekran kaydı durur). Önce hepsi geçici klasöre: dizin girdileri atlanır; ad `checkedPath` (yalnız `restaurants.json` ya da `YYYY-MM-DD/<logNames>`; `\` ve baştaki `/` red; tarih geçerli); aynı ad iki kez → red; ≥2000 dosya → red; dosya ≤32 MB, toplam ≤256 MB; `.jsonl` her dolu satır JSON nesnesi, `restaurants.json` JSON nesnesi, `.csv` ilk satır `gps.csv` başlığı olmalı; boş ZIP red. **Hepsi geçerliyse** yazılır: gün dosyaları `mergeLines(var olan, gelen)` (boş satırsız, sıra korunur, aynı satır bir kez, sonda `\n`), `restaurants.json` anahtar başına `n`'i büyük olan; her dosya `<ad>.restore`'a yazılıp yeniden adlandırılır. Sonra `OrderTracker.reloadImportedStats` (A3'te dolar). Herhangi bir hata (bellek dahil) → hiçbir kayıt değişmez (yazma aşamasına geçilmediyse), mesaj gösterilir, `importing = false`.
+- Dışa aktarma ZIP'i, günlük paket, anonim dışa aktarma: A4.3 (R17, R18).
+- **A2.6 için ekran (öneri):** "Daha fazla → Kayıtlar": ZIP içe aktar + gün listesi (tarih, dosya sayısı, boyut, arşiv). Rawstats'taki içe aktarma ve gün sayfasının (R12) ilk parçası; A3 R12 genişletir.
+
+### 5.4 Göç işaretleri
+
+- `manualPolicy` (Int): 1.1.
+- `structuredMigration07` (Bool): `OrderTracker` ilk açılışta false ise `courier.db`'yi gün klasörlerindeki `orders.jsonl`'den yeniden kurar (`rebuildRecords`, RS `OrderTracker.kt:270-273,910+`), sonra true. **A3'te korunur**; Rawstats'ın üstüne kurulumda zaten true. `.dev`'de içe aktarmadan sonra `reloadImportedStats`.
+- `userPicked` (Bool) + `targets` (StringSet): izlenen uygulamalar elle seçildi mi (R2, A3).
+
+### 5.5 `courier.db` (RS `CourierDb.kt:10-45`)
+
+- `SQLiteOpenHelper("courier.db", version 1)`; `onCreate` tam olarak:
+  `CREATE TABLE trips(id TEXT PRIMARY KEY,pkg TEXT NOT NULL,day TEXT NOT NULL,payload TEXT NOT NULL)` · `CREATE INDEX trips_day ON trips(day)` · `CREATE TABLE offers(id TEXT PRIMARY KEY,pkg TEXT NOT NULL,day TEXT NOT NULL,result TEXT,payload TEXT NOT NULL)` · `CREATE INDEX offers_day ON offers(day)` · `CREATE TABLE session(k TEXT PRIMARY KEY,payload TEXT NOT NULL)`. `onUpgrade` boş.
+- İşlemler (hepsi tek kilitte): `saveTrip(j)` / `saveOffer(j, result?)` = `id`, `pkg`, `day` alanları yüklemden, `payload = j.toString()`, çakışmada **REPLACE**; `trips(day?)` ve `offers(day)` `id` sırasıyla; `offer(id)`; `offerCount(day, result)` SQL'de sayar (yük ayrıştırılmaz); `session()` / `session(j)` tek satır `k='active'`; `batch {}` tek işlem; `clear()` üç tabloyu tek işlemde boşaltır.
+- **WEEM:** ad, sürüm ve DDL aynı; DDL dizgileri `logic/core`'da sabit (birebir dizgi testi), Android yardımcısı onları çalıştırır. Yeni tablo gerekirse sürüm 2 + gerçek göç (boş `onUpgrade` kalmaz). Müşteri telefonu yalnız burada (`withPhone=true`, `VERI_SOZLESMESI` 9).
+
+### 5.6 `kuryelog` tercihleri — tam liste (A2.1'de kaynaktan çıkarıldı; `VERI_SOZLESMESI` 5.1'in yerine geçer)
+
+| Anahtar | Tip (varsayılan) | Anlam | Sahibi · aşama |
+|---|---|---|---|
+| `lang` | String `tr`\|`az`\|yok | dil | `:app` · A1.3 |
+| `theme` | String `system`\|`light`\|`dark` | **yeni** (A1.3) | `:app` |
+| `shift`, `manualSession`, `autoStarted`, `autoShift` | Bool (false) | 1.1 | `:core` · A2.4 |
+| `manualPolicy` | **Int** (0) | göç işareti | `:core` · A2.4 |
+| `shiftStart`, `shiftEndedAt`, `shiftInterruptedAt` | Long ms (0) | 1.1, 1.5 | `:core` · A2.4 |
+| `shiftStartReason`, `shiftEndReason` | String | 1.1 | `:core` · A2.4 |
+| `dist` | Float m (0) | 1.3 | `:core` · A2.4 |
+| `home.lat`, `home.lon` | **String** | 2.1 | `:core` · A2.4 |
+| `home.updatedAt` | Long (yok = bilinmiyor) | 2.1 | `:core` · A2.4 |
+| `home.startBlocked`, `home.endArmed` | Bool (false) | 1.6 | `:core` · A2.4 |
+| `crashSeenAt` | Long (0) | 4.1 | `:core` · A2.3 |
+| `weem.deviceId` | String | **yeni** (1.10) | `:core` · A2.4 |
+| `targets` | StringSet | izlenen uygulamalar | `:capture` · A3 |
+| `userPicked`, `structuredMigration07` | Bool (false) | 5.4 | `:capture` / `:orders` · A3 |
+| `ocr`, `overlay` | Bool | OCR, rozet | `:capture` / `:orders` · A3 |
+| `bx`, `by` | Int (12, 95) | rozet konumu | `:orders` · A3 |
+| `commission`, `commission:<pkg>` | Float | filo komisyonu | `:orders` · A3 |
+| `customerCard` | Bool | müşteri kartı | `:orders` · A3 |
+| `customerCardSizePct`, `restaurantBubbleWidthPct` | Int (85, 90) | balon boyu | `:orders` · A3 |
+| `onlineSessions.v1`, `economicsIdle.v1`, `openWaits.v1` | String JSON | açık oturum/bekleme | `:orders` · A3 |
+| `cashPending.azn`, `cashPending.at` | String / Long | son Wolt nakit borcu | `:orders` · A3 |
+| `economics.vehicle`, `economics.zone`, `economics.appMode` (`shadow`), `economics.scooterId` | String | ekonomi ayarları | `:economics` · A4 |
+| `dailyPack` | Bool (true) | günlük paket | `:core` · A4.3 |
+| `scooter.autoConnect` | Bool (true) | vardiyada scooter'a bağlan | `:scooter` · A5 |
+| `scooter.shiftLink` | Bool | bağlantıyı vardiya açtı | `:scooter` · A5 |
+| `shiftOdoFirstKm`, `shiftOdoLastKm` | Long m (−1) | 1.4 D8 | `:scooter` · A5 (okuyan `:core`) |
+| `shiftOdoLastAt` | Long ms | 1.4 | `:scooter` · A5 |
+| `economics.share` | Bool | YolGo'ya paylaşım anahtarı | **kalkar** (S7; okunmaz, silinmez) |
+
+`home.ui.*` tercih değildir (Activity durum paketi, 2.2). `pocket_cash`, `cash_received` bildirim yanıt (`RemoteInput`) anahtarlarıdır, tercih değil.
+
+## 6. Test eşlemesi (A2.2 bunu izler)
+
+Yer: saf testler `logic/core/src/test/kotlin/com/kuryelog/logic/core/` (JVM, Android'siz; `org.json` test bağımlılığı). "Kaynak taraması" = eski test Rawstats kaynak dosyasında dizgi arıyor; WEEM'de **karar saf koda alındığı için** çoğu saf teste döner, kalanlar WEEM'in kendi Android kaynağını tarar (bileşen yazıldığı görevde).
+
+### 6.1 Rawstats (19 dosya, 113)
+
+| Test (sayı) | WEEM | Görev | Not |
+|---|---|---|---|
+| `HomeShiftK38Test` (11) | saf, aynen | A2.2 → A2.4 | |
+| `HomeShiftE6Test` (9) | 8 saf aynen; `watcherAndSettingsFollowTheRule` → WEEM izleyici kaynağı taraması (HIGH = GPS 2 sn, hız `hasSpeed` ise; ayar metni `START_RADIUS_M`'den) | A2.4 | |
+| `HomeEndRuleF45bTest` (7) | 6 saf aynen; `serviceTellsTheRuleWhetherAnOrderIsOpen` → `ShiftMachine` saf testi (`busy` sağlayıcısı ev kuralına geçer) + A3'te `OrderEvents` bağlantısı | A2.4 | |
+| `ShiftInterruptH4Test` (3) | 2 saf aynen; kaynak taraması → `ShiftMachine` saf testi (H4: olay, tercih, 5103, devamda `shift_resumed` + silme) | A2.4 | |
+| `ShiftStateF41Test` (5) | `runningShift`, `endedShiftAndUnknowns`, `interruptedShiftIsVisible` saf aynen; `pathAndUri`, `providerGrantAndAnnouncement` **çevrilmez** (sağlayıcı kalkar, S7) | A2.2 | ShiftState v1 alanları 1.8 |
+| `EndedShiftMinutesTest` (5) | saf aynen (`java.io`) | A2.2 → A2.4 | |
+| `ShiftDistanceD8Test` (4) | saf aynen | A2.2 → A2.4 | |
+| `HomeRepositoryTest` (7) | saf aynen (sahte `Storage`) | A2.2 → A2.4 | |
+| `HomeDraftTest` (5), `HomeFixesTest` (4), `HomeFixRegressionTest` (2) | saf aynen | A2.2 → A2.4 | |
+| `CrashReportTest` (7) | saf; iki beklenti WEEM'e uyarlanır: paylaşılan metin "WEEM …", ilk kare deseni `com.kuryelog.(app\|logic)` | A2.2 → A2.3 | 4.1 |
+| `CrashGuardTest` (10) | `everyProcessStartInstallsTheCrashRecorderFirst`, `pagesAndTapsDoNotCloseTheApp` → A2.3 (WEEM `Application`, sekme hata sınırı); `gpsServiceStartFixAndStopAreGuarded`, `refusedForegroundStartStillReachesStartForeground` → A2.4 (vardiya servisi); `everyScreenReadGoesThroughTheGuard`, `accessibilityEventsAreGuarded`, `tickRecordsAFailureAndAlwaysRunsAgain`, `notificationListenerNeverThrows`, `screenServiceStartAndOcrCallbacksAreGuarded`, `gpsOrderStepsAreGuarded` → **A3** (bileşenleri orada). Ek saf test: `guarded` yakalar/kaydeder, `VirtualMachineError`'ı fırlatır | A2.3 / A2.4 / A3 | 4.2 |
+| `DailyRecordsTest` (8) | saf aynen (`TemporaryFolder`); `everyFileWrittenByTheAppIsInTheBackupList` WEEM kaynağını tarar (`append(…, "<ad>")`) | A2.2 → A2.3 | |
+| `RecordJsonTest` (6) | **`:orders`'a** (yolculuk/teklif tipleri orada) | A3 | |
+| `AnalysisExportTest` (13), `DailyPackTest` (2), `ExportKeysParityTest` (1), `RedactorParityTest` (4) | `:core` modülü ama **A4.3** (R17, R18) | A4.3 | |
+
+Aşama 2 toplamı: 79 test (+ yeni `guarded`, `NotificationIdsTest`, `ShiftMachine`, DDL testleri); A3: 12; A4.3: 20; çevrilmez: 2.
+
+### 6.2 YolGo (Dart 6 + Kotlin 2 dosya)
+
+"Aynen" = YolGo senaryosu ve beklentisi Rawstats kuralında aynı (1.9'daki koşuyla doğrulandı); `HomeDayRules` çağrıları `HomeShift`'e: `idle(f)` → `observe(f, false)`, `day(f, busy)` → `observe(f, true, busy)`, `dayEnded(manual: true)` → `onManualStop()`, `dayStarted()` (elle) → `onManualStart()`; konum dönüşümü YolGo yardımcısındaki gibi.
+
+| Test (sayı) | WEEM | Görev |
+|---|---|---|
+| `home_day_rules_test` (19) | **aynen 8:** "50 m ötede iki tutarlı…", "10 km/s sınırın altında…", "GPS hız vermezse (0)…", "dışarıda dururken GPS titremesi…", "başlangıçta doğruluk >20 m ve sıra dışı zaman…", "evde elle bitirince…", "dışarıda elle bitirince…", "eve dönünce otomatik bitince…". **Fark 1:** "sıçrayan fix…" → beklenti 1.9 (a: hiç başlamaz; b: 31. sn'de başlar). **F4.5b'ye ölçeklenir 8** (`legacy()` grubu 200 m/10 km/s/2 dk ile parametreliydi; WEEM kuralı parametresiz): konumlar 150→20 m, giriş hızı 6→4 km/s, 2 dk→30 sn; beklentiler: "tam 120. sn" → ilk `end` giriş fix'inden 30 sn sonra (dizin 2+30); "günü evde başlatıp…" (40 m) → hiç; "tek sapan fix" (70 m, doğruluk 30) → **kurar**, 40 m'de 30 sn sonra `end` (doğruluk 31–35 ile kurmaz); "10 m'yi aşan kayma" (10,5 m) → hiç; "bölgeye ≥10 km/s" (≥5 km/s'ye) → yavaşlayınca 30. fix'te `end`; "süren siparişte…" → hiç (ayar kısmı çevrilmez); "dışarıya çıkınca pencere iptal" → gerçekçi çıkışla (380 m/60 sn) 30. fix'te `end`, 2 sn'lik sıçramayla ayrıca dönüşteki ilk fix'te `end` (fark, 1.9); "yeni gün eski günün kurulumunu taşımaz" → yeni vardiya `onManualStart` sonrası 20 m'de hiç. **Çevrilmez 1:** "ayar kapalıysa başlamaz" (ayar yok). **Uyarlanır 1:** "kalıcı durum koordinat içermez…" → `home.startBlocked`/`home.endArmed` iki bool, koordinat yok; ev değişince koruyucular düşer (`HomeRepository.set`) | A2.2 → A2.4 |
+| `home_day_e6_test` (10) | aynen 9; **fark 1:** "elle bitirdikten sonra 50–200 m içinde…" → hepsi `none`, `startBlocked == true` | A2.2 → A2.4 |
+| `home_day_end_rule_test` (5) | "varsayılanlar" → `HomeShift` sabitleri; "29 sn yetmez…", "60 m ışık", "sipariş açıkken" aynen; **fark 1:** "50 m içinde 30 sn dur" → ilk `end` **36. sn** | A2.2 → A2.4 |
+| `home_day_controller_test` (5) | 1–2 `ShiftMachine` saf testi (neden `home_departure`/`manual`/`home_arrival`, elle bitirince evde yeniden başlamaz, 30 sn sonra `home_arrival`); 3'ün "ev yoksa başlamaz" kısmı aynı (ayar kısmı çevrilmez); 4 (feed aşamaları) ve 5 (gün istatistiği nedeni metni) → **`:map` A6** | A2.4 / A6 |
+| `rawstats_shift_end_test` (11) | **uyarlanır:** saf `ShiftFollower` (`logic/core`): kendi "gün"ünü tutan modül (`:map` gün motoru) `ShiftState`'i izler — kapalı vardiya + işlenmemiş `endedAtMs` (gün başından önce değil) → günü o anla bitir; açık vardiya + kapalı gün + işlenmemiş `startedAtMs` → o anla başlat; gün açıkken görülen başlangıç "işlendi" sayılır (elle bitirilen gün aynı vardiyada yeniden açılmaz); her damga bir kez; bozuk/başka şema ya da okuma yok → hiçbir şey | A2.2 → A2.5 |
+| `shift_engine_test` (9) | **`:map`'e** (YolGo gün motoru: km, duruş, ışık, sipariş aşaması; Y11/Y17/Y18) | A6 |
+| `native_telemetry_test` (1) | **çevrilmez** (Flutter kanal yarışı); ilkesi `ShiftMachine` testinde: kapanmış vardiyaya geç gelen eski başlatma/yapılandırma isteği vardiyayı açmaz | A2.4 |
+| `NotifyPolicyTest` (2, Kotlin) | saf aynen | A2.2 → A2.4 |
+| `TelemetryJournalTest` (8, Kotlin) | **`:map`'e** (YolGo yerel servis → Flutter tamponu; WEEM'de köprü yok; Y18 kayıt yazıcısı aynı sınırlı günlüğü kullanırsa çevrilir, A6.1 karar verir) | A6 |
+| `rawstats_home_sync_test` (13), `rawstats_home_stale_test` (6) | **çevrilmez** (tek ev, S7; korunacak tek ilke "başarısız okuma evi silmez" `HomeRepositoryTest.invalidSaveDoesNotEraseAValidHome`'da) | — |
+| `HomePickContractTest` (6, Rawstats, uyarlanır) | saf `HomePickResult.parse(ok, lat: Any?, lon: Any?)`: yalnız `Double`, sayıya/dizgiye zorlama yok, sonlu ve aralıkta, 0 ve sınırlar geçerli, iptal hiçbir şey seçmez; sonuç doğruluğu bilinmeyen taslak. `:map` seçicisi (A6) bunu kullanır | A2.2 → A2.4 |
+
+`TEST_ENVANTERI.md` hedef sütunu buna göre güncellendi (Bölüm 7).
+
+## 7. Açık noktalar ve riskler
+
+- **Kullanıcıya sorulacak (engel değil):** (1) İki km ölçüsü (Rawstats D8 `shift_end.km` ve YolGo gün km'si) bir ekranda yan yana görünecek (Y17 istatistik, R12 gün sayfası); hangisi gösterilsin ya da ikisi mi — A6.1'de sorulur, o zamana kadar ikisi de eski yerinde. (2) 1.9'daki farklar S2 kararının sonucu; saha denemesinde (K0.1, gölge mod) "evde tek sapan fix vardiyayı kurdu" gibi bir bulgu çıkarsa kural kullanıcı kararıyla değişir.
+- **Doğrulanmadı:** ev izleyicinin ve H4'ün telefonda davranışı (Rawstats'ta da "telefonda denenmedi" notu, `HomeShiftE6Test.kt:106`); 1.3'teki Android `Location.distanceTo` ile saf haversine farkı (A2.4 seçimi, gölge modda denetlenir).
+- **Bilerek küçük farklar:** bildirim numaraları 5103→5104 (ekran okuma) ve 4000+→10000+ (nakit bahşiş); `runCatching` → `guarded` (bellek hatası artık çökme raporu); çökme metninde "Rawstats" → "WEEM". Hepsi kullanıcıya görünmez ya da yalnız metin.
+- `VERI_SOZLESMESI.md` düzeltildi: `manualPolicy` Int, `home.*` lat/lon String, `home.ui.*` tercih değil, eksik anahtarlar (5.6), 5103 ve bahşiş için WEEM numaraları (8.2).
+- `bulgular/R_core_contract.md` satır numaralarının bir kısmı yanlıştı (ör. `HomePreferences.kt:54-74`, dosya 28 satır); bu belge doğrularını verir.
