@@ -8,7 +8,7 @@ import java.io.InputStream
 
 /**
  * ZIP yedeğini arka planda içe aktarır (CORE.md 5.3; RS `MainActivity.kt:1477-1490`). Vardiya açıkken başlamaz; sürerken
- * [Store.importing] (vardiya başlamaz, ekran kaydı durur). Sonuç ana iş parçacığında. A3: ardından `:orders` istatistiği yeniden yükler.
+ * [Store.importing] (vardiya başlamaz, ekran kaydı durur). Sonuç ana iş parçacığında. Ardından [afterImport] (`:orders` istatistiği yeniden yükler).
  */
 object LogImport {
     sealed interface Outcome {
@@ -17,6 +17,9 @@ object LogImport {
         data object Busy : Outcome
         data class Failed(val message: String?) : Outcome
     }
+
+    /** İçe aktarma bitince (ana iş parçacığında, korumalı): `:orders` istatistiği yeniden kurar; `:app` bağlar. */
+    @Volatile var afterImport: ((Context) -> Unit)? = null
 
     fun start(ctx: Context, open: () -> InputStream?, done: (Outcome) -> Unit) {
         val app = ctx.applicationContext
@@ -33,7 +36,11 @@ object LogImport {
                 runCatching { Store.failure(app, "import", e) }
                 Outcome.Failed(e.message)
             }
-            main.post { Store.importing = false; done(outcome) }
+            main.post {
+                Store.importing = false
+                if (outcome is Outcome.Done) afterImport?.let { hook -> Store.guarded(app, "import") { hook(app) } }
+                done(outcome)
+            }
         }, "weem-import").start()
     }
 }
