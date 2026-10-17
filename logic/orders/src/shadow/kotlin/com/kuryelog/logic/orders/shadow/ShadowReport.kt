@@ -56,7 +56,11 @@ class ShadowReport(val rawstatsName: String, val weemName: String, val days: Lis
         appendLine("Sonuç: sert $hard · yumuşak $soft · beklenen $expected" + if (hard == 0) " — sert fark yok" else " — SERT FARK VAR")
         for (d in days) {
             appendLine()
-            appendLine("== ${d.day} (sert ${diffs.filter { it.day == d.day && it.level == Level.HARD }.sumOf { it.count }})")
+            val dayHard = diffs.filter { it.day == d.day && it.level == Level.HARD }.sumOf { it.count }
+            if (listOf(d.rawstats, d.weem).all { it.trips == 0 && it.offers == 0 && it.screens == 0 }) {
+                appendLine("== ${d.day} (sert $dayHard): sipariş, teklif ve ekran yok (yalnız platform/ekonomi satırları)"); continue
+            }
+            appendLine("== ${d.day} (sert $dayHard)")
             appendLine("   sipariş     Rawstats ${line(d.rawstats)}")
             appendLine("               WEEM     ${line(d.weem)}")
             appendLine("   eşlenen: ${d.matchedTrips} sipariş, ${d.matchedOffers} teklif · ayrıştırıcı: ${d.parser.same}/${d.parser.checked} aynı" +

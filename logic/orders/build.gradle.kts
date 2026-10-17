@@ -29,4 +29,6 @@ tasks.register<JavaExec>("shadowReport") {
     mainClass.set("com.kuryelog.logic.orders.shadow.ShadowMainKt")
     // Göreli yollar depo köküne göre (komut kökten `./gradlew -p logic …` ile çalışır).
     workingDir = rootDir.parentFile
+    // Türkçe rapor metni her terminalde UTF-8 (JDK 18+ `stdout.encoding`).
+    jvmArgs("-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8", "-Dfile.encoding=UTF-8")
 }
