@@ -21,8 +21,13 @@ object LogImport {
     /** İçe aktarma bitince (ana iş parçacığında, korumalı): `:orders` istatistiği yeniden kurar; `:app` bağlar. */
     @Volatile var afterImport: ((Context) -> Unit)? = null
 
-    fun start(ctx: Context, open: () -> InputStream?, done: (Outcome) -> Unit) {
+    fun start(ctx: Context, open: () -> InputStream?, then: (Outcome) -> Unit) {
         val app = ctx.applicationContext
+        // RS sırası: bayrak iner → `reloadImportedStats` (korumalı) → kullanıcıya sonuç.
+        val done: (Outcome) -> Unit = { outcome ->
+            if (outcome is Outcome.Done) afterImport?.let { hook -> Store.guarded(app, "import") { hook(app) } }
+            then(outcome)
+        }
         if (Store.shiftOn(app)) { done(Outcome.ShiftOn); return }
         if (Store.importing) { done(Outcome.Busy); return }
         Store.importing = true
@@ -36,11 +41,7 @@ object LogImport {
                 runCatching { Store.failure(app, "import", e) }
                 Outcome.Failed(e.message)
             }
-            main.post {
-                Store.importing = false
-                if (outcome is Outcome.Done) afterImport?.let { hook -> Store.guarded(app, "import") { hook(app) } }
-                done(outcome)
-            }
+            main.post { Store.importing = false; done(outcome) }
         }, "weem-import").start()
     }
 }

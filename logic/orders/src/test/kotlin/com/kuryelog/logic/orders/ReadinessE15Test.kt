@@ -86,7 +86,18 @@ class ReadinessE15Test {
     }
 
     // ------------------------------------------------------------------ wiring (source checks; notification and card are telefonda denenmedi)
-    private fun main(): File = listOf("src/main", "app/src/main", "kuryelog/app/src/main").map(::File).firstOrNull { it.isDirectory }
-        ?: error("KuryeLog kaynak klasörü bulunamadı: ${File(".").absolutePath}")
+    // WEEM (A3.7): `OrderTracker.kt` → `OrderFlow.kt`, `DeliveryReminder.notify(ctx, next, update = true)` → `env.notifyReminder(next,
+    // update = true)` (Android `:orders` `Orders` → `DeliveryReminder.notify`). The card and list (`cardAndListShowIt`) are A3.8.
+    @Test fun restaurantNotificationUsesTheCounterAndFollowsIt() {
+        val tracker = RepoSource.text("logic/orders/src/main/kotlin/com/kuryelog/logic/orders/OrderFlow.kt")
+        val fn = tracker.substringAfter("private fun readiness(").substringBefore("\n    private fun ")
+        assertTrue(fn.contains("Readiness.headline(Readiness.of("))
+        assertFalse(tracker.contains("Hazır olmalı (tahmin)"))
+        // As it counts down the notification is posted again silently (same id, alert once).
+        assertTrue(tracker.contains("env.notifyReminder(next, update = true)"))
+        assertTrue(RepoSource.text("orders/src/main/kotlin/com/kuryelog/app/orders/Orders.kt").contains("DeliveryReminder.notify(ctx, reminder, update)"))
+        val reminder = RepoSource.text("orders/src/main/kotlin/com/kuryelog/app/orders/DeliveryReminder.kt")
+        assertTrue(reminder.contains("setOnlyAlertOnce(update)"))
+    }
 
 }

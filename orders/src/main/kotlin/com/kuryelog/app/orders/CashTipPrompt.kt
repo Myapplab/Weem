@@ -18,7 +18,7 @@ import com.kuryelog.logic.orders.TripRecord
  * 4000 + …), `OrderTracker` → [Orders.flow].
  *
  * K32: the "how much cash did you receive?" notification with an inline number reply (F4.6: message style, quick buttons). Dismissing it loses nothing: the
- * order card keeps the same input (MainActivity). Only the platform and the cash amount are shown, no customer data.
+ * order card keeps the same input (Siparişler sekmesi, A3.8). Only the platform and the cash amount are shown, no customer data.
  */
 object CashTipPrompt {
     private const val CHANNEL = "cash_tips"

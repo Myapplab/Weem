@@ -80,8 +80,17 @@ class CustomerCardE16Test {
     }
 
     // ------------------------------------------------------------------ wiring (source checks; the card is telefonda denenmedi)
-    private fun main(): File = listOf("src/main", "app/src/main", "kuryelog/app/src/main").map(::File).firstOrNull { it.isDirectory }
-        ?: error("KuryeLog kaynak klasörü bulunamadı: ${File(".").absolutePath}")
-    private fun src(name: String) = File(main(), "java/com/kuryelog/app/$name").readText()
+    // WEEM (A3.7): `OrderTracker.kt` → `OrderFlow.kt`; `routeFor(yolgo` → `routeFor(route` (`NavPort.route`). The size setting
+    // (`CustomerCard.SIZE_KEY` in Ayarlar → Ekran) and the old Ayarlar texts are checked with the settings screen (A3.8).
+    @Test fun oldNotificationTriggerIsGone() {
+        val tracker = RepoSource.text("logic/orders/src/main/kotlin/com/kuryelog/logic/orders/OrderFlow.kt")
+        assertTrue(tracker.contains("CustomerCard.trigger("))
+        assertTrue(tracker.contains("CustomerCard.routeFor(route"))
+        for (old in listOf("ROUTE_TRIGGER_M", "STRAIGHT_TRIGGER_M", "navMeters", "remainingMeters", "Yakınlık uyarısı")) assertFalse(old, tracker.contains(old))
+        assertFalse(RepoSource.text("logic/capture/src/main/kotlin/com/kuryelog/logic/capture/NavDistance.kt").contains("fun remainingMeters("))
+        val android = RepoSource.mainKotlin().filter { "/logic/" !in it.invariantSeparatorsPath }.joinToString("\n") { it.readText() }
+        assertFalse(android.contains("ROUTE_TRIGGER_M")); assertFalse(android.contains("Google Maps/Waze navigasyonu"))
+        assertTrue(RepoSource.text("orders/src/main/kotlin/com/kuryelog/app/orders/DeliveryReminder.kt").contains("CustomerCard.heightShare("))
+    }
 
 }

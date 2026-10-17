@@ -42,6 +42,8 @@ class CrashGuardTest {
         val import = RepoSource.text(core + "LogImport.kt")
         assertTrue(import.contains("} catch (e: Throwable) {"))
         assertTrue(import.contains("main.post { Store.importing = false; done(outcome) }"))
+        // RS `safely("import") { OrderTracker.reloadImportedStats(this) }`: the orders' reload after an import is guarded too.
+        assertTrue(import.contains("afterImport?.let { hook -> Store.guarded(app, \"import\") { hook(app) } }"))
         assertTrue(RepoSource.text(app + "RecordsScreen.kt").contains("if (uri != null) ctx.safely(\"import\") {"))
     }
 
