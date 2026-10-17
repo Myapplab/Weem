@@ -1,0 +1,66 @@
+# Rawstats — çekirdek + tam veri sözleşmesi bulguları
+Kaynak: rawstats @ 6388c04 ("Merge PR #52: Rawstats 0.25.1"); kök /home/user/kurye_nav. Yollar köke göreli; `K/` = `app/src/main/java/com/kuryelog/app/`, `T/` = `app/src/test/java/com/kuryelog/app/`.
+Durum: YAZILIYOR (bölümler sırayla dolduruluyor).
+
+## 1. Özellikler
+
+### G1 Tek vardiya / gün (Rawstats tarafı: HomeShift, K38, E6, F4.5b, H4, F41)
+- Eski kod: `K/HomeShift.kt:12-141` (`HomeShift` karar motoru), `K/HomeShift.kt:150-183` (`HomeWatchPlan` LOW/HIGH), `K/HomeLocation.kt:61-168` (`HomeWatch`, `HomeWatcher`), `K/GpsService.kt:36-103` (başlatma), `:260-299` (`stopShift`), `K/RecordingPolicy.kt:5-15` (`ManualSessionPolicy`), `K/Store.kt:19-25` (`ensureManualMode`), `:93` (`shiftOn`), `K/ShiftStateFeed.kt` (F4.1 YolGo'ya vardiya durumu), `K/AutoStartNotice.kt` (H4 / 0.22.2 dokun-başlat bildirimleri), `K/EndedShiftMinutes.kt` (bugünün biten vardiya dakikaları).
+- Davranış:
+  - Vardiya açık = `kuryelog` prefs `shift`==true VE `manualSession`==true (`K/Store.kt:93`). Ekran kaydı ancak vardiya açık ve içe aktarma yokken (`ManualSessionPolicy.canCapture`, `K/RecordingPolicy.kt:7`; `K/Store.kt:16`).
+  - Başlatma yalnız 2 yoldan: açık `com.kuryelog.app.MANUAL_START` ya da geçerli `com.kuryelog.app.HOME_START` (ev revizyonu eşleşmeli: extra `homeRevision` == `home.updatedAt`, `K/HomeLocation.kt:36-39`, `K/HomeRepository.kt:42-44`); içe aktarma sürerken asla (`mayStart`, `K/RecordingPolicy.kt:6`; `K/GpsService.kt:45-47`). Durdurma `com.kuryelog.app.STOP` (bildirim düğmesi "Vardiyayı bitir", PendingIntent.getService req 11, `K/GpsService.kt:171-172`).
+  - Otomatik BAŞLAMA (E6): vardiya kapalıyken, evden düz çizgi ≥ `START_RADIUS_M`=50 m, GPS'in KENDİ hızı ≥ 10 km/h (`START_SPEED_MPS`), doğruluk ≤ 20 m (`START_MAX_ACCURACY_M`), art arda 2 fix, aralarında ≤ 120 s (`MAX_PAIR_GAP_MS`) (`K/HomeShift.kt:38-55`, sabitler `:109-126`). Doğruluk > 50 m (`HOME_SEEN_ACCURACY_M`) fix çifti bozar; zaman geri giden ya da > 50 m/s (`MAX_PLAUSIBLE_MPS`) sıçrama düşer (`:42-44`, `:98-101`). Geçersiz enlem/boylam veya doğruluğu olmayan fix → NONE ve çift sıfırlanır (`:30-34`).
+  - Otomatik BİTİŞ (F4.5b, YolGo ile aynı kural): vardiya açıkken; fix doğruluğu ≤ 30 m (`END_MAX_ACCURACY_M`); evden ≤ 50 m (`RADIUS_M`; K38'de 200 m idi); önce bir kez yarıçap dışına çıkılmış olmalı (`endArmed`); hız < 5 km/h (`END_SPEED_MPS`; hız = önceki fix varsa iki konumdan türetilmiş ya da GPS hızı, `speedOf` `:89-95`); 10 m alan (`STILL_AREA_M`) içinde ≥ 30 s (`STILL_MS`) ve ≥ 3 fix (`MIN_WINDOW_FIXES`), fix arası ≤ 45 s (`MAX_GAP_MS`) (`K/HomeShift.kt:57-80`). Açık sipariş varken (`busy` = `OrderTracker.hasOpenOrder()`, `K/GpsService.kt:213`) ASLA bitmez.
+  - Koruyucular: elle başlatılan vardiya (evde olabilir) ancak bir kez yarıçap dışına çıkınca otomatik biter (`onManualStart`, `:83`); elle durdurulan vardiyadan sonra ev yarıçapında (≤50 m, doğruluk ≤50 m) bir fix görülene kadar otomatik başlama yok (`onManualStop` → `startBlocked`, `:86`, `:47`). `startBlocked`/`endArmed` prefs'te kalıcı (`home.startBlocked`, `home.endArmed`, `K/HomeRepository.kt:38-41`).
+  - Ev izleyici (vardiya dışı, ev varken): LOW = dengeli güç 30 s (`INTERVAL_MS`, min 15 s); "ayrılma olası" (doğruluk dairesi bile evden ≥50 m uzakta ya da hız ≥10 km/h) → HIGH = GPS 2 s, 5 dk (`HIGH_MS`); pencere boşa biterse sonraki 10 dk bekler (`COOLDOWN_MS`) — hızlı hareket hariç (`K/HomeShift.kt:150-182`). İzleme koşulu: ev var, vardiya kapalı, içe aktarma yok, FINE + BACKGROUND konum izni (`K/HomeRepository.kt:45-46`). En çok 5 s'de bir yeniden denetim (`K/HomeLocation.kt:95`). Sürücü: WatchService / NotifService tik'i + GpsService başlangıç/bitiş (`K/HomeLocation.kt:56-74`).
+  - Arka plan FGS başlatma reddedilirse (Android 12+, pil optimizasyonu): `home_auto_start_failed` olayı + bildirim 5101 "Evden çıktın / Vardiyayı başlatmak için dokun." (PendingIntent.getForegroundService, 15 dk zaman aşımı) (`K/HomeLocation.kt:149-156`, `K/AutoStartNotice.kt:66-71`).
+  - H4 kesinti: Android yapışkan yeniden başlatmada (intent==null) FGS'yi reddederse vardiya AÇIK kalır, `shiftInterruptedAt` yazılır, `shift_interrupted` olayı, kalıcı bildirim 5103 "Vardiya durdu / GPS kaydı yok. Devam etmek için dokun." (zaman aşımı yok) (`K/GpsService.kt:53-57`, `K/RecordingPolicy.kt:10-14`, `K/AutoStartNotice.kt:81-86`). Devam edince `shift_resumed` + anahtar silinir (`K/GpsService.kt:68-72`). Diğer başlatma hatası → vardiya açılmaz, `Store.lastError`.
+  - Başlangıçta: prefs `shift`=true, `manualSession`=true, `autoStarted`=false, `shiftStart`=now, `dist`=0, `shiftStartReason`=`manual`|`home_departure`; olay `shift_start {auto, reason}`; YolGo'ya FeedNotify; cepteki nakit sorusu (R9); scooter sayacı sıfırlanır (`K/GpsService.kt:73-90`).
+  - Bitişte: `ShiftDistance.result` (GPS ile scooter odometresinin büyüğü, D8) → olay `shift_end {km, km_gps, km_scooter, km_from_scooter, min, reason}`; reason `manual`|`home_arrival`; DailyPack, OrderTracker.stop, ScooterLink.onShiftEnd; prefs `shift`=false, `manualSession`=false, `dist`, `shiftEndedAt`, `shiftEndReason`; bildirim 12 iptal (`K/GpsService.kt:260-299`). Her adım `guarded` (16 Eki saha düzeltmesi: bir adımın hatası vardiyayı açık bırakmasın).
+  - `ensureManualMode`: `manualPolicy`<1 ise bir kez `shift/manualSession/autoShift/autoStarted`=false, `manualPolicy`=1 (eski otomatik oturum göçü, `K/Store.kt:19-25`).
+  - Gün: `Store.day()` = cihaz yerel saatinde `yyyy-MM-dd` (`K/Store.kt:43,50`); vardiya gece yarısını geçerse ayrı gün klasörüne yazılır (kayıt anının günü). Biten vardiya dakikaları = bugünün `events.jsonl` içindeki `shift_end.min` toplamı (`K/EndedShiftMinutes.kt`, artımlı okuma, 500 ms rozet).
+- Testler: `HomeShiftK38Test` (11), `HomeShiftE6Test` (9), `HomeEndRuleF45bTest` (7), `ShiftInterruptH4Test` (3), `ShiftStateF41Test` (5), `EndedShiftMinutesTest` (5) — ayrıntı Bölüm 3.
+- Veri: prefs `kuryelog`: `shift`, `manualSession`, `autoShift`, `autoStarted`, `manualPolicy`, `shiftStart`, `shiftEndedAt`, `shiftStartReason`, `shiftEndReason`, `shiftInterruptedAt`, `dist`, `home.*`; `events.jsonl` olayları `shift_start`, `shift_end`, `shift_interrupted`, `shift_resumed`, `home_watch_no_permission`, `home_watch_error`, `home_auto_start_failed`, `gps_error`, `gps_no_permission`, `gps_disabled`, `screen_reading_off/on`; sağlayıcı `content://com.kuryelog.app.economics/shift/v1/state`.
+- Bağımlı: G2 (ev noktası), R9 (vardiya başı nakit), R14/S* (scooter sayacı), R5 (açık sipariş bitişi engeller), R19 (ekran okuma uyarısı 5103, AutoStart 5101), YolGo Y17 (gün = vardiya, F4.1).
+- WEEM: `:core` — `HomeShift`, `HomeWatchPlan`, `ManualSessionPolicy`, `ShiftStateFeed.snapshot`, `EndedShiftMinutes` saf (`logic/`); `GpsService`/`HomeWatcher`/`AutoStartNotice` Android · Aşama 2 (kural), 7 (G1 bütünlüğü YolGo ile tek).
+- Not: YolGo'nun kendi gün başlat/bitir kuralı ayrı (YolGo ajanı); F4.1 ile YolGo, Rawstats vardiyasını izliyor. WEEM'de tek kaynak olacak. GpsService gps.csv'yi ev kuralından SONRA yazar: bitiş fix'i gps.csv'ye girmez (`K/GpsService.kt:213-219`).
+
+### G2 Ev konumu (GPS ile ya da haritadan seçme)
+- Eski kod: `K/HomeRepository.kt` (tek kaynak), `K/HomePreferences.kt` (prefs adaptörü), `K/HomeDraft.kt` (onaysız seçim, bellekte), `K/HomeFixes.kt` + `K/HomeFixSampler.kt` (GPS örnekleme), `K/HomePickContract.kt` (YolGo'dan haritada seçme), `K/HomeShareActivity.kt` (YolGo'ya evi verme), `K/HomeLocation.kt:20-54` (cephe), MainActivity ev bölümü (aşağıda doldurulacak).
+- Davranış:
+  - Ev yalnız `kuryelog` prefs'te: `home.lat`, `home.lon` (String!), `home.updatedAt` (Long, yoksa "bilinmiyor" — uydurulmaz), `home.startBlocked`, `home.endArmed` (Boolean) (`K/HomePreferences.kt:54-74`). Loglara, dışa aktarmaya, sağlayıcı akışına asla yazılmaz (`K/HomeLocation.kt:16-18`, `K/HomeShift.kt:9`).
+  - Geçerlilik: sonlu, enlem −90..90, boylam −180..180; değilse ev yok sayılır (`HomeShift.parseHome`, `K/HomeShift.kt:134-139`).
+  - `set`: `updatedAt = max(now, eski+1)` (revizyon tek yönlü artar) (`K/HomeRepository.kt:16-20`); `clear` tüm `home.*` anahtarlarını siler (`K/HomePreferences.kt:59-60`). Değişince AutoStart 5101 iptal + izleyici sıfırlanır (`K/HomeLocation.kt:32-35`).
+  - GPS ile: `HomeFixSampler` tüm etkin sağlayıcılardan (PASSIVE hariç) son bilinen + 1 s güncellemeler, 6 s topla (`COLLECT_MS`); yaşı ≤ 15 s (`MAX_AGE_MS`) ve doğruluğu olan örnekler; en iyi = en küçük doğruluk, eşitse en yeni (`K/HomeFixes.kt:151`); doğruluk > 25 m (`WARN_ACCURACY_M`) uyarı (`HomeDraft.needsWarning`). Onaylanana kadar bellekte (Draft), prefs'e yazılmaz.
+  - Haritadan: YolGo'ya `com.myapplab.yolgo.PICK_HOME` (paket `az.duzyol.app`, requestCode 32), dönüş extra `lat`/`lon` Double; RESULT_OK değilse ya da tip Double değilse null (`K/HomePickContract.kt`).
+  - YolGo'ya verme: `com.kuryelog.app.action.SHARE_HOME`, yalnız `callingPackage == "az.duzyol.app"` (`OfferFeed.TARGET`) → RESULT_OK + `lat`/`lon` Double; ev yoksa ya da başka çağıran → RESULT_CANCELED (`K/HomeShareActivity.kt`).
+- Testler: `HomeRepositoryTest` (7), `HomeDraftTest` (5), `HomeFixesTest` (4), `HomeFixRegressionTest` (2), `HomePickContractTest` (6).
+- Veri: yukarıdaki `home.*` anahtarları; intent action'ları; `queries` paket `az.duzyol.app`.
+- Bağımlı: G1; Y (YolGo ev konumu; G2 WEEM'de tek ev); Bölüm 7 YolGo içe aktarma.
+- WEEM: `:core` (`HomeRepository`, `HomeDraft`, `HomeFixes`, `parseHome` saf), `:app`/`:map` ev seçme ekranı (WEEM'de harita aynı uygulamada; PICK_HOME/SHARE_HOME dış sözleşmeleri gereksizleşir — karar Bölüm 5) · Aşama 2 + 7.
+
+(G3, G4, G5, R12 kabuğu: aşağıda eklenecek)
+
+## 2. Veri sözleşmesi kalemleri
+(dolduruluyor; toplanan ilk kalemler)
+
+| Tür | Ad (tam yazım) | Ayrıntı | Kaynak |
+|---|---|---|---|
+| kimlik | applicationId `com.kuryelog.app` | namespace aynı; minSdk 29, target/compile 36; versionCode 33, versionName `0.25.1`; release minify kapalı; Java/JVM 17 | `app/build.gradle.kts:7-16,26-35,45` |
+| imza | `ci/kuryelog-test.keystore`, alias `kuryelogtest` | `signingConfigs.debug` içinde; store/key şifresi `app/build.gradle.kts:21,23`'te düz metin (değer buraya yazılmadı). `release` buildType'a signingConfig bağlı DEĞİL; CI yalnız `assembleDebug` derler ve SHA-256'yı keystore'la karşılaştırır | `app/build.gradle.kts:18-29`; `.github/workflows/rawstats.yml:64,77-84` |
+| derleme | Gradle 9.3.1, AGP 9.1.0 (`com.android.application`/`library`), Kotlin 2.4.0 (`org.jetbrains.kotlin.android`) | `libs.versions.toml` YOK; sürümler kök `build.gradle.kts`'de; `android.builtInKotlin=false`, `android.newDsl=false`, `nonTransitiveRClass=true` | `gradle/wrapper/gradle-wrapper.properties:3`; `build.gradle.kts:2-4`; `gradle.properties` |
+| bağımlılık | `androidx.viewpager2:viewpager2:1.1.0`, `project(":surus-paneli")`, `com.google.mlkit:text-recognition:16.0.1`; test `junit:junit:4.13.2`, `org.json:json:20240303` | Compose/AppCompat yok | `app/build.gradle.kts:49-55` |
+| modül | `:surus-paneli` = `ninebot-logger/app` (Android library, namespace `az.ninebot.logger`, Java) | manifest'i `com.kuryelog.app`'e birleşir | `settings.gradle.kts`; `ninebot-logger/app/build.gradle` |
+| veritabanı | `courier.db` sürüm 1 | `SQLiteOpenHelper(ctx,"courier.db",null,1)`; `onUpgrade` BOŞ (göç yok) | `K/CourierDb.kt:10,18` |
+| tablo | `trips` | `CREATE TABLE trips(id TEXT PRIMARY KEY,pkg TEXT NOT NULL,day TEXT NOT NULL,payload TEXT NOT NULL)` + `CREATE INDEX trips_day ON trips(day)`; payload = `RecordJson.trip(t, withPhone=true)` JSON | `K/CourierDb.kt:12-13` |
+| tablo | `offers` | `CREATE TABLE offers(id TEXT PRIMARY KEY,pkg TEXT NOT NULL,day TEXT NOT NULL,result TEXT,payload TEXT NOT NULL)` + `CREATE INDEX offers_day ON offers(day)`; payload = `RecordJson.offer` | `K/CourierDb.kt:14-15` |
+| tablo | `session` | `CREATE TABLE session(k TEXT PRIMARY KEY,payload TEXT NOT NULL)`; tek satır `k='active'` | `K/CourierDb.kt:16,36-37` |
+| bildirim | 5101 `AutoStartNotice.HOME_ID` | kanal `auto_start` ("Otomatik başlatma", HIGH); 15 dk timeout | `K/AutoStartNotice.kt:17-23,66-71` |
+| bildirim | 5102 `AutoStartNotice.SCOOTER_ID` | kanal `auto_start` | `K/AutoStartNotice.kt:19,74-78` |
+| bildirim | 5103 `AutoStartNotice.SHIFT_ID` **ÇAKIŞMA** | kanal `auto_start`; aynı numara `ScreenReadingGuard.NOTIFICATION_ID`=5103 (kanal `screen_reading`) | `K/AutoStartNotice.kt:20`; `K/ScreenReading.kt:38` |
+| bildirim | 4000–8095 `CashTipPrompt.id(tripId)` = `4000 + (tripId.hashCode() and 0xFFF)` **ÇAKIŞMA** | kanal `cash_tips` ("Nakit bahşiş sorusu", HIGH); aralık 4901, 4902, 5101–5103'ü kapsar | `K/CashTipPrompt.kt:22-24` |
+| bildirim | 4901 `PocketCashPrompt.ID` | kanal `pocket_cash` ("Vardiya başı nakit sorusu", HIGH) | `K/PocketCashPrompt.kt:25-28` |
+| bildirim | 4902 `ScooterLink.NOTICE_ID` | kanal `scooter_link` ("Scooter bağlantısı") | `K/ScooterLink.kt:31-32,44` |
+| bildirim | 12 (teslimat notu) | kanal `delivery_notes` ("Müşteri teslimat notu", HIGH, titreşim) | `K/DeliveryReminder.kt:303,308`; vardiya sonu iptal `K/GpsService.kt:291` |
+| bildirim | 1 (FGS vardiya) | kanal `shift` ("Vardiya kaydı", LOW); ongoing; eylem "Vardiyayı bitir" | `K/GpsService.kt:157-175,316` |
+| bildirim | 5103 (ekran okuma kapalı) | kanal `screen_reading` ("Ekran okuma uyarısı", HIGH); ongoing | `K/GpsService.kt:125-133,317` |
