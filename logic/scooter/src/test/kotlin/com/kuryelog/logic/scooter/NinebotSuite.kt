@@ -7,8 +7,8 @@ import org.junit.Assert.assertTrue
  * [count]'a eklenir; suit sonunda sayı eski çıktının "çalışma" sayısıyla karşılaştırılır. Çağrı yeri sayıları `SuiteCountTest`'te.
  */
 abstract class NinebotSuite {
+    /** Eski suitler gibi doğrudan da artırılabilir (`SweepTest.rejects`, `check` çağırmadan sayar). */
     protected var count = 0
-        private set
 
     protected fun check(ok: Boolean, label: String) {
         assertTrue(label, ok)
