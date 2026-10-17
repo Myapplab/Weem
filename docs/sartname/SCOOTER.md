@@ -553,3 +553,71 @@ TR/AZ ikili metinler (`ScooterLink`, `ScooterReconnect` bildirimleri) aynen; Sü
 - **ICU:** `NinebotMetrics.exportable` deseni `bms_[0-9a-f]{2}_(…)` ICU güvenli; bütün desenler `RegexPortabilityTest`'e girer.
 - **Anahtar gizliliği:** anahtar baytları kullanımdan sonra sıfırlanır; anahtar hiçbir zaman olay/ZIP'e yazılmaz (yalnız tam teşhis ZIP'indeki tel kayıtlarından çıkarılabilir; uyarı metni aynı).
 - **Müşteri verisi:** scooter tarafına sipariş kimliği (`tripId`) dışında bir şey gitmez; `trip.label` = `tripId` (bugünkü gibi).
+
+## 13. Test eşlemesi (A5.2 bunu izler)
+
+### 13.1 Sürüş Paneli suitleri (NT, main() tabanlı; 14 suit, **324**)
+
+Sayılar: **satır** = `grep -c 'check('` (envanterdeki 324; her dosyanın `check` tanım satırı dahil) · **çağrı** = `check(` çağrı yeri (toplam 336; bir satırda birden çok olabilir) · **çalışma** = suitin bastığı geçen denetim sayısı (döngüler dahil; 17 Ekim, JDK 21, `bash ninebot-logger/tests/run.sh`, hepsi yeşil).
+
+| Suit | Satır | Çağrı | Çalışma | Ne sınar | Kullandığı sınıflar | WEEM hedefi · yeşil |
+|---|---|---|---|---|---|---|
+| `TimingTest` | 10 | 9 | 9 | `ageMs`, `retryMs` dizisi, `hex`/`unhex` | `Timing` | `logic/scooter` · A5.2 |
+| `ProtocolTest` | 33 | 55 | 408 | şifreleme vektörleri, sağlama, sayaç/tekrar/düşürme reddi, PRE_COMM→AUTH→READING, okuma koruması, kayıtlı anahtarla AUTH, PRE_COMM 3 deneme, sweep çözme, birleştirme sınırları | `NinebotCrypto`, `NinebotFrames`, `NinebotMetrics`, `NinebotMode`, `NinebotSession`, `Timing` | A5.2 |
+| `LinkTest` | 23 | 23 | 33 | GATT sırası, yinelenen/sırasız geri çağrılar (ör. Android 17'de keşiften önce gelen MTU) | `NinebotLink` | A5.2 |
+| `PairFlowTest` | 26 | 26 | 37 | eşleştirme: aday, yanlış yön, veri yoklaması, tam pencere, AUTH'ta yanlış kaynak terfi ettirmez | `NinebotCrypto`, `NinebotFrames`, `NinebotMetrics`, `NinebotMode`, `NinebotSession`, `SessionKey` | A5.2 |
+| `SweepTest` | 22 | 21 | 24 | sweep aralığı doğrulaması, V×A gücü | `NinebotMetrics` | A5.2 |
+| `PowerCadenceTest` | 23 | 22 | 49 | fast şerit tazeliği, güç girdilerinin yaşı | `NinebotCrypto`, `NinebotMetrics`, `NinebotSession` | A5.2 |
+| `SpeedCadenceTest` | 23 | 22 | 61 | 70 ms yanıtlı sahaya benzer akış, harici paket `0x06`; hız aralığı (en büyük boşluk 300/240 ms), arka plan/ön plan istek sayısı (704/792), GPS temposu | `NinebotCrypto`, `NinebotGpsPolicy`, `NinebotMetrics`, `NinebotSession` | A5.2 |
+| `BatteryProbeTest` | 64 | 64 | 854 | yoklama, aday/onay/düşme, D12 sessiz paket, `PackPresence` | `NinebotCrypto`, `NinebotDashboard`, `NinebotMetrics`, `NinebotSession`, `PackPresence` | A5.2 (`NinebotDashboard`, `PackPresence` bu görevde yazılır) |
+| `DashboardTest` | 15 | 14 | 14 | kare tazeliği, oturum en yüksek hızı, 7 Ekim saha değerleri, biçimler | `NinebotDashboard`, `NinebotMetrics` | A5.2 (sınıf hazır) |
+| `EventQueueTest` | 7 | 6 | 13 | sınırlı kuyruk, reddedilen gönderim | `NinebotEventQueue` | A5.3 |
+| `LogPolicyTest` | 14 | 13 | (basmaz) | normal/ayrıntılı sınırlar, tavan, aşırı yükten sonra GPS | `NinebotEventQueue`, `NinebotLogPolicy` | A5.3 |
+| `EnergyTest` | 21 | 20 | 20 | enerji bloğu anahtarları, işaret, boşluk, harici bayraklar, D10 | `NinebotMetrics`, `ScooterEnergy` | A5.3 |
+| `TripMeterTest` | 20 | 19 | 19 | sayaç (10 dk 18 km/s −400 W + 5 dk duruş), D10 | `ScooterEnergy`, `TripMeter` | A5.3 |
+| `FloatingTest` | 23 | 22 | 22 | alan seçimi (en çok 4), bar boyları (Pixel 10 Pro 1280 × 2856) | `FloatGeometry`, `NinebotDashboard`, `PanelField` | A5.4 |
+
+Çeviri kuralı: her suit bir Kotlin test sınıfı; her `check(koşul, etiket)` bir doğrulama (etiket mesajı aynı); döngüdeki denetimler döngüde kalır. **Kabul:** suit başına çağrı yeri sayısı (yukarıdaki "Çağrı") ve çalışma sayısı (basılıyorsa) aynı; sayıyı düşüren çeviri sapmadır ve `TEST_ENVANTERI`'ne yazılır. JUnit sarmalayıcı (`SurusPaneliJvmTest`, 14 `@Test`) gerekmez: suitler doğrudan JUnit. `ReferenceProbe.java` (yardımcı) çevrilir ya da gerektiği yere gömülür.
+
+Cihaz ve Python testleri: `KeyVaultInstrument` (9 kasa denetimi + `LogExportTest`, bildirim, depolama politikası, yazıcı kuyruğu, panel önizleme; `upgrade_seed`) → `:scooter` `androidTest` (A5.2; CI emülatörde, kullanıcı cihazında değil); `LogExportTest` gizlilik denetimleri → JVM (`LogExport` saf). `reference_parity.py`, `laptop_client_test.py`, `upgrade_smoke.py`, `emulator_smoke.py`: CI dışı, çevrilmez; `reference_parity.py`'nin sabit vektörleri `ProtocolTest`'te zaten var.
+
+### 13.2 Rawstats scooter testleri (RT)
+
+| Dosya | Test | WEEM |
+|---|---|---|
+| `ScooterReconnectM23Test` | 4 | `logic/scooter` aynen · A5.2 |
+| `ScooterBridgeTest` | 6 | `logic/scooter` `ScooterBridgeImpl` çekirdeği + `EnergyBlock` (5 test); `dumpForSchemaCheck` (`KL_ROWS_OUT` ortam değişkeniyle şema dökümü) korunur · A5.3 |
+| `ScooterSamplesTest` | 5 | `logic/scooter` (4); `fileIsBackedUpAndExported` `BackupFiles.logNames`/`AnalysisExport` ifadeleri `:core`/A4.3'e · A5.3 |
+| `ScooterFeedTest` | 5 | 3 test `ScooterLiveMapper`'a uyarlanır (alanlar, bağlantı yokken null — sonsuz değer null olur —, sipariş/konum yok; bugünkü yükte `trip` hep nesne, WEEM `ScooterLive.trip` bağlantı yokken `null` olabilir: test buna göre); `pathMatchesYolGoReader`, `scooterReaderStillNeedsAllGates` **çevrilmez** (sağlayıcı kalkar, S7) · A5.3 |
+| `ScooterOrderEnergyTest` | 7 | `:economics`/`:orders` (envanter: `:economics`); `step` kısmı `logic/scooter` `ScooterSamples` ile · A5.3 (adım akışı 12.2) |
+| `ShiftDistanceD8Test` | 4 | `:core` (A2.2'de çevrildi) |
+| `AutoStartNoticeTest` | 1 | scooter kısmı (5102) A5.3'te kaynak taraması |
+
+Toplam `:scooter` hedefi (envanter): 14 suit (324) + `ScooterBridgeTest` 6 + `ScooterFeedTest` 5 + `ScooterReconnectM23Test` 4 + `ScooterSamplesTest` 5 = **344**; bunun 2'si çevrilmez (S7), 1'i (`fileIsBackedUpAndExported`) `:core`'a gider.
+
+### 13.3 WEEM ekleri (eski testte yok)
+
+- Salt okuma kaynak taraması (2.6).
+- `SessionKey.derive` Kotlin eşitliği: Java `Random` ve `int` kaydırma (2.7) için `ProtocolTest`/`PairFlowTest` vektörleri yeter; ek olarak `kotlin.random` kullanılmadığı taranır.
+- `VERI_SOZLESMESI` adları: `pairing-v1`, `NinebotLogger.Pairing.v1`, `ninebot-logger.db`, `logger`, `economics-scooter.jsonl` sabitlerinin değeri test edilir (A2'deki kimlik testleri gibi).
+
+## 14. Açık noktalar, riskler ve bilerek farklar
+
+| No | Konu | Durum / öneri |
+|---|---|---|
+| R-S1 | `VISIBLE_SPEED_MS = 150`, açıklama "180 ms" (`NinebotSession.java:31-36`) | Kod geçerli (testler 150'ye göre); WEEM 150 + açıklama düzeltilir |
+| R-S2 | Register haritası topluluk kaynaklı (`device_verified=false`); hız, `0x68`, `0x6a` "aday"; resmî W kaynağı bilinmiyor; `0x8a` anlamsız | Aynen; arayüzde "aday/doğrulanmamış" kalır. Saha doğrulaması A5.5 |
+| R-S3 | `fail()` durumları (PRE_COMM 3 yanıtsız, AUTH başarısız, `NEEDS_KEY`, ad/seri, bildirim kanalı yok) GATT'ı açık ve **boşta** bırakır; yeniden deneme yok; M23 uyarmaz (hiç kare gelmedi) | Davranış şartnamesi gereği aynen; **kullanıcı sorusu S18** (vardiya bağlantısında yeniden deneme). S11 ile Pixel'deki resmî uygulama aynı anda bağlıysa Poco'da bu duruma düşülebilir |
+| R-S4 | Eşleştirme penceresi 300 sn bağlantılar arası tek; pencere dolunca kayıt durdurulup yeniden başlatılmalı | Aynen |
+| R-S5 | 2 telefonda sipariş enerjisi (12.2): saniyelik adımlar Receiver'dan çıkmaz | A8.1 kararı; tek telefonda bugünkü gibi. A5'i engellemez |
+| R-S6 | Receiver'da vardiya bağlantısı vardiya durumunu `:link`'ten alır; `:link` kopukken scooter bağlantısı açılmaz | A8.1; o zamana kadar tek telefon kuralı |
+| R-S7 | `SessionKey.derive` Java `int` kaydırma ve `java.util.Random`; Kotlin'de yanlış tür (Long kaydırma, `kotlin.random`) sessizce başka anahtar üretir | Yalnız testlerde kullanılır; vektör testleri yakalar (13.3) |
+| R-S8 | Sayaç 16 bit (`tx ≥ 65535` → "Şifreli oturum yenileniyor", yeniden bağlanma). Yanıt sayacı `tx`'i ileri çeker (`tx = max(tx, c)`); sahada sayaç her alışverişte 2 artıyor (NB üstü `VALIDATION.md:91` "PAIR RX 6,8,…,28") → ~32.700 okuma; hızlı tempoda (~10–13 okuma/sn) **tahminen 40–60 dk'da bir** oturum düşer | Tahmin, sahada doğrulanmadı. Bugünkü davranış, aynen; A5.5'te `ble_state` "Şifreli oturum yenileniyor" sıklığı ölçülür (D12'deki günde 240–290 yeniden bağlanmanın bir kısmı bu olabilir) |
+| R-S9 | Keystore anahtarı uygulama UID'sine bağlı: WEEM aynı `applicationId` + imza ile kurulmazsa eşleşme kaybolur | Plan Bölüm 2 (kimlik değişmez); A5.2 cihaz testinde `upgrade_seed` yolu |
+| R-S10 | Bildirim 7 ve 8 küçük sayılar (NB), Rawstats'la aynı ad alanında | `CORE.md` 3.3 tablosunda; aynen |
+| R-S11 | Yüzen panel `SYSTEM_ALERT_WINDOW` ister; Compose'a taşıma (`ComposeView` + `WindowManager`) yaşam döngüsü sahibi gerektirir | A5.4 teknik notu |
+| R-S12 | `battery_lost` olayı izin listesinde ama yazılmıyor | Aynen (eski veritabanları) |
+| F-S1 | Ekranda "Rawstats" → "WEEM" (bildirim 7 başlığı, panel "Rawstats vardiyası" metinleri, InfoSheet bölümü) | Bilerek fark (A3.1 kuralı); kayıt dizgileri değişmez |
+| F-S2 | `ScooterLive.source` `weem_surus_paneli` (bugün `rawstats_surus_paneli`), sağlayıcı yok | A2.5'te kararlaştı (S7) |
+| F-S3 | `scooter_link` `skip` nedeni `role_provider` (yeni) | S11 |
+| F-S4 | Sürüş Paneli metinlerine AZ karşılığı | G3 kuralı (A5.4) |
