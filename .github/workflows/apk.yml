@@ -1,0 +1,44 @@
+# .dev APK'yı derler, kimliğini denetler ve GitHub Release'e koyar. Yalnız `weem-v*` etiketi ya da elle.
+# Release APK (com.kuryelog.app) bilerek dağıtılmaz: WEEM 1.0'a kadar telefona kurulmaz, Rawstats'ın yerini alır.
+name: APK
+
+on:
+  push:
+    tags: ['weem-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Android SDK
+        run: bash tools/setup-android-sdk.sh
+      - name: logic/ testleri
+        run: ./gradlew -p logic test --console=plain
+      - name: Android birim testleri ve .dev APK
+        run: ./gradlew test assembleDebug --console=plain
+      - name: Kimlik denetimi (.dev)
+        run: ci/check_identity.sh app/build/outputs/apk/debug/app-debug.apk com.kuryelog.app.dev
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ver=$(sed -n 's/^weem.versionName=//p' gradle.properties)
+          apk="weem-${ver}-dev.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$apk"
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            tag=$GITHUB_REF_NAME; extra=""
+          else
+            tag="weem-dev-${GITHUB_RUN_NUMBER}"; extra="--prerelease --target $GITHUB_SHA"
+          fi
+          gh release create "$tag" "$apk" --title "WEEM $ver (.dev) — $tag" --generate-notes $extra

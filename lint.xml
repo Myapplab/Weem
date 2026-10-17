@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lint: hata = CI kırmızı (abortOnError). Uyarılar raporda kalır, CI'yı kırmaz. -->
+<lint>
+    <!-- Sürümler bilinçli sabit (Rawstats ile aynı AGP/Kotlin); güncelleme ayrı iş, uyarı gürültüsü. -->
+    <issue id="AndroidGradlePluginVersion" severity="ignore" />
+    <issue id="NewerVersionAvailable" severity="ignore" />
+    <issue id="GradleDependency" severity="ignore" />
+    <!-- Yazım denetimi İngilizce sözlükle çalışır; metinler Türkçe/Azerice (G3). -->
+    <issue id="Typos" severity="ignore" />
+    <!-- MissingApplicationIcon uyarı olarak kalır: simge kullanıcıdan bekleniyor (WEEM_ISLER "Kullanıcıdan beklenen"). -->
+</lint>

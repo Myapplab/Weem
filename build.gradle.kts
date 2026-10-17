@@ -26,6 +26,15 @@ subprojects {
         // İnce Android katmanı: kararı veren kod aynı adlı logic/ modülünde.
         dependencies.add("implementation", "com.kuryelog.logic:${project.name}")
     }
+    // Lint hataları CI'yı kırar; uyarılar ve ayarlar kök lint.xml'de.
+    pluginManager.withPlugin("com.android.library") {
+        extensions.configure<com.android.build.api.dsl.LibraryExtension> {
+            lint {
+                abortOnError = true
+                lintConfig = rootProject.file("lint.xml")
+            }
+        }
+    }
     pluginManager.withPlugin("org.jetbrains.kotlin.android") {
         extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension> {
             compilerOptions.jvmTarget.set(JvmTarget.JVM_17)

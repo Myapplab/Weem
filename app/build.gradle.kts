@@ -45,6 +45,11 @@ android {
         }
     }
 
+    lint {
+        abortOnError = true
+        lintConfig = rootProject.file("lint.xml")
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
