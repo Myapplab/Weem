@@ -8,7 +8,7 @@ Kurallar: `AGENTS.md` → "Birden çok Claude hesabı". Durumlar: `bekliyor` · 
 
 - **Son yapılan:** 17 Ekim — A1.4 (CI: `ci.yml` PR'da `logic/` + Android testleri, lint, `.dev` + release derleme, `check_identity.sh`; `apk.yml` `weem-v*`/elle → yalnız `.dev` APK Release; `lint.xml` + `abortOnError`). PR #1'de ilk GitHub koşusu yeşil (3 dk 24 sn).
 - **Sıradaki iş:** A1.3 (kabuk: alt menü, tema, TR/AZ) — Sonnet · high. Sonra A1.5 (K) ve Aşama 2.
-- **Devam eden (yarım) iş:** yok
+- **Devam eden (yarım) iş:** A1.3 sürüyor — dal `claude/weem-continuation-jj51eu`, kalınan adım: başlangıç
 - **Kullanıcıdan beklenen:** K0.1 kodsuz saha denemesi; uygulama simgesi; kalıcı Receiver telefonu (bugün Poco); her hesabın ortam ağ ayarında `dl.google.com` izni (Android'i yerelde derlemek için; nasıl: `AGENTS.md` → "Ortam").
 
 ## Aşama 0 — Planın son hâli
@@ -25,7 +25,7 @@ Kurallar: `AGENTS.md` → "Birden çok Claude hesabı". Durumlar: `bekliyor` · 
 |---|---|---|---|---|---|
 | A1.1 | Gradle iskeleti: wrapper 9.3.1, AGP 9.1.0, Kotlin 2.4.0 (Rawstats ile aynı), sürüm kataloğu. `logic/` ayrı build (Android eklentisi yok; alt projeler `core capture orders economics scooter map link remote`), kök build `includeBuild("logic")`; Android modülleri `:app :core :capture :orders :economics :scooter :map :link :remote` (boş). Oturum başlangıç kancası `logic` önbelleğini ısıtır (zaten yazılı) | Yerelde `./gradlew -p logic test` yeşil (modül başına örnek test); bağımlılık yönü testi (4.2) | Opus · high | A0.1 | bitti (`a1eb8bc`, `6776b9a`; Android katmanı yerelde derlenmedi, ilk derleme A1.4 CI'da) |
 | A1.2 | Kimlik: `applicationId` `com.kuryelog.app`, debug `.dev`; imza = `rawstats` `ci/kuryelog-test.keystore` (alias ve şifre Rawstats `app/build.gradle.kts`'teki gibi); sürüm kodu tek kaynaktan, >33; minSdk 29, target/compile 36; `allowBackup=false` + Rawstats `data_extraction_rules.xml`; manifestte `com.kuryelog.app.WatchService` ve `NotifService` (boş gövde), izinler (`VERI_SOZLESMESI` Bölüm 3) | CI'da `aapt2 dump badging`: paket, sürüm, imza SHA-256 Rawstats ile aynı | Opus · high | A1.1 | bitti (`7dd7b6a`; `ci/check_identity.sh` yerelde yeşil: `.dev` ve `com.kuryelog.app`, imza SHA-256 Rawstats ile aynı; CI'da A1.4) |
-| A1.3 | Kabuk: tek Activity + Compose alt menü (Harita · Siparişler · Scooter · Uzaktan · Daha fazla), sekme durumu korunur, açılış Harita; gece/gündüz teması (renk karşıtlığı testi, `RawPaletteContrastTest` karşılığı); dil TR/AZ (G3) ve çeviri kapsam testi (`I18nCoverageTest` karşılığı) | Kabuk testleri yeşil; `.dev` APK derlenir | Sonnet · high | A1.1 | bekliyor |
+| A1.3 | Kabuk: tek Activity + Compose alt menü (Harita · Siparişler · Scooter · Uzaktan · Daha fazla), sekme durumu korunur, açılış Harita; gece/gündüz teması (renk karşıtlığı testi, `RawPaletteContrastTest` karşılığı); dil TR/AZ (G3) ve çeviri kapsam testi (`I18nCoverageTest` karşılığı) | Kabuk testleri yeşil; `.dev` APK derlenir | Sonnet · high | A1.1 | sürüyor (17 Ekim 2026) |
 | A1.4 | CI: `ci.yml` (PR: `logic` testleri + Android birim testleri + lint + `assembleDebug`; Gradle önbelleği; `.md` hariç) ve `apk.yml` (`weem-v*` etiketi ya da elle → Release) | Bir yeşil koşu | Sonnet · high | A1.2 | bitti (PR #1; ilk koşu yeşil: logic + Android testleri, lint, iki APK'da kimlik denetimi) |
 | A1.5 | (K) `.dev` APK yedek telefonda açılır, sekmeler arası geçişte durum korunur | Kullanıcı onayı | — | A1.4 | bekliyor |
 
