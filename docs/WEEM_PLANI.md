@@ -199,6 +199,7 @@ Toplam 48 oturumluk görev (`docs/WEEM_ISLER.md`; aksamalarla kabaca 50–55 otu
 | S11 Scooter bağlantısı | Scooter tek telefona bağlanır (Receiver = Poco). Provider (Pixel) rolünde WEEM scooter'a hiç bağlanmaz; resmî Ninebot uygulaması Pixel'de gerektiğinde kullanılır, sonra Pixel Bluetooth'u kapatılır ya da scooter unutturulur — 17 Ekim |
 | S12 Uzaktan kullanım | İki yönlü ve tam: yanındaki telefondaki (Pixel ↔ Poco) her şey yönetilebilir — 17 Ekim |
 | S13 Usage | Ultracode yalnız gerekli yerlerde (Aşama 3 ve 6 şartnameleri, son büyük denetim); paralel ajan en çok 2–3, çıktı bölüm bölüm repoya + push; kalite en yüksek (kural `AGENTS.md`) — 17 Ekim |
+| S14 A3.1 çalışma biçimi | A3.1 (Aşama 3 şartnamesi) tek ajanla, **Opus · max**; ultracode ve paralel ajan yok. S13'teki ultracode listesinden A3.1 çıkar (ultracode artık yalnız A6.1 ve A10.3). Şartname yine bölüm bölüm yazılır, her bölümde commit + push — 17 Ekim |
 
 ## 9. İlerleme
 

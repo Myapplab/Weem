@@ -2,13 +2,13 @@
 
 Kurallar: `AGENTS.md` → "Birden çok Claude hesabı". Durumlar: `bekliyor` · `sürüyor (<tarih saat>)` · `bitti (<commit>)` · `engel (<neden>)`. Her görev bir oturuma sığar; "Bağımlı" sütunundakiler bitmeden başlanmaz. Özellik kodları (Y/R/S/G/N) `WEEM_PLANI.md` Bölüm 3'te; her özelliğin eski kodu, testleri ve verisi `docs/sartname/OZELLIK_HARITASI.md`'de, korunacak adlar `VERI_SOZLESMESI.md`'de, test listesi `TEST_ENVANTERI.md`'de. (K) = kullanıcının telefonda yapacağı deneme.
 
-**Usage kuralı (S13, ayrıntı `AGENTS.md`):** ultracode yalnız A3.1, A6.1 (şartname) ve A10.3 (büyük denetim); paralel ajan en çok 2–3, her ajan çıktısını bölüm bölüm repoya yazar ve her bölümde commit + push. Diğer şartname görevleri (A2.1, A5.1) tek ajanla; önce `docs/sartname/bulgular/` ve özellik haritası okunur, yalnız eksikler kaynak koddan çıkarılır.
+**Usage kuralı (S13, S14; ayrıntı `AGENTS.md`):** ultracode yalnız A6.1 (şartname) ve A10.3 (büyük denetim); paralel ajan en çok 2–3, her ajan çıktısını bölüm bölüm repoya yazar ve her bölümde commit + push. Diğer şartname görevleri (A2.1, A3.1, A5.1) tek ajanla (A3.1: Opus · max, S14); önce `docs/sartname/bulgular/` ve özellik haritası okunur, yalnız eksikler kaynak koddan çıkarılır.
 
 ## Şu an
 
 - **Son yapılan:** 17 Ekim — A2.3 (depolama, R20 çökme kaydı/kartı, Daha fazla → Kayıtlar ile ZIP içe aktarma), A2.4 (tek vardiya: `ShiftMachine`, `ShiftService`, ev izleyici, `NotificationIds`, vardiya kartı, Ev konumu ekranı), A2.5 (modüller arası arayüzler ve mesaj tipleri) bitti; `logic/core` 212 test, kök test+lint+iki APK yerelde yeşil, telefonda denenmedi.
-- **Sıradaki iş:** A3.1 (Aşama 3 şartnamesi) — Opus · xhigh + ultracode, hesabın usage'ı tazeyken (S13: en çok 2–3 paralel ajan). Aşama 2 tamam (A2.6 kullanıcı onayı, `weem-dev-2`).
-- **Devam eden (yarım) iş:** yok
+- **Sıradaki iş:** A3.1 (Aşama 3 şartnamesi) sürüyor — Opus · max, tek ajan (S14: ultracode ve paralel ajan yok). Aşama 2 tamam (A2.6 kullanıcı onayı, `weem-dev-2`).
+- **Devam eden (yarım) iş:** A3.1 — dal `claude/a3-1-specification-writing-yowfos`; kalınan adım: üstlenildi, S14 yazıldı; sıradaki bölüm `CAPTURE.md` 0 (kapsam, kaynaklar, saha kareleri).
 - **Kullanıcıdan beklenen:** evde ev konumunu kaydedip "Her zaman" konum izni vermek ve otomatik vardiyayı denemek (çıkış ≥50 m ve ≥10 km/s, dönüşte 30 sn); K0.1 kodsuz saha denemesi; uygulama simgesi; kalıcı Receiver telefonu (bugün Poco); her hesabın ortam ağ ayarında `dl.google.com` izni (Android'i yerelde derlemek için; nasıl: `AGENTS.md` → "Ortam").
 
 ## Aşama 0 — Planın son hâli
@@ -44,7 +44,7 @@ Kurallar: `AGENTS.md` → "Birden çok Claude hesabı". Durumlar: `bekliyor` · 
 
 | No | İş | Bitti sayılır | Model · effort | Bağımlı | Durum |
 |---|---|---|---|---|---|
-| A3.1 | Şartname `docs/sartname/CAPTURE.md`, `ORDERS.md` — kaynak `bulgular/R_capture.md`, `R_orders.md` + eksikler (R12, R13, R15; `DeliveryCore` durum makinesinin tamamı); saha kareleri (`saha_kareleri_2026-10-11_12`) | Belge (bölüm bölüm push) | Opus · xhigh + ultracode (S13: en çok 2–3 paralel ajan) | A2.5 | bekliyor |
+| A3.1 | Şartname `docs/sartname/CAPTURE.md`, `ORDERS.md` — kaynak `bulgular/R_capture.md`, `R_orders.md` + eksikler (R12, R13, R15; `DeliveryCore` durum makinesinin tamamı); saha kareleri (`saha_kareleri_2026-10-11_12`) | Belge (bölüm bölüm push) | Opus · max, tek ajan (S14: ultracode ve paralel ajan yok) | A2.5 | sürüyor (17 Ekim 14:44 UTC) |
 | A3.2 | Testleri çevir: `:capture` (15 dosya, 203) + `:orders` sipariş akışı (K34, D3, D9, M18–M22, E2, E15, R1, K21, K29, `CoreLifecycleV2Test`, `SahaTekrarTest`) | Testler derlenir, kırmızı | Sonnet · high | A3.1 | bekliyor |
 | A3.3 | Testleri çevir: `:orders` para, platform, rozet, balon, gün sayfası (K31–K32, M15–M17, F4.6–F4.8, K27, M21, E3, K36, D15, F8.1–F8.5, K35, E14, E16, F7.1–F7.3, K25, E1, K28) | Testler derlenir, kırmızı | Sonnet · high | A3.1 | bekliyor |
 | A3.4 | `:capture` kodu: ayrıştırıcı, ekran tanıma, OCR temposu, kayıt politikası, bildirim okuma, R16 mesafe; **ağ yasağı testi** (`:capture` bağımlılıklarında ağ sınıfı yok) ve **ICU desen testi** (tüm modüller) | A3.2 `:capture` testleri yeşil | Opus · high | A3.2 | bekliyor |

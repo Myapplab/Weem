@@ -36,9 +36,9 @@ Kullanıcı WEEM'i 2–3 Claude hesabından sırayla geliştirir; bir hesabın u
 | Net tanımlı iş: testi hazır modül kodu, Compose ekranları, test çevirisi, ayarlar | Sonnet · high |
 | Belge, küçük düzeltme, sürüm numarası | Sonnet · medium |
 | Aşama sonu denetimi | `/code-review high`; WEEM 1.0 öncesi `/code-review xhigh` |
-| Ultracode (çok ajanlı, çok usage) | Yalnız: A3.1 ve A6.1 (Aşama 3 ve 6 şartnameleri), A10.3 (WEEM 1.0 öncesi büyük denetim); hesabın usage'ı tazeyken |
+| Ultracode (çok ajanlı, çok usage) | Yalnız: A6.1 (Aşama 6 şartnamesi), A10.3 (WEEM 1.0 öncesi büyük denetim); hesabın usage'ı tazeyken |
 
-- `max` kullanma (aşırı düşünür, usage yer). Hesapta Opus yoksa Opus satırları Sonnet · high (zorsa xhigh) ile yapılır.
+- `max` kullanma (aşırı düşünür, usage yer); tek istisna A3.1: tek ajan, Opus · max (kullanıcı kararı S14, 17 Ekim). Hesapta Opus yoksa Opus satırları Sonnet · high (zorsa xhigh) ile yapılır.
 - Ayarlar: `/model opus|sonnet`, `/effort high` (ya da `xhigh`, `medium`), ultracode `/effort ultracode` (kapatma `/effort ultracode off`).
 - `WEEM_ISLER.md`'deki her görevde önerilen model · effort yazılıdır; oturum başında ona göre ayarla.
 
@@ -46,7 +46,7 @@ Kullanıcı WEEM'i 2–3 Claude hesabından sırayla geliştirir; bir hesabın u
 
 Kalite en yüksek, usage dikkatli. 10 paralel ajan bir hesabın usage'ını ~1 saatte bitirdi; bu yüzden:
 
-- Ultracode ve paralel ajan yalnız yukarıdaki üç görevde. Başka yerde alt ajan yok (kullanıcı açıkça istemedikçe).
+- Ultracode ve paralel ajan yalnız yukarıdaki iki görevde (A6.1, A10.3; A3.1 S14 ile çıktı). Başka yerde alt ajan yok (kullanıcı açıkça istemedikçe).
 - Aynı anda **en çok 2–3 ajan**.
 - Her ajan çıktısını repoya **bölüm bölüm** yazar (bir özellik/bölüm = bir dosya bölümü) ve **her bölümde commit + push** yapar; sonuç yalnız sohbette kalmaz. Usage biterse yazılan bölümler kalır.
 - `WEEM_ISLER.md` → "Devam eden" satırı her push'ta güncel: dal, son commit, kalınan adım (hangi bölümler bitti, hangisi sırada). Sonraki hesap oradan sürer.
