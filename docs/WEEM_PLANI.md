@@ -212,5 +212,6 @@ Toplam 48 oturumluk görev (`docs/WEEM_ISLER.md`; aksamalarla kabaca 50–55 otu
 | 2026-10-17 | A0.1 planın son hâli: `docs/sartname/` (özellik haritası, veri sözleşmesi, test envanteri, ham bulgular), mimari 4.1–4.7, iş listesi oturumluk görevler, açık sorular. Çok ajanlı okuma usage nedeniyle yarıda durduruldu; kalan ayrıntı aşama şartname görevlerinde | Claude | dal `claude/weem-plan-specification-dq4yxx` |
 | 2026-10-17 | A0.2 açık soruların yanıtı (S1–S13) Bölüm 8'e; Y12 1.0'a alındı; AGENTS.md'ye ultracode/paralel ajan kuralı ve devam promptu | Claude | dal `ccr-2e70dcaf-vhiw6n` |
 | 2026-10-17 | A1.1 Gradle iskeleti: `logic/` ayrı build (8 modül, testler yeşil), kök Android build (9 boş modül), modül yönü denetimi | Claude | `6776b9a`; Android katmanı yerelde derlenmedi (`dl.google.com` kapalı) |
+| 2026-10-17 | A1.2 kimlik ve imza: Rawstats anahtarı, `.dev` debug + `com.kuryelog.app` release, tek kaynak sürüm, yedek kuralları, `WatchService`/`NotifService`, izinler, `ci/check_identity.sh` | Claude | `7dd7b6a`; Android katmanı ilk kez yerelde derlendi, kimlik denetimi yeşil; CI ve telefon yok |
 
 **Sıradaki:** `docs/WEEM_ISLER.md` → "Şu an".
