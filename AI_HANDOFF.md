@@ -2,6 +2,13 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-17 — A5.1 Aşama 5 şartnamesi `SCOOTER.md` (Claude Opus · high, tek ajan; dal `ccr-3deb3b22-ikpcye`, doğrudan `main`)
+- Yapılan: `docs/sartname/SCOOTER.md` Bölüm 0–14 (~640 satır), Sürüş Paneli 0.4.3 + Rawstats scooter kodu (`rawstats` @ `6388c04`) satır satır: UUID'ler ve GATT sırası, çerçeve, Encryption2 şifreleme, PRE_COMM/PAIR/AUTH, oturum sabitleri (tek bekleyen istek, 1,2 sn, 5/20 ms, hız 150/400 ms, 12 zaman aşımı), register/ölçek tablosu, `pairing-v1`/Keystore biçimi, S2–S8, R14, veri sözleşmesi, WEEM yerleşimi, test eşlemesi, riskler.
+- Güncellendi: `OZELLIK_HARITASI` (S1–S8, R14 Ayrıntı → `SCOOTER.md`), `VERI_SOZLESMESI` (5.2: `export_*`/`immersive` tercih değil, örnek durum paketi; 5.3 değer biçimi; 7.2 ZIP), `TEST_ENVANTERI` (A5.1 notu: 324 satır / 336 çağrı / çalışma sayıları; yeşil görevleri), `WEEM_PLANI` (şartname eksikleri durumu).
+- Doğrulama: `bash ninebot-logger/tests/run.sh` (JDK 21) 14 suit yeşil; kaynak repoya yazılmadı. Kod, test ve CI yok (`[skip ci]`); telefonda denenecek bir şey yok.
+- Kararlar (şartname): `ScooterBridge.steps` (sipariş enerjisi adımları) A5.3'te `logic/core`'a eklenir; Provider rolünde BLE yok, `skip role_provider` (S11); `nb_crypto.py` yalnız test referansı, LICENSE/NOTICE ile.
+- Açık kalan: kullanıcı sorusu **S18** (bağlantı `fail()` sonrası boşta kalıyor; yeniden deneme?). Riskler R-S5/R-S6 (2 telefonda sipariş enerjisi ve vardiya durumu) A8.1'e. Sıradaki scooter işi A5.2 (Opus · xhigh).
+
 ## 2026-10-17 — A3.5 `:orders` çekirdek (Claude Opus · high; dal `ccr-e90bca59-fxabvl`, `c192b40`)
 - Yapılan: `DeliveryCore` + yardımcılar (Readiness, DeliveryDeadline, ArrivalDistance, VenueArrival, LegacyRecords, RecordJson, PlatformHistory, CashPayment/CashTips, OnlineSessions, OfferWeather, BoostLog, OrderHistory) satır satır `logic/orders`'a; uyarlananlar `OfferWindows`, `Platforms`, `OverlayText` (`OwnLines` sabitleri), `OrderStages`, `NavBinding`, `OfferSummaries`, `OfferWeather.from(WeatherNow)`; `OrderTracker` → saf `OrderFlow` (`Env`: LogStore, prefs, `CourierRecords`, Clock, ScooterBridge, WeatherPort, `OrderObserver`), `CaptureSink` + `ShiftMachine.Hooks` uygular. Farklar `ORDERS.md` 16.1.
 - Doğrulama: `logic/orders` 383 test, 336 yeşil (A3.2 sipariş testleri, `SahaTekrarTest` 10/10, yeni `OrderFlowTest` 7, `OverlayTextOwnLinesTest` 2); kalan 47 = A3.6 iskeletleri (PlatformTotals 19, CashReconcile 5, CashPending 3, PocketCash 3, RecordPages 2, RestaurantBubble 4, CustomerBubble 6, CustomerCard 5). capture 128/129, core 216 yeşil; kök `:orders`/`:capture` derlenir. CI yok (`[skip ci]`), telefonda denenmedi.
