@@ -315,6 +315,8 @@ Tam liste (anahtar, tip, varsayılan, sahibi modül ve aşama) A2.1'de kaynaktan
 
 Yer: saf testler `logic/core/src/test/kotlin/com/kuryelog/logic/core/` (JVM, Android'siz; `org.json` test bağımlılığı). "Kaynak taraması" = eski test Rawstats kaynak dosyasında dizgi arıyor; WEEM'de **karar saf koda alındığı için** çoğu saf teste döner, kalanlar WEEM'in kendi Android kaynağını tarar (bileşen yazıldığı görevde).
 
+**Durum (A2.2, 17 Ekim):** aşağıda "A2.2" yazan her test `logic/core/src/test/kotlin/com/kuryelog/logic/core/` altında; Rawstats testleri aynı adla, YolGo testleri `HomeDayRulesTest` (19 → 18 + 1 ek: sıçrayan çıkış fix'i), `HomeDayE6Test` (10), `HomeDayEndRuleTest` (5), `ShiftFollowerTest` (11 → 7 saf karar + 4 denetleyici senaryosu), `NotifyPolicyTest` (2), `HomePickResultTest` (6). Sınıflar eski koddan taşındı (testler yeşil: 126 test). **A2.4'ün eklemesi kalanlar:** `HomeShiftE6Test.watcherAndSettingsFollowTheRule`, `HomeEndRuleF45bTest.serviceTellsTheRuleWhetherAnOrderIsOpen`, `ShiftInterruptH4Test.serviceKeepsTheShiftWritesTheEventAndAsksForATap`, `home_day_controller_test` 1–3 (`ShiftMachine`). **A2.3:** `CrashGuardTest` (WEEM `Application`, sekme hata sınırı, `guarded`), `DailyRecordsTest.everyFileWrittenByTheAppIsInTheBackupList`. Çevirirken görülen küçük sapmalar: konum yardımcıları saniye yerine ms; `ShiftState.parse` Dart'taki gibi `startedAtMs/endedAtMs ≤ 0` değerini null sayar.
+
 ### 6.1 Rawstats (19 dosya, 113)
 
 | Test (sayı) | WEEM | Görev | Not |

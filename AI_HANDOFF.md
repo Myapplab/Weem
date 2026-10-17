@@ -2,6 +2,11 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-17 — A2.2 `:core` testleri (Claude Sonnet · high, tek ajan; dal `ccr-ff8b6e08-4a0i1z`, `main`'e birleşti)
+- Yapılan: `logic/core` — Rawstats `:core` testleri (HomeShiftK38/E6/F45b, H4, F4.1, D8, EndedShiftMinutes, HomeRepository/Draft/Fixes, CrashReport, DailyRecords) ve YolGo `home_day_*` (aynen / F4.5b ölçekli / 1.9 fark beklentileriyle), `rawstats_shift_end` → `ShiftFollower`, `HomePickResult`, `NotifyPolicy`. Çevirileri doğrulamak için saf sınıflar eski koddan taşındı (WEEM değişiklikleri: `CrashReport` "WEEM" + `com.kuryelog.logic` kareleri, `distM` kendi haversine'i, `ShiftState`/`ShiftFollower` Dart'tan). `org.json` `compileOnly`+test (kataloğa `org-json 20240303`).
+- Doğrulama: `./gradlew -p logic test` yeşil (core: 126 test). Çeviride tek hata kendi eklediğim sıçrama-testimdeydi (ilk fix sıçrama sayılmıştı); kaynak testlerin hepsi ilk seferde geçti. Android kök derlemesi bu oturumda Maven Central 429 yüzünden koşmadı (build.gradle değişikliği yalnız `logic/core`'a org.json); CI koşusu yok; telefonda denenmedi.
+- Açık kalan: A2.3 (depolama + R20: `Store`, `LogImporter`, `courier.db` DDL, `guarded`, çökme yazımı) ve A2.4 (`ShiftMachine`, servis, izleyici, `NotificationIds`); satırlarda neyin bittiği/kaldığı yazılı. Sıradaki A2.3 (Opus · high).
+
 ## 2026-10-17 — A2.1 Aşama 2 şartnamesi (Claude Opus · high, tek ajan; dal `claude/weem-continuation-pmd9q3`, `main`'e push)
 - Yapılan: `docs/sartname/CORE.md` — G1 tek vardiya kuralı = Rawstats `HomeShift` (sabitler, durum geçişleri, başlatma/bitirme sırası, H4, ev izleyici, D8 mesafe; kaynak satırları doğrulandı), G2 ev kaydı/taslak, G4 `NotificationIds` (ekran okuma 5103→5104, nakit bahşiş 4000+→10000–14095, 7400 vardiya servisine), R20 çökme kaydı + `guarded`, depolama (gün klasörü, `logNames`, ZIP içe aktarma A2.3'e, `courier.db` DDL), test eşlemesi (Bölüm 6).
 - YolGo `home_day_*` senaryoları Rawstats kuralının Python kopyasıyla koşturuldu: çoğu aynı; 6 fark (sıçrama tabanı, 120 sn çift, elle bitirme sonrası 50 m koruması, doğruluk paysız kurulma, `end_rule` 36. sn) 1.9'da beklentileriyle.
