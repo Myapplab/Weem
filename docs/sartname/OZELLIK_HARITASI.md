@@ -6,12 +6,12 @@ Durum: A0.1, 17 Ekim 2026. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c0
 
 **Kesinlik:** eski kod sütunu dosya adları ve ham bulgulardan; test sütunu test adından eşlendi (bir test birden çok özelliğe sayılabilir, toplamlar bu yüzden test envanterinden büyüktür). Testi **yok** olan özellikler: Y2, Y17, Y21 (eski kodda ekran var, test yok → WEEM'de karakterizasyon testi yazılır) ve yeni özellikler N2, N3, N6, N8.
 
-## Özet — WEEM 1.0 (58)
+## Özet — WEEM 1.0 (59)
 
 | Kod | Özellik | WEEM modül · aşama | Test (adet) |
 |---|---|---|---:|
 | Y1 | Harita ekranı | `:map` · 6 (A6.5) | 22 |
-| Y2 | İkinci harita görünümü (OSM) | `:map` · 6 (A6.5; OSM kütüphanesi kullanıcıya sorulur) | 0 |
+| Y2 | İkinci harita görünümü (OSM) | `:map` · 6 (A6.5; MapLibre, S4) | 0 |
 | Y3 | Kendi rota motoru | `:map` `logic/` · 6 (A6.4) | 81 |
 | Y4 | Navigasyon | `:map` · 6 (A6.6) | 75 |
 | Y5 | Wolt/Bolt navigasyon bağlantıları | `:map` `logic/` + `:app` · 6 (A6.6) | 23 |
@@ -21,6 +21,7 @@ Durum: A0.1, 17 Ekim 2026. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c0
 | Y9 | Hız ve batarya tahmini | `:map` `logic/` · 6 (A6.7) | 54 |
 | Y10 | Hava durumu | `:map` · 6 (A6.7) | 16 |
 | Y11 | Trafik ışığı duruşları | `:map` `logic/` · 6 (A6.8) | 48 |
+| Y12 | Yol kalitesi öğrenme | `:map` `logic/` · 6 (A6.11; sıfırdan, S3) | 55 |
 | Y15 | Bisiklet yolu katmanı | `:map` · 6 (A6.8) | 18 |
 | Y16 | Restoran noktaları | `:map` · 6 (A6.8) | 4 |
 | Y17 | İstatistik ekranı | `:map` · 6 (A6.9) | 0 |
@@ -69,7 +70,7 @@ Durum: A0.1, 17 Ekim 2026. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c0
 | N6 | Hırsızlık koruması | `:link` + `:scooter` · 8 (A8.4) | 0 |
 | N8 | Günlük kazanç hedefi | `:economics` · 4 (A4.2) | 0 |
 
-Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R15 R19 · `:economics` R4 N4 N5 N8 · `:core` G1 G2 G4 R17 R18 R20 N3 · `:scooter` S1–S8 R14 · `:map` Y1–Y11 Y15–Y21 · `:link` N1 N6 · `:remote` N2 · `:app` G3 G5.
+Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R15 R19 · `:economics` R4 N4 N5 N8 · `:core` G1 G2 G4 R17 R18 R20 N3 · `:scooter` S1–S8 R14 · `:map` Y1–Y12 Y15–Y21 · `:link` N1 N6 · `:remote` N2 · `:app` G3 G5.
 
 ## Ayrıntı
 
@@ -85,13 +86,13 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Testler:** **yok**
 - **Veri:** OSM karoları (ağ)
 - **Bağımlı:** Y1
-- **WEEM:** `:map` · 6 (A6.5; OSM kütüphanesi kullanıcıya sorulur)
+- **WEEM:** `:map` · 6 (A6.5; MapLibre Native, iki stil: bugünkü OSM raster karoları ve vektör — S4)
 
 ### Y3 Kendi rota motoru
 - **Eski kod:** YG `lib/routing/router.dart` (CostModel, A*), `planner.dart`, `route.dart`, `route_worker.dart`, `quality.dart`, `speed_options.dart`, `route_hours.dart`, `lib/core/physics.dart`, `lib/core/geo.dart`
 - **Testler:** `bikeway_e13_test` (18); `park_paths_test` (4); `push_segments_test` (5); `route_hours_test` (3); `router_test` (38); `ww_green_two_way_test` (4); `quality_test` (9) — **81**
-- **Veri:** `graph_<region>.bin`, DEM `.hgt`, `streets.*`, `roads.*` (Y12)
-- **Bağımlı:** Y7, Y8, Y15, Y12 (!), Y9
+- **Veri:** `graph_<region>.bin`, DEM `.hgt`, `streets.*`, yol kalitesi verisi (Y12, WEEM'de sıfırdan)
+- **Bağımlı:** Y7, Y8, Y15, Y12 (A6.11), Y9
 - **WEEM:** `:map` `logic/` · 6 (A6.4)
 - **Ayrıntı:** `bulgular/Y_routing.md` §Y3
 
@@ -155,6 +156,14 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Bağımlı:** G1, Y7, Y17
 - **WEEM:** `:map` `logic/` · 6 (A6.8)
 - **Ayrıntı:** `bulgular/Y_tracking.md` §Y11
+
+### Y12 Yol kalitesi öğrenme (17 Ekim'de 1.0'a alındı, S3)
+- **Eski kod:** YG `lib/roads/`, `lib/ui/roads_screen.dart`, `road_score.dart`, `lib/routing/quality.dart`; ses tuşu `setVolumeCapture` (Ses+/Ses−)
+- **Testler:** `day_contributions_test` (3); `quality_test` (9); `road_learner_test` (9); `road_save_test` (1); `road_score_ui_test` (11); `street_scores_test` (12); `ww_clean_run_test` (5); `ww_no_problem_green_test` (5) — **55**
+- **Veri:** YolGo `roads.*` aktarılmaz (S1); WEEM aynı anlamda yeni veri tutar, sıfırdan öğrenir
+- **Bağımlı:** Y3 (rota maliyeti: öğrenilen kalite, ters yön oranı), Y7, Y8
+- **WEEM:** `:map` `logic/` · 6 (A6.11)
+- **Ayrıntı:** `bulgular/Y_contract.md` (Y12–Y14 başvurusu), `Y_routing.md` §Y3 (`learned`, `wwRatio`)
 
 ### Y15 Bisiklet yolu katmanı
 - **Eski kod:** YG `lib/routing/bikeways.dart`, `lib/ui/bikeway_layer.dart`, `graph_builder.dart` (`isBikewayTags`)
@@ -509,29 +518,28 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Bağımlı:** N4
 - **WEEM:** `:economics` · 4 (A4.2)
 
-## Sonra (4) ve çıkarılan (1) — WEEM 1.0'da yazılmaz
+## Sonra (3) ve çıkarılan (1) — WEEM 1.0'da yazılmaz
 
 | Kod | Özellik | Eski kod | Test (adet) |
 |---|---|---|---:|
-| Y12 | Yol kalitesi öğrenme | YG `lib/roads/`, `lib/ui/roads_screen.dart`, `road_score.dart`, `lib/routing/quality.dart` | 55 |
 | Y13 | Yüzey ve titreşim ölçümü | YG `lib/surface/`, `android_overlay/SurfaceSignal.kt`, `RawDiagnostics.kt` | 44 |
 | Y14 | Yol kalibrasyonu | YG `lib/calibration/`, `android_overlay/RoadCalibration*.kt` | 56 |
 | N7 | Sesli uyarılar | yeni | 0 |
 | N9 | Bakım hatırlatıcı (çıkarıldı) | — | 0 |
 
-**Uyarı (Açık soru S3):** Y12 verisi bugün rota maliyetine giriyor (`lib/routing/router.dart` CostModel: öğrenilen kalite, `roads.ww*` ters yön oranı; testler `quality_test`, `ww_clean_run_test`, `ww_no_problem_green_test`). Y12'siz Y3 aynı kullanıcı verisiyle YolGo'dan farklı rota verebilir.
+Y12 17 Ekim'de (S3) WEEM 1.0'a alındı; yukarıdaki ayrıntıya bakın.
 
 ## Kapsam listesinde adı olmayan eski davranışlar
 
-63 listesinde ayrı satırı yok; aşağıdaki özelliğe bağlanarak korunur (kullanıcı çıkarmak isterse Açık soru S9):
+63 listesinde ayrı satırı yok; aşağıdaki özelliğe bağlanarak korunur (S9, 17 Ekim: hepsi kalır, yalnız Google Maps'te rota açma kaldırılır):
 
 | Davranış | Eski kod | Bağlandığı özellik |
 |---|---|---|
 | Eve dönüş batarya eşikleri (`homeReturnPct` 30, `lowBatteryPct` 50, `lowBatteryGradePct`) | YG `settings.v1`, `battery_estimator.dart` | Y9, N5 |
 | Kaldırım bölgeleri ve "kaldırımda bekliyorum" | YG `sidewalk.zones.v1`, `stop_semantics.dart` | Y11 |
 | Hareket tanıma (yürüme güveni) | YG `MotionReceiver.kt` | G1, Y11 |
-| Google Maps'te iki tekerli rota açma (yedek) | YG `MainActivity.kt` `openGoogleRoute` | Y4 |
-| Sürüşte ekranı açık tutma; ses tuşu yakalama (Ses+/Ses−) | YG `setScreenAwake`, `setVolumeCapture`; NB `keep_screen_on` | Y1, S2 (ses tuşu Y12/Y13 ile sonra) |
+| ~~Google Maps'te iki tekerli rota açma (yedek)~~ | YG `MainActivity.kt` `openGoogleRoute` | **kaldırıldı (S9)**; görev kartındaki "Rota Oluştur" WEEM navigasyonunu açar (Y20) |
+| Sürüşte ekranı açık tutma; ses tuşu yakalama (Ses+/Ses−) | YG `setScreenAwake`, `setVolumeCapture`; NB `keep_screen_on` | Y1, S2; ses tuşu Y12 ile (A6.11) |
 | Gün silme | YG `day_deletion.dart`; RS `DailyRecords` | R12, Y17 |
 | İzlenen uygulama seçimi (başlatılabilir uygulama listesi) | RS manifest `<queries>`, `MainActivity` | R2 |
 | Müşteri adresinin Android Geocoder ile koordinata çevrilmesi (<50 km) | RS `OrderTracker.kt` (`resolve`) | R5 (`:orders`; `:capture` ağsız kalır) |

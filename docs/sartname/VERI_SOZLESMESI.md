@@ -2,7 +2,7 @@
 
 Durum: A0.1, 17 Ekim 2026. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c04` (kısaltma **RS** = `app/src/main/java/com/kuryelog/app/`, **NB** = `ninebot-logger/app/src/main/java/az/ninebot/logger/`) ve `yolgo-test` @ `870ab6e` (**YG**). Kural: plan Bölüm 2. Bu belgedeki bir adı değiştirmek kullanıcı kararıdır.
 
-Sütun **WEEM**: `aynı` = harfiyen korunur · `oku` = WEEM eski veriyi okur (ilk açılış/içe aktarma), yeni yazım aynı biçimde · `içe aktar` = YolGo'dan dışa aktarma → WEEM'e alma (Aşama 7) · `kalkar` = tek uygulamada gereksiz (Açık sorular) · `yeni` = WEEM'de eklenir.
+Sütun **WEEM**: `aynı` = harfiyen korunur · `oku` = WEEM eski veriyi okur (ilk açılış/içe aktarma), yeni yazım aynı biçimde · `içe aktar` = YolGo'dan dışa aktarma → WEEM'e alma (Aşama 7) · `kalkar` = tek uygulamada gereksiz (S7, plan Bölüm 8) · `yeni` = WEEM'de eklenir.
 
 Ayrıntılı alan listeleri ve satır başvuruları: `docs/sartname/bulgular/` (ham, kısmi; mekanik denetim: 634 başvurudan 18'i geçersiz satır, aşağıda kullanılmadı).
 
@@ -29,11 +29,11 @@ Ayrıntılı alan listeleri ve satır başvuruları: `docs/sartname/bulgular/` (
 | **`com.kuryelog.app.WatchService`** | AccessibilityService, exported, `BIND_ACCESSIBILITY_SERVICE`, meta-data `android.accessibilityservice` → `@xml/accessibility_config` | RS manifest:52-62 | **aynı ad** (izin bileşen adına bağlı) |
 | **`com.kuryelog.app.NotifService`** | NotificationListenerService, exported, `BIND_NOTIFICATION_LISTENER_SERVICE` | RS manifest:65-72 | **aynı ad** |
 | `.GpsService` | exported=false, `foregroundServiceType="location"` (vardiya) | RS manifest:75-77 | ad serbest; tür aynı |
-| `.OfferFeedProvider` | authority `com.kuryelog.app.economics`, exported=false, grant yolları `/offers/current`, `/offers/v2/current`, `/logs/v3/day/*`, `/scooter/v1/live`, `/shift/v1/state` | RS manifest:78-88 | kalkar? (eski YolGo okuyucusu kalmaz; Açık soru S7) |
+| `.OfferFeedProvider` | authority `com.kuryelog.app.economics`, exported=false, grant yolları `/offers/current`, `/offers/v2/current`, `/logs/v3/day/*`, `/scooter/v1/live`, `/shift/v1/state` | RS manifest:78-88 | kalkar (S7) |
 | `.HomeShareActivity` | exported, action `com.kuryelog.app.action.SHARE_HOME` (yalnız `az.duzyol.app`) | RS manifest:89-95 | kalkar (tek uygulama) |
 | `.TipAmountActivity`, `.PocketCashActivity` | exported=false, excludeFromRecents (bahşiş/nakit penceresi) | RS manifest:97-104 | Compose diyalog; ad serbest |
 | `.PocketCashReceiver`, `.CashTipReceiver` | exported=false (bildirim "Yanıtla") | RS manifest:105-110 | ad serbest |
-| `<queries>` | package `az.duzyol.app`; MAIN/LAUNCHER intent (uygulama listesi) | RS manifest:14-24 | `az.duzyol.app` yalnız içe aktarma için |
+| `<queries>` | package `az.duzyol.app`; MAIN/LAUNCHER intent (uygulama listesi) | RS manifest:14-24 | `az.duzyol.app` gerekmez (S1: içe aktarma paylaşılan dosyadan) |
 | `az.ninebot.logger.DashboardActivity`, `.MainActivity` | exported=false, "Sürüş Paneli" | NB manifest:20-21 | Scooter sekmesi |
 | `az.ninebot.logger.RecordingService` | exported=false, `foregroundServiceType="location\|connectedDevice"` | NB manifest:22 | tür aynı; ad serbest |
 | YG `.MainActivity` intent filtreleri | VIEW (10 filtre): şemalar `geo`, `google.navigation`, `waze`, `yandexnavi`, `yandexmaps`; https hostlar `waze.com`, `www.waze.com`, `www.google.com` (`/maps`), `maps.google.com`, `maps.app.goo.gl`, `maps.yandex.ru`, `maps.yandex.com`, `yandex.ru`, `yandex.com`, `yandex.az` (pathPrefix `/maps` 4 filtrede); SEND `text/plain`; PROCESS_TEXT `text/plain` | YG `android_overlay/AndroidManifest.xml:27-120` | **aynı filtreler** WEEM Activity'sinde (Y5) |
@@ -69,9 +69,9 @@ Bugünkü mesajlar (alan alan: `bulgular/X_protocol.md` P1–P11; WEEM'deki kar�
 | Vardiya durumu | `…/shift/v1/state` (schemaVersion 1) | RS → YG | iç mesaj + P→R |
 | Gün kayıtları v3 | `…/logs/v3/day/YYYY-MM-DD` (manifest + 32 KB sayfa, `docs/LOG_FEED_V3.md`) | RS → YG (veri seti) | kalkar; Y19 dosyaları doğrudan okur |
 | Navigasyon | `content://az.duzyol.app.nav/nav/v1/current` (schemaVersion 1, `source` `yolgo`) | YG → RS | iç mesaj + R→P |
-| Hava | `content://az.duzyol.app.weather/weather/current` (schemaVersion 1, `source` `yolgo_open_meteo`) | YG → RS | iç mesaj + R→P |
-| Ev paylaşımı | action `com.kuryelog.app.action.SHARE_HOME` (YG istek kodu 703; extra `lat`,`lon`) | RS → YG | kalkar (tek ev, `:core`) |
-| Ev seçme | action `com.myapplab.yolgo.PICK_HOME` | RS → YG | kalkar (WEEM içi harita) |
+| Hava | `content://az.duzyol.app.weather/weather/current` (schemaVersion 1, `source` `yolgo_open_meteo`) | YG → RS | iç olay; 2 telefon modunda gönderilmez, her telefon kendi çeker (S6) |
+| Ev paylaşımı | action `com.kuryelog.app.action.SHARE_HOME` (YG istek kodu 703; extra `lat`,`lon`) | RS → YG | kalkar (S7; tek ev, `:core`) |
+| Ev seçme | action `com.myapplab.yolgo.PICK_HOME` | RS → YG | kalkar (S7; WEEM içi harita) |
 | Değişiklik bildirimi | `contentResolver.notifyChange` (`FeedChanges`: içerik anahtarı, ≥200 ms, kalp atışı) | RS → YG | iç olay akışı; `:link` kuyruğunda aynı kural |
 
 ## 5. SharedPreferences
@@ -109,27 +109,29 @@ Not: tam liste A2.1'de `rg -n 'Store.prefs|prefs\(' RS` ile kesinleşir (bazı a
 | SharedPreferences | `pairing-v1` (cihaz başına şifreli eşleşme malzemesi) | NB `KeyVault.java:14` |
 | Android Keystore takma adı | **`NinebotLogger.Pairing.v1`** (AndroidKeyStore; anahtar uygulama kimliğine ve imzaya bağlı) | NB `KeyVault.java:13-15` |
 
-### 5.4 YolGo — `FlutterSharedPreferences` (her anahtar `flutter.` önekli) — WEEM: **içe aktar** (A7.1)
+### 5.4 YolGo — `FlutterSharedPreferences` (her anahtar `flutter.` önekli) — WEEM: **aktarılmaz** (S1: eski YolGo'ya dışa aktarma eki yok; WEEM başka paketin verisini okuyamaz)
 
-| Anahtar | İçerik | Aktarılır mı |
+Anahtarların anlamı WEEM `:map` ayarları için başvurudur; değerler WEEM'de yeniden girilir ya da yeniden öğrenilir.
+
+| Anahtar | İçerik | WEEM (S1) |
 |---|---|---|
-| `settings.v1` | JSON AppSettings: araç `g3`, enerji katsayıları (`flatWhPerM` 0.0135, `climbWhPerM` 0.38 …), hızlar (`flatKmh` 28.5, `climbKmh` 18.5, `walkKmh` 4.5), eğim/batarya eşikleri, **ev**, `lang`, `lightMaxM` … | evet |
-| `streets.approved`, `streets.blocked`, `streets.steep`, `streets.names`, `streets.hours.v1`, `streets.blocked.legacy.v1`, `streets.blocked.migrated.v2` | sokak kararları (Y8) | evet |
-| `streets.bikeway.v1` | elle bisiklet yolları `wayId\|ad` (Y15) | evet |
-| `lights.v1` | ışık veritabanı (Y11) | evet |
-| `places.local.v1` | POI düzeltmeleri (Y16) | evet |
-| `sidewalk.zones.v1` | kaldırım bölgeleri | evet |
-| `daily.tasks.v1`, `daily.tasks.closed.v1`, `reminders.v1`, `reminders.last.v1` | görevler, hatırlatıcılar (Y20) | evet |
-| `search.recents.v2` | son aramalar | evet |
+| `settings.v1` | JSON AppSettings: araç `g3`, enerji katsayıları (`flatWhPerM` 0.0135, `climbWhPerM` 0.38 …), hızlar (`flatKmh` 28.5, `climbKmh` 18.5, `walkKmh` 4.5), eğim/batarya eşikleri, **ev**, `lang`, `lightMaxM` … | yeniden girilir |
+| `streets.approved`, `streets.blocked`, `streets.steep`, `streets.names`, `streets.hours.v1`, `streets.blocked.legacy.v1`, `streets.blocked.migrated.v2` | sokak kararları (Y8) | yeniden girilir |
+| `streets.bikeway.v1` | elle bisiklet yolları `wayId\|ad` (Y15) | yeniden girilir |
+| `lights.v1` | ışık veritabanı (Y11) | yeniden girilir |
+| `places.local.v1` | POI düzeltmeleri (Y16) | yeniden girilir |
+| `sidewalk.zones.v1` | kaldırım bölgeleri | yeniden girilir |
+| `daily.tasks.v1`, `daily.tasks.closed.v1`, `reminders.v1`, `reminders.last.v1` | görevler, hatırlatıcılar (Y20) | yeniden girilir |
+| `search.recents.v2` | son aramalar | yeniden girilir |
 | `battery.setPct`, `battery.consumed`, `battery.setAt` | batarya tahmini durumu | hayır (anlık) |
 | `shift.v1`, `shift.last`, `day.home.v1`, `courier.follow.v1`, `shift.deleted.days.v2`, `ride.active.v1`, `passive.pausedAt.v2`, `rawstats.*` | anlık gün durumu | hayır (WEEM tek vardiya) |
-| `weather.enabled.v1`, `weather.strip.v1`, `weather.key.v1`, `weather.permission.asked.v1` | hava ayarları | evet (anahtar değeri belgeye yazılmaz) |
+| `weather.enabled.v1`, `weather.strip.v1`, `weather.key.v1`, `weather.permission.asked.v1` | hava ayarları | yeniden girilir (anahtar değeri belgeye yazılmaz) |
 | `map.bundled.<region>`, `map.bundledAt`, `clipboard.lastHash` | önbellek | hayır |
-| `roads.ways.v1`, `roads.ww.v1`, `roads.ghost.v1`, `roads.wwseg.v1`, `roads.rate.v1`, `roads.names.v1`, `roads.days.v2`, `roads.days.damaged.v2`, `surface.*` | Y12/Y13 verisi | **Açık soru S3** (sonra; ama Y3 rotasını etkiliyor) |
+| `roads.ways.v1`, `roads.ww.v1`, `roads.ghost.v1`, `roads.wwseg.v1`, `roads.rate.v1`, `roads.names.v1`, `roads.days.v2`, `roads.days.damaged.v2`, `surface.*` | Y12/Y13 verisi | aktarılmaz; Y12 WEEM'de sıfırdan öğrenir (S3, A6.11); Y13 sonra |
 
 YG native: `duzyol_weather` (enabled, az, key, report, fetched, lat, lon, locationAt), `offer_dataset_v1` (region, active), `road_calibration_overlay_v1` — WEEM'de karşılığı `:map` ayarları.
 
-**Önemli:** YolGo'da bu tercihleri ve `lights.v1`, POI düzeltmeleri, görevler, Y12 verisi için **dışa aktarma yolu yok** (`RideLogStore.export` yalnız `logs/` dosyalarını `duzyol-journal-v1` biçiminde paylaşır). Tam taşıma için eski YolGo'ya küçük bir dışa aktarma eki gerekir → Açık soru S1.
+**Önemli:** YolGo'da bu tercihleri ve `lights.v1`, POI düzeltmeleri, görevler, Y12 verisi için **dışa aktarma yolu yok** (`RideLogStore.export` yalnız `logs/` dosyalarını `duzyol-journal-v1` biçiminde paylaşır). Karar (S1, 17 Ekim): eski YolGo'ya ek yapılmaz; bunlar WEEM'de yeniden girilir ya da yeniden öğrenilir.
 
 ## 6. Veritabanları
 
@@ -173,7 +175,7 @@ Dışa aktarma ZIP'i: `manifest.json` (`schema` 1, `app` "Sürüş Paneli", `ver
 | `app_flutter/logs/YYYY-MM-DD.jsonl`, `…_ride_<ms>.jsonl`, `…[_HHMM].gun.json`, `…_route_<ms>.json` | gün günlüğü, sürüş, gün raporu, rota kaydı (Y17, Y18) | içe aktar (dışa aktarma biçimi `duzyol-journal-v1` var) |
 | `files/mapdata/graph_<region>.bin`, `pois_<region>.json`, `dem/N40E049.hgt`, `dem/N40E050.hgt`, `parts_graph_<region>/` | harita verisi (Y7) | yeniden üret (CI `ci/osm_extract.py` + Overpass) |
 | `files/telemetry-v2.jsonl` (≤3000 satır) | yerel telemetri | hayır |
-| `app_flutter/TeklifVeriSeti/<gün>/…` | veri seti (Y19) | içe aktar? (Açık soru S1) |
+| `app_flutter/TeklifVeriSeti/<gün>/…` | veri seti (Y19) | hayır (S1: dışa aktarma yolu yok); WEEM'de yeni veri seti |
 | `files/surface-v2/…`, `files/surface-raw-v2/…`, `files/road-calibration-v1/<id>.json` | Y13/Y14 | sonra |
 
 ## 8. Bildirim kanalları ve numaraları
@@ -203,4 +205,4 @@ Tek tablo `:core` `NotificationIds`: her bildirim sabit numara ya da ayrılmış
 
 - Müşteri **telefonu** yalnız `courier.db` (`withPhone=true`), bellek, rozet/balon ve bildirim 12'de; JSONL ve yedekte yok (`PhoneK25Test`).
 - Müşteri **adı** `courier.db`, `orders.jsonl` (`record`) ve `latest` gözleminde düz; dışa aktarmada `AnalysisExport`/`Redactor` gizler.
-- 2 telefon modunda Receiver'a gitmeyecekler: müşteri adı, telefonu, adresi (`dropoffAddress`), notlar, bildirim 12 içeriği. Gidebilecekler: aşama, saat, bölge (`Z1..Z4`), restoran adı/koordinatı, rota hedefi koordinatı (plan Bölüm 4.4).
+- 2 telefon modunda Receiver'a gitmeyecekler: müşteri adı, telefonu, notlar, bildirim 12 içeriği. Gidebilecekler: aşama, saat, bölge (`Z1..Z4`), restoran adı/koordinatı, müşteri koordinatı ve adres metni (`dropoffAddress`; S5, 17 Ekim), rota hedefi (plan Bölüm 4.4).

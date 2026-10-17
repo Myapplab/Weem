@@ -8,7 +8,7 @@ Durum: A0.1, 17 Ekim 2026. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c0
 - YolGo Dart: `grep -cE '^\s*(test|testWidgets)\(' test/*.dart` → **83 dosya, 564** (döngüyle üretilen testler tek sayılır; `flutter test` 637 gösterir).
 - YolGo Kotlin: `grep -c '@Test' android_overlay/test/*.kt` → **14 dosya, 88** (`tools/jvm-overlay/test.sh`).
 
-**Hedef sütunu:** WEEM modülü (`logic/` saf kısmı). `sonra (Y12/Y13/Y14)` = WEEM 1.0'da yok, `BEKLEYEN_OZELLIKLER.md`; `çevrilmez` = iki uygulama ya da Flutter/CI'a özgü, WEEM'de karşılığı yok; `uyarlanır` = davranış korunur ama iki uygulama sözleşmesi tek uygulamada iç arayüze döner (test yeniden yazılır). Birden çok modül yazılıysa ilk modül çeviriyi üstlenir.
+**Hedef sütunu:** WEEM modülü (`logic/` saf kısmı). `sonra (Y13/Y14)` = WEEM 1.0'da yok (Y12 17 Ekim'de 1.0'a alındı, S3), `BEKLEYEN_OZELLIKLER.md`; `çevrilmez` = iki uygulama ya da Flutter/CI'a özgü, WEEM'de karşılığı yok; `uyarlanır` = davranış korunur ama iki uygulama sözleşmesi tek uygulamada iç arayüze döner (test yeniden yazılır). Birden çok modül yazılıysa ilk modül çeviriyi üstlenir.
 
 **Doğrulama:** "Neyi doğrular" sütunu test adlarından ve ham bulgulardan (`docs/sartname/bulgular/`) çıkarıldı; her modülün şartname görevinde (A2.1, A3.1, A5.1, A6.1) test gövdesi okunarak kesinleşir.
 
@@ -21,14 +21,14 @@ Durum: A0.1, 17 Ekim 2026. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c0
 | :core | 27 | 172 |
 | :economics | 11 | 101 |
 | :link | 1 | 8 |
-| :map | 56 | 352 |
+| :map | 62 | 397 |
 | :orders | 52 | 325 |
 | :scooter | 18 | 344 |
-| sonra | 19 | 145 |
+| sonra | 13 | 100 |
 | uyarlanır | 8 | 67 |
 | çevrilmez | 7 | 34 |
 
-Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **1.582** (sonra 145 ve çevrilmez 34 hariç; uyarlanır 67 dahil). Satır tahmini plan Bölüm 6'da.
+Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **1.627** (sonra 100 ve çevrilmez 34 hariç; uyarlanır 67 dahil). Satır tahmini plan Bölüm 6'da.
 
 ## Test listesi
 
@@ -228,12 +228,12 @@ Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **
 | `yolgo_rules_test` | 4 | sapma 8 sn, sipariş JSON, yüzey/ışık, hava | Y4 Y11 Y10 | :map |
 | `yolgo_sade_2_test` | 10 | gün kartı düğmeleri | G1 Y1 | :map |
 | `offer_feed_versions_test` | 6 | teklif feed sürüm uyumu | N1 R3 | :orders |
-| `day_contributions_test` | 3 | gün katkıları defteri | Y12 | sonra (Y12) |
-| `quality_test` | 9 | yol kalitesi ön tahmin/öğrenilen skor (rota seçimini etkiler) | Y12 Y3 | sonra (Y12) |
-| `road_learner_test` | 9 | yol öğrenme | Y12 | sonra (Y12) |
-| `road_save_test` | 1 | yol kaydı | Y12 | sonra (Y12) |
-| `road_score_ui_test` | 11 | yol puanı ekranı | Y12 | sonra (Y12) |
-| `street_scores_test` | 12 | sokak puanları | Y12 | sonra (Y12) |
+| `day_contributions_test` | 3 | gün katkıları defteri | Y12 | :map |
+| `quality_test` | 9 | yol kalitesi ön tahmin/öğrenilen skor (rota seçimini etkiler) | Y12 Y3 | :map |
+| `road_learner_test` | 9 | yol öğrenme | Y12 | :map |
+| `road_save_test` | 1 | yol kaydı | Y12 | :map |
+| `road_score_ui_test` | 11 | yol puanı ekranı | Y12 | :map |
+| `street_scores_test` | 12 | sokak puanları | Y12 | :map |
 | `road_surface_score_test` | 4 | yüzey skoru | Y13 | sonra (Y13) |
 | `surface_gate_test` | 11 | yüzey kapısı | Y13 | sonra (Y13) |
 | `surface_single_flight_test` | 2 | yüzey tek uçuş | Y13 | sonra (Y13) |
@@ -289,5 +289,5 @@ Eksik: Sürüş Paneli ve YolGo için saha kaydı tabanlı altın test yok (YolG
 ## Çevrilmeyenler ve bekleyenler
 
 - **Çevrilmez (7 dosya, 34):** `FeedSignerTest`, `OfferFeedAccessTest`, `YolGoButtonE5Test`, `HomeShareTest`, `app_version_test`, `ci_apk_workflow_test`, `offer_navigation_removed_test` — davranışları WEEM'de yok; 2 telefon eşleştirme/izin testleri A8'de yeniden yazılır.
-- **Sonra (19 dosya, 145):** Y12/Y13/Y14 testleri. **Dikkat:** `quality_test`, `ww_clean_run_test`, `ww_no_problem_green_test` Y12 verisini rota seçiminde kullanır (Açık soru S3).
+- **Sonra (13 dosya, 100):** Y13/Y14 testleri. Y12 testleri (6 dosya, 45; `ww_clean_run_test` ve `ww_no_problem_green_test` zaten `:map`) 17 Ekim'de `:map`'e alındı (S3; A6.2a, A6.11).
 - **Uyarlanır (8 dosya, 67):** Rawstats ↔ YolGo eşitleme testleri (`rawstats_shift_end_test`, `rawstats_home_*`, `rawstats_signals_test`, `RawstatsObserverTest`, `CourierFeedPayloadTest`, `LogFeedV3Test`, `HomePickContractTest`): tek uygulamada iç arayüz, 2 telefon modunda `:link` mesajı olarak yeniden yazılır.

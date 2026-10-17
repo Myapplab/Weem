@@ -23,7 +23,7 @@ Kullanıcı WEEM'i 2–3 Claude hesabından sırayla geliştirir; bir hesabın u
 1. **Başlarken:** bu dosya → `docs/WEEM_ISLER.md` "Şu an" → `AI_HANDOFF.md` en üst bölüm → `git log --oneline -10`. "Devam eden" iş varsa önce o.
 2. **Üstlen:** görevin durumunu `sürüyor (<tarih saat>)` yap; commit + push. Sonra başla.
 3. **Küçük adım, sık push:** her yeşil adımda (testler geçti) commit + push; en geç 30 dakikada bir. Push edilmemiş iş usage bitince kaybolur (bulut kapsayıcı silinir).
-4. **`main` her zaman son hâl.** Kullanıcının kalıcı izni (17 Ekim 2026): oturum dalından `main`'e PR açıp birleştirmek ya da doğrudan `main`'e push etmek serbest. Yasak: force-push, geçmişi yeniden yazmak, dal/etiket/Release silmek. Testleri kırmızı kod `main`'e girmez: yarım iş oturum dalında kalır; `WEEM_ISLER.md` → "Devam eden" satırına dal adı, son commit ve sıradaki adım yazılır, bu not `main`'e push edilir.
+4. **`main` her zaman son hâl.** Kullanıcının kalıcı izni (17 Ekim 2026): oturum dalından `main`'e PR açıp birleştirmek ya da doğrudan `main`'e push etmek serbest. Yasak: force-push, geçmişi yeniden yazmak, dal/etiket/Release silmek. Testleri kırmızı kod `main`'e girmez: yarım iş oturum dalında kalır; `WEEM_ISLER.md` → "Devam eden" satırına dal adı, son commit ve kalınan adım (sıradaki adım) yazılır, bu not `main`'e push edilir.
 5. **Her push'ta güncel tut:** `WEEM_ISLER.md` (görev durumu + "Şu an") ve oturum sonunda `AI_HANDOFF.md`.
 6. **Aynı anda iki hesap** varsayılan değil. Gerekirse yalnız farklı aşama/modülde, her biri kendi görevini "sürüyor" diye işaretleyerek.
 7. **Karar kullanıcının:** kapsam, yeni özellik, bekleyen özellik, plan değişikliği → önce sor; kararı `WEEM_PLANI.md` Bölüm 8'e tarihle yaz.
@@ -36,11 +36,35 @@ Kullanıcı WEEM'i 2–3 Claude hesabından sırayla geliştirir; bir hesabın u
 | Net tanımlı iş: testi hazır modül kodu, Compose ekranları, test çevirisi, ayarlar | Sonnet · high |
 | Belge, küçük düzeltme, sürüm numarası | Sonnet · medium |
 | Aşama sonu denetimi | `/code-review high`; WEEM 1.0 öncesi `/code-review xhigh` |
-| Ultracode (çok ajanlı, çok usage) | Yalnız: Aşama 3 ve 6 başında şartname çıkarma, WEEM 1.0 öncesi büyük denetim; hesabın usage'ı tazeyken |
+| Ultracode (çok ajanlı, çok usage) | Yalnız: A3.1 ve A6.1 (Aşama 3 ve 6 şartnameleri), A10.3 (WEEM 1.0 öncesi büyük denetim); hesabın usage'ı tazeyken |
 
 - `max` kullanma (aşırı düşünür, usage yer). Hesapta Opus yoksa Opus satırları Sonnet · high (zorsa xhigh) ile yapılır.
 - Ayarlar: `/model opus|sonnet`, `/effort high` (ya da `xhigh`, `medium`), ultracode `/effort ultracode` (kapatma `/effort ultracode off`).
 - `WEEM_ISLER.md`'deki her görevde önerilen model · effort yazılıdır; oturum başında ona göre ayarla.
+
+### Paralel ajan ve ultracode (kullanıcı kararı S13, 17 Ekim)
+
+Kalite en yüksek, usage dikkatli. 10 paralel ajan bir hesabın usage'ını ~1 saatte bitirdi; bu yüzden:
+
+- Ultracode ve paralel ajan yalnız yukarıdaki üç görevde. Başka yerde alt ajan yok (kullanıcı açıkça istemedikçe).
+- Aynı anda **en çok 2–3 ajan**.
+- Her ajan çıktısını repoya **bölüm bölüm** yazar (bir özellik/bölüm = bir dosya bölümü) ve **her bölümde commit + push** yapar; sonuç yalnız sohbette kalmaz. Usage biterse yazılan bölümler kalır.
+- `WEEM_ISLER.md` → "Devam eden" satırı her push'ta güncel: dal, son commit, kalınan adım (hangi bölümler bitti, hangisi sırada). Sonraki hesap oradan sürer.
+
+## Devam promptu (her profilde bunu yapıştır)
+
+Hangi Claude hesabında olursan ol, yeni oturumda yalnız bu yeterli:
+
+```
+WEEM'e devam. AGENTS.md kurallarını uygula: WEEM_ISLER.md "Şu an" (önce "Devam eden"), AI_HANDOFF.md en üst bölüm, git log --oneline -10. Sıradaki görevi üstlen (sürüyor + push) ve görevdeki model · effort'u söyle. Küçük adımlarla commit + push; alt ajanı yalnız AGENTS.md izin veriyorsa kullan; usage'a dikkat. Kapsam ya da plan kararı gerekirse dur ve bana sor. Bitince main'e birleştir, WEEM_ISLER.md ve AI_HANDOFF.md'yi güncelle, bana kısa rapor ver: ne değişti, doğrulama, kalan risk, sıradaki iş.
+```
+
+Kullanıcı bu prompta görev ya da yanıt ekleyebilir; ek yoksa ajan "Şu an"daki sıradaki işi yapar.
+
+## Ortam (bulut oturumu)
+
+- `dl.google.com` = Google'ın Android dosya sunucusu (Android SDK ve Google Maven: AGP, AndroidX, Compose). Bulut ortamının ağ ayarı onu kapatırsa Android modülleri burada derlenmez; `logic/` (saf Kotlin, Maven Central) yine derlenir ve test edilir, Android katmanını CI derler. Oturum başlangıç kancası durumu yazar.
+- Açmak (kullanıcı, her hesap için bir kez): oturum başlığındaki bulut ortamı menüsü → **Edit** → **Network access** → "Allowed domains"e `dl.google.com` ekle ("Allow package managers" işaretli kalsın). Adımlar: <https://code.claude.com/docs/en/cloud-environments#network-access>.
 
 ## Usage tasarrufu
 
