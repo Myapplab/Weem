@@ -1,0 +1,21 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Android
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Claude Code yerel ayarları (paylaşılan .claude/settings.json ve hooks depoda kalır)
+.claude/settings.local.json
