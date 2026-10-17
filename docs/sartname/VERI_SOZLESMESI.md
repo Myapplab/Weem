@@ -1,6 +1,6 @@
 # Veri sözleşmesi — WEEM'in koruyacağı adlar ve biçimler
 
-Durum: A0.1, 17 Ekim 2026. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c04` (kısaltma **RS** = `app/src/main/java/com/kuryelog/app/`, **NB** = `ninebot-logger/app/src/main/java/az/ninebot/logger/`) ve `yolgo-test` @ `870ab6e` (**YG**). Kural: plan Bölüm 2. Bu belgedeki bir adı değiştirmek kullanıcı kararıdır.
+Durum: A0.1, 17 Ekim 2026; A3.1 notları 7.1'de. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c04` (kısaltma **RS** = `app/src/main/java/com/kuryelog/app/`, **NB** = `ninebot-logger/app/src/main/java/az/ninebot/logger/`) ve `yolgo-test` @ `870ab6e` (**YG**). Kural: plan Bölüm 2. Bu belgedeki bir adı değiştirmek kullanıcı kararıdır.
 
 Sütun **WEEM**: `aynı` = harfiyen korunur · `oku` = WEEM eski veriyi okur (ilk açılış/içe aktarma), yeni yazım aynı biçimde · `içe aktar` = YolGo'dan dışa aktarma → WEEM'e alma (Aşama 7) · `kalkar` = tek uygulamada gereksiz (S7, plan Bölüm 8) · `yeni` = WEEM'de eklenir.
 
@@ -94,7 +94,7 @@ Bugünkü mesajlar (alan alan: `bulgular/X_protocol.md` P1–P11; WEEM'deki kar�
 | `weem.deviceId` | String: küçük harfli UUID (36 karakter; `DeviceId`) | **yeni** (`CORE` 1.10) | `:core` · A2.4 |
 | `targets` | StringSet | izlenen uygulamalar | `:capture` · A3 |
 | `userPicked`, `structuredMigration07` | Bool (false) | `CORE` 5.4 | `:capture` / `:orders` · A3 |
-| `ocr`, `overlay` | Bool | OCR, rozet | `:capture` / `:orders` · A3 |
+| `ocr`, `overlay` | Bool (**true**; `CAPTURE.md` 6.4, `ORDERS.md` 6.2) | OCR, rozet | `:capture` / `:orders` · A3 |
 | `bx`, `by` | Int (12, 95) | rozet konumu | `:orders` · A3 |
 | `commission`, `commission:<pkg>` | Float | filo komisyonu | `:orders` · A3 |
 | `customerCard` | Bool | müşteri kartı | `:orders` · A3 |
@@ -171,13 +171,19 @@ Tek kaynak `BackupFiles.logNames` (RS `BackupFiles.kt:8-28`; listede olmayan dos
 | `scooter.jsonl`, `scooter_events.jsonl`, `scooter_averages.jsonl` | eski scooter kaydı | eski (oku) |
 | `economics-offers.jsonl`, `economics-legs.jsonl`, `economics-idle.jsonl`, `economics-penalties.jsonl`, `economics-waits.jsonl`, `economics-exposure.jsonl` | `EconomicsLogs` (SPEC 2.1.0) | `docs/ekonomi-v2/kuryelog_logs_v2.schema.json`, `SPEC_V2.md` §17.2 |
 | `economics-platform-history.jsonl` (K36), `economics-platform-totals.jsonl` (F8.3, schemaVersion 1) | `PlatformHistory`, `PlatformTotals` | kod |
-| `economics-cash-tips.jsonl` (K32, schemaVersion 1), `economics-pocket-cash.jsonl` (M15), `economics-cash-pending.jsonl` (M17) | `CashTips`, `PocketCash`, `CashPending` | kod (`bulgular/R_orders.md` §R8–R9) |
-| `economics-boosts.jsonl` (K27/M21, schemaVersion 1) | `BoostLog` | kod (`bulgular/R_orders.md` §R10) |
+| `economics-cash-tips.jsonl` (K32, schemaVersion 1), `economics-pocket-cash.jsonl` (M15), `economics-cash-pending.jsonl` (M17) | `CashTips`, `PocketCash`, `CashPending` | kod (`ORDERS.md` 7–8) |
+| `economics-boosts.jsonl` (K27/M21, schemaVersion 1) | `BoostLog` | kod (`ORDERS.md` 9.1; null'lar `JSONObject.NULL`, aşağıdaki not) |
 | `economics-energy.jsonl` | `EnergySegments` | enerji şeması (bacak/bekleme) |
 | `economics-scooter.jsonl` | `ScooterSamples` (SCHEMA 1, 1 Hz, yalnız vardiyada) | kod |
 | `economics-offer-scores.jsonl`, `economics-offer-ratings.jsonl` | `OfferScore` (E4) | kod |
 
 Diğer: dışa aktarma ZIP'i `YYYY-MM-DD/<dosya>` + kökte `restaurants.json` (`BackupFiles.checkedPath`); `files/crashes.jsonl` (`CrashLog.kt:19`); gün sırları `noBackupFilesDir/economics-day-secrets-v3/<gün>` (32 bayt; ZIP/yedeğe girmez); anonim dışa aktarma işareti `ANALIZ_ANONIM.json` (`AnalysisExport.kt:273`). Analiz araçları (`tools/analysis/kl_export.py`, `anonymize.py`) bu adları bekler.
+
+**A3.1 notları (17 Ekim; ayrıntı `CAPTURE.md` 6, `ORDERS.md` 9, 12, 14):** adlar ve şemalar aynı; aşağıdakiler değer/yazım ayrıntılarıdır.
+- `events.jsonl` `click.text` WEEM'de `NoteFields.redact`'ten geçer (telefon → `[tel]`); Rawstats redact etmeden yazıyordu (müşteri kartında dokunulan telefon JSONL'e girebiliyordu, bu §9 kuralının deliği). Alan adı değişmez; gölge modda fark yalnız telefon içeren tıklama satırlarında çıkar ("beklenen fark", `CAPTURE.md` 6.3).
+- `economics-boosts.jsonl` (ve teklife yazılan `weather_*` alanları) null değerleri `JSONObject.NULL` ile yazar: anahtar vardır, değer `null`. Öteki dosyalarda `put(k, null)` anahtarı siler (null alan yazılmaz). WEEM ikisini de aynen korur; JSON karşılaştırması ayrıştırılmış değerle yapılır (`ORDERS.md` 9.1).
+- `weather_source` değeri `yolgo_open_meteo` **korunur** (WEEM'de YolGo ayrı uygulama değil, ama eski/yeni kayıtlar aynı okunur; analiz araçları ve `EnergySegments` bunu bekler). Aynı şekilde `nav_yolgo`, `gps_dwell_yolgo_target`, `gps_near_yolgo_target`, `yolgo_venue` kayıt dizgileri korunur (`ORDERS.md` 12, 16).
+- Tercih varsayılanları: `ocr` ve `overlay` **true**, `targets` boş, `userPicked` false (`CAPTURE.md` 6.4).
 
 ### 7.2 Sürüş Paneli
 
