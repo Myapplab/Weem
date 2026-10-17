@@ -46,7 +46,7 @@ class ScreenReadingE7Test {
 
     // ------------------------------------------------------------------ wiring (source checks; notification and badge are telefonda denenmedi)
     // WEEM (CAPTURE.md 5.2, 8): the warning listener lives in Android :capture (A3.7), the texts in the CaptureText table
-    // (logic/capture), the card in :app. Red until A3.4 (table) and A3.7 (Android) are written.
+    // (logic/capture, A3.4), the card in :app. Red until A3.7 (Android) is written.
     private fun androidCapture() = RepoSource.mainKotlin().filter { val p = it.invariantSeparatorsPath; "/capture/src/main/" in p && "/logic/" !in p }
         .joinToString("\n") { it.readText() }
     private fun appSources() = RepoSource.mainKotlin().filter { val p = it.invariantSeparatorsPath; "/app/src/main/" in p && "/logic/" !in p }
