@@ -1,0 +1,293 @@
+# Test envanteri — eski testler ve WEEM hedefleri
+
+Durum: A0.1, 17 Ekim 2026. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c04` (Rawstats + Sürüş Paneli) ve `yolgo-test` @ `870ab6e` (YolGo). Kural (plan Bölüm 5): bir modül yazılmadan önce buradaki testleri Kotlin'e çevrilir; aynı girdi → aynı çıktı.
+
+**Sayım komutları** (sayılar betikle üretildi, elle yazılmadı):
+- Rawstats: `grep -c '@Test' app/src/test/java/com/kuryelog/app/*.kt` → **107 dosya, 785**. (`android-compile.sh` 799 = 785 + Sürüş Paneli sarmalayıcısı 14.)
+- Sürüş Paneli: `ninebot-logger/tests/*Test.java` main() tabanlı 14 suit; sayı = `check(`/`assert…(`/`expect(` çağrısı → **324 denetim**. Gradle'da `SurusPaneliJvmTest` 14 `@Test` olarak görünür. Ayrıca cihazda: `androidTest/KeyVaultInstrument`, `LogExportTest`; Python (CI dışı): `reference_parity.py`, `laptop_client_test.py`, `upgrade_smoke.py`, `emulator_smoke.py`.
+- YolGo Dart: `grep -cE '^\s*(test|testWidgets)\(' test/*.dart` → **83 dosya, 564** (döngüyle üretilen testler tek sayılır; `flutter test` 637 gösterir).
+- YolGo Kotlin: `grep -c '@Test' android_overlay/test/*.kt` → **14 dosya, 88** (`tools/jvm-overlay/test.sh`).
+
+**Hedef sütunu:** WEEM modülü (`logic/` saf kısmı). `sonra (Y12/Y13/Y14)` = WEEM 1.0'da yok, `BEKLEYEN_OZELLIKLER.md`; `çevrilmez` = iki uygulama ya da Flutter/CI'a özgü, WEEM'de karşılığı yok; `uyarlanır` = davranış korunur ama iki uygulama sözleşmesi tek uygulamada iç arayüze döner (test yeniden yazılır). Birden çok modül yazılıysa ilk modül çeviriyi üstlenir.
+
+**Doğrulama:** "Neyi doğrular" sütunu test adlarından ve ham bulgulardan (`docs/sartname/bulgular/`) çıkarıldı; her modülün şartname görevinde (A2.1, A3.1, A5.1, A6.1) test gövdesi okunarak kesinleşir.
+
+## Özet (ilk hedefe göre)
+
+| Hedef | Dosya | Test/denetim |
+|---|---:|---:|
+| :app | 4 | 10 |
+| :capture | 15 | 203 |
+| :core | 27 | 172 |
+| :economics | 11 | 101 |
+| :link | 1 | 8 |
+| :map | 56 | 352 |
+| :orders | 52 | 325 |
+| :scooter | 18 | 344 |
+| sonra | 19 | 145 |
+| uyarlanır | 8 | 67 |
+| çevrilmez | 7 | 34 |
+
+Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **1.582** (sonra 145 ve çevrilmez 34 hariç; uyarlanır 67 dahil). Satır tahmini plan Bölüm 6'da.
+
+## Test listesi
+
+### Rawstats — `app/src/test/java/com/kuryelog/app/` (JUnit, `@Test` sayısı) — 107 dosya, 785
+
+| Test dosyası | Sayı | Neyi doğrular | Özellik | Hedef |
+|---|---:|---|---|---|
+| `BrandingK26Test` | 3 | K26 paket ve tercihler aynı; simge ve ad | G5 | :app |
+| `I18nCoverageTest` | 2 | TR/AZ çeviri kapsamı | G3 | :app |
+| `RawPaletteContrastTest` | 2 | tema renk karşıtlığı | Y1 | :app |
+| `BoltBubbleR2Test` | 5 | R2 Bolt alış ekranı "N min" → hazır süresi | R1 R6 | :capture |
+| `CashScreenM16Test` | 7 | M16 Wolt nakit ekranı, para üstü, kutu ✓ | R8 | :capture |
+| `OcrPaceD6Test` | 11 | D6 OCR temposu | R1 | :capture |
+| `ParserEconomicsTest` | 23 | parser ekonomi alanları | R1 R3 | :capture |
+| `RecordingPolicyTest` | 12 | kayıt politikası, tekrar süzgeci | R1 | :capture |
+| `ScreenReadingE7Test` | 4 | E7 ekran okuma kapalı uyarısı | R19 | :capture |
+| `WoltDeliverySliderTest` | 9 | Wolt teslim kaydırıcısı | R1 R5 | :capture |
+| `WoltOfferFeeK37Test` | 6 | K37 Wolt teklif ücreti yeniden okuma | R1 R3 | :capture |
+| `WoltSliderSpinnerK33Test` | 9 | K33 kaydırıcı dönen gösterge | R1 R5 | :capture |
+| `WoltStatsF81Test` | 6 | F8.1 Wolt Stats dönemi ve tutarlar | R13 | :capture |
+| `IcuRegexTest` | 2 | ICU'da derlenmeyen desen yasağı (0.25.1 hatası) | R1 | :capture (tüm modüller) |
+| `CourierFlowTest` | 44 | uçtan uca kurye akışı: ekran kareleri → teklif/sipariş kaydı | R1 R3 R5 | :capture :orders |
+| `DeliveryRecognitionTest` | 24 | teslim tanıma: Wolt müşteri kartı, kaydırıcı, bekleme | R1 R5 | :capture :orders |
+| `SahaTekrarTest` | 16 | 11–12 Ekim saha kareleri tekrarı (altın) | R1 R3 R5 | :capture :orders |
+| `WoltFlowK1K5Test` | 25 | K1–K5 Wolt akışı | R1 R3 R5 | :capture :orders |
+| `AnalysisExportTest` | 13 | anonim analiz dışa aktarımı: takma ad, alan izin listesi, gizleme | R18 | :core |
+| `CrashGuardTest` | 10 | korumalı girişler; hata errors.jsonl'a, süreç ölmez | R20 | :core |
+| `CrashReportTest` | 7 | crashes.jsonl biçimi, ApplicationExitInfo süzgeci | R20 | :core |
+| `DailyPackTest` | 2 | günlük paket adı ve içeriği | R17 R18 | :core |
+| `DailyRecordsTest` | 8 | gün kayıtları, arşiv/geri alma, silme, logNames tamlığı, yol geçişi reddi | R12 R17 | :core |
+| `EndedShiftMinutesTest` | 5 | biten vardiya dakikaları | G1 | :core |
+| `ExportKeysParityTest` | 1 | dışa aktarma izin listeleri eşit | R17 R18 | :core |
+| `HomeDraftTest` | 5 | onaysız ev seçimi | G2 | :core |
+| `HomeEndRuleF45bTest` | 7 | F4.5b ev bitişi 50 m / 30 sn / <5 km/s | G1 | :core |
+| `HomeFixRegressionTest` | 2 | ev GPS örneklemesi regresyonu | G2 | :core |
+| `HomeFixesTest` | 4 | ev GPS örneklemesi | G2 | :core |
+| `HomeRepositoryTest` | 7 | tek ev kaydı | G2 | :core |
+| `HomeShiftE6Test` | 9 | E6 ev çıkışında vardiya başlatma | G1 | :core |
+| `HomeShiftK38Test` | 11 | K38 ev kuralıyla vardiya | G1 | :core |
+| `RecordJsonTest` | 6 | kayıt JSON biçimi | R12 R17 | :core |
+| `RedactorParityTest` | 4 | gizleme ref.py/redact.py ile eşit | R18 | :core |
+| `ShiftDistanceD8Test` | 4 | D8 vardiya mesafesi, scooter odometresi yedeği | G1 R12 | :core |
+| `ShiftInterruptH4Test` | 3 | H4 kesilen vardiya | G1 | :core |
+| `ShiftStateF41Test` | 5 | F4.1 vardiya durumu yükü | G1 N1 | :core |
+| `EconomicsLogsTest` | 21 | ekonomi v2 log satırları | R4 | :economics |
+| `EconomicsObservationTest` | 13 | sürekli teklif olayı, boşta aralıkları | R4 | :economics |
+| `EconomicsV2GoldenTest` | 8 | altın vektörler (ref.py ile eşitlik) | R4 | :economics |
+| `EconomicsV2PriorsTest` | 4 | öncül değerler = altın, kopya | R4 | :economics |
+| `EnergySegmentsTest` | 4 | bacak/bekleme enerji satırları | R14 | :economics |
+| `OfferGeoTest` | 12 | teklif bölgesi Z1..Z4 vektörleri | R4 | :economics |
+| `OfferScoreE4Test` | 8 | E4 teklif puanı 1–10 | R4 | :economics |
+| `ScooterOrderEnergyTest` | 7 | sipariş başına enerji | R14 | :economics |
+| `ShadowEvaluatorTest` | 11 | gölge değerlendirme (shadow corpus) | R4 | :economics |
+| `FeedChangesE8Test` | 8 | E8 içerik anahtarı, 200 ms aralık, kalp atışı | N1 | :link |
+| `ArrivalDistanceM20Test` | 4 | M20 varış mesafesi kaynağı (YolGo nav / Maps bildirimi / GPS payı) | R5 R16 | :orders |
+| `AutoStartNoticeTest` | 1 | otomatik başlatma bildirimi | R19 G1 | :orders |
+| `AverageListE1Test` | 6 | E1 ortalamalar listesi | R12 | :orders |
+| `BoostListM21Test` | 4 | M21 Earn extra listesi: gün, dilim, liste kazanır | R10 | :orders |
+| `BoostLogK27Test` | 7 | K27 boost değişimi ve Bolt 30 dk dilimleri | R10 | :orders |
+| `BoostTempE3Test` | 5 | E3 Wolt plan boost + sıcaklık; Bolt çarpanı teklif kartından | R10 R15 | :orders |
+| `CashOrderK31K32Test` | 16 | K31/K32 nakit sipariş ve bahşiş sorusu | R8 | :orders |
+| `CashPendingM17Test` | 5 | M17 Wolt CASH PENDING kaydı | R9 | :orders |
+| `CashReconcileM17Test` | 5 | M17 nakit mutabakatı (başlangıç + toplanan − yatırılan) | R9 | :orders |
+| `CoreLifecycleV2Test` | 23 | teklif/sipariş yaşam döngüsü v2 (pencere sonu zaman aşımı ≠ ret) | R3 R5 | :orders |
+| `CustomerBubbleF72Test` | 7 | F7.2 müşteri balonu satırları | R6 | :orders |
+| `CustomerBubbleViewF73Test` | 3 | F7.3 balon kaydırma/açma kararları | R6 | :orders |
+| `CustomerCardE16Test` | 6 | E16 müşteri kartı | R6 | :orders |
+| `CustomerMatchK21Test` | 5 | K21 müşteri eşleştirme | R5 | :orders |
+| `CustomerNearM19Test` | 5 | M19 müşteriye ≤10 m varış | R5 | :orders |
+| `CustomerStageK34ClosedCardTest` | 10 | K34 kapanan kartta müşteri aşaması | R5 | :orders |
+| `CustomerStageK34LateDeliveryTest` | 7 | K34 geç teslim | R5 | :orders |
+| `CustomerStageK34RecordTest` | 10 | K34 kayıt alanları | R5 | :orders |
+| `CustomerStageK34RoutingTest` | 5 | K34 müşteriye yönlendirme | R5 | :orders |
+| `CustomerStageK34Test` | 10 | K34 müşteri aşaması temel akış | R5 | :orders |
+| `DeliveryCountD3Test` | 9 | D3 teslim sayımı (çıkarımlı dahil, çift sayım yok) | R5 R12 | :orders |
+| `DeliveryDeadlineK29Test` | 4 | K29 platform teslim saati | R5 | :orders |
+| `DualOfferStatusK30Test` | 3 | K30 iki platform durum satırı | R3 R7 | :orders |
+| `NoteFieldsF71Test` | 6 | F7.1 bina/kat/daire/kod notları | R6 | :orders |
+| `OfferFeedV2Test` | 6 | teklif özeti v2 alanları | R3 N1 | :orders |
+| `OfferNetLineTest` | 6 | net = brüt − filo komisyonu | R7 N4 | :orders |
+| `OfferWeatherK28Test` | 2 | K28 teklif anının havası | R15 | :orders |
+| `OrderHistoryTest` | 9 | günlük sipariş geçmişi, brüt/net | R12 | :orders |
+| `OverlayBadgeK35Test` | 4 | K35 rozet satırları (ad yok) | R7 | :orders |
+| `PhoneK25Test` | 3 | K25 müşteri telefonu yalnız telefonda; kayıt/yedekte yok | R6 | :orders |
+| `PlatformHistoryK36Test` | 10 | K36 platform kazanç listeleri | R13 | :orders |
+| `PlatformListD15Test` | 5 | D15 Wolt gün başlığı, tekrar okunan teslim bir kez | R13 | :orders |
+| `PlatformTotalsF82Test` | 6 | F8.2 Wolt Daily details, nakit toplama | R13 | :orders |
+| `PlatformTotalsF83Test` | 5 | F8.3 economics-platform-totals.jsonl | R13 | :orders |
+| `PlatformTotalsF84Test` | 7 | F8.4 karşılaştırma kuralları | R13 | :orders |
+| `PlatformTotalsF85Test` | 3 | F8.5 resmî değerler kartı | R13 | :orders |
+| `PocketCashM15Test` | 4 | M15 cepteki nakit | R9 | :orders |
+| `ReadinessE15Test` | 5 | E15 hazır sayacı | R5 | :orders |
+| `RecordPagesTest` | 2 | gün sayfaları sırası ve seçimi | R12 | :orders |
+| `RestaurantBubbleE14Test` | 6 | E14 restoran balonu | R6 | :orders |
+| `RestaurantWaitE2Test` | 6 | E2 restoran beklemesi | R5 | :orders |
+| `StuckCustomerM22Test` | 8 | M22 takılı "Müşteriye gidiliyor" | R5 | :orders |
+| `TipNotificationF46Test` | 4 | F4.6 bahşiş hızlı cevap bildirimi | R8 | :orders |
+| `TipRecordF48Test` | 5 | F4.8 bahşiş kaydı | R8 | :orders |
+| `TodayAveragesTest` | 2 | bugünün ortalamaları (yalnız ölçülen) | R12 | :orders |
+| `TripStagesE8Test` | 6 | E8 sipariş aşamaları yükü | R5 N1 | :orders |
+| `VenueArrivalD9Test` | 11 | D9 restoran varışı 60 m / 20 sn | R5 | :orders |
+| `VenueNearM18Test` | 5 | M18 restorana ≤5 m varış | R5 | :orders |
+| `WaitObservationProcessDeathTest` | 5 | bekleme gözlemi süreç ölümünde | R5 | :orders |
+| `WoltSameCustomerR1Test` | 5 | R1 aynı müşteriye çoklu teslim | R5 | :orders |
+| `YolGoNavE8Test` | 13 | YolGo nav hedefi/kalan yol tüketimi | Y4 R5 N1 | :orders |
+| `ScooterBridgeTest` | 6 | ScooterBridge arayüzü, korumalı çağrılar | R14 N1 | :scooter |
+| `ScooterFeedTest` | 5 | canlı scooter yükü | S2 N1 | :scooter |
+| `ScooterReconnectM23Test` | 4 | M23 veri kesildi/geldi bildirimi | S6 | :scooter |
+| `ScooterSamplesTest` | 5 | economics-scooter.jsonl 1 Hz | S3 R14 | :scooter |
+| `HomePickContractTest` | 6 | haritadan ev seçme sonucu doğrulama (iki uygulama sözleşmesi → WEEM içi) | G2 | uyarlanır :core |
+| `LogFeedV3Test` | 10 | gün kayıtları v3: allowlist, maskeleme, sayfalama | Y19 R18 | uyarlanır :core |
+| `FeedSignerTest` | 2 | iki uygulama arası imza kapısı (tek uygulamada yok; 2 telefon eşleştirmesi A8'de) | — | çevrilmez |
+| `OfferFeedAccessTest` | 7 | sağlayıcı erişim kapısı (2 telefon izni A8'de yeniden) | — | çevrilmez |
+| `YolGoButtonE5Test` | 2 | kaldırılmış YolGo düğmesi | — | çevrilmez |
+
+### Sürüş Paneli — `ninebot-logger/tests/` (main() tabanlı suit; sayı = `check(` denetimi; JUnit sarmalayıcı `SurusPaneliJvmTest` 14 `@Test`) — 14 dosya, 324
+
+| Test dosyası | Sayı | Neyi doğrular | Özellik | Hedef |
+|---|---:|---|---|---|
+| `BatteryProbeTest` | 64 | harici batarya (BMS kartı) arama | S5 | :scooter |
+| `DashboardTest` | 15 | panel değerleri | S2 | :scooter |
+| `EnergyTest` | 21 | enerji bloğu | S4 R14 | :scooter |
+| `EventQueueTest` | 7 | olay kuyruğu | S3 | :scooter |
+| `FloatingTest` | 23 | yüzen panel geometri/alanlar | S7 | :scooter |
+| `LinkTest` | 23 | GATT sırası | S1 | :scooter |
+| `LogPolicyTest` | 14 | kayıt politikası | S3 S8 | :scooter |
+| `PairFlowTest` | 26 | eşleşme akışı | S1 | :scooter |
+| `PowerCadenceTest` | 23 | güç okuma temposu | S1 S2 | :scooter |
+| `ProtocolTest` | 33 | çerçeve + şifreleme protokolü | S1 | :scooter |
+| `SpeedCadenceTest` | 23 | hız okuma temposu | S1 S2 | :scooter |
+| `SweepTest` | 22 | değer taraması | S8 | :scooter |
+| `TimingTest` | 10 | zamanlama/yeniden deneme | S1 S6 | :scooter |
+| `TripMeterTest` | 20 | yolculuk sayacı | S4 | :scooter |
+
+### YolGo Dart — `test/` (`^\s*(test|testWidgets)\(` sayısı) — 83 dosya, 564
+
+| Test dosyası | Sayı | Neyi doğrular | Özellik | Hedef |
+|---|---:|---|---|---|
+| `scooter_language_section_test` | 3 | scooter/dil bölümü | G3 S2 | :app |
+| `home_day_controller_test` | 5 | gün denetleyicisi | G1 | :core |
+| `home_day_e6_test` | 10 | E6 çıkış bölgesi 200 m | G1 | :core |
+| `home_day_end_rule_test` | 5 | ev bitişi 50 m / 30 sn | G1 | :core |
+| `home_day_rules_test` | 19 | ev günü kuralları | G1 | :core |
+| `native_telemetry_test` | 1 | yerel telemetri günlüğü | G1 | :core |
+| `shift_engine_test` | 9 | gün motoru | G1 Y11 | :core |
+| `offer_engine_test` | 7 | ek teklif fırsat maliyeti | R4 N5 | :economics |
+| `route_costing_test` | 6 | rota maliyeti (teklif) | R4 N5 | :economics |
+| `address_parser_test` | 17 | bağlantı ve adres ayrıştırma | Y5 Y6 | :map |
+| `api_settings_test` | 1 | API anahtarı ayarları | Y6 Y10 | :map |
+| `approach_zoom_test` | 4 | yaklaşma yakınlaştırması, 10 sn sonra takip | Y4 | :map |
+| `arrival_focus_test` | 4 | varış odağı 100/150 m | Y4 | :map |
+| `arrival_pin_test` | 3 | varış iğnesi | Y4 | :map |
+| `assistant_test` | 14 | görev girişi, saat/gün, 1 km sınırı, bölge histerezisi | Y20 | :map |
+| `battery_estimator_test` | 5 | batarya tahmini, enerji sayacı | Y9 | :map |
+| `bikeway_e13_test` | 18 | E13 bisiklet yolu işaretleme ve rota etkisi | Y15 Y3 | :map |
+| `courier_stage_follow_test` | 14 | sipariş aşaması izleyici | G1 Y20 N1 | :map |
+| `courier_stages_e8_test` | 13 | E8 aşama yükü tüketimi | N1 R5 | :map |
+| `dataset_days_test` | 2 | veri seti günleri | Y19 | :map |
+| `dataset_screen_test` | 5 | veri seti ekranı | Y19 | :map |
+| `geocoder_scope_test` | 1 | geokod kapsamı | Y6 | :map |
+| `home_picker_test` | 5 | haritadan ev seçme | G2 | :map |
+| `hud_layout_test` | 2 | HUD yerleşimi | Y1 | :map |
+| `light_leaks_f52_test` | 3 | F5.2 ışık karakterizasyonu | Y11 | :map |
+| `light_rule_m14_test` | 14 | M14 ışık kuralı (≤5 m, yaya yoluna ≤1 m), lightMaxM göçü | Y11 | :map |
+| `light_tracker_test` | 4 | canlı ışık ölçer | Y11 | :map |
+| `locate_button_test` | 3 | konum düğmesi | Y1 | :map |
+| `log_store_test` | 7 | günlük/sürüş kayıtları, silme, dışa aktarma | Y18 | :map |
+| `map_data_update_test` | 2 | harita verisi güncelleme | Y7 | :map |
+| `map_hud_gesture_test` | 2 | HUD dokunma | Y1 | :map |
+| `native_fast_fix_test` | 2 | hızlı konum okuması (≤1/sn) | Y4 | :map |
+| `nav_assistant_test` | 1 | dış hedef + sağlayıcı akışı | Y4 Y20 | :map |
+| `nav_feed_test` | 11 | nav/v1/current yükü | Y4 N1 | :map |
+| `nav_only_location_test` | 2 | gün bitince rota açıksa yalnız-nav konum | Y4 G1 | :map |
+| `overpass_test` | 3 | Overpass sorgu/ayrıştırma | Y7 | :map |
+| `park_paths_test` | 4 | F6.4 park yolları | Y3 | :map |
+| `place_search_test` | 8 | yer arama | Y6 | :map |
+| `pois_test` | 4 | POI ve düzeltmeler | Y16 | :map |
+| `puck_arrow_test` | 3 | konum oku | Y1 | :map |
+| `push_segments_test` | 5 | F6.3 itme segmentleri | Y3 | :map |
+| `remaining_km_e12_test` | 7 | E12 kalan km göstergesi | Y4 Y9 | :map |
+| `reminder_card_test` | 3 | hatırlatıcı kartı 30 sn | Y20 G4 | :map |
+| `reminders_test` | 5 | hatırlatıcılar | Y20 | :map |
+| `ride_log_status_test` | 2 | sürüş kaydı durumu | Y18 | :map |
+| `route_hours_test` | 3 | ters yön saat izni | Y8 Y3 | :map |
+| `route_warnings_h2_h3_test` | 3 | H2/H3 rota uyarısı, başarısızlıkta eski rota | Y4 | :map |
+| `router_test` | 38 | rota motoru | Y3 | :map |
+| `street_prefs_migration_test` | 1 | sokak kararları göçü | Y8 | :map |
+| `task_controller_test` | 1 | görev denetleyicisi | Y20 | :map |
+| `v140_features_test` | 14 | 1.4.0: ışık kuralları, hız seçenekleri | Y11 Y9 | :map |
+| `v150_features_test` | 15 | 1.5.0: rota başlangıç konumu, özel hızlar | Y4 Y9 | :map |
+| `v160_y1_y2_test` | 5 | 1.6.0: hava şeridi/önbellek | Y10 | :map |
+| `v170_features_test` | 13 | 1.7.0: Rawstats canlı scooter yükü, batarya | S2 Y9 N1 | :map |
+| `weather_section_test` | 4 | hava bölümü | Y10 | :map |
+| `ww_clean_run_test` | 5 | ters yön temiz geçiş/onay (Y12 sorusuyla ilişkili) | Y8 Y12 | :map |
+| `ww_green_two_way_test` | 4 | onaylı temiz sokak iki yönlü | Y8 Y3 | :map |
+| `ww_no_problem_green_test` | 5 | "Evet, sorun"/Ses− geçiş kararları | Y8 Y12 | :map |
+| `yolgo_rules_test` | 4 | sapma 8 sn, sipariş JSON, yüzey/ışık, hava | Y4 Y11 Y10 | :map |
+| `yolgo_sade_2_test` | 10 | gün kartı düğmeleri | G1 Y1 | :map |
+| `offer_feed_versions_test` | 6 | teklif feed sürüm uyumu | N1 R3 | :orders |
+| `day_contributions_test` | 3 | gün katkıları defteri | Y12 | sonra (Y12) |
+| `quality_test` | 9 | yol kalitesi ön tahmin/öğrenilen skor (rota seçimini etkiler) | Y12 Y3 | sonra (Y12) |
+| `road_learner_test` | 9 | yol öğrenme | Y12 | sonra (Y12) |
+| `road_save_test` | 1 | yol kaydı | Y12 | sonra (Y12) |
+| `road_score_ui_test` | 11 | yol puanı ekranı | Y12 | sonra (Y12) |
+| `street_scores_test` | 12 | sokak puanları | Y12 | sonra (Y12) |
+| `road_surface_score_test` | 4 | yüzey skoru | Y13 | sonra (Y13) |
+| `surface_gate_test` | 11 | yüzey kapısı | Y13 | sonra (Y13) |
+| `surface_single_flight_test` | 2 | yüzey tek uçuş | Y13 | sonra (Y13) |
+| `surface_store_exclusions_test` | 4 | yüzey deposu dışlamalar | Y13 | sonra (Y13) |
+| `surface_store_test` | 12 | yüzey deposu | Y13 | sonra (Y13) |
+| `road_calibration_channel_test` | 6 | kalibrasyon kanalı | Y14 | sonra (Y14) |
+| `road_calibration_score_test` | 10 | kalibrasyon skoru | Y14 | sonra (Y14) |
+| `road_calibration_screen_test` | 4 | kalibrasyon ekranı | Y14 | sonra (Y14) |
+| `road_calibration_test` | 7 | kalibrasyon | Y14 | sonra (Y14) |
+| `rawstats_home_stale_test` | 6 | Rawstats ev eşitleme bayatlığı (WEEM'de tek ev) | G2 | uyarlanır :core |
+| `rawstats_home_sync_test` | 13 | Rawstats ev eşitleme | G2 | uyarlanır :core |
+| `rawstats_shift_end_test` | 11 | Rawstats vardiyası → YolGo günü (WEEM'de tek vardiya) | G1 | uyarlanır :core |
+| `rawstats_signals_test` | 10 | değişiklik sinyalleri | N1 | uyarlanır :link |
+| `app_version_test` | 1 | Flutter sürüm dosyası | — | çevrilmez |
+| `ci_apk_workflow_test` | 15 | Flutter CI iş akışı | — | çevrilmez |
+| `offer_navigation_removed_test` | 4 | kaldırılmış teklif navigasyonu | — | çevrilmez |
+
+### YolGo Kotlin — `android_overlay/test/` (JUnit, `@Test`) — 14 dosya, 88
+
+| Test dosyası | Sayı | Neyi doğrular | Özellik | Hedef |
+|---|---:|---|---|---|
+| `NotifyPolicyTest` | 2 | bildirim politikası | G4 | :core |
+| `TelemetryJournalTest` | 8 | telemetri günlüğü 3000 satır | G1 Y18 | :core |
+| `DatasetContractTest` | 6 | veri seti sözleşmesi | Y19 | :map |
+| `DatasetMatchingTest` | 4 | veri seti eşleştirme | Y19 | :map |
+| `DatasetReadsTest` | 6 | veri seti okuma | Y19 | :map |
+| `NavFeedContractTest` | 6 | nav yükü + IncomingLink | Y4 Y5 N1 | :map |
+| `WeatherFeedTest` | 2 | hava yükü | Y10 R15 | :map |
+| `SurfaceSignalTest` | 11 | yüzey sinyali | Y13 | sonra (Y13) |
+| `RoadCalibrationCountdownTest` | 5 | 3-2-1 sayım | Y14 | sonra (Y14) |
+| `RoadCalibrationRoadRmsTest` | 6 | yol RMS | Y14 | sonra (Y14) |
+| `RoadCalibrationTest` | 18 | kalibrasyon | Y14 | sonra (Y14) |
+| `CourierFeedPayloadTest` | 6 | teklif feed yükü (YolGo okuyucu) | N1 R3 | uyarlanır :link |
+| `RawstatsObserverTest` | 5 | değişiklik gözlemcisi | N1 | uyarlanır :link |
+| `HomeShareTest` | 3 | iki uygulama ev paylaşımı | G2 | çevrilmez |
+
+## Altın test adayları (saha kayıtları ve vektörler)
+
+| Dosya | Boyut | İçerik | Kullanan | WEEM |
+|---|---:|---|---|---|
+| `rawstats: app/src/test/resources/saha/saha_kareleri_2026-10-11_12.jsonl.gz` | 238 KB | 11–12 Ekim gerçek vardiya: 6.481 erişilebilirlik/OCR karesi (Wolt + Bolt) | `SahaTekrarTest` | `:capture` + `:orders` altın testi; gölge mod raporunun ilk girdisi |
+| `rawstats: …/saha/saha_beklenen_2026-10-11_12.json` | 23 KB | aynı karelerden beklenen teklif/sipariş sonuçları | `SahaTekrarTest` | aynı |
+| `rawstats: …/economics/golden_vectors.json` (= `docs/ekonomi-v2/golden_vectors.json`) | 248 KB | ekonomi v2 altın vektörleri (`ref.py` üretir) | `EconomicsV2GoldenTest`, `EconomicsV2PriorsTest` | `:economics` (A4.1) |
+| `rawstats: …/economics/shadow_corpus.json` | 109 KB | gölge değerlendirme derlemi | `ShadowEvaluatorTest` | `:economics` |
+| `rawstats: …/economics/redact_vectors.json` (= `docs/ekonomi-v2/vektorler/`) | 6 KB | gizleme vektörleri (`redact.py`) | `RedactorParityTest` | `:core` dışa aktarma |
+| `rawstats: …/economics/offer_geo_vectors.json` (= `docs/ekonomi-v2/vektorler/`) | 7 KB | teklif bölgesi vektörleri | `OfferGeoTest` | `:economics` |
+| `yolgo: test/fixtures/offer-economics.json` | — | teklif ekonomisi örneği | `offer_engine_test`, `route_costing_test` | `:economics` |
+| `rawstats: ninebot-logger/tests/ProtocolTest.java`, `tools/reference/nb_crypto.py` | — | Ninebot çerçeve/şifreleme referansı (Python referansı CI dışı; lisans `tools/reference/PROVENANCE.md`) | `ProtocolTest`, `reference_parity.py` | `:scooter` (A5.1) |
+| Telefon kayıtları (gün klasörleri `files/logs/YYYY-MM-DD/`) | — | kullanıcının ZIP yedekleri | — | gölge mod karşılaştırması (A3.7) ve A2.5 eski veri okuma; kullanıcıdan istenir |
+
+Eksik: Sürüş Paneli ve YolGo için saha kaydı tabanlı altın test yok (YolGo rota beklentileri `router_test` içinde sabit). Gölge modda (`.dev`) toplanacak kayıtlar altın teste dönüştürülür.
+
+## Çevrilmeyenler ve bekleyenler
+
+- **Çevrilmez (7 dosya, 34):** `FeedSignerTest`, `OfferFeedAccessTest`, `YolGoButtonE5Test`, `HomeShareTest`, `app_version_test`, `ci_apk_workflow_test`, `offer_navigation_removed_test` — davranışları WEEM'de yok; 2 telefon eşleştirme/izin testleri A8'de yeniden yazılır.
+- **Sonra (19 dosya, 145):** Y12/Y13/Y14 testleri. **Dikkat:** `quality_test`, `ww_clean_run_test`, `ww_no_problem_green_test` Y12 verisini rota seçiminde kullanır (Açık soru S3).
+- **Uyarlanır (8 dosya, 67):** Rawstats ↔ YolGo eşitleme testleri (`rawstats_shift_end_test`, `rawstats_home_*`, `rawstats_signals_test`, `RawstatsObserverTest`, `CourierFeedPayloadTest`, `LogFeedV3Test`, `HomePickContractTest`): tek uygulamada iç arayüz, 2 telefon modunda `:link` mesajı olarak yeniden yazılır.
