@@ -46,6 +46,11 @@ android {
         }
     }
 
+    testOptions {
+        // Compose ekranlarını JVM'de çizen denemeler (Robolectric; cihaz gerekmez).
+        unitTests.isIncludeAndroidResources = true
+    }
+
     lint {
         abortOnError = true
         lintConfig = rootProject.file("lint.xml")
@@ -56,6 +61,9 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 }
+
+// Compose denemeleri debug'a bağlı (ui-test-manifest yalnız debug'da): release birim testi koşmaz.
+tasks.matching { it.name == "testReleaseUnitTest" }.configureEach { enabled = false }
 
 kotlin {
     compilerOptions {
@@ -76,4 +84,11 @@ dependencies {
     listOf("core", "capture", "orders", "economics", "scooter", "map", "link", "remote").forEach {
         implementation(project(":$it"))
     }
+    testImplementation(libs.junit)
+    testImplementation(platform(libs.compose.bom))
+    debugImplementation(platform(libs.compose.bom))
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.compose.ui.test.junit4)
+    debugImplementation(libs.compose.ui.test.manifest)
 }

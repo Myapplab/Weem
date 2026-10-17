@@ -2,6 +2,7 @@ package com.kuryelog.app
 
 import android.animation.ValueAnimator
 import android.app.DatePickerDialog
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -68,14 +69,14 @@ import java.time.LocalDate
  * metinler `logic/orders` [OrdersScreen]'den (testli); burada yalnız çizim ve dokunuşlar. Açıkken vardiya varsa 5 sn'de bir yenilenir.
  */
 @Composable
-fun OrdersTab(lang: Lang) {
+fun OrdersTab(lang: Lang, source: (Context) -> OrdersSource = OrdersAccess::source) {
     val ctx = LocalContext.current
     var version by remember { mutableIntStateOf(0) }
     var detail by rememberSaveable { mutableStateOf<String?>(null) }
     var platform by rememberSaveable { mutableStateOf("") }
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) { while (true) { delay(REFRESH_MS); if (Store.shiftOn(ctx)) version++ } }
-    GuardedPage("orders", lang, key = version, build = { OrdersAccess.source(ctx).let { it to OrdersScreen(it, lang).warm() } }) { (src, screen) ->
+    GuardedPage("orders", lang, key = version, build = { source(ctx).let { it to OrdersScreen(it, lang).warm() } }) { (src, screen) ->
         val day = detail
         if (day != null) {
             DayDetailScreen(screen, src, day, platform.ifEmpty { null }, onBack = { detail = null }) { version++ }

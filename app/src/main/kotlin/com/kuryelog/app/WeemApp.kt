@@ -125,7 +125,7 @@ private fun MoreScreen(
     var records by rememberSaveable { mutableStateOf(false) }
     var home by rememberSaveable { mutableStateOf(false) }
     if (records) {
-        RecordsScreen(lang) { records = false }
+        RecordsScreen(lang, onBack = { records = false })
         return
     }
     if (home) {

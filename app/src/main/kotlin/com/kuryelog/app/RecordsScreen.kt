@@ -35,13 +35,14 @@ import com.kuryelog.app.core.Store
 import com.kuryelog.logic.core.DailyRecords
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.orders.OrdersScreen
+import com.kuryelog.logic.orders.OrdersSource
 import com.kuryelog.logic.app.Text as Str
 /**
  * Daha fazla → Kayıtlar (CORE.md 5.3, ORDERS.md 10.3): eski Rawstats ZIP yedeğini içe aktarma (A2.6) ve gün sayfaları (A3.8): her gün
  * için o günün siparişleri, kayıt dosyaları, arşivle/arşivden çıkar, sil. Üstteki düğme arşivle etkin günler arasında geçer.
  */
 @Composable
-fun RecordsScreen(lang: Lang, onBack: () -> Unit) {
+fun RecordsScreen(lang: Lang, onBack: () -> Unit, source: (android.content.Context) -> OrdersSource = OrdersAccess::source) {
     val ctx = LocalContext.current
     var version by remember { mutableIntStateOf(0) }
     var status by remember { mutableStateOf<String?>(null) }
@@ -81,7 +82,7 @@ fun RecordsScreen(lang: Lang, onBack: () -> Unit) {
         ) { Text(Str.RECORDS_IMPORT.get(lang)) }
         status?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp)) }
 
-        GuardedPage("records", lang, key = version, build = { OrdersAccess.source(ctx).let { it to OrdersScreen(it, lang).warm() } }) { (src, screen) ->
+        GuardedPage("records", lang, key = version, build = { source(ctx).let { it to OrdersScreen(it, lang).warm() } }) { (src, screen) ->
             val labels = screen.labels
             OutlinedButton(onClick = { archive = !archive; selected = null }, Modifier.fillMaxWidth().padding(top = 12.dp)) {
                 Text(if (archive) labels.showActive else labels.showArchive)
@@ -93,12 +94,12 @@ fun RecordsScreen(lang: Lang, onBack: () -> Unit) {
             }
         }
     }
-    trip?.let { id -> TripDetailDialog(ctx, lang, id) { trip = null } }
+    trip?.let { id -> TripDetailDialog(ctx, lang, id, source) { trip = null } }
 }
 
 @Composable
-private fun TripDetailDialog(ctx: android.content.Context, lang: Lang, id: String, onClose: () -> Unit) {
-    val screen = remember(id) { OrdersScreen(OrdersAccess.source(ctx), lang) }
+private fun TripDetailDialog(ctx: android.content.Context, lang: Lang, id: String, source: (android.content.Context) -> OrdersSource, onClose: () -> Unit) {
+    val screen = remember(id) { OrdersScreen(source(ctx), lang) }
     TripDialog(screen, id, onClose)
 }
 

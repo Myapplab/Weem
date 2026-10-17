@@ -11,7 +11,7 @@ internal fun JSONObject.num(k: String): Double? = if (has(k) && !isNull(k)) optD
 internal fun JSONObject.longOrNull(k: String): Long? = num(k)?.toLong()
 internal fun JSONArray.strings() = (0 until length()).map { getString(it) }
 internal fun JSONArray.objects() = (0 until length()).map { getJSONObject(it) }
-internal object RecordJson {
+object RecordJson {
     /** Trips kept in memory after a restart: deliveries still open from yesterday
      *  (accepted before midnight) first, then today's. Damaged rows are skipped. */
     fun restorable(today: List<JSONObject>, yesterday: List<JSONObject>): List<TripRecord> =

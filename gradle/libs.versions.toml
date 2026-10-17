@@ -11,6 +11,9 @@ activity-compose = "1.13.0"
 kotlinx-coroutines = "1.9.0"
 # Ekran OCR (CAPTURE.md 3.3, 7.3; Rawstats ile aynı; model APK içinde, Latin yazısı).
 mlkit-text-recognition = "16.0.1"
+# :app Compose ekran denemeleri (JVM'de, cihazsız; A3.8).
+robolectric = "4.14.1"
+androidx-test-core = "1.6.1"
 
 [libraries]
 junit = { module = "junit:junit", version.ref = "junit" }
@@ -20,6 +23,10 @@ compose-ui = { module = "androidx.compose.ui:ui" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity-compose" }
 mlkit-text-recognition = { module = "com.google.mlkit:text-recognition", version.ref = "mlkit-text-recognition" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+androidx-test-core = { module = "androidx.test:core", version.ref = "androidx-test-core" }
+compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 
 [plugins]
