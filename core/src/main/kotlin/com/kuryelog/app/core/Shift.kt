@@ -9,6 +9,7 @@ import com.kuryelog.logic.core.DeviceId
 import com.kuryelog.logic.core.GpsFix
 import com.kuryelog.logic.core.GpsTrack
 import com.kuryelog.logic.core.ShiftMachine
+import com.kuryelog.logic.core.ShiftState
 import java.time.ZoneId
 
 /** Vardiyanın süreç içi parçaları ve başlatma/bitirme istekleri (CORE.md 1.2, 1.11). Karar `logic/core` [ShiftMachine]'de. */
@@ -38,6 +39,25 @@ object Shift {
     fun start(ctx: Context) { ctx.startForegroundService(Intent(ctx, ShiftService::class.java).setAction(ShiftMachine.ACTION_START)) }
     /** Bitirme düz başlatma (`STOP` ön plan türünde değil). */
     fun stop(ctx: Context) { ctx.startService(Intent(ctx, ShiftService::class.java).setAction(ShiftMachine.ACTION_STOP)) }
+
+    /** Tercihlerden `ShiftState` v1 (servis çalışmasa da; CORE.md 1.8). */
+    fun state(ctx: Context): ShiftState = machine(ctx, NoPlatform).state()
+
+    /** Durum okumak için platformsuz makine (hiçbir Android çağrısı yapmaz). */
+    private object NoPlatform : ShiftMachine.Platform {
+        override fun startForeground() = Unit
+        override fun stopForeground() = Unit
+        override fun stopSelf() = Unit
+        override fun requestGps() = Unit
+        override fun removeGps() = Unit
+        override fun showShiftInterrupted() = Unit
+        override fun cancel(id: Int) = Unit
+        override fun recheckHomeWatch() = Unit
+    }
+
+    /** Vardiya kararlarını veren makine; servis kendi platformuyla kurar. */
+    fun machine(ctx: Context, platform: ShiftMachine.Platform): ShiftMachine = ShiftMachine(Store.values(ctx), Store.log(ctx), Home.repository(ctx),
+        AndroidClock, platform, ShiftHub.listeners, importing = { Store.importing }, lang = { Store.lang(ctx) }, track = track)
 
     /** WEEM cihaz kimliği (CORE.md 1.10): ilk açılışta üretilir. */
     fun deviceId(ctx: Context): String = DeviceId.ensure(Store.values(ctx))

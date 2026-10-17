@@ -67,7 +67,7 @@ Kaynak: seçim sayfası <https://claude.ai/artifact/5RTwBJxg8JHXCgUTbLAGyD> (kay
 
 Bağımlılık yönü tek: `:core` ← diğerleri; modüller birbirini yalnız `:core`'daki arayüzlerle görür (istisna: `:orders` → `:capture` gözlem tipleri, `:economics` → `:orders` kayıt tipleri). Döngü derleme hatasıdır.
 
-### 4.3 Modüller arası arayüzler (`:core`, öneri — A2'de kesinleşir)
+### 4.3 Modüller arası arayüzler (`:core`; A2.5'te kesinleşti, `logic/core/Ports.kt`)
 
 | Arayüz | Yöntemler | Üreten → tüketen | Eski karşılığı |
 |---|---|---|---|
@@ -78,11 +78,11 @@ Bağımlılık yönü tek: `:core` ← diğerleri; modüller birbirini yalnız `
 | `WeatherPort` | `current(): WeatherNow?` (≤90 dk) | `:map` → `:orders` (R15), `:economics` | `weather/current` |
 | `NotifyPort` | `post(id: NotificationId, …)`, `cancel(id)` | hepsi → `:core` | dağınık `notify(n)` |
 
-Tek telefonda bu arayüzler aynı süreçte doğrudan çağrılır. 2 telefon modunda `:link` aynı arayüzün **uzak** uygulamasını takar (Provider'da `ScooterBridge` uzak, Receiver'da `OrderEvents` uzak); modüller farkı görmez. `energy()` her iki durumda da askıya alınan çağrıdır; uzakta yanıt gelene kadar kayıt "bekleniyor" durur.
+A2.5'te kesinleşen farklar: `ShiftPort.start/stop` nedeni varsayılan `manual` (evden çıkış/eve dönüş kuralın kendisi); `OrderEvents.busy()` (açık sipariş, ev kuralına gider); `NotifyPort.post(Notify)` (numara `NotificationIds` tablosundan, değilse hata); modüllerin vardiya başı/sonu işleri `ShiftListeners`'a takılır; üreticisi yazılmamış arayüzün `NONE` uygulaması veri uydurmaz. Tek telefonda bu arayüzler aynı süreçte doğrudan çağrılır. 2 telefon modunda `:link` aynı arayüzün **uzak** uygulamasını takar (Provider'da `ScooterBridge` uzak, Receiver'da `OrderEvents` uzak); modüller farkı görmez. `energy()` her iki durumda da askıya alınan çağrıdır; uzakta yanıt gelene kadar kayıt "bekleniyor" durur.
 
 ### 4.4 Mesajlar (tek telefonda iç olay, 2 telefon modunda `:link` yükü)
 
-Ortak kurallar: her mesaj `schemaVersion` taşır; okuyucu bilinmeyen alanı yok sayar (bugünkü feed kuralı); zamanlar gönderenin duvar saati (ms), alıcı saat farkıyla düzeltir; sayısal alan ölçülmediyse `null` (uydurulmaz).
+Ortak kurallar (A2.5'te kod: her tip `toJson()`/`parse()`, `MessagesTest` gidiş-dönüş ve bugünkü feed yükleriyle): her mesaj `schemaVersion` taşır (bugünkü `stages` `version` yazar; okuyucu ikisini de kabul eder); okuyucu bilinmeyen alanı yok sayar (bugünkü feed kuralı); zamanlar gönderenin duvar saati (ms), alıcı saat farkıyla düzeltir; sayısal alan ölçülmediyse `null` (uydurulmaz).
 
 | Mesaj | Yön (2 telefon) | Ne zaman | Alanlar | Eski kaynak |
 |---|---|---|---|---|
@@ -216,5 +216,6 @@ Toplam 48 oturumluk görev (`docs/WEEM_ISLER.md`; aksamalarla kabaca 50–55 otu
 | 2026-10-17 | A1.4 CI: `ci.yml` (PR: logic + Android testleri, lint, derleme, kimlik denetimi), `apk.yml` (.dev APK → Release), `lint.xml` | Claude | PR #1; ilk GitHub koşusu yeşil; `apk.yml` koşmadı, telefon yok |
 | 2026-10-17 | A1.3 kabuk (alt menü, tema, TR/AZ) + A1.5 kullanıcı onayı: Aşama 1 tamam | Claude | `90475d2`; `.dev` APK yedek telefonda denendi |
 | 2026-10-17 | A2.1 Aşama 2 şartnamesi `docs/sartname/CORE.md`: tek vardiya kuralı (Rawstats `HomeShift`), YolGo farkları senaryo senaryo, ev, `NotificationIds` (5103 ve bahşiş çakışması çözümü), çökme kaydı, depolama, test eşlemesi; veri sözleşmesi tercih listesi tamamlandı, test envanteri hedefleri kesinleşti (1.607 çevrilir) | Claude | yalnız belge |
+| 2026-10-17 | A2.3–A2.5: depolama ve R20 (`LogStore`, `LogImporter`, `courier.db` şeması, çökme kartı, sekme hata sınırı, Kayıtlar/ZIP içe aktarma), tek vardiya (`ShiftMachine`, `ShiftService`, ev izleyici, `NotificationIds`, vardiya kartı, ev ekranı), modüller arası arayüzler ve mesaj tipleri | Claude | `logic/core` 212 test; kök test+lint+iki APK yerelde yeşil; telefonda denenmedi |
 
 **Sıradaki:** `docs/WEEM_ISLER.md` → "Şu an".

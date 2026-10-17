@@ -12,16 +12,14 @@ import android.os.IBinder
 import android.os.Looper
 import com.kuryelog.logic.core.NotificationIds
 import com.kuryelog.logic.core.ShiftMachine
+import com.kuryelog.logic.core.ShiftState
 
 /**
  * Vardiya ön plan servisi (G1, CORE.md 1.2–1.5; RS `GpsService`), tür `location`. Her karar ve sıra [ShiftMachine]'de; burada yalnız
  * Android çağrıları. Konum geri çağrısı ve her adım korumalı (makine kaydeder, fırlatmaz).
  */
 class ShiftService : Service(), LocationListener {
-    private val machine by lazy {
-        ShiftMachine(Store.values(this), Store.log(this), Home.repository(this), Shift.AndroidClock, platform,
-            importing = { Store.importing }, lang = { Store.lang(this) }, track = Shift.track)
-    }
+    private val machine by lazy { Shift.machine(this, platform) }
 
     private val platform = object : ShiftMachine.Platform {
         override fun startForeground() {
@@ -40,6 +38,7 @@ class ShiftService : Service(), LocationListener {
         override fun showShiftInterrupted() = Notices.shiftInterrupted(this@ShiftService)
         override fun cancel(id: Int) = Notices.cancel(this@ShiftService, id)
         override fun recheckHomeWatch() { HomeWatch.recheck(this@ShiftService) }
+        override fun published(state: ShiftState) = ShiftHub.published(state)
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
