@@ -119,9 +119,13 @@ data class BoostSlot(val pct: Int, val window: String?, val from: String?, val a
     val date: String? = null)
 
 object CourierParser {
+    /** WEEM (CAPTURE.md 7.5): Unicode word edges written out. Android's ICU reads `\b` as a Unicode edge, JDK 19+ as an ASCII
+     *  one, so `\b` after "мин" matches on the phone but not in JVM tests; these give the phone's result on both. */
+    internal const val WORD_START = "(?<![\\p{L}\\p{N}_])"
+    internal const val WORD_END = "(?![\\p{L}\\p{N}_])"
     fun norm(s: String): String = Normalizer.normalize(s.lowercase(Locale.ROOT)
         .replace('ə', 'e').replace('ı', 'i').replace('ё', 'е'), Normalizer.Form.NFD)
-        .replace(Regex("\\p{M}+"), "").replace(Regex("\\s+"), " ").trim()
+        .replace(Regex("\\p{M}+"), "").replace(Regex("[\\s\\p{Z}]+"), " ").trim()
     val WOLT = setOf("com.wolt.courierapp", "com.wolt.partner")
     private val GO_ONLINE = setOf("go online", "slide to go online", "cevrim ici ol")
     private val GO_OFFLINE = setOf("go offline", "slide to go offline")
@@ -152,7 +156,7 @@ object CourierParser {
     fun amount(s: String): Double? = money.find(s)?.let { number(it.groups[1]?.value ?: it.groups[2]?.value) }
     fun isAccept(s: String): Boolean {
         val n = norm(s)
-        return OfferRules.isAccept(s) || (amount(s) != null && Regex("\\b\\d+\\s*(min|deq|dk)\\b").containsMatchIn(n))
+        return OfferRules.isAccept(s) || (amount(s) != null && Regex("$WORD_START\\d+\\s*(min|deq|dk)$WORD_END").containsMatchIn(n))
     }
     fun isDecline(s: String) = norm(s) in setOf("decline", "decline delivery", "reject", "reddet", "redd et", "imtina", "imtina et", "imtina edin", "отклонить")
     fun isCollect(s: String): Boolean {

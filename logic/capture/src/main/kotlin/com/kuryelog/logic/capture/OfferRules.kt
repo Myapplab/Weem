@@ -4,7 +4,7 @@ import java.util.Locale
 
 // Rawstats RecordingPolicy.kt:64-80, 99-111 @ 6388c04 (CAPTURE.md 2.9). MotionGate ve OfferIdentity WEEM'de yazılmaz; ManualSessionPolicy logic/core'da.
 object OfferRules {
-    private fun norm(s: String) = s.trim().lowercase(Locale.ROOT).replace(Regex("\\s+"), " ")
+    private fun norm(s: String) = s.trim().lowercase(Locale.ROOT).replace(Regex("[\\s\\p{Z}]+"), " ")
     private val accept = setOf("accept", "accept order", "accept delivery", "qəbul", "qəbul et",
         "qəbul etmək", "kabul", "kabul et", "принять", "принять заказ")
     private val history = setOf("history", "order history", "delivery history", "completed orders",
@@ -23,9 +23,9 @@ object OfferRules {
 
 class ScreenDeduper {
     private val previous = HashMap<String, Set<String>>()
-    private val clock = Regex("\\b\\d{1,2}:\\d{2}\\b")
-    private val metric = Regex("\\b\\d+(?:[.,]\\d+)?\\s*(?:km|min|dk|dəq)\\b", RegexOption.IGNORE_CASE)
-    private val countdown = Regex("^\\d+\\s*(?:s|sec|seconds|san|с)$", RegexOption.IGNORE_CASE)
+    private val clock = Regex("${CourierParser.WORD_START}\\d{1,2}:\\d{2}${CourierParser.WORD_END}")
+    private val metric = Regex("${CourierParser.WORD_START}\\d+(?:[.,]\\d+)?[\\s\\p{Z}]*(?:km|min|dk|dəq)${CourierParser.WORD_END}", RegexOption.IGNORE_CASE)
+    private val countdown = Regex("^\\d+[\\s\\p{Z}]*(?:s|sec|seconds|san|с)$", RegexOption.IGNORE_CASE)
     fun shouldSave(pkg: String, texts: List<String>): Boolean {
         val signature = texts.map { it.trim() }.filter { it.isNotEmpty() && !countdown.matches(it) }
             .map { metric.replace(clock.replace(it, "<time>"), "<metric>") }.toSet()

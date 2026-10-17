@@ -13,7 +13,10 @@ object NoteFields {
         val room: String? = null)
 
     // Ordinal suffixes: 6-cı, 3-cü, 2-ci, 4-cu, 5.
-    private const val ORD = "(?:\\s*-?\\s*(?:ci|cu|ci|cu|ncı|nci|ncu|ncü|inci|uncu|nd|rd|th|st)\\b|\\.)?"
+    // WEEM (CAPTURE.md 7.5): explicit Unicode word edges instead of `\b` (ICU on the phone, JDK 21 in tests).
+    private const val S = CourierParser.WORD_START
+    private const val E = CourierParser.WORD_END
+    private const val ORD = "(?:\\s*-?\\s*(?:ci|cu|ci|cu|ncı|nci|ncu|ncü|inci|uncu|nd|rd|th|st)$E|\\.)?"
     private const val B = "(?<![\\p{L}\\d])"
     private fun rx(s: String) = Regex(s)
     private val doorCode = listOf(
@@ -23,26 +26,26 @@ object NoteFields {
         rx("${B}kod(?:u)?\\s+([0-9]{1,8}[#*]?)(?![\\p{L}\\d])")
     )
     private val floor = listOf(
-        rx("$B(?:mertebe|kat|floor|etaj|этаж)\\s*[:=\\-–]?\\s*(\\d{1,3})\\b"),
-        rx("\\b(\\d{1,3})$ORD\\s*(?:mertebe|kat|floor|etaj|этаж)")
+        rx("$B(?:mertebe|kat|floor|etaj|этаж)\\s*[:=\\-–]?\\s*(\\d{1,3})$E"),
+        rx("$S(\\d{1,3})$ORD\\s*(?:mertebe|kat|floor|etaj|этаж)")
     )
     private val apartment = listOf(
-        rx("$B(?:menzil|daire|apartment|apt|flat|kvartira|квартира|kv|кв)\\.?\\s*[:=\\-–]?\\s*(?:no\\.?|№|#)?\\s*(\\d{1,4}[a-z]?)\\b"),
-        rx("\\b(\\d{1,4})$ORD\\s*(?:menzil|daire|kvartira|квартира)")
+        rx("$B(?:menzil|daire|apartment|apt|flat|kvartira|квартира|kv|кв)\\.?\\s*[:=\\-–]?\\s*(?:no\\.?|№|#)?\\s*(\\d{1,4}[a-z]?)$E"),
+        rx("$S(\\d{1,4})$ORD\\s*(?:menzil|daire|kvartira|квартира)")
     )
     private val entrance = listOf(
-        rx("$B(?:podyezd|podezd|pod\\.|giris|entrance|подъезд|подьезд)\\s*[:=\\-–]?\\s*(\\d{1,2})\\b"),
-        rx("\\b(\\d{1,2})$ORD\\s*(?:podyezd|podezd|giris|giriw|entrance|подъезд|подьезд)"),
+        rx("$B(?:podyezd|podezd|pod\\.|giris|entrance|подъезд|подьезд)\\s*[:=\\-–]?\\s*(\\d{1,2})$E"),
+        rx("$S(\\d{1,2})$ORD\\s*(?:podyezd|podezd|giris|giriw|entrance|подъезд|подьезд)"),
         // F7.1 V4: a letter entrance "A giriw" / "B giriş" (giriw: OCR/keyboard for giriş).
         rx("$B([a-z])\\s*(?:giris|giriw)(?![\\p{L}])")
     )
     private val room = listOf(
-        rx("$B(?:otaq|otag|ofis|office|room|комната|офис)\\s*[:=\\-–]?\\s*(?:no\\.?|№|#)?\\s*(\\d{1,4})\\b"),
-        rx("\\b(\\d{1,4})$ORD\\s*(?:otaq|otag|ofis|office|room|комната|офис)")
+        rx("$B(?:otaq|otag|ofis|office|room|комната|офис)\\s*[:=\\-–]?\\s*(?:no\\.?|№|#)?\\s*(\\d{1,4})$E"),
+        rx("$S(\\d{1,4})$ORD\\s*(?:otaq|otag|ofis|office|room|комната|офис)")
     )
     private val building = listOf(
-        rx("$B(?:blok|block|korpus|корпус|bldg|building)\\s*[:=\\-–]?\\s*([a-z]\\b|\\d{1,3}[a-z]?\\b)"),
-        rx("${B}bina\\s*[:=\\-–]?\\s*(\\d{1,3}[a-z]?|[a-z])\\b")
+        rx("$B(?:blok|block|korpus|корпус|bldg|building)\\s*[:=\\-–]?\\s*([a-z]$E|\\d{1,3}[a-z]?$E)"),
+        rx("${B}bina\\s*[:=\\-–]?\\s*(\\d{1,3}[a-z]?|[a-z])$E")
     )
 
     // Azerbaijani mobile/landline prefixes; a number must be 9 digits after the country/trunk code.
@@ -105,7 +108,7 @@ object NoteFields {
     }
 
     /** F7.1 V3/V4: words that name another field; a structured Entrance/Floor/Apartment value holding one is free text. */
-    private val otherFieldWord = Regex("(?:menzil|daire|kvartira|квартира|\\bkv\\b|кв\\b|kod|mertebe|\\bkat\\b|floor|этаж|otaq|otag|ofis|office|room|giris|giriw|podyezd)")
+    private val otherFieldWord = Regex("(?:menzil|daire|kvartira|квартира|${S}kv$E|кв$E|kod|mertebe|${S}kat$E|floor|этаж|otaq|otag|ofis|office|room|giris|giriw|podyezd)")
     fun holdsOtherFields(value: String?): Boolean = value != null && otherFieldWord.containsMatchIn(CourierParser.norm(value))
 
     /** Wolt and Bolt shorten long notes with an ellipsis until the note is opened. */
