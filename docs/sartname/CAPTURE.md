@@ -350,3 +350,117 @@ Latin tanıyıcı Kiril okumaz: söz dağarcığındaki Rusça sözcükler yaln�
 - **Ana sayfa:** vardiya açık ∧ ekran okuma çalışmıyorsa kırmızı satır "Ekran okuma kapalı — kayıt yapılmıyor" + "!" → erişilebilirlik ayarı. Elle vardiya başlatma ekran okuma **istemez** (E7: vardiya okumasız da açılır).
 - **WEEM:** kural `logic/capture` (`ScreenReading`, `ScreenReadingGuard`). Denetim döngüsü, bildirim (`NotifyPort`, 5104) ve kırmızı rozet Android `:capture`'ta bir `ShiftListeners` dinleyicisi (vardiya başı: döngü; vardiya sonu: durdur ve kaldır); `:core` vardiya servisi `:capture`'ı tanımaz. Metindeki servis adı "WEEM ekran kaydı" (manifest etiketi). Ana sayfa satırı Harita sekmesindeki vardiya kartında (A2.4 kartı; A3.7). `NotificationIds.kt`'deki "`:orders`/R19" sahiplik notu `:capture` olur.
 - R19'un diğer kalemleri: otomatik başlatma bildirimleri 5101/5103 A2.4'te yazıldı (`Notices`), 5102 scooter A5'te; pil optimizasyonu bilgi satırı ve izinler kartı (`MainActivity.kt:1186-1210`) `:app` ilk açılış/izinler ekranında (G5; `ORDERS.md` R19 satırında ayrıntı).
+
+## 6. Veri (A3.4 yazar, A3.9 karşılaştırır)
+
+Gün klasörü `files/logs/YYYY-MM-DD/` (kayıt anının yerel tarihi), satır ekleme `LogStore.append` (A2.3; tek kilit). Zaman damgası `t` = `yyyy-MM-dd'T'HH:mm:ss.SSSZ` (`LogTime`, ör. `2026-10-17T18:44:00.123+0400`). `loc` (varsa) = `{lat, lon, acc, age_s}` — vardiya servisinin son konumu (`LogStore.lastLocation`), `age_s` = (şimdi − fix anı) / 1000 tam sayı. JSON'da değeri null olan alan **yazılmaz** (`org.json` `put(k, null)` anahtarı siler).
+
+### 6.1 `screens.jsonl` (RS `WatchService.kt:161-166`)
+
+| Alan | Değer |
+|---|---|
+| `t` | kare anı (`at`; OCR'da ekran görüntüsünün istendiği an) |
+| `pkg` | paket |
+| `window` | erişilebilirlik pencere id'si |
+| `bounds` | `Rect.flattenToString()` ("0 0 1280 2856") |
+| `source` | `accessibility` \| `ocr` |
+| `offerLike` | aşama OFFER mı |
+| `stage` | aşama adı |
+| `texts` | satırlar, her biri `NoteFields.redact` |
+| `actions` | eylemler, `redact` |
+| `nodes` | yalnız erişilebilirlik: düğüm satırları, ilk iki öğe (`text`, `contentDescription`) `redact` |
+| `phone_battery_pct` | telefon pili 0–100 (okunamazsa yok) |
+| `deliver_spinner` | `true`, yalnız erişilebilirlik okumasında K33 göstergesi varsa |
+| `loc` | varsa |
+
+Satır yalnız `ScreenDeduper` imzası değiştiğinde yazılır (2.9); `:orders` her kareyi alır. Yani `screens.jsonl` karelerin **tamamı değildir**.
+
+### 6.2 `notifs.jsonl` (RS `NotifService.kt:49-62, 73-78`)
+
+- "posted": `t` (şimdi), `posted` (`sbn.postTime`), `ev` = `posted`, `pkg`, `key`, `ongoing`, `channel` (kanal kimliği), `title`, `text`, `big`, `sub` (her biri `redact`; yoksa alan yok), `loc`.
+- "removed": `t`, `ev` = `removed`, `pkg`, `key` (konum yok).
+- Navigasyon paketlerinin bildirimleri **hiç** yazılmaz.
+
+### 6.3 `events.jsonl` ve `errors.jsonl` (`:capture`'ın yazdıkları)
+
+| `type` | Ek alanlar | Kaynak |
+|---|---|---|
+| `click` | `pkg`, `text` (tekil etiketler boşlukla; **redact yok** — tıklanan düğmenin metni) | `WatchService.kt:89` |
+| `screenshot_unavailable` | `pkg`, `code` (Android hata kodu), `display` (tüm ekran mıydı) | `:229` |
+| `screen_reading_off` / `screen_reading_on` | — | `GpsService.kt:122` (WEEM: `:capture` uyarı dinleyicisi) |
+
+`Store.event` ek alanlardan sonra `t`, `type`, `loc` ekler. `errors.jsonl`: `{t, source, error}` (1.8).
+
+Not (gizlilik): `click.text` müşteri kartındaki bir düğmenin metni olabilir (ör. "Call"); Rawstats onu `redact` etmeden yazar. WEEM aynı yazar (veri sözleşmesi); dışa aktarma `AnalysisExport` alan izin listesiyle süzer (A4.3).
+
+### 6.4 Tercihler ve bellek
+
+- `kuryelog` tercihleri: `targets` (StringSet), `userPicked` (Bool, false), `ocr` (Bool, **true**; Daha fazla'da "Görünür ekran OCR yedeği" / "Görünən ekran üçün OCR ehtiyatı" anahtarı, RS `MainActivity.kt:1140`). `overlay`, `bx`, `by` `:orders`'ındır (R7).
+- Yalnız bellek (diske yazılmaz): son okuma ve son "Accept" anı, görülen teklif sayısı (tanı kartı); navigasyon özeti; telefon uygulamasından okunan numara (`:orders`'a gider; orada yalnız `courier.db`'ye, `ORDERS.md`); OCR görüntü izleri ve satırları.
+
+### 6.5 Gölge mod (A3.9) için
+
+- İki uygulama aynı kareyi farklı anlarda okur: `screens.jsonl` satırları birebir eşleşmez. Ayrıştırıcı eşitliği için Rawstats'ın `screens.jsonl` satırları (`pkg`, `source`, `texts`, `actions`, `t`) WEEM ayrıştırıcısına verilir ve `stage`/`offerLike` Rawstats'ın yazdığıyla karşılaştırılır (metinler `redact`'li: telefon çıkarımı dışında sonuç aynı olmalı). Sipariş ve teklif eşitliği `ORDERS.md`'de.
+- JSON karşılaştırması **ayrıştırılmış değerle** yapılır, bayt bayt değil: Android `org.json` alan sırasını korur, JVM'deki `org.json` korumaz.
+- Gölge modda iki erişilebilirlik servisi ve iki rozet aynı anda çalışır. Kendi satırları tanıma (2.10) iki uygulamanın rozetini de tanır (aynı biçim). Tüm ekran görüntüsünde (yalnız API < 34 ya da geçersiz pencere sonrası) her uygulama yalnız kendi penceresini boyar: öbürünün rozeti/topu OCR'a girebilir. Pixel 10 Pro (API 36) normalde pencere görüntüsü alır; fark raporunda `screenshot_unavailable` olan dakikalar ayrıca işaretlenir.
+
+## 7. WEEM yerleşimi ve kesişen kurallar
+
+### 7.1 Modüller ve arayüzler
+
+**`logic/capture` (saf, JVM testli; paket `com.kuryelog.logic.capture`):** `CourierParser`, `CourierObservation`, `ScreenStage`, `DeliveryDetails`, `BoostSlot`, `CourierScreens`, `OfferRules`, `ScreenDeduper`, `SliderSpinner`, `NoteFields`, `Dialer`, `NameMatch` (2.10), `OwnLines` (2.10), `OfferCapture`, `OcrPace`, `OcrAcceptance` (3.5), `CaptureTiming`, `NavDistance`, `NotificationDedup` (4.1), `ScreenReading`, `ScreenReadingGuard`, `TargetApps` (1.9), satır biçimleri (`ScreenRow`, `NotifRow`: 6.1–6.2'deki alanlardan `JSONObject`), `CaptureSink`, metin tablosu (`CaptureText`, TR/AZ).
+
+**`CaptureSink`** (`logic/capture`; `:orders` uygular, `:app` bağlar; bağlanmamışsa `NONE` = hiçbir şey yapmaz, `awaitingPhone` false):
+
+```kotlin
+interface CaptureSink {
+    fun onScreen(pkg: String, texts: List<String>, actions: List<String>, at: Long, source: String,
+                 spinner: Boolean, checked: Boolean?, parsed: CourierObservation)   // OrderTracker.onScreen
+    fun onClick(pkg: String, label: String, at: Long)                             // OrderTracker.onClick
+    fun onNotification(pkg: String, text: String, at: Long)                       // OrderTracker.notification
+    fun onNavigation(lines: List<String>, at: Long)                               // OrderTracker.navigation
+    fun awaitingPhone(now: Long): Boolean                                         // OrderTracker.awaitingPhone
+    fun onDialer(texts: List<String>, at: Long)                                   // OrderTracker.dialerPhone
+}
+```
+
+Çağrılar bugünkü sırayla ve aynı iş parçacığında (ana) yapılır; kayıt iznine `:capture` bakar, `:orders` kendi tarafında yeniden bakabilir (Rawstats `OrderTracker` her girişte bakar).
+
+**Android `:capture` (paket `com.kuryelog.app` servis adları için, gövde `com.kuryelog.app.capture`):** `WatchService`, `NotifService` (adlar değişmez), ekran görüntüsü + ML Kit + maskeleme, E7 uyarı dinleyicisi (`ShiftListeners`, 5.2), `CaptureHost`:
+
+```kotlin
+interface CaptureHost {                       // :orders uygular (rozet, balonlar, sipariş tiki); :app bağlar
+    fun onConnected(service: AccessibilityService)                // OrderTracker.init + DeliveryReminder kurulumu
+    fun onTick(service: AccessibilityService, now: Long, shiftOn: Boolean)  // 1.6 adım 3–4
+    fun onDisconnected(service: AccessibilityService)             // pencereleri kaldır
+}
+```
+
+`TYPE_ACCESSIBILITY_OVERLAY` pencereleri yalnız erişilebilirlik servisinin bağlamıyla açılır; bu yüzden `:orders` rozet ve balonları `service` üzerinden açar, `:capture` onları tanımaz. Maskeleme için `:core`'daki `OwnOverlays` kaydı (3.5).
+
+**Bağlama:** `WeemApplication` (`:app`) açılışta `Capture.sink = <:orders>` ve `Capture.host = <:orders>` yazar; `:capture` yalnız arayüzü görür. Bağlanmamış hâlde (Aşama 3 kodu gelene kadar) servis okur, satır yazar, hiçbir sipariş işi yapmaz.
+
+**Taşınanlar:** `ManualSessionPolicy` (A2.4'te `logic/core`), `Store.canRecordScreen` → Android `Store.canRecordScreen(ctx)` (`ManualSessionPolicy.canCapture` + `importing`), `Store.targets`, `Store.phoneBattery`, `Store.locJson` → `LogStore.locJson` (A2.3), `Store.failure` → `LogStore.failure`.
+
+### 7.2 Metinler
+
+Kullanıcıya görünen her `:capture` metni (`OCR ekranı okunamadı…`, `Rozet açılamadı:`, E7 başlık/metin/kanal adı, `OCR yedeği` anahtarı, izlenen uygulamalar kartı) `CaptureText` tablosunda TR ve AZ; `TextCoverageTest` benzeri kapsam testi; Android kaynağında düz TR/AZ metin yok (A1.3 kuralı).
+
+### 7.3 Ağ yasağı
+
+- `:capture` (saf ve Android) kaynakta ağ sınıfı kullanmaz: `java.net.*` (`URL`, `HttpURLConnection`, `Socket`, `InetAddress`…), `javax.net.*`, `okhttp3`, `android.net.http`, `Ktor`, `Retrofit`, `WebView` yok — **kaynak taraması testi** (A3.4).
+- **Çalışma sınıf yolu izin listesi** (A3.4): `:capture`'ın `releaseRuntimeClasspath`'i bir izin listesiyle karşılaştırılır (`logic/capture`, `logic/core`, Kotlin stdlib, coroutines, AndroidX çekirdek, ML Kit text-recognition ve zorunlu bağımlılıkları); listede olmayan yeni bağımlılık testi kırar.
+- **ML Kit telemetrisi (risk):** ML Kit, model cihazda olsa da API kullanım ve performans ölçümlerini Google'a göndermek için Google veri aktarım kütüphanesini (`com.google.android.datatransport`) getirir. Rawstats'ta INTERNET izni yoktu, gönderemiyordu; WEEM internetlidir (harita, hava, uzaktan kullanım). Varsayılan çözüm: `:capture`'ta ML Kit bağımlılığından gönderim arka ucu (`transport-backend-cct`) çıkarılır; A3.4 bağımlılık ağacını (`./gradlew :capture:dependencies`) bu bölüme ekler; A3.7 OCR'ın çıkarılmış arka uçla cihazda çalıştığını doğrular (doğrulanmadı). Çıkarma OCR'ı bozarsa kullanıcıya sorulur (9).
+- 2 telefon modunda `:capture` hiçbir şey göndermez: Receiver'a giden her şey `:orders` mesajlarıdır (plan 4.4); ham satırlar (`screens`, `notifs`) Provider'dan çıkmaz.
+
+### 7.4 Hiçbir şeye basmama
+
+- `accessibility_config.xml`'de `canPerformGestures` yok; `WatchService` yalnız okur.
+- **Kaynak taraması testi** (A3.7, `:remote` hariç tüm modüller): `performAction(`, `dispatchGesture(`, `performGlobalAction(`, `GestureDescription` yok; `AccessibilityNodeInfo.ACTION_` sabiti yok. Uzaktan kullanımın dokunuşu ayrı bir serviste (plan 4.6; A9 kendi kuralını yazar).
+- Okunan pencereye hiçbir şey yazılmaz (`ACTION_SET_TEXT` yok), pano okunmaz (`ClipboardManager` `:capture`'ta yok).
+
+### 7.5 Desenler: ICU ve JDK 21
+
+- **Yasak yapılar** (RT `IcuRegexTest.kt:25-39`, WEEM'de **tüm modüller**: `logic/*/src/main`, Android modülleri, `app`): satır içi `(?U)` (ve `U` içeren bayrak grupları), `UNICODE_CHARACTER_CLASS`, `CANON_EQ`, `\p{java…}`. Yorum satırları sayılmaz. Gerekçe: Android her deseni ICU'ya verir; ICU bunları tanımaz, sınıf yüklenemez (0.25.0'da ilk bildirimde uygulama kapandı).
+- **Sınıf anlamı farkı (yeni bulgu, 17 Ekim):** JDK 19'dan beri `\b` yalnız ASCII sözcük karakterlerine bakar (`\w` ile tutarlı); Android ICU'da `\b`, `\w`, `\d`, `\s` Unicode'dur. Rawstats testleri JDK 17'de koşuyordu (orada `\b` Unicode harfini sözcük sayardı); WEEM testleri JDK 21'de koşar. Bu ortamda denendi: `\b\d+\s*(?:min|мин|ч)\b` "3 мин · 1,2 км"de JDK 21'de **eşleşmez** (ICU'da eşleşir); `кв\b` "кв 5"te eşleşmez; `этаж\s*(\d{1,3})\b` "этаж 5й"de eşleşir (ICU'da eşleşmez).
+- **Kural (WEEM):** ASCII olmayan metin görebilen desenlerde `\b` yerine açık sınır `(?<![\p{L}\p{N}_])` / `(?![\p{L}\p{N}_])` (Rawstats'ın `NavDistance.durationU` ve boost sözcüğünde zaten kullandığı biçim), boşlukta NBSP olabilecek yerde `[\s\p{Z}]`. Cihaz davranışı değişmez (ICU'nun `\b`'si bunun karşılığıdır); JVM testi cihazdaki sonucu verir. Bilinen yerler: `NavDistance` `duration` (`summary`), `NoteFields` `:16-45` (`\b` rakamdan sonra/önce) ve `otherFieldWord` `:108` (`\bkv\b`, `кв\b`, `\bkat\b`), `ScreenDeduper` `clock`/`metric`, `CourierParser.isAccept` (`\b\d+\s*(min|deq|dk)\b`) ve parser'daki diğer `\b`'ler. A3.4 bütün `Regex(` kurulumlarını (birleştirilerek kurulanlar dahil) tarar, gerekenleri çevirir ve her çevrilen desen için Kiril/NBSP girdili bir JVM testi ekler (beklenen = ICU sonucu). Taramanın sonucu bu bölüme liste olarak eklenir.

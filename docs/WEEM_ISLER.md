@@ -8,7 +8,7 @@ Kurallar: `AGENTS.md` → "Birden çok Claude hesabı". Durumlar: `bekliyor` · 
 
 - **Son yapılan:** 17 Ekim — A2.3 (depolama, R20 çökme kaydı/kartı, Daha fazla → Kayıtlar ile ZIP içe aktarma), A2.4 (tek vardiya: `ShiftMachine`, `ShiftService`, ev izleyici, `NotificationIds`, vardiya kartı, Ev konumu ekranı), A2.5 (modüller arası arayüzler ve mesaj tipleri) bitti; `logic/core` 212 test, kök test+lint+iki APK yerelde yeşil, telefonda denenmedi.
 - **Sıradaki iş:** A3.1 (Aşama 3 şartnamesi) sürüyor — Opus · max, tek ajan (S14: ultracode ve paralel ajan yok). Aşama 2 tamam (A2.6 kullanıcı onayı, `weem-dev-2`).
-- **Devam eden (yarım) iş:** A3.1 — dal `claude/a3-1-specification-writing-yowfos`; son commit: CAPTURE.md 0–5 bitti; sıradaki: CAPTURE.md 6 (kayıt satırları), 7 (yerleşim: CaptureSink/CaptureHost, ağ yasağı, basmama, ICU ve JDK 21 \\b farkı), 8 test eşlemesi, 9 açık noktalar; sonra ORDERS.md.
+- **Devam eden (yarım) iş:** A3.1 — dal `claude/a3-1-specification-writing-yowfos`; son commit: CAPTURE.md 0–7 bitti; sıradaki: CAPTURE.md 8 (test eşlemesi: 15 dosya 203 test, 95 capture / 100 orders / 2 core / 6 çevrilmez), 9 açık noktalar; sonra ORDERS.md.
 - **Kullanıcıdan beklenen:** evde ev konumunu kaydedip "Her zaman" konum izni vermek ve otomatik vardiyayı denemek (çıkış ≥50 m ve ≥10 km/s, dönüşte 30 sn); K0.1 kodsuz saha denemesi; uygulama simgesi; kalıcı Receiver telefonu (bugün Poco); her hesabın ortam ağ ayarında `dl.google.com` izni (Android'i yerelde derlemek için; nasıl: `AGENTS.md` → "Ortam").
 
 ## Aşama 0 — Planın son hâli
