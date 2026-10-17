@@ -1,0 +1,16 @@
+# WEEM sürüm kataloğu — iki build de kullanır (kök Android build ve logic/).
+# Araç sürümleri Rawstats (kurye_nav rawstats @ 6388c04) ile aynı.
+[versions]
+agp = "9.1.0"
+kotlin = "2.4.0"
+junit = "4.13.2"
+
+[libraries]
+junit = { module = "junit:junit", version.ref = "junit" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
