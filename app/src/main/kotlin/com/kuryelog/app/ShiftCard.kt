@@ -1,7 +1,6 @@
 package com.kuryelog.app
 
 import android.Manifest
-import android.content.SharedPreferences
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,9 +13,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -24,37 +22,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.kuryelog.app.core.Home
-import com.kuryelog.app.core.Shift
-import com.kuryelog.app.core.Store
-import com.kuryelog.logic.core.KuryelogPrefs
+import com.kuryelog.app.core.ShiftHub
 import com.kuryelog.logic.core.Lang
-import com.kuryelog.logic.core.ManualSessionPolicy
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import com.kuryelog.logic.app.Text as Str
 
-/** Vardiya kartı (G1, CORE.md 1.2): durum ve tek düğme. Vardiya `kuryelog` tercihlerinden okunur; değişince kart yenilenir. */
+/** Vardiya kartı (G1, CORE.md 1.2): durum (`ShiftPort.state`) ve tek düğme. */
 @Composable
 fun ShiftCard(lang: Lang) {
     val ctx = LocalContext.current
-    var version by remember { mutableIntStateOf(0) }
+    val shift by ShiftHub.state.collectAsState()
     var status by remember { mutableStateOf<String?>(null) }
-    DisposableEffect(Unit) {
-        val prefs = Store.prefs(ctx)
-        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> version++ }
-        prefs.registerOnSharedPreferenceChangeListener(listener)
-        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
-    }
     val askLocation = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         ctx.safely {
-            if (Home.hasFine(ctx)) { status = null; Shift.start(ctx) } else status = Str.SHIFT_NEEDS_LOCATION.get(lang)
+            if (Home.hasFine(ctx)) { status = null; ShiftHub.start() } else status = Str.SHIFT_NEEDS_LOCATION.get(lang)
         }
     }
-    GuardedPage("shift_card", lang, key = version, build = { Store.values(ctx).let { p ->
-        Triple(Shift.on(ctx), p.getLong(KuryelogPrefs.SHIFT_START, 0L),
-            ManualSessionPolicy.interrupted(Shift.on(ctx), p.getLong(KuryelogPrefs.SHIFT_INTERRUPTED_AT, 0L), p.getLong(KuryelogPrefs.SHIFT_START, 0L)))
-    } }) { (on, startedAt, interrupted) ->
+    GuardedPage("shift_card", lang, key = shift, build = { Triple(shift.active, shift.startedAtMs ?: 0L, shift.interrupted) }) { (on, startedAt, interrupted) ->
         Card(Modifier.fillMaxWidth().padding(12.dp)) {
             Column(Modifier.padding(16.dp)) {
                 Text(
@@ -64,15 +50,15 @@ fun ShiftCard(lang: Lang) {
                 if (interrupted) Text(Str.SHIFT_INTERRUPTED.get(lang), color = MaterialTheme.colorScheme.error)
                 status?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 if (on && !interrupted) {
-                    OutlinedButton(onClick = { ctx.safely { Shift.stop(ctx) } }, modifier = Modifier.padding(top = 8.dp)) { Text(Str.SHIFT_STOP.get(lang)) }
+                    OutlinedButton(onClick = { ctx.safely { ShiftHub.stop() } }, modifier = Modifier.padding(top = 8.dp)) { Text(Str.SHIFT_STOP.get(lang)) }
                 } else {
                     Button(onClick = {
                         ctx.safely {
-                            if (Home.hasFine(ctx)) Shift.start(ctx)
+                            if (Home.hasFine(ctx)) ShiftHub.start()
                             else askLocation.launch(locationPermissions())
                         }
                     }, modifier = Modifier.padding(top = 8.dp)) { Text(Str.SHIFT_START.get(lang)) }
-                    if (interrupted) OutlinedButton(onClick = { ctx.safely { Shift.stop(ctx) } }) { Text(Str.SHIFT_STOP.get(lang)) }
+                    if (interrupted) OutlinedButton(onClick = { ctx.safely { ShiftHub.stop() } }) { Text(Str.SHIFT_STOP.get(lang)) }
                 }
             }
         }
