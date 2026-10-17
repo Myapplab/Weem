@@ -1,6 +1,6 @@
 # SCOOTER — Aşama 5 şartnamesi (`:scooter`: S1–S8, R14)
 
-Durum: A5.1, 17 Ekim 2026 (Claude Opus · high, tek ajan) — yazılıyor; biten bölümler `WEEM_ISLER.md` "Şu an"da. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c04` (Rawstats 0.25.1; Sürüş Paneli `BuildInfo.VERSION` **0.4.3**); satır numaraları bu commit'te açılıp doğrulandı. Ham bulgu yok (`bulgular/` scooter içermez; `X_protocol.md` yalnız `scooter/v1/live` yükü, P4); bu belge kaynak koddan tam çıkarmadır.
+Durum: A5.1, 17 Ekim 2026 (Claude Opus · high, tek ajan) — bölüm 0–14 yazıldı. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c04` (Rawstats 0.25.1; Sürüş Paneli `BuildInfo.VERSION` **0.4.3**); satır numaraları bu commit'te açılıp doğrulandı. Ham bulgu yok (`bulgular/` scooter içermez; `X_protocol.md` yalnız `scooter/v1/live` yükü, P4); bu belge kaynak koddan tam çıkarmadır.
 
 Kısaltmalar: **NB** = `ninebot-logger/app/src/main/java/az/ninebot/logger/` (Sürüş Paneli, Java, Gradle `:surus-paneli`, namespace `az.ninebot.logger`), **NT** = `ninebot-logger/tests/` (main() tabanlı suitler), **NR** = `ninebot-logger/tools/reference/`, **RS** = `app/src/main/java/com/kuryelog/app/`, **RT** = `app/src/test/java/com/kuryelog/app/` (Rawstats). Davranış metni kodun söylediğidir; "WEEM" satırları bu şartnamenin kararıdır.
 
@@ -8,7 +8,25 @@ Kısaltmalar: **NB** = `ninebot-logger/app/src/main/java/az/ninebot/logger/` (S�
 
 ## 0. Özet: WEEM kuralları
 
-_(A5.1 sonunda yazılır.)_
+| Konu | WEEM kuralı | Neden / kaynak |
+|---|---|---|
+| Cihaz ve yol | Segway-Ninebot Max G3; tek BLE GATT bağlantısı, Nordic UART (`6e400001/2/3-b5a3-f393-e0a9-e50e24dcca9e`), yazma `WRITE_NO_RESPONSE`, MTU 247 istenir; GATT sırası `NinebotLink` ile, her adımda 15 sn bekçi | 2.1; NB `BleCapture.java`, `NinebotLink.java` |
+| Salt okuma | Yalnız okuma (`0x01`) ve el sıkışma (kart 4: `0x5b` PRE_COMM, `0x5c` PAIR, `0x5d` AUTH); başka komut atılamaz (koruma + kaynak taraması testi) | 2.6; `NinebotSession.java:75-78` |
+| Çerçeve | `5a a5 LEN 3e BOARD CMD INDEX DATA` (+6 bayt şifreli kuyruk); birleştirme sınırları 3 sn / 2.048 / 268 bayt | 2.2 |
+| Şifreleme | "Encryption2": SHA-1 türetilmiş AES-128 anahtar; PRE_COMM sabit `FW` + sağlama; oturumda sayaçlı AES-CTR + 4 baytlık CBC-MAC; tekrar/düşürme reddi; birebir Kotlin, referans `nb_crypto.py` (Apache-2.0) | 2.3, 10.3 |
+| El sıkışma | PRE_COMM (5 sn × 3) → anahtar varsa AUTH (5 sn × 3, veri = 14 bayt seri) → READING; eşleştirmede PAIR (anahtar = SecureRandom 16 bayt, 2 sn'de bir, 300 sn pencere, ilk yanıtta titreşim + bildirim 8) | 2.4, 4.2 |
+| Oturum sabitleri | **Tek bekleyen istek**, **1,2 sn** yanıt penceresi, aralık 5/20 ms (izleniyor/izlenmiyor), hız ≥150/400 ms ve arada ≥2 okuma, seyrek sayaçlar her 3. turda, yanıtsız register 3'te düşer, **12 ardışık zaman aşımı** = yeniden bağlan | 2.5 |
+| Okunan değerler | VCU `0x16`: pil %, menzil, odometre, yaşam sayaçları, sıcaklık, hız/sürüş km/sürüş sn (aday); BMS `0x8c` V, `0x8d` A (işaretli), `0x8f` %, `0x8a` ham; küçük uçlu, ölçek/aralık tablosu; tazelik 3/15 sn; güç = V×A (iç + onaylı harici) | 3 |
+| Eşleşme deposu | `pairing-v1` + Keystore `NinebotLogger.Pairing.v1` (AES-GCM, AAD = adres); aday/etkin/önceki; **adlar ve biçim değişmez** | 4.1; `VERI_SOZLESMESI` 5.3 |
+| Yeniden bağlanma (S6) | 1, 2, 4, 8 sn, sonra 15 sn (24 denemeye kadar), sonra 60 sn; okuyan bağlantı sıfırlar. M23: veri kesildi/geldi bildirimi 4902 (30 sn, ≥10 km/s) | 5 |
+| Kim bağlanır (S11) | Tek telefonda WEEM; 2 telefonda **yalnız Receiver**; Provider BLE açmaz | 5.3, 12.3 |
+| Canlı panel ve yüzen panel (S2, S7) | Kare her ölçümde; 5 sn bayat; boş değer "–" (asla 0); yüzen top 4 değer, 80 ms çizim, geometri `FloatGeometry`; PiP yalnız üstte gösterme izni yokken | 6 |
+| Kayıt (S3) | Canlı kip (yazmaz) / kayıt (SQLite `ninebot-logger.db` + GPS 1 Hz, durunca 3 sn); ayrıntılı teşhis ilk 10 dk, bütçeler 10.000 + 10.000, kuyruk 2.048; ZIP izin listesi aynı | 7 |
+| Sayaç ve enerji (S4, R14) | 1 Hz örnek; adım ≤3 sn, yalnız iki paketin gücü (D10); blok kapsama ≥%80, uç ≤15 sn; `economics-scooter.jsonl` aynı; sipariş enerjisi `ScooterBridge.steps` (yeni arayüz, A5.3) | 8, 12.2 |
+| Harici batarya (S5) | Bir kerelik salt okuma yoklaması (31 aday, voltaj 30–60 V, yüzde onaylar; sahada `0x06`); sessiz paket 15 sn'de bir (D12); duyuru 60 sn kararlılık | 9 |
+| Tanı (S8) | Sweep `0x16:00–c0`, ayrıntılı teşhis, tam ZIP (hassas uyarısı), bilgi sayfası; dizüstü araçları CI dışı | 10 |
+| Modül sınırı | `logic/scooter` saf (protokol, kurallar, panel, enerji, politikalar); `:scooter` Android (GATT, servis, Keystore, SQLite, arayüz); `:scooter` → yalnız `:core`; dışarıya yalnız `ScooterBridge` | 12.1 |
+| Açık soru | S18: `fail()` sonrası bağlantının boşta kalması (yeniden deneme yok) | 14, R-S3 |
 
 ## 1. Kaynak haritası
 
@@ -116,7 +134,7 @@ Durumlar: `PRE_COMM`, `NEEDS_KEY`, `PAIR`, `AUTH`, `READING`, `FAILED`, `CLOSED`
 | Adım | Gönderilen | Bekleme | Yanıt ve sonuç (satır) |
 |---|---|---|---|
 | Kurulum | — | — | Okuma listesi = araç registerları + `voltage(7)`, `voltage(0x22)`, `voltage(0x23)` (+ sweep, 10.1); `pairWindow = clamp(window, 0, 300.000)`, `pairUntil = now + pairWindow`; ad boşsa `fail("Bluetooth cihaz adı okunamadı; GPS kaydı sürüyor")`; not `handshake_started` (56) |
-| PRE_COMM | `NinebotCrypto(ad UTF-8, FW, firmwareInput=true)`; kart 4, komut `0x5b`, index 0, veri yok (açık + sağlama, sayaç 0) | 5.000 ms; en çok 3 deneme | Yazma karakteristiği yoksa ya da 3 deneme bittiyse `fail("G3 başlangıç yanıtı yok; yalnız Nordic profile 0 denendi. Bağlantı ZIP'ini gönder")` (73-74). Yanıt `reply(p,4,0x5b,idx,LEN)` ve `p.length≥37`: `challenge = p[7..23)` (16), `serial = p[23..37)` (14); seri baytları 0 ya da 32–126 değilse `fail("G3 cihaz kimliği beklenen biçimde değil")`; not `pre_comm_ok` (`stored_key = idx≠0`); `crypto.start(challenge)` (100-102) |
+| PRE_COMM | `NinebotCrypto(ad UTF-8, FW, firmwareInput=true)`; kart 4, komut `0x5b`, index 0, veri yok (sayaç 0: sabit anahtar akışı `AES(key, FW)` + sağlama, MAC yok) | 5.000 ms; en çok 3 deneme | Yazma karakteristiği yoksa ya da 3 deneme bittiyse `fail("G3 başlangıç yanıtı yok; yalnız Nordic profile 0 denendi. Bağlantı ZIP'ini gönder")` (73-74). Yanıt `reply(p,4,0x5b,idx,LEN)` ve `p.length≥37`: `challenge = p[7..23)` (16), `serial = p[23..37)` (14); seri baytları 0 ya da 32–126 değilse `fail("G3 cihaz kimliği beklenen biçimde değil")`; not `pre_comm_ok` (`stored_key = idx≠0`); `crypto.start(challenge)` (100-102) |
 | Dal | — | — | Eşleştirme istendi ve pencere açık → PAIR (103). Değilse anahtar yok **ya da** `idx==0` (scooter'da kayıtlı anahtar yok) **ya da** eşleştirme istendi (pencere kapalı) → `NEEDS_KEY`, durum "G3 yanıt verdi • ölçümler için G3 ile eşleştir düğmesini kullan" (104). Yoksa AUTH (105) |
 | PAIR | Yeni 16 bayt anahtar: uygulamada `SessionKey.random()` (SecureRandom), referans kurucuda `SessionKey.derive(challenge, duvar saati)` (2.7); `port.key(k, false)` (aday kaydedilir); `crypto.setKey(ad, challenge)`; kart 4, `0x5c`, index 0, **veri = anahtar** | 2.000 ms aralıkla yeniden gönderilir (120) | Pencere dolunca `fail("Scooter eşleştirme süresi doldu (300 sn pencere); GPS kaydı sürüyor. Kaydı durdurup ZIP'i gönder")` (84). Yanıt (86-95): yönü/boyu yanlış ya da aşama PAIR değil → red; ilk yanıtta not `pair_first_reply` + **eşleştirme uyarısı** (titreşim + bildirim 8, 4.3); veri dolu ve ilk kez → AUTH (`trigger=nonempty_payload`, deneysel); `idx==1` → AUTH (`trigger=index_1`); veri dolu (ikinci kez) → "PAIR veri yanıtının anlamı bilinmiyor • onay bekleniyor (N sn)"; `idx==0` → "Scooter yanıt verdi • eşleştirme onayı bekleniyor (N sn). Güç düğmesine bir kez kısa bas"; başka → red "unknown SET_PWD status". Her yanıtta ayrıntılı not `pair_reply` |
 | AUTH | `crypto.setKey(anahtar, challenge)`; kart 4, `0x5d`, index 0, **veri = seri (14 bayt)**; durum "G3 kimlik doğrulanıyor • deneme n/3" | 5.000 ms; en çok 3 deneme (121) | Yanıt `reply(p,4,0x5d,idx,0)` (boş veri), not `auth_reply`. `idx==1` → `port.key(k, true)` (onaylı), `READING`, uyarı kapanır, durum "G3 bağlı • deneysel ölçüm okuma", not `authenticated` (108). `idx≠1` ya da 3 zaman aşımı → `recoverPair` |
@@ -254,7 +272,7 @@ Eşleştirme başlatma (NB `DashboardActivity.java:172`): bağlantı, dışa akt
 
 - Metin `MESSAGE = "ŞİMDİ güç düğmesine bir kez kısa bas"` (10); bildirim no **8**, kanal `pairing-attention` "Eşleştirme onayı", `IMPORTANCE_HIGH`, ses yok, kanal titreşimi kapalı (11, 22); başlık "Scooter yanıt verdi", dokununca ayarlar (`MainActivity`).
 - Servis başına **bir kez** (yeniden bağlanmalar dahil): titreşim `[0, 300, 120, 300]` ms (titreşim motoru varsa), olay `pair_attention {message, first_reply, vibrator_available, vibration_requested, vibration_error}` (17-26). Kapanınca bildirim silinir. Oturum `pairPrompt(true)` ilk PAIR yanıtında, `false` READING'e geçince, başarısızlıkta ve kapanışta.
-- Ayarlar ekranı aynı metni saniyede bir yeniler (`refreshPairPrompt`, NB `MainActivity.java:18`).
+- Ayarlar ekranı (`refreshPairPrompt`, NB `MainActivity.java:18, 58`) ve canlı panel (`DashboardActivity.java:103`) uyarı satırını `PairAttention.visible()` iken gösterir (saniyede bir denetlenir).
 
 ### 4.3 Kimlik ve göç
 
@@ -374,7 +392,7 @@ Sürüş Paneli bağlanma anını dışarı vermez; durum karelerden okunur. `ti
 - `json(k, v, …)`: `null` → `JSONObject.NULL` (33).
 - `deleteCompletedBefore(cutoff)`: yalnız `recording` olmayan ve `started_ms < cutoff`; ardından `VACUUM`; yalnız ayarlardaki "Eski kayıtları sil" (30 gün; onaylı; NB `MainActivity.java:112-118`).
 
-Olay politikası (`NinebotLogPolicy.java:9-21`): sık türler `ble_raw`, `ble_write`, `ble_write_result`, `protocol_tx` (READING'deki), `ble_measurement` yalnız "Ayrıntılı teşhis" (`detailed_diagnostics`) açıkken ve kaydın ilk **10 dk**'sında (`DETAIL_MS`), en çok **10.000**; diğer BLE olayları ayrı **10.000** bütçe; el sıkışma TX'i (`stage=READING` içermeyen `protocol_tx`) `handshake_tx` bütçesine sayılır (`RecordingService.java:137-139`); atlananlar `omitted`. Yazma kuyruğu (`NinebotEventQueue.java:8`): sınır **2.048** (`RecordingService.java:56`); dolu ise BLE olayı atılır ve sayılır; GPS ve örnek satırları kuyruğu atlar (doğrudan yazıcı). Canlı kipte hiçbir olay yazılmaz.
+Olay politikası (`NinebotLogPolicy.java:9-21`): sık türler `ble_raw`, `ble_write`, `ble_write_result`, `protocol_tx` (READING'deki), `ble_measurement` yalnız "Ayrıntılı teşhis" (`detailed_diagnostics`) açıkken ve kaydın ilk **10 dk**'sında (`DETAIL_MS`), en çok **10.000**; diğer BLE olayları ayrı **10.000** bütçe; el sıkışma TX'i (`stage=READING` içermeyen `protocol_tx`) politikada `handshake_tx` adıyla **nadir** bütçeye sayılır, satır yine `protocol_tx` yazılır (`RecordingService.java:137-139`); atlananlar `omitted`. Yazma kuyruğu (`NinebotEventQueue.java:8`): sınır **2.048** (`RecordingService.java:56`); dolu ise BLE olayı atılır ve sayılır; GPS ve örnek satırları kuyruğu atlar (doğrudan yazıcı). Canlı kipte hiçbir olay yazılmaz.
 
 ### 7.4 Dışa aktarma ZIP (NB `LogStore.java:45-75`, `LogExport.java:7-34`; `DashboardActivity.java:185-200`)
 
