@@ -66,6 +66,8 @@ kotlin {
 dependencies {
     // Kabuğun saf mantığı (sekmeler, dil, tema, palet): logic/app.
     implementation("com.kuryelog.logic:app")
+    // Siparişler sekmesinin içeriği (A3.8): logic/orders OrdersScreen.
+    implementation("com.kuryelog.logic:orders")
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)

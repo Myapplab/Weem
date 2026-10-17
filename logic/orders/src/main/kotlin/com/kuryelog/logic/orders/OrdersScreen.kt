@@ -75,6 +75,7 @@ class OrdersLabels(private val tl: (String, String) -> String) {
     val older = tl("Önceki gün", "Əvvəlki gün")
     val newer = tl("Sonraki gün", "Sonrakı gün")
     val dayDetails = tl("Günün tüm ayrıntıları", "Günün bütün təfərrüatları")
+    val today = tl("Bugün", "Bu gün")
     val back = tl("Geri", "Geri")
     val close = tl("Kapat", "Bağla")
     val save = tl("Kaydet", "Yadda saxla")
@@ -112,9 +113,20 @@ class OrdersScreen(private val src: OrdersSource, lang: Lang) {
     private fun minutesText(m: Double) = if (m < -0.5) "-" + dk(-m) else dk(m.coerceAtLeast(0.0))
     private val todayText = tl("Bugün", "Bu gün")
 
-    /** Gün listesi (yeniden eskiye); [platform] null = Tüm siparişler. Canlı kayıt saklıyı ezer. */
+    /** Saklı kayıtlar ve canlı kopya bir kez okunur (bir örnek = bir görüntü); canlı kayıt saklıyı ezer. */
+    private val merged: List<TripRecord> by lazy {
+        val byId = LinkedHashMap<String, TripRecord>()
+        (src.stored() + src.live()).forEach { byId[it.id] = it }
+        byId.values.toList()
+    }
+    private val dayCache = HashMap<String?, List<OrderHistory.Day>>()
+
+    /** Gün listesi (yeniden eskiye); [platform] null = Tüm siparişler. */
     fun days(platform: String? = null): List<OrderHistory.Day> =
-        OrderHistory.days(src.stored(), src.live(), platform, ::platformOf) { src.day(it) }
+        dayCache.getOrPut(platform) { OrderHistory.days(merged, emptyList(), platform, ::platformOf) { src.day(it) } }
+
+    /** Okumaları baştan yapar (arayüz çizmeden önce). */
+    fun warm(): OrdersScreen { days(); OrderHistory.PLATFORMS.forEach { days(it) }; return this }
 
     // ---------- Bugün ----------
 

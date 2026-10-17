@@ -80,6 +80,8 @@ fun WeemApp(
             holder.SaveableStateProvider(selected.key) {
                 GuardedPage(selected.key, lang, build = {}) {
                     when (selected) {
+                        // A3.8: Siparişler sekmesi.
+                        Tab.ORDERS -> OrdersTab(lang)
                         Tab.MORE -> MoreScreen(lang, langSetting, theme, versionName, onLangSetting, onTheme)
                         // G1: vardiya düğmesi açılış sekmesinde (harita A6'da gelir).
                         Tab.MAP -> Column { ShiftCard(lang); PlaceholderScreen(selected, lang) }
