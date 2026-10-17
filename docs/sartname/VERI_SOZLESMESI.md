@@ -81,6 +81,7 @@ Bugünkü mesajlar (alan alan: `bulgular/X_protocol.md` P1–P11; WEEM'deki kar�
 | Anahtar | Tip | Anlam | Kaynak |
 |---|---|---|---|
 | `lang` | String `tr`/`az` | dil | `I18n.kt` |
+| `theme` | String `system`/`light`/`dark` | **WEEM'de yeni** (A1.3): gece/gündüz teması | `ShellPrefs.kt` |
 | `shift`, `shiftStart`, `shiftStartReason`, `shiftEndedAt`, `shiftEndReason`, `shiftInterruptedAt`, `autoStarted` | Bool / Long ms / String | vardiya durumu (F4.1, H4) | `GpsService.kt`, `OfferFeed.kt:161-165` |
 | `dist` | Float/Long | vardiya GPS mesafesi (D8) | `GpsService.kt:40,75,93,242,268,288` |
 | `manualPolicy`, `manualSession` | String / Bool | elle oturum politikası | `RecordingPolicy.kt`, `Store.kt` |

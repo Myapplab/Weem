@@ -47,7 +47,7 @@ Kaynak: seçim sayfası <https://claude.ai/artifact/5RTwBJxg8JHXCgUTbLAGyD> (kay
 
 - Kotlin, Jetpack Compose, **tek Activity + alt menü:** Harita | Siparişler | Scooter | Uzaktan | Daha fazla. Her sekme kaldığı yerden devam eder; açılış sekmesi Harita.
 - **İki Gradle build** (A1.1):
-  - `logic/` — saf Kotlin/JVM, Android eklentisi yok; her ortamda derlenir ve test edilir (JDK 21, Maven Central). Alt projeler modül başına: `logic/core`, `logic/capture`, `logic/orders`, `logic/economics`, `logic/scooter`, `logic/map`, `logic/link`, `logic/remote`. Eski testlerin çevirisi buraya.
+  - `logic/` — saf Kotlin/JVM, Android eklentisi yok; her ortamda derlenir ve test edilir (JDK 21, Maven Central). Alt projeler: `logic/app` (kabuk mantığı: sekme, dil, tema, palet; A1.3) ve modül başına `logic/core`, `logic/capture`, `logic/orders`, `logic/economics`, `logic/scooter`, `logic/map`, `logic/link`, `logic/remote`. Eski testlerin çevirisi buraya.
   - Kök build (Android) — `:app` ve modül başına ince Android katmanı (`:core` … `:remote`); `logic/` `includeBuild` ile bağlanır. Android modülleri yalnız servis, pencere, BLE, konum, bildirim, dosya/veritabanı erişimi ve Compose ekranları içerir.
 - Kural: karar veren her kod `logic/`'te (eşik, durum makinesi, ayrıştırma, biçim); Android katmanında `if` yalnız platform durumu için. Hedef: satırların ≥%60'ı `logic/`.
 
