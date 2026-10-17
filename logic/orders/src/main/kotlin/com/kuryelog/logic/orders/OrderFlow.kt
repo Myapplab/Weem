@@ -32,14 +32,18 @@ import java.util.TimeZone
 interface OrderObserver {
     /** Açılış (`econ.restart`): bekleyen ve düşen teklifler. */
     fun restart(now: Long, kept: Collection<OfferState>, dropped: List<OfferState>) {}
-    /** Her kare, olaylar işlenmeden önce (4.3 adım 13 ve 17). */
+    /** Her kare, oturumlar yazıldıktan sonra (4.3 adım 13: bekleme nedenleri, `waitCore.observe`, `economics-exposure.jsonl`). */
+    fun waits(o: CourierObservation, events: List<CoreEvent>, now: Long) {}
+    /** Her kare, teklif anı eklentilerinden sonra, olaylar işlenmeden önce (4.3 adım 17: gölge karar, `econ.frame`). */
     fun frame(o: CourierObservation, events: List<CoreEvent>, before: Map<String, OfferState>, core: DeliveryCore, open: List<OnlineSessions.Session>) {}
     /** Olay üreten öbür girişler (dokunuş, nakit toplama, konum, navigasyon bağı, elle teslim): `econ.events`. */
     fun events(now: Long, events: List<CoreEvent>, before: Map<String, OfferState>, core: DeliveryCore, open: List<OnlineSessions.Session>, idleUpdate: Boolean = true) {}
     /** Ret dokunuşu (bekleme nedeni `after_decline_observed`). */
     fun declineTap(pkg: String, at: Long) {}
     fun distance(now: Long, m: Double) {}
-    /** Vardiya sonu (`waitCore.stop`, `econ.stop`), [events] çekirdeğin kapanış olayları. */
+    /** Vardiya sonu, çekirdek durmadan önce (`waitCore.stop`, açık beklemeler). */
+    fun stopping(now: Long) {}
+    /** Vardiya sonu (`econ.stop`), [events] çekirdeğin kapanış olayları. */
     fun stop(now: Long, events: List<CoreEvent>, before: Map<String, OfferState>, core: DeliveryCore) {}
     /** Kullanıcı iptal bildirdi (bekleme kırılır). */
     fun cancellation(pkg: String) {}
@@ -203,7 +207,7 @@ class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
         env.prefs.put(mapOf(OPEN_SESSIONS to sessions.encode()))
     }
     @Synchronized fun stop() {
-        init(); saveSessions(sessions.stop(), force = true)
+        init(); saveSessions(sessions.stop(), force = true); env.observer.stopping(now())
         val now = now(); val before = core.pending.values.associateBy { it.id }; val events = core.stop(now)
         env.observer.stop(now, events, before, core)
         process(events); reminder = null; persist(true)
@@ -265,6 +269,7 @@ class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
             ?.let { it.feeOcrMs = (now() - now).coerceAtLeast(0) }
         events.forEach { e -> linkSession(e); val t = e.tripId?.let { core.trips[it] }; sessions.event(e, t?.customers?.size ?: 1, t?.deliveredInferredAt != null) }
         saveSessions(listOfNotNull(closedSession), force = events.isNotEmpty() || opened != sessions.openSessions().size)
+        env.observer.waits(o, events, now)
         // K27: boosts are logged from every home/offer frame, before the offer takes the latest one.
         boosts.observe(o, day(now), env.log.locJson()).forEach { env.log.append(BoostLog.FILE, it.toString()) }
         core.pending[pkg]?.let { offer -> if (events.any { it.type == "offer" }) {

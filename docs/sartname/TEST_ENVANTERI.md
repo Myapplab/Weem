@@ -339,3 +339,9 @@ Beklentiler Rawstats ile birebir; elle değişenler yalnız aşağıdakiler (`gi
 - `logic/capture`: 129 test, **128 yeşil** (A3.2/A3.3'ten 100 + A3.4'te yazılan 29: `RegexPortabilityTest` 6, `OcrAcceptanceTest` 4, `NotificationDedupTest` 6, `TargetAppsTest` 3, `CaptureRowsTest` 4, `CaptureTextTest` 3, `NoNetworkTest` 3). Kırmızı kalan 1: `ScreenReadingE7Test.shiftServiceWarnsAndTheHomeShowsIt` (Android `:capture` uyarı dinleyicisi, `ShiftCard` satırı, `WatchService`/`NotifService` gövdeleri: A3.7).
 - `logic/orders`: 374 test, 365 kırmızı (A3.5–A3.6 kodu; önce 371). `logic/core` yeşil.
 - Kod: Rawstats @ `6388c04`'ten satır satır (`CAPTURE.md` 2); WEEM farkları yalnız `CAPTURE.md` 7.5 desen sınırları (cihaz sonucu aynı), `OwnLines` (sabitler `:orders` `OverlayText` için açık), `ScreenReadingGuard.NOTIFICATION_ID` 5104, `click.text` `redact`.
+
+## A3.5 kod durumu (17 Ekim 2026)
+
+- `logic/orders`: 383 test, **336 yeşil** (A3.2/A3.3'ten 374 + A3.5'te yazılan 9: `OverlayTextOwnLinesTest` 2, `OrderFlowTest` 7). A3.2 sipariş akışı testleri ve `SahaTekrarTest` (10/10) yeşil.
+- Kırmızı kalan 47, hepsi A3.6 iskeleti (`TODO("A3.6")`): `PlatformTotalsF82Test` 6, `F83Test` 4, `F84Test` 7, `F85Test` 2, `CashReconcileM17Test` 5, `CashPendingM17Test` 3, `PocketCashM15Test` 3, `RecordPagesTest` 2, `RestaurantBubbleE14Test` 4, `CustomerBubbleF72Test` 6, `CustomerCardE16Test` 5.
+- Kod: Rawstats @ `6388c04`'ten satır satır; farklar `ORDERS.md` 16.1. `logic/capture` 128/129 (kalan A3.7), `logic/core` 216 yeşil; kök `:orders`/`:capture` `compileDebugKotlin` yeşil.
