@@ -10,6 +10,7 @@ Claude, Codex ve diğer tüm ajanlar için tek kural dosyası. `CLAUDE.md` bunu 
 |---|---|
 | `docs/WEEM_ISLER.md` | Her oturum başında "Şu an" bölümü; sıradaki iş buradan |
 | `docs/WEEM_PLANI.md` | Kapsam, kimlik/veri, mimari, kurallar, yol haritası, kullanıcı kararları; gerektiğinde ilgili bölüm |
+| `docs/sartname/` | Bir modüle başlamadan: `OZELLIK_HARITASI.md` (özellik → eski kod, test, veri), `VERI_SOZLESMESI.md` (korunacak adlar), `TEST_ENVANTERI.md`; ham notlar `bulgular/` (kısmi) |
 | `docs/BEKLEYEN_OZELLIKLER.md` | WEEM 1.0 sonrası özellikler: kullanıcı sormadan yazılmaz |
 | `AI_HANDOFF.md` | Yalnız en üstteki 1–2 bölüm |
 

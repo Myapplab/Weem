@@ -10,8 +10,8 @@ Durum: A0.1, 17 Ekim 2026. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c0
 
 | Kod | Özellik | WEEM modül · aşama | Test (adet) |
 |---|---|---|---:|
-| Y1 | Harita ekranı | `:map` · 6 | 22 |
-| Y2 | İkinci harita görünümü (OSM) | `:map` · 6 (kütüphane seçimi kullanıcıya) | 0 |
+| Y1 | Harita ekranı | `:map` · 6 (A6.5) | 22 |
+| Y2 | İkinci harita görünümü (OSM) | `:map` · 6 (A6.5; OSM kütüphanesi kullanıcıya sorulur) | 0 |
 | Y3 | Kendi rota motoru | `:map` `logic/` · 6 (A6.4) | 81 |
 | Y4 | Navigasyon | `:map` · 6 (A6.6) | 75 |
 | Y5 | Wolt/Bolt navigasyon bağlantıları | `:map` `logic/` + `:app` · 6 (A6.6) | 23 |
@@ -23,30 +23,30 @@ Durum: A0.1, 17 Ekim 2026. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c0
 | Y11 | Trafik ışığı duruşları | `:map` `logic/` · 6 (A6.8) | 48 |
 | Y15 | Bisiklet yolu katmanı | `:map` · 6 (A6.8) | 18 |
 | Y16 | Restoran noktaları | `:map` · 6 (A6.8) | 4 |
-| Y17 | İstatistik ekranı | `:map` · 6 (A6.8) | 0 |
-| Y18 | Sürüş kayıtları | `:map` · 6 (A6.8) | 17 |
-| Y19 | Teklif veri seti ekranı | `:map` + `:core` · 6 (A6.8) | 33 |
-| Y20 | Görev kartları ve hatırlatıcılar | `:map` · 6 (A6.8) | 38 |
+| Y17 | İstatistik ekranı | `:map` · 6 (A6.9) | 0 |
+| Y18 | Sürüş kayıtları | `:map` · 6 (A6.9) | 17 |
+| Y19 | Teklif veri seti ekranı | `:map` + `:core` · 6 (A6.9) | 33 |
+| Y20 | Görev kartları ve hatırlatıcılar | `:map` · 6 (A6.9) | 38 |
 | Y21 | Bölge bilgisi | `:map` · 6 (A6.8) | 0 |
-| R1 | Wolt ve Bolt ekranını okuma | `:capture` `logic/` + servis · 3 (A3.3) | 186 |
-| R2 | Bildirim okuma | `:capture` · 3 (A3.3) | 0 |
-| R3 | Teklif kaydı | `:capture` + `:orders` · 3 (A3.4) | 158 |
+| R1 | Wolt ve Bolt ekranını okuma | `:capture` `logic/` + servis · 3 (A3.4) | 186 |
+| R2 | Bildirim okuma | `:capture` · 3 (A3.4) | 0 |
+| R3 | Teklif kaydı | `:capture` + `:orders` · 3 (A3.5) | 158 |
 | R4 | Teklif puanı | `:economics` `logic/` · 4 (A4.1) | 90 |
-| R5 | Sipariş takibi | `:orders` `logic/` · 3 (A3.4) | 296 |
-| R6 | Restoran ve müşteri balonları | `:orders` · 3 (A3.6) | 36 |
-| R7 | Kurye uygulaması üstünde gösterge | `:orders` + `:capture` · 3 (A3.6) | 13 |
-| R8 | Nakit ve bahşiş | `:orders` · 3 (A3.5) | 32 |
-| R9 | Cepteki nakit | `:orders` · 3 (A3.5) | 14 |
-| R10 | Boost / Earn extra | `:orders` · 3 (A3.5) | 16 |
-| R11 | Çevrimiçi süreler | `:orders` · 3 (A3.5) | 0 |
-| R12 | Siparişler ve gün sayfaları | `:orders` + `:app` · 3 (A3.6) | 46 |
-| R13 | Resmî değerlerle karşılaştırma | `:orders` · 3 (A3.5) | 42 |
+| R5 | Sipariş takibi | `:orders` `logic/` · 3 (A3.5) | 296 |
+| R6 | Restoran ve müşteri balonları | `:orders` · 3 (A3.7) | 36 |
+| R7 | Kurye uygulaması üstünde gösterge | `:orders` + `:capture` · 3 (A3.7) | 13 |
+| R8 | Nakit ve bahşiş | `:orders` · 3 (A3.6) | 32 |
+| R9 | Cepteki nakit | `:orders` · 3 (A3.6) | 14 |
+| R10 | Boost / Earn extra | `:orders` · 3 (A3.6) | 16 |
+| R11 | Çevrimiçi süreler | `:orders` · 3 (A3.6) | 0 |
+| R12 | Siparişler ve gün sayfaları | `:orders` + `:app` · 3 (A3.8) | 46 |
+| R13 | Resmî değerlerle karşılaştırma | `:orders` · 3 (A3.6) | 42 |
 | R14 | Sipariş başına enerji | `:scooter` + `:economics` · 5 (A5.3) | 43 |
-| R15 | Teklif anının havası | `:orders` · 3 (A3.5) — Y10 Aşama 6'da gelir | 9 |
-| R16 | Başka navigasyon uygulamasından mesafe | `:capture` `logic/` · 3 (A3.3) | 4 |
+| R15 | Teklif anının havası | `:orders` · 3 (A3.6) — Y10 Aşama 6'da gelir | 9 |
+| R16 | Başka navigasyon uygulamasından mesafe | `:capture` `logic/` · 3 (A3.4) | 4 |
 | R17 | Yedek ve geri yükleme | `:core` · 4 (A4.3) | 17 |
 | R18 | Anonim analiz dışa aktarımı | `:core` · 4 (A4.3) | 30 |
-| R19 | Uyarılar | `:orders` + `:core` · 3 (A3.6) | 5 |
+| R19 | Uyarılar | `:orders` + `:core` · 3 (A3.7) | 5 |
 | R20 | Çökme kaydı | `:core` + `:app` · 2 (A2.3) | 17 |
 | S1 | Scooter bağlantısı | `:scooter` `logic/` + BLE · 5 (A5.2) | 138 |
 | S2 | Canlı panel | `:scooter` · 5 (A5.3) | 82 |
@@ -54,8 +54,8 @@ Durum: A0.1, 17 Ekim 2026. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c0
 | S4 | Yolculuk sayacı | `:scooter` `logic/` · 5 (A5.3) | 41 |
 | S5 | Harici batarya | `:scooter` · 5 (A5.3) — enerji ölçümü açık sorun | 64 |
 | S6 | Yeniden bağlanma | `:scooter` · 5 (A5.2) | 14 |
-| S7 | Yüzen panel | `:scooter` + `:app` · 5 (A5.3) | 23 |
-| S8 | Tanı araçları | `:scooter` · 5 (A5.3) | 36 |
+| S7 | Yüzen panel | `:scooter` + `:app` · 5 (A5.4) | 23 |
+| S8 | Tanı araçları | `:scooter` · 5 (A5.4) | 36 |
 | G1 | Tek vardiya / gün | `:core` `logic/` · 2 (A2.4) + 7 | 139 |
 | G2 | Ev konumu | `:core` + `:map` · 2 (A2.4) + 7 | 51 |
 | G3 | Dil | `:app` · 1 (A1.3) | 5 |
@@ -78,14 +78,14 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Testler:** `RawPaletteContrastTest` (2); `hud_layout_test` (2); `locate_button_test` (3); `map_hud_gesture_test` (2); `puck_arrow_test` (3); `yolgo_sade_2_test` (10) — **22**
 - **Veri:** `settings.v1` (tema)
 - **Bağımlı:** Y3, Y4, G3
-- **WEEM:** `:map` · 6
+- **WEEM:** `:map` · 6 (A6.5)
 
 ### Y2 İkinci harita görünümü (OSM)
 - **Eski kod:** YG `lib/ui/map_view.dart` (flutter_map yüzeyi), `pubspec.yaml` (`flutter_map`, `latlong2`)
 - **Testler:** **yok**
 - **Veri:** OSM karoları (ağ)
 - **Bağımlı:** Y1
-- **WEEM:** `:map` · 6 (kütüphane seçimi kullanıcıya)
+- **WEEM:** `:map` · 6 (A6.5; OSM kütüphanesi kullanıcıya sorulur)
 
 ### Y3 Kendi rota motoru
 - **Eski kod:** YG `lib/routing/router.dart` (CostModel, A*), `planner.dart`, `route.dart`, `route_worker.dart`, `quality.dart`, `speed_options.dart`, `route_hours.dart`, `lib/core/physics.dart`, `lib/core/geo.dart`
@@ -175,28 +175,28 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Testler:** **yok**
 - **Veri:** `app_flutter/logs/*.gun.json`
 - **Bağımlı:** G1, Y11, Y18, R12
-- **WEEM:** `:map` · 6 (A6.8)
+- **WEEM:** `:map` · 6 (A6.9)
 
 ### Y18 Sürüş kayıtları
 - **Eski kod:** YG `lib/tracking/ride_logger.dart`, `log_store.dart`, `lib/nav/route_recorder.dart`, `lib/ui/ride_logs_screen.dart`, `android_overlay/TelemetryJournal.kt`
 - **Testler:** `log_store_test` (7); `ride_log_status_test` (2); `TelemetryJournalTest` (8) — **17**
 - **Veri:** `app_flutter/logs/*_ride_*.jsonl`, `*_route_*.json`; dışa aktarma `duzyol-journal-v1`
 - **Bağımlı:** G1, Y4
-- **WEEM:** `:map` · 6 (A6.8)
+- **WEEM:** `:map` · 6 (A6.9)
 
 ### Y19 Teklif veri seti ekranı
 - **Eski kod:** YG `lib/ui/dataset_screen.dart`, `dataset_manual.dart`, `lib/economics/dataset_runtime.dart`, `dataset_days.dart`, `android_overlay/Dataset*.kt`; RS `LogFeedV3*.kt`
 - **Testler:** `LogFeedV3Test` (10); `dataset_days_test` (2); `dataset_screen_test` (5); `DatasetContractTest` (6); `DatasetMatchingTest` (4); `DatasetReadsTest` (6) — **33**
 - **Veri:** `app_flutter/TeklifVeriSeti/…`; RS gün klasörü
 - **Bağımlı:** R1–R18 kayıtları, G1
-- **WEEM:** `:map` + `:core` · 6 (A6.8)
+- **WEEM:** `:map` + `:core` · 6 (A6.9)
 
 ### Y20 Görev kartları ve hatırlatıcılar
 - **Eski kod:** YG `lib/tasks/daily_task.dart`, `task_controller.dart`, `lib/ui/tasks_screen.dart`, `lib/reminders/reminders.dart`, `lib/ui/reminder_widgets.dart`
 - **Testler:** `assistant_test` (14); `courier_stage_follow_test` (14); `nav_assistant_test` (1); `reminder_card_test` (3); `reminders_test` (5); `task_controller_test` (1) — **38**
 - **Veri:** `daily.tasks.*`, `reminders.*` (içe aktar); kanal `hatirlatici`
 - **Bağımlı:** G1, R5 (aşamalar), Y6, G4
-- **WEEM:** `:map` · 6 (A6.8)
+- **WEEM:** `:map` · 6 (A6.9)
 - **Ayrıntı:** `bulgular/Y_tracking.md` §Y20
 
 ### Y21 Bölge bilgisi
@@ -211,7 +211,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Testler:** `BoltBubbleR2Test` (5); `OcrPaceD6Test` (11); `ParserEconomicsTest` (23); `RecordingPolicyTest` (12); `WoltDeliverySliderTest` (9); `WoltOfferFeeK37Test` (6); `WoltSliderSpinnerK33Test` (9); `IcuRegexTest` (2); `CourierFlowTest` (44); `DeliveryRecognitionTest` (24); `SahaTekrarTest` (16); `WoltFlowK1K5Test` (25) — **186**
 - **Veri:** `screens.jsonl`, `events.jsonl`; ML Kit OCR (yerel)
 - **Bağımlı:** —
-- **WEEM:** `:capture` `logic/` + servis · 3 (A3.3)
+- **WEEM:** `:capture` `logic/` + servis · 3 (A3.4)
 - **Ayrıntı:** `bulgular/R_capture.md` §R1
 
 ### R2 Bildirim okuma
@@ -219,7 +219,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Testler:** **yok**
 - **Veri:** `notifs.jsonl`
 - **Bağımlı:** R3, R5, R16
-- **WEEM:** `:capture` · 3 (A3.3)
+- **WEEM:** `:capture` · 3 (A3.4)
 - **Ayrıntı:** `bulgular/R_capture.md` §R2
 
 ### R3 Teklif kaydı
@@ -227,7 +227,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Testler:** `ParserEconomicsTest` (23); `WoltOfferFeeK37Test` (6); `CourierFlowTest` (44); `SahaTekrarTest` (16); `WoltFlowK1K5Test` (25); `CoreLifecycleV2Test` (23); `DualOfferStatusK30Test` (3); `OfferFeedV2Test` (6); `offer_feed_versions_test` (6); `CourierFeedPayloadTest` (6) — **158**
 - **Veri:** `courier.db` `offers`, `economics-offers.jsonl`
 - **Bağımlı:** R1, R4, R10, R15
-- **WEEM:** `:capture` + `:orders` · 3 (A3.4)
+- **WEEM:** `:capture` + `:orders` · 3 (A3.5)
 - **Ayrıntı:** `bulgular/R_capture.md` §R3
 
 ### R4 Teklif puanı
@@ -242,7 +242,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Testler:** `WoltDeliverySliderTest` (9); `WoltSliderSpinnerK33Test` (9); `CourierFlowTest` (44); `DeliveryRecognitionTest` (24); `SahaTekrarTest` (16); `WoltFlowK1K5Test` (25); `ArrivalDistanceM20Test` (4); `CoreLifecycleV2Test` (23); `CustomerMatchK21Test` (5); `CustomerNearM19Test` (5); `CustomerStageK34ClosedCardTest` (10); `CustomerStageK34LateDeliveryTest` (7); `CustomerStageK34RecordTest` (10); `CustomerStageK34RoutingTest` (5); `CustomerStageK34Test` (10); `DeliveryCountD3Test` (9); `DeliveryDeadlineK29Test` (4); `ReadinessE15Test` (5); `RestaurantWaitE2Test` (6); `StuckCustomerM22Test` (8); `TripStagesE8Test` (6); `VenueArrivalD9Test` (11); `VenueNearM18Test` (5); `WaitObservationProcessDeathTest` (5); `WoltSameCustomerR1Test` (5); `YolGoNavE8Test` (13); `courier_stages_e8_test` (13) — **296**
 - **Veri:** `courier.db` `trips`/`session`, `orders.jsonl`, `economics-waits/legs.jsonl`
 - **Bağımlı:** R1, R3, R16, Y4 (nav hedefi), R14
-- **WEEM:** `:orders` `logic/` · 3 (A3.4)
+- **WEEM:** `:orders` `logic/` · 3 (A3.5)
 - **Ayrıntı:** `bulgular/R_orders.md` §R5
 
 ### R6 Restoran ve müşteri balonları
@@ -250,7 +250,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Testler:** `BoltBubbleR2Test` (5); `CustomerBubbleF72Test` (7); `CustomerBubbleViewF73Test` (3); `CustomerCardE16Test` (6); `NoteFieldsF71Test` (6); `PhoneK25Test` (3); `RestaurantBubbleE14Test` (6) — **36**
 - **Veri:** bildirim 12 `delivery_notes`; `customerCard*`, `restaurantBubbleWidthPct`
 - **Bağımlı:** R5, R16, Y4
-- **WEEM:** `:orders` · 3 (A3.6)
+- **WEEM:** `:orders` · 3 (A3.7)
 - **Ayrıntı:** `bulgular/R_orders.md` §R6
 
 ### R7 Kurye uygulaması üstünde gösterge
@@ -258,7 +258,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Testler:** `DualOfferStatusK30Test` (3); `OfferNetLineTest` (6); `OverlayBadgeK35Test` (4) — **13**
 - **Veri:** `overlay`, `commission*`
 - **Bağımlı:** R1, R5, R11
-- **WEEM:** `:orders` + `:capture` · 3 (A3.6)
+- **WEEM:** `:orders` + `:capture` · 3 (A3.7)
 - **Ayrıntı:** `bulgular/R_orders.md` §R7
 
 ### R8 Nakit ve bahşiş
@@ -266,7 +266,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Testler:** `CashScreenM16Test` (7); `CashOrderK31K32Test` (16); `TipNotificationF46Test` (4); `TipRecordF48Test` (5) — **32**
 - **Veri:** `economics-cash-tips.jsonl`; kanal `cash_tips` (numara çakışması)
 - **Bağımlı:** R1, R5
-- **WEEM:** `:orders` · 3 (A3.5)
+- **WEEM:** `:orders` · 3 (A3.6)
 - **Ayrıntı:** `bulgular/R_orders.md` §R8
 
 ### R9 Cepteki nakit
@@ -274,7 +274,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Testler:** `CashPendingM17Test` (5); `CashReconcileM17Test` (5); `PocketCashM15Test` (4) — **14**
 - **Veri:** `economics-pocket-cash.jsonl`, `economics-cash-pending.jsonl`, `cashPending.*`; kanal `pocket_cash` 4901
 - **Bağımlı:** R8, R13, G1
-- **WEEM:** `:orders` · 3 (A3.5)
+- **WEEM:** `:orders` · 3 (A3.6)
 - **Ayrıntı:** `bulgular/R_orders.md` §R9
 
 ### R10 Boost / Earn extra
@@ -282,7 +282,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Testler:** `BoostListM21Test` (4); `BoostLogK27Test` (7); `BoostTempE3Test` (5) — **16**
 - **Veri:** `economics-boosts.jsonl`
 - **Bağımlı:** R1, R3, R4
-- **WEEM:** `:orders` · 3 (A3.5)
+- **WEEM:** `:orders` · 3 (A3.6)
 - **Ayrıntı:** `bulgular/R_orders.md` §R10
 
 ### R11 Çevrimiçi süreler
@@ -290,7 +290,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Testler:** **yok**
 - **Veri:** `online-sessions.jsonl` (v2), `onlineSessions.v1`
 - **Bağımlı:** R1, R7
-- **WEEM:** `:orders` · 3 (A3.5)
+- **WEEM:** `:orders` · 3 (A3.6)
 - **Ayrıntı:** `bulgular/R_orders.md` §R11
 
 ### R12 Siparişler ve gün sayfaları
@@ -298,14 +298,14 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Testler:** `DailyRecordsTest` (8); `RecordJsonTest` (6); `ShiftDistanceD8Test` (4); `AverageListE1Test` (6); `DeliveryCountD3Test` (9); `OrderHistoryTest` (9); `RecordPagesTest` (2); `TodayAveragesTest` (2) — **46**
 - **Veri:** `courier.db`, gün klasörü, arşiv
 - **Bağımlı:** R5, R13, G1
-- **WEEM:** `:orders` + `:app` · 3 (A3.6)
+- **WEEM:** `:orders` + `:app` · 3 (A3.8)
 
 ### R13 Resmî değerlerle karşılaştırma
 - **Eski kod:** RS `PlatformTotals.kt`, `PlatformHistory.kt`, `CourierParser.statsPeriod`
 - **Testler:** `WoltStatsF81Test` (6); `PlatformHistoryK36Test` (10); `PlatformListD15Test` (5); `PlatformTotalsF82Test` (6); `PlatformTotalsF83Test` (5); `PlatformTotalsF84Test` (7); `PlatformTotalsF85Test` (3) — **42**
 - **Veri:** `economics-platform-totals.jsonl`, `economics-platform-history.jsonl`
 - **Bağımlı:** R1, R12, R9
-- **WEEM:** `:orders` · 3 (A3.5)
+- **WEEM:** `:orders` · 3 (A3.6)
 
 ### R14 Sipariş başına enerji
 - **Eski kod:** RS `ScooterBridge.kt`, `ScooterLink.kt`, `ScooterSamples.kt`, `EnergySegments.kt`; NB `ScooterEnergy.java`
@@ -320,7 +320,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Testler:** `BoostTempE3Test` (5); `OfferWeatherK28Test` (2); `WeatherFeedTest` (2) — **9**
 - **Veri:** teklif satırında `weather_*`; yük `weather/current`
 - **Bağımlı:** Y10, R3
-- **WEEM:** `:orders` · 3 (A3.5) — Y10 Aşama 6'da gelir
+- **WEEM:** `:orders` · 3 (A3.6) — Y10 Aşama 6'da gelir
 - **Ayrıntı:** `bulgular/X_protocol.md` §P9
 
 ### R16 Başka navigasyon uygulamasından mesafe
@@ -328,7 +328,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Testler:** `ArrivalDistanceM20Test` (4) — **4**
 - **Veri:** bellek (`navSummary`)
 - **Bağımlı:** R2, R5
-- **WEEM:** `:capture` `logic/` · 3 (A3.3)
+- **WEEM:** `:capture` `logic/` · 3 (A3.4)
 - **Ayrıntı:** `bulgular/R_capture.md` §R16
 
 ### R17 Yedek ve geri yükleme
@@ -351,7 +351,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Testler:** `ScreenReadingE7Test` (4); `AutoStartNoticeTest` (1) — **5**
 - **Veri:** kanallar `screen_reading`, `auto_start` (5103 çakışması)
 - **Bağımlı:** R1, G1, S1
-- **WEEM:** `:orders` + `:core` · 3 (A3.6)
+- **WEEM:** `:orders` + `:core` · 3 (A3.7)
 - **Ayrıntı:** `bulgular/R_capture.md` §R19
 
 ### R20 Çökme kaydı
@@ -410,14 +410,14 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Testler:** `FloatingTest` (23) — **23**
 - **Veri:** `floating`, `float_*`
 - **Bağımlı:** S2
-- **WEEM:** `:scooter` + `:app` · 5 (A5.3)
+- **WEEM:** `:scooter` + `:app` · 5 (A5.4)
 
 ### S8 Tanı araçları
 - **Eski kod:** NB `BleCapture` ayrıntılı kayıt, sweep, `InfoSheet`; `tools/g3_readonly.py`
 - **Testler:** `LogPolicyTest` (14); `SweepTest` (22) — **36**
 - **Veri:** `sweep`, `detailed_diagnostics`, `export_full`
 - **Bağımlı:** S1, S3
-- **WEEM:** `:scooter` · 5 (A5.3)
+- **WEEM:** `:scooter` · 5 (A5.4)
 
 ### G1 Tek vardiya / gün
 - **Eski kod:** RS `HomeShift.kt`, `HomeLocation.kt` (`HomeWatch`), `GpsService.kt`, `ShiftStateFeed.kt`, `EndedShiftMinutes.kt`; YG `lib/tracking/shift_engine.dart`, `shift_controller.dart`, `home_day.dart`, `rawstats_shift.dart`, `nav_only.dart`

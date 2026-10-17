@@ -137,18 +137,18 @@ Her aşama: testler yeşil → `.dev` APK → telefonda gölge mod denemesi (kul
 |---|---|---|---|
 | 0 | Kapsam seçimi (bitti); planın son hâli: şartname haritası, veri sözleşmesi, test envanteri, ayrıntılı iş listesi (bitti, A0.1); açık soruların yanıtı; kullanıcının kodsuz saha denemesi | `docs/sartname/` belgeleri + güncel iş listesi | 1 (bitti) |
 | 1 | Gradle iskeleti (`logic/` ayrı build) ve modüller; alt menü kabuğu, tema, dil; imza, sürüm, `.dev`; CI | Boş sekmeli `.dev` APK kurulur | 4 |
-| 2 | `:core`: depolama, eski Rawstats verisini okuma, vardiya/gün/ev tek kural, saat/cihaz kimliği, bildirim tablosu, çökme kaydı; modüller arası arayüzler (4.3) | Eski kayıtlar WEEM'de okunur | 4 |
-| 3 | `:capture` + `:orders` (R1–R3, R5–R13, R15–R16, R19) | Pixel'de gölge mod: WEEM ile Rawstats aynı günü aynı kaydeder | 10–11 |
+| 2 | `:core`: depolama, eski Rawstats verisini okuma, vardiya/gün/ev tek kural, saat/cihaz kimliği, bildirim tablosu, çökme kaydı; modüller arası arayüzler (4.3) | Eski kayıtlar WEEM'de okunur | 5 |
+| 3 | `:capture` + `:orders` (R1–R3, R5–R13, R15–R16, R19) | Pixel'de gölge mod: WEEM ile Rawstats aynı günü aynı kaydeder | 9–11 |
 | 4 | `:economics` + yedek (R4, R17–R18, N3, N4, N8) | Altın vektörler geçer; gün sonu eski verilerle tutarlı | 3–4 |
 | 5 | `:scooter` (S1–S8, R14) | Yedek telefonda Sürüş Paneli ile aynı değerler | 4–5 |
-| 6 | `:map` (Y1–Y11, Y15–Y21, N5) | YolGo testleri geçer; yan yana sürüşte aynı rotalar | 11–13 |
+| 6 | `:map` (Y1–Y11, Y15–Y21, N5) | YolGo testleri geçer; yan yana sürüşte aynı rotalar | 10–12 |
 | 7 | YolGo verisini içe aktarma (eski YolGo'ya dışa aktarma eki gerekebilir, S1); G1–G5 bütünlüğü | Yedek telefonda YolGo'dan tam taşıma | 2–3 |
 | 8 | `:link` 2 telefon modu (N1) + hırsızlık koruması (N6) | İki telefonla gerçek vardiya | 4–5 |
 | 9 | `:remote` uzaktan kullanım (N2) | Yakınken öteki telefon kullanılır | 2–3 |
 | 10 | Optimizasyon (pil, bellek, APK boyutu, arka planda kalma), kod sadeleştirme (`/simplify`), güvenlik ve büyük denetim, geri yükleme provası; **WEEM 1.0**; geçiş: ZIP yedek → WEEM Rawstats'ın üstüne → YolGo içe aktar | İş telefonlarında WEEM | 4 |
 | 11 | `BEKLEYEN_OZELLIKLER.md` kullanıcıya sorulur | Kullanıcı kararı | — |
 
-Toplam kabaca 49–56 oturum (görevler `docs/WEEM_ISLER.md`'de, her biri bir oturuma sığar) + telefon denemeleri. Ara `.dev` sürümleri gölge modda sahada denenir; geçiş yalnız WEEM 1.0 ile.
+Toplam 47 oturumluk görev (`docs/WEEM_ISLER.md`; aksamalarla kabaca 50–55 oturum) + telefon denemeleri. Ara `.dev` sürümleri gölge modda sahada denenir; geçiş yalnız WEEM 1.0 ile.
 
 **Satır tahmini (kabaca, A0.1'de güncellendi):** bugün ana kod ~45.300 satır (YolGo Dart 24.352 + `android_overlay` Kotlin ~4.600, Rawstats 14.423, Sürüş Paneli 1.980); test 1.761 test/denetim (Rawstats 785, Sürüş Paneli 324 denetim / 14 suit, YolGo Dart 564 + Kotlin 88), 1.582'si çevrilir. WEEM 1.0 ana kod: `:map` 15–18 bin, `:orders` 7–8 bin, `:capture` 2,5–3 bin, `:economics` 3–4 bin, `:core` 3–4 bin, `:scooter` 2–2,5 bin, `:link` 2,5–3,5 bin, `:remote` 1,5–2 bin, `:app` 2–3 bin → **~40–48 bin**, tamamı Kotlin; test ~26–30 bin. Satır sayısı amaç değil; asıl kazanç tek dil, tek kural kaynağı.
 
