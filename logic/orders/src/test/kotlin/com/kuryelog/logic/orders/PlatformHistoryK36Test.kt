@@ -163,6 +163,8 @@ class PlatformHistoryK36Test {
         assertEquals(listOf("15:10 · Çay Evi Test · 3,46 ₼", "16:45 · Test Plov · 2,72 ₼"), PlatformHistory.missed(rows, "bolt").map(PlatformHistory::missedLine))
         assertTrue(PlatformHistory.missed(rows, "wolt").isEmpty())
         assertTrue(PlatformHistory.FILE in BackupFiles.logNames)
-        // WEEM: `AnalysisExport.kindOf(...) == KEEP_ALL` ve `missed_by_kuryeplus` alanı ifadeleri `AnalysisExportTest`'te (A4.3, `:core`).
+        assertEquals(AnalysisExport.Kind.KEEP_ALL, AnalysisExport.kindOf("2026-10-08/" + PlatformHistory.FILE))
+        val exported = AnalysisExport().text("2026-10-08/" + PlatformHistory.FILE, rows.joinToString("\n", postfix = "\n"))!!
+        assertTrue(exported.contains("\"missed_by_kuryeplus\":true"))
     }
 }

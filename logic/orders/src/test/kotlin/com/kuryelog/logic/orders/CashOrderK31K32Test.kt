@@ -184,6 +184,6 @@ class CashOrderK31K32Test {
     }
     @Test fun theLogIsBackedUpAndExportedAnonymously() {
         assertTrue(CashTips.FILE in BackupFiles.logNames)
-        // WEEM: `AnalysisExport.kindOf(...) == KEEP_ALL` ifadesi `AnalysisExportTest`'te (A4.3, `:core`).
+        assertEquals(AnalysisExport.Kind.KEEP_ALL, AnalysisExport.kindOf("2026-10-08/" + CashTips.FILE))
     }
 }

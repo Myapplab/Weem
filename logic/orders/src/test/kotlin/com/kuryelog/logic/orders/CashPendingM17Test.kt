@@ -59,4 +59,11 @@ class CashPendingM17Test {
         assertTrue(CashPending.shouldWrite(8.21 to 0L, 12.4, 1_000L))
     }
 
+
+    // A4.3: Rawstats'ın "günlük yedeğe ve dışa aktarmaya girer" taraması (A3.3'te yazılmadı); `tools/analysis` = Rawstats @ 6388c04.
+    @Test fun theLogIsBackedUpAndExported() {
+        assertTrue(CashPending.FILE in BackupFiles.logNames)
+        val py = RepoSource.text("tools/analysis/kl_export.py")
+        assertTrue(py.contains("\"${CashPending.FILE}\""))
+    }
 }

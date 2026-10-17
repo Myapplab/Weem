@@ -1,0 +1,340 @@
+{
+ "secret": "test-secret",
+ "note": "Redactor(secret).lines(pkg, lines) must equal 'out' exactly; free(text) must equal the 'free' map.",
+ "rows": [
+  {
+   "pkg": "com.wolt.courierapp",
+   "lines": [
+    "Dropoff to",
+    "Alici B. Soyad",
+    "Sintetik kuce 81, Bakı",
+    "Notes",
+    "BLOCK B\n(Domofon kodu: 68)",
+    "Mertebe 6, tel 055 123 45 67",
+    "Translate",
+    "Order details",
+    "From",
+    "Punkap",
+    "#408",
+    "Order delivered!"
+   ],
+   "out": [
+    "Dropoff to",
+    "NameF980",
+    "[addr:9BBF90]",
+    "Notes",
+    "[note]",
+    "[note]",
+    "Translate",
+    "Order details",
+    "From",
+    "Punkap",
+    "#112",
+    "Order delivered!"
+   ]
+  },
+  {
+   "pkg": "com.bolt.courier",
+   "lines": [
+    "Drop off in -1 min",
+    "Alici A. #8P6D2",
+    "Items (1)",
+    "Address",
+    "Mehdi Huseyn 40, Baku",
+    "Instructions",
+    "Meet at my door",
+    "Floor",
+    "3",
+    "Arrived",
+    "Slide to confirm"
+   ],
+   "out": [
+    "Drop off in -1 min",
+    "NameB215 #1L0F8",
+    "Items (1)",
+    "Address",
+    "[addr:944A59]",
+    "Instructions",
+    "[note]",
+    "Floor",
+    "[n]",
+    "Arrived",
+    "Slide to confirm"
+   ]
+  },
+  {
+   "pkg": "com.wolt.courierapp",
+   "lines": [
+    "Ready in 3 min",
+    "Decline",
+    "₼2.31",
+    "2 stops (2.8 km) • 8–16 min",
+    "Izmir Doner Tantuni No1",
+    "9RQW+344 Baku, Baku, AZ1000",
+    "Customer drop-off",
+    "Mirzəağa Əliyev 249, Bakı, 1014",
+    "Accept"
+   ],
+   "out": [
+    "Ready in 3 min",
+    "Decline",
+    "₼2.31",
+    "2 stops (2.8 km) • 8–16 min",
+    "Izmir Doner Tantuni No1",
+    "9RQW+344 Baku, Baku, AZ1000",
+    "Customer drop-off",
+    "[addr:7FC983]",
+    "Accept"
+   ]
+  },
+  {
+   "pkg": "com.wolt.courierapp",
+   "lines": [
+    "Test Courier",
+    "Online",
+    "Delivery settings",
+    "Insights",
+    "Finances",
+    "Stats"
+   ],
+   "out": [
+    "[self]",
+    "Online",
+    "Delivery settings",
+    "Insights",
+    "Finances",
+    "Stats"
+   ]
+  },
+  {
+   "pkg": "com.wolt.courierapp",
+   "lines": [
+    "Pickup from",
+    "TEST RESTORAN",
+    "Test küç. 1, AZ1010 Baku",
+    "Notes",
+    "Restoran həyətin içindədir",
+    "Translate",
+    "Collect order",
+    "#014",
+    "Aysel T.",
+    "ORDER DETAILS",
+    "1 x Test",
+    "Collect"
+   ],
+   "out": [
+    "Pickup from",
+    "TEST RESTORAN",
+    "Test küç. 1, AZ1010 Baku",
+    "Notes",
+    "[note]",
+    "Translate",
+    "Collect order",
+    "#576",
+    "NameC58F",
+    "ORDER DETAILS",
+    "1 x Test",
+    "Collect"
+   ]
+  },
+  {
+   "pkg": "com.wolt.courierapp",
+   "lines": [
+    "Dropoff to",
+    "Aysel Testova",
+    "Yasamal, Bakı",
+    "Entrance",
+    "Floor",
+    "Apartment",
+    "Menzil33",
+    "4",
+    "33",
+    "Order details"
+   ],
+   "out": [
+    "Dropoff to",
+    "NameCBDA",
+    "[addr:170E1B]",
+    "Entrance",
+    "Floor",
+    "Apartment",
+    "[n]",
+    "[n]",
+    "[n]",
+    "Order details"
+   ]
+  },
+  {
+   "pkg": "com.wolt.courierapp",
+   "lines": [
+    "Floor",
+    "3",
+    "Apartment",
+    "12",
+    "Order details",
+    "₼3.94"
+   ],
+   "out": [
+    "Floor",
+    "[n]",
+    "Apartment",
+    "[n]",
+    "Order details",
+    "₼3.94"
+   ]
+  },
+  {
+   "pkg": "com.wolt.courierapp",
+   "lines": [
+    "Collect order",
+    "#014 Aysel T.",
+    "ORDER DETAILS"
+   ],
+   "out": [
+    "Collect order",
+    "#576 NameC58F",
+    "ORDER DETAILS"
+   ]
+  },
+  {
+   "pkg": "com.bolt.courier",
+   "lines": [
+    "Zəng et +994 50 123 45 67",
+    "(012) 555 12 34",
+    "Qapı kodu: 1234#",
+    "код 45",
+    "door code 7788",
+    "İlkin Ş. #Q3FYM",
+    "Mərtəbə",
+    "7",
+    "ünvan",
+    "Nəsimi r., Şərifzadə 12"
+   ],
+   "out": [
+    "Zəng et[tel]",
+    "[tel]",
+    "[code]",
+    "[code]",
+    "[code]",
+    "Name406A #R9BSE",
+    "Mərtəbə",
+    "[n]",
+    "ünvan",
+    "[addr:6C4672]"
+   ]
+  },
+  {
+   "pkg": "com.bolt.courier",
+   "lines": [
+    "код двери 7788",
+    "код подъезда 45",
+    "Код домофона: 12",
+    "tel 055 123 45 67",
+    "Sifariş #408ş",
+    "#408 hazırdır",
+    "Ünvan",
+    "Nərimanov pr. 5",
+    "Giriş",
+    "2",
+    "Qeydlər",
+    "Zəngi basmayın"
+   ],
+   "out": [
+    "[code]",
+    "[code]",
+    "[code]",
+    "tel[tel]",
+    "Sifariş #408ş",
+    "#112 hazırdır",
+    "Ünvan",
+    "[addr:5E1FE3]",
+    "Giriş",
+    "[n]",
+    "Qeydlər",
+    "[note]"
+   ]
+  },
+  {
+   "pkg": "com.wolt.courierapp",
+   "lines": [
+    "[self]",
+    "Test Kurye FILO ., Online",
+    "Delivery settings",
+    "Insights",
+    "Finances",
+    "Stats",
+    "Version 2.202.6 (22020600)"
+   ],
+   "out": [
+    "[self]",
+    "[self], Online",
+    "Delivery settings",
+    "Insights",
+    "Finances",
+    "Stats",
+    "Version 2.202.6 (22020600)"
+   ]
+  },
+  {
+   "pkg": "com.wolt.courierapp",
+   "lines": [
+    "Sabir St",
+    "He",
+    "#676",
+    "Aysel T.",
+    "ORDER DETAILS",
+    "1x Ayran 250ml",
+    "Collect"
+   ],
+   "out": [
+    "Sabir St",
+    "He",
+    "#447",
+    "NameC58F",
+    "ORDER DETAILS",
+    "1x Ayran 250ml",
+    "Collect"
+   ]
+  },
+  {
+   "pkg": "com.wolt.courierapp",
+   "lines": [
+    "Timeline",
+    "O Test Restoran",
+    "now",
+    "O Kamal B.",
+    "-6 min",
+    "Test küç. 1, Bakı",
+    "Order details",
+    "From",
+    "#330",
+    "Test Restoran"
+   ],
+   "out": [
+    "Timeline",
+    "O Test Restoran",
+    "now",
+    "Name9316",
+    "-6 min",
+    "Test küç. 1, Bakı",
+    "Order details",
+    "From",
+    "#433",
+    "Test Restoran"
+   ]
+  }
+ ],
+ "free": {
+  "tel 055 123 45 67": "tel[tel]",
+  "+994 (50) 123-45-67": "[tel]",
+  "Order #408 ready": "Order #112 ready",
+  "Domofon kodu 68": "[code]",
+  "₼2.31 · 4,2 km": "₼2.31 · 4,2 km",
+  "AZN 16.79": "AZN 16.79",
+  "код двери 7788": "[code]",
+  "код подъезда 45": "[code]",
+  "tel 055 123 45 67": "tel[tel]",
+  "#408ş": "#408ş",
+  "Sifariş #A1B2C ödənildi": "Sifariş #I9B7U ödənildi"
+ }
+}

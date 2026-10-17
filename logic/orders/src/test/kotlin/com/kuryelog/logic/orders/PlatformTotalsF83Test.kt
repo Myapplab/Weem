@@ -54,4 +54,13 @@ class PlatformTotalsF83Test {
         assertNull(PlatformTotals.dayOf("week:2026-10-11..2026-10-16")); assertNull(PlatformTotals.dayOf("month:2026-10"))
     }
 
+
+    // A4.3: Rawstats taraması (A3.3'te yazılmadı); `tools/analysis` = Rawstats @ 6388c04.
+    @Test fun fileIsBackedUpAndExported() {
+        assertEquals("economics-platform-totals.jsonl", PlatformTotals.FILE)
+        assertTrue(PlatformTotals.FILE in BackupFiles.logNames)
+        assertEquals(AnalysisExport.Kind.KEEP_ALL, AnalysisExport.kindOf("2026-10-16/" + PlatformTotals.FILE))
+        val py = RepoSource.text("tools/analysis/kl_export.py")
+        assertTrue(py.contains("\"${PlatformTotals.FILE}\""))
+    }
 }

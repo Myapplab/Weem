@@ -65,6 +65,23 @@ class CustomerStageK34RecordTest {
         assertFalse(open.has("delivered_inferred_at")); assertFalse(open.has("delivered_inferred_by")); assertFalse(open.has("delivered_inferred_reason"))
         assertNull(RecordJson.trip(open).deliveredInferredAt)
     }
+    // A4.3 (R18): Rawstats'ın iki dışa aktarma testi (A3.1 notu: `:core` R18 payı; `AnalysisExport` `logic/orders`'ta).
+    @Test fun analysisExportKeepsTheFlagAndDropsTheCustomer() {
+        val d = day()
+        val e = AnalysisExport(ByteArray(32) { 7 }).trip(RecordJson.trip(d.wolt))
+        assertEquals(1_200_000L, e.getLong("delivered_inferred_at")); assertEquals(d.bolt.id, e.getString("delivered_inferred_by"))
+        assertEquals("next_order_at_customer_after_slider", e.getString("delivered_inferred_reason")); assertEquals("END_UNCONFIRMED", e.getString("phase"))
+        assertFalse(e.toString().contains("Customer A")); assertFalse(e.toString().contains("Test küçəsi"))
+    }
+    @Test fun analysisExportKeepsTheOrderEvent() {
+        val d = day()
+        val row = JSONObject().put("t", "2026-10-08T13:20:00.000+04:00").put("type", "delivered_inferred").put("pkg", wolt).put("offer_id", JSONObject.NULL)
+            .put("id", d.wolt.id).put("reason", d.inferredEvent.reason).put("record", RecordJson.trip(d.wolt))
+        val e = AnalysisExport(ByteArray(32) { 7 }).order(row)
+        assertEquals("delivered_inferred", e.getString("type")); assertEquals("next_order_at_customer_after_slider", e.getString("reason"))
+        assertEquals(d.wolt.id, e.getString("id")); assertEquals(1_200_000L, e.getJSONObject("record").getLong("delivered_inferred_at"))
+        assertFalse(e.toString().contains("Customer A"))
+    }
     @Test fun orderCardShowsAnUnverifiedDelivery() {
         val d = day(); val tr = { a: String, _: String -> a }; val az = { _: String, b: String -> b }
         assertEquals("Teslim edildi (doğrulanmadı)", OrderHistory.status(d.wolt, tr)); assertEquals("Çatdırıldı (təsdiqlənmədi)", OrderHistory.status(d.wolt, az))

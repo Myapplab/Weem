@@ -48,12 +48,18 @@ class OfferNetLineTest {
         }
     }
 
-    @Test fun theNetLineIsOneOfTheParsersOwnLines() {
+    // A4.3: Rawstats adı geri geldi (A3.3'te `theNetLineIsOneOfTheParsersOwnLines`, yalnız `OwnLines.isOwn` yarısı).
+    @Test fun analysisExportDropsTheNetLineWithTheParsersRecogniser() {
         val lines = listOf(OverlayText.offer("Wolt", 3.94, "Test Restoran", net = 3.152, tl = tr), OverlayText.offer("Bolt Food", 4.49, null, net = 3.8165, tl = az),
             "Wolt • 3,94 ₼ • net 3,15 ₼ • Test Restoran", "Wolt · 3.94 AZN · net 3.15 AZN · Teklif")
-        for (l in lines) assertTrue(l, OwnLines.isOwn(l))
-        // WEEM: `AnalysisExport.isPanelLine` ve `AnalysisExport(...).screen(...)` ifadeleri (dışa aktarma net satırını atar) `AnalysisExportTest`'te (A4.3, `:core`); burada ayrıştırıcının tanıyıcısı.
-        for (l in e5) assertFalse(l, OwnLines.isOwn(l))
+        for (l in lines) { assertTrue(l, OwnLines.isOwn(l)); assertTrue(l, AnalysisExport.isPanelLine(l)) }
+        for (l in e5) assertFalse(l, AnalysisExport.isPanelLine(l))
+        val row = AnalysisExport(ByteArray(32) { it.toByte() }).screen(JSONObject().put("t", 1L).put("pkg", wolt).put("source", "ocr")
+            .put("texts", JSONArray(lines + e5)).put("actions", JSONArray(listOf(lines[0], "Accept"))))
+        val texts = row.getJSONArray("texts").let { a -> (0 until a.length()).map { a.getString(it) } }
+        assertTrue(texts.toString(), texts.none { "net" in it.lowercase() || "3.15" in it || "3,15" in it })
+        assertTrue(texts.toString(), "₼3.94" in texts)
+        assertFalse(row.toString(), row.toString().contains("net 3"))
     }
 
     // ------------------------------------------------------------------ app wiring (source checks; the UI itself is telefonda denenmedi)

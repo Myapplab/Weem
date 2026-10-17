@@ -43,4 +43,11 @@ class PocketCashM15Test {
         assertEquals("Vardiya başında cepte: 35.00₼", PocketCash.text(35.0, tr))
     }
 
+
+    // A4.3: Rawstats'ın "günlük yedeğe ve dışa aktarmaya girer" taraması (A3.3'te yazılmadı); `tools/analysis` = Rawstats @ 6388c04.
+    @Test fun theLogIsBackedUpAndExported() {
+        assertTrue(PocketCash.FILE in BackupFiles.logNames)
+        val py = RepoSource.text("tools/analysis/kl_export.py")
+        assertTrue(py.contains("\"${PocketCash.FILE}\""))
+    }
 }
