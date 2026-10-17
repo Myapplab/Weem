@@ -400,6 +400,7 @@ Not (gizlilik, **WEEM farkı**): `click.text` müşteri kartındaki bir öğenin
 
 ### 6.5 Gölge mod (A3.9) için
 
+- **A3.9 (17 Ekim):** karşılaştırıcı `logic/orders/src/shadow` (`ORDERS.md` 16.5); ayrıştırıcı eşitliği kuralı `parser.stage` (sert).
 - İki uygulama aynı kareyi farklı anlarda okur: `screens.jsonl` satırları birebir eşleşmez. Ayrıştırıcı eşitliği için Rawstats'ın `screens.jsonl` satırları (`pkg`, `source`, `texts`, `actions`, `t`) WEEM ayrıştırıcısına verilir ve `stage`/`offerLike` Rawstats'ın yazdığıyla karşılaştırılır (metinler `redact`'li: telefon çıkarımı dışında sonuç aynı olmalı). Sipariş ve teklif eşitliği `ORDERS.md`'de.
 - JSON karşılaştırması **ayrıştırılmış değerle** yapılır, bayt bayt değil: Android `org.json` alan sırasını korur, JVM'deki `org.json` korumaz.
 - Gölge modda iki erişilebilirlik servisi ve iki rozet aynı anda çalışır. Kendi satırları tanıma (2.10) iki uygulamanın rozetini de tanır (aynı biçim). Tüm ekran görüntüsünde (yalnız API < 34 ya da geçersiz pencere sonrası) her uygulama yalnız kendi penceresini boyar: öbürünün rozeti/topu OCR'a girebilir. Pixel 10 Pro (API 36) normalde pencere görüntüsü alır; fark raporunda `screenshot_unavailable` olan dakikalar ayrıca işaretlenir.
