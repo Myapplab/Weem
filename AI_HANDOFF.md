@@ -2,6 +2,12 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-17 — A2.1 Aşama 2 şartnamesi (Claude Opus · high, tek ajan; dal `claude/weem-continuation-pmd9q3`, `main`'e push)
+- Yapılan: `docs/sartname/CORE.md` — G1 tek vardiya kuralı = Rawstats `HomeShift` (sabitler, durum geçişleri, başlatma/bitirme sırası, H4, ev izleyici, D8 mesafe; kaynak satırları doğrulandı), G2 ev kaydı/taslak, G4 `NotificationIds` (ekran okuma 5103→5104, nakit bahşiş 4000+→10000–14095, 7400 vardiya servisine), R20 çökme kaydı + `guarded`, depolama (gün klasörü, `logNames`, ZIP içe aktarma A2.3'e, `courier.db` DDL), test eşlemesi (Bölüm 6).
+- YolGo `home_day_*` senaryoları Rawstats kuralının Python kopyasıyla koşturuldu: çoğu aynı; 6 fark (sıçrama tabanı, 120 sn çift, elle bitirme sonrası 50 m koruması, doğruluk paysız kurulma, `end_rule` 36. sn) 1.9'da beklentileriyle.
+- Belge düzeltmeleri: `VERI_SOZLESMESI` 5.1 tam tercih listesi (tek kaynak; `manualPolicy` Int, `home.ui.*` tercih değil), 8.2 numaralar; `TEST_ENVANTERI` hedefleri (4 dosya başka modüle, 3 çevrilmez; çevrilecek 1.607).
+- Doğrulama: yalnız belge; kod yok, CI yok. Açık kalan: iki km ölçüsü (D8 / YolGo) hangisi gösterilir — A6.1'de kullanıcıya sorulacak. Sıradaki A2.2 (Sonnet · high).
+
 ## 2026-10-17 — A1.3 kabuk (Claude Sonnet; dal `claude/weem-continuation-jj51eu`, `main`'e birleşti)
 - Yapılan: `:app` Compose kabuğu — `MainActivity`, `WeemApp` (alt menü: Harita · Siparişler · Scooter · Uzaktan · Daha fazla; `SaveableStateHolder` ile sekme durumu korunur; açılış Harita), `WeemTheme`, "Daha fazla" = ayarlar (dil: telefon/TR/AZ, tema: telefon/gündüz/gece). Saf mantık yeni `logic/app` projesinde (`Tab`, `Lang.resolve`, `ThemeMode`, `Palette`+`Contrast`, `Text` iki dilli tablo). Testler: sekme/dil/tema, `PaletteContrastTest` (4,5:1), `TextCoverageTest` (`I18nCoverageTest` karşılığı; `app/` kaynağında düz TR/AZ metin yasak).
 - Tercihler `kuryelog` dosyasında: `lang` (eski anahtar) + yeni `theme` (`system|light|dark`). Debug (.dev) yapıda her yer tutucu sekmede sayaç düğmesi var (A1.5 için).

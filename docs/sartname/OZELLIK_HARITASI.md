@@ -369,7 +369,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `files/crashes.jsonl`, `errors.jsonl`, `crashSeenAt`
 - **Bağımlı:** —
 - **WEEM:** `:core` + `:app` · 2 (A2.3)
-- **Ayrıntı:** `bulgular/R_capture.md` §R20
+- **Ayrıntı:** `CORE.md` Bölüm 4 (şartname, A2.1); ham: `bulgular/R_capture.md` §R20
 
 ### S1 Scooter bağlantısı
 - **Eski kod:** NB `NinebotCrypto`, `NinebotFrames`, `NinebotSession`, `NinebotLink`, `BleCapture`, `SessionKey`, `KeyVault`, `PairAttention`, `NinebotMode`, `Timing`; `tools/reference/nb_crypto.py`
@@ -434,7 +434,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `shift*` (RS), `shift.v1`, `day.home.v1` (YG); kanal `shift` 1
 - **Bağımlı:** G2, R5 (açık sipariş bitişi engeller), R9, Y11, Y17
 - **WEEM:** `:core` `logic/` · 2 (A2.4) + 7
-- **Ayrıntı:** `bulgular/R_core_contract.md` §G1, Y_tracking
+- **Ayrıntı:** `CORE.md` Bölüm 1 (şartname, A2.1: tek kural, YolGo farkları); ham: `bulgular/R_core_contract.md` §G1, Y_tracking
 
 ### G2 Ev konumu
 - **Eski kod:** RS `HomeRepository.kt`, `HomePreferences.kt`, `HomeDraft.kt`, `HomeFixes.kt`, `HomeFixSampler.kt`; YG `lib/ui/home_picker.dart`, `lib/core/rawstats_home.dart`
@@ -442,7 +442,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `home.*` (RS), `settings.v1` ev (YG)
 - **Bağımlı:** G1, Y1 (haritadan seçme)
 - **WEEM:** `:core` + `:map` · 2 (A2.4) + 7
-- **Ayrıntı:** `bulgular/R_core_contract.md` §G2, Y_tracking
+- **Ayrıntı:** `CORE.md` Bölüm 2 (şartname, A2.1); ham: `bulgular/R_core_contract.md` §G2, Y_tracking
 
 ### G3 Dil
 - **Eski kod:** RS `I18n.kt` (`I18n.tl`); YG `lib/core/i18n.dart`
@@ -458,7 +458,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** bildirim tablosu (veri sözleşmesi §8)
 - **Bağımlı:** R19, Y20
 - **WEEM:** `:core` · 2 (A2.4)
-- **Ayrıntı:** `bulgular/Y_tracking.md` §G4
+- **Ayrıntı:** `CORE.md` Bölüm 3 (şartname, A2.1: `NotificationIds` tablosu); ham: `bulgular/Y_tracking.md` §G4
 
 ### G5 İlk açılış kurulumu
 - **Eski kod:** YG `lib/ui/setup_screen.dart`, `settings_screen.dart`, `maps_help.dart`; RS `MainActivity` izin akışı, `Readiness`

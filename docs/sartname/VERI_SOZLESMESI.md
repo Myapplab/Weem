@@ -78,26 +78,40 @@ Bugünkü mesajlar (alan alan: `bulgular/X_protocol.md` P1–P11; WEEM'deki kar�
 
 ### 5.1 Rawstats — dosya `kuryelog` (`Store.prefs`, RS `Store.kt:46-47`) — WEEM: **oku + aynı**
 
-| Anahtar | Tip | Anlam | Kaynak |
+| Anahtar | Tip (varsayılan) | Anlam | Sahibi · aşama |
 |---|---|---|---|
-| `lang` | String `tr`/`az` | dil | `I18n.kt` |
-| `theme` | String `system`/`light`/`dark` | **WEEM'de yeni** (A1.3): gece/gündüz teması | `ShellPrefs.kt` |
-| `shift`, `shiftStart`, `shiftStartReason`, `shiftEndedAt`, `shiftEndReason`, `shiftInterruptedAt`, `autoStarted` | Bool / Long ms / String | vardiya durumu (F4.1, H4) | `GpsService.kt`, `OfferFeed.kt:161-165` |
-| `dist` | Float/Long | vardiya GPS mesafesi (D8) | `GpsService.kt:40,75,93,242,268,288` |
-| `manualPolicy`, `manualSession` | String / Bool | elle oturum politikası | `RecordingPolicy.kt`, `Store.kt` |
-| `ocr`, `overlay` | Bool | OCR ve rozet açık mı | `MainActivity.kt` |
-| `commission`, `commission:<pkg>` | Float | filo komisyonu (net satırı) | `OverlayText.kt`, `OrderHistory.kt` |
-| `customerCard`, `customerCardSizePct` (85), `restaurantBubbleWidthPct` (90) | Bool / Int | balon ayarları | `DeliveryReminder.kt:68`, `CustomerCard.kt:18`, `RestaurantBubble.kt:15` |
-| `economics.share`, `economics.vehicle`, `economics.zone` | Bool / String | YolGo'ya paylaşım anahtarı; ekonomi araç/bölge | `OfferFeed.kt`, `OrderTracker.kt:338-339` |
-| `onlineSessions.v1` | String JSON dizi | açık çevrimiçi oturumlar | `OrderTracker.kt:19` |
-| `cashPending.azn`, `cashPending.at` | String / Long | son Wolt CASH PENDING | `OrderTracker.kt:802-803` |
-| `crashSeenAt` | Long | çökme kartı gizlendi | `CrashLog.kt:20` |
-| `dailyPack` | Bool | vardiya bitince günlük paket | `DailyPack.kt:17` |
-| `structuredMigration07`, `userPicked` | Bool | eski göç işaretleri | `Store.kt`, `MainActivity.kt` |
-| `home.lat`, `home.lon`, `home.updatedAt`, `home.startBlocked`, `home.endArmed` | Double/Long/Bool | ev ve ev kuralı durumu | `HomePreferences.kt:22-26` |
-| `home.ui.open`, `home.ui.settings`, `home.ui.edit`, `home.ui.lat` … | UI durumu | ev ekranı | `MainActivity.kt:149-153` |
+| `lang` | String `tr`\|`az`\|yok | dil | `:app` · A1.3 |
+| `theme` | String `system`\|`light`\|`dark` | **yeni** (A1.3) | `:app` |
+| `shift`, `manualSession`, `autoStarted`, `autoShift` | Bool (false) | `CORE` 1.1 | `:core` · A2.4 |
+| `manualPolicy` | **Int** (0) | göç işareti | `:core` · A2.4 |
+| `shiftStart`, `shiftEndedAt`, `shiftInterruptedAt` | Long ms (0) | `CORE` 1.1, 1.5 | `:core` · A2.4 |
+| `shiftStartReason`, `shiftEndReason` | String | `CORE` 1.1 | `:core` · A2.4 |
+| `dist` | Float m (0) | `CORE` 1.3 | `:core` · A2.4 |
+| `home.lat`, `home.lon` | **String** | `CORE` 2.1 | `:core` · A2.4 |
+| `home.updatedAt` | Long (yok = bilinmiyor) | `CORE` 2.1 | `:core` · A2.4 |
+| `home.startBlocked`, `home.endArmed` | Bool (false) | `CORE` 1.6 | `:core` · A2.4 |
+| `crashSeenAt` | Long (0) | `CORE` 4.1 | `:core` · A2.3 |
+| `weem.deviceId` | String | **yeni** (`CORE` 1.10) | `:core` · A2.4 |
+| `targets` | StringSet | izlenen uygulamalar | `:capture` · A3 |
+| `userPicked`, `structuredMigration07` | Bool (false) | `CORE` 5.4 | `:capture` / `:orders` · A3 |
+| `ocr`, `overlay` | Bool | OCR, rozet | `:capture` / `:orders` · A3 |
+| `bx`, `by` | Int (12, 95) | rozet konumu | `:orders` · A3 |
+| `commission`, `commission:<pkg>` | Float | filo komisyonu | `:orders` · A3 |
+| `customerCard` | Bool | müşteri kartı | `:orders` · A3 |
+| `customerCardSizePct`, `restaurantBubbleWidthPct` | Int (85, 90) | balon boyu | `:orders` · A3 |
+| `onlineSessions.v1`, `economicsIdle.v1`, `openWaits.v1` | String JSON | açık oturum/bekleme | `:orders` · A3 |
+| `cashPending.azn`, `cashPending.at` | String / Long | son Wolt nakit borcu | `:orders` · A3 |
+| `economics.vehicle`, `economics.zone`, `economics.appMode` (`shadow`), `economics.scooterId` | String | ekonomi ayarları | `:economics` · A4 |
+| `dailyPack` | Bool (true) | günlük paket | `:core` · A4.3 |
+| `scooter.autoConnect` | Bool (true) | vardiyada scooter'a bağlan | `:scooter` · A5 |
+| `scooter.shiftLink` | Bool | bağlantıyı vardiya açtı | `:scooter` · A5 |
+| `shiftOdoFirstKm`, `shiftOdoLastKm` | Long m (−1) | `CORE` 1.4 D8 | `:scooter` · A5 (okuyan `:core`) |
+| `shiftOdoLastAt` | Long ms | `CORE` 1.4 | `:scooter` · A5 |
+| `economics.share` | Bool | YolGo'ya paylaşım anahtarı | **kalkar** (S7; okunmaz, silinmez) |
 
-Not: tam liste A2.1'de `rg -n 'Store.prefs|prefs\(' RS` ile kesinleşir (bazı anahtarlar değişkenle kuruluyor: `commission:<pkg>`).
+`home.ui.*` tercih değildir (Activity durum paketi, 2.2). `pocket_cash`, `cash_received` bildirim yanıt (`RemoteInput`) anahtarlarıdır, tercih değil.
+
+Kaynak: RS `Store.kt:46-47` ve anahtarları yazan dosyalar (`rg` ile A2.1'de tarandı, `CORE.md` 1.1, 2.1, 5.4). Düzeltmeler (17 Ekim, A2.1): `manualPolicy` Int; `home.lat`/`home.lon` String; `home.ui.*` tercih değil.
 
 ### 5.2 Sürüş Paneli — dosya `logger` (eski `MainActivity` dosyasından bir kez göç, `legacy_main_migrated`) — WEEM: **oku + aynı**
 
@@ -200,7 +214,7 @@ Dışa aktarma ZIP'i: `manifest.json` (`schema` 1, `app` "Sürüş Paneli", `ver
 
 ### 8.2 WEEM kuralı (A2.4)
 
-Tek tablo `:core` `NotificationIds`: her bildirim sabit numara ya da ayrılmış, çakışmayan aralık (ör. bahşiş sorusu için sıralı havuz); derleme zamanı testi çakışmayı reddeder. Kanal kimlikleri aynı kalır (kullanıcının kanal ayarları kanal kimliğine bağlı); yeni kanallar `yeni`.
+Tek tablo `:core` `NotificationIds` (tam tablo `CORE.md` 3.3): her bildirim sabit numara ya da ayrılmış, çakışmayan aralık; test çakışmayı reddeder. Eski numaralar korunur; iki değişiklik: ekran okuma uyarısı **5103 → 5104** (5103 H4 vardiya kesintisinde kalır), nakit bahşiş **4000 + (h & 0xFFF) → 10000 + (h & 0xFFF)** (10000–14095). 7400 (YolGo gün kaydı servisi) kullanılmaz: vardiya servisiyle (1) birleşir. Gün sonu iptali aralık değil açık liste. Kanal kimlikleri aynı kalır (kullanıcının kanal ayarları kanal kimliğine bağlı); yeni kanallar `yeni`.
 
 ## 9. Gizlilik sınırı (WEEM'de korunur)
 

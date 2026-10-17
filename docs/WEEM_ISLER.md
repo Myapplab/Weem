@@ -6,9 +6,9 @@ Kurallar: `AGENTS.md` → "Birden çok Claude hesabı". Durumlar: `bekliyor` · 
 
 ## Şu an
 
-- **Son yapılan:** 17 Ekim — A1.3 kabuk bitti, A1.5 kullanıcı onayladı (`.dev` APK yedek telefonda): Aşama 1 tamam.
-- **Sıradaki iş:** A2.1 (Aşama 2 şartnamesi `docs/sartname/CORE.md`) — Opus · high, tek ajan.
-- **Devam eden (yarım) iş:** A2.1 — dal `claude/weem-continuation-pmd9q3`; `docs/sartname/CORE.md` Bölüm 0–1 (G1) yazıldı; sırada Bölüm 2 (G2), 3 (G4), 4 (R20), 5 (depolama), 6 (test eşlemesi), 7 (açık noktalar)
+- **Son yapılan:** 17 Ekim — A2.1 Aşama 2 şartnamesi `docs/sartname/CORE.md` bitti (tek vardiya kuralı = Rawstats `HomeShift`; YolGo farkları senaryo senaryo; `NotificationIds`; depolama; test eşlemesi). Aşama 1 tamam (A1.5 onaylı).
+- **Sıradaki iş:** A2.2 (`:core` testlerini çevir, `CORE.md` Bölüm 6) — Sonnet · high.
+- **Devam eden (yarım) iş:** yok
 - **Kullanıcıdan beklenen:** K0.1 kodsuz saha denemesi; uygulama simgesi; kalıcı Receiver telefonu (bugün Poco); her hesabın ortam ağ ayarında `dl.google.com` izni (Android'i yerelde derlemek için; nasıl: `AGENTS.md` → "Ortam").
 
 ## Aşama 0 — Planın son hâli
@@ -33,11 +33,11 @@ Kurallar: `AGENTS.md` → "Birden çok Claude hesabı". Durumlar: `bekliyor` · 
 
 | No | İş | Bitti sayılır | Model · effort | Bağımlı | Durum |
 |---|---|---|---|---|---|
-| A2.1 | Şartname `docs/sartname/CORE.md`: G1, G2, G4, R20 ve depolama — kaynak `bulgular/R_core_contract.md`, `Y_tracking.md` §G1–G4 + eksikler (Rawstats `Store`, `CourierDb`, `DailyRecords`, `RecordJson`, `HomeShift`, `GpsService`; YolGo `home_day`, `shift_engine`); eşikler ve durum geçişleri kaynak satırıyla; tek vardiya kuralı = bugünkü Rawstats F4.5b (S2, ek GPS önlemi yok), YolGo kuralıyla farklar belgelenir | Belge; tek kural yazılı | Opus · high (tek ajan) | A0.1 | sürüyor (17 Ekim 15:45) |
-| A2.2 | `:core` testlerini çevir: `TEST_ENVANTERI` hedefi `:core` (27 dosya, 172) + uyarlanır `rawstats_shift_end_test`, `rawstats_home_*`, `HomePickContractTest` | Testler derlenir, kırmızı | Sonnet · high | A2.1, A1.1 | bekliyor |
-| A2.3 | Depolama: gün klasörü ve `logNames`, JSONL yazma/okuma, `courier.db` (şema 1), `kuryelog` tercihleri, eski göç işaretleri; çökme kaydı (R20: `crashes.jsonl`, korumalı girişler) | A2.2 depolama ve R20 testleri yeşil | Opus · high | A2.2 | bekliyor |
-| A2.4 | Vardiya / gün / ev tek kural (G1, G2; bitiş bugünkü F4.5b kuralı, S2), saat ve cihaz kimliği, bildirim tablosu (`NotificationIds`, çakışma testi; G4 `NotifyPolicy`) | A2.2 testleri yeşil; 5103 ve 4000–8095 çakışması testle yok | Opus · high | A2.2 | bekliyor |
-| A2.5 | Modüller arası arayüzler ve mesaj tipleri (plan 4.3–4.4): `ShiftPort`, `OrderEvents`, `ScooterBridge`, `NavPort`, `WeatherPort`, `NotifyPort`; tipler `ShiftState`, `OfferSummary`, `TripStages`, `NavTarget`, `DaySummary`, `Energy*`, `BatterySummary`, `RouteStatus`, `WeatherNow`; JSON gidiş-dönüş testleri (bugünkü feed alanlarıyla) | Tip testleri yeşil | Opus · high | A2.2 | bekliyor |
+| A2.1 | Şartname `docs/sartname/CORE.md`: G1, G2, G4, R20 ve depolama — kaynak `bulgular/R_core_contract.md`, `Y_tracking.md` §G1–G4 + eksikler (Rawstats `Store`, `CourierDb`, `DailyRecords`, `RecordJson`, `HomeShift`, `GpsService`; YolGo `home_day`, `shift_engine`); eşikler ve durum geçişleri kaynak satırıyla; tek vardiya kuralı = bugünkü Rawstats F4.5b (S2, ek GPS önlemi yok), YolGo kuralıyla farklar belgelenir | Belge; tek kural yazılı | Opus · high (tek ajan) | A0.1 | bitti (17 Ekim; `CORE.md` `d66fc36`–`891a502` + sözleşme/envanter güncellemesi) |
+| A2.2 | `:core` testlerini çevir — liste ve beklentiler `CORE.md` Bölüm 6 (Rawstats 79; YolGo `home_day_*` aynen/F4.5b ölçekli/fark beklentileriyle, `home_day_controller_test` 1–3, `rawstats_shift_end_test` → `ShiftFollower`, `HomePickContractTest`, `NotifyPolicyTest`; ~134). A3/A4.3/A6'ya düşenler çevrilmez | Testler derlenir, kırmızı | Sonnet · high | A2.1, A1.1 | bekliyor |
+| A2.3 | Depolama (`CORE.md` 4–5): gün klasörü ve `logNames`, JSONL yazma/okuma, `DailyRecords`, ZIP içe aktarma (`LogImporter`; A2.6 için), `courier.db` (şema 1, DDL sabitleri), `kuryelog` tercihleri, eski göç işaretleri; çökme kaydı (R20: `crashes.jsonl`, `guarded`, kart); A2.6 için "Kayıtlar" listesi (öneri, 5.3) | A2.2 depolama ve R20 testleri yeşil | Opus · high | A2.2 | bekliyor |
+| A2.4 | Vardiya / gün / ev tek kural (G1, G2; `CORE.md` 1–2; bitiş bugünkü F4.5b kuralı, S2), `ShiftMachine` + vardiya servisi + ev izleyici, saat ve cihaz kimliği, bildirim tablosu (`NotificationIds` `CORE.md` 3.3, çakışma testi; G4 `NotifyPolicy`) | A2.2 testleri yeşil; 5103 ve 4000–8095 çakışması testle yok | Opus · high | A2.2 | bekliyor |
+| A2.5 | Modüller arası arayüzler ve mesaj tipleri (plan 4.3–4.4; `CORE.md` 1.8, 1.11): `ShiftPort`, `ShiftFollower`, `OrderEvents`, `ScooterBridge`, `NavPort`, `WeatherPort`, `NotifyPort`; tipler `ShiftState`, `OfferSummary`, `TripStages`, `NavTarget`, `DaySummary`, `Energy*`, `BatterySummary`, `RouteStatus`, `WeatherNow`; JSON gidiş-dönüş testleri (bugünkü feed alanlarıyla) | Tip testleri yeşil | Opus · high | A2.2 | bekliyor |
 | A2.6 | (K) Eski Rawstats verisi (ZIP yedek ya da kurulu Rawstats) WEEM `.dev`'de okunur | Kullanıcı onayı | — | A2.3 | bekliyor |
 
 ## Aşama 3 — Ekran okuma ve siparişler (R1–R3, R5–R13, R15–R16, R19)

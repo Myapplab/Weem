@@ -41,7 +41,7 @@ Kaynak: seçim sayfası <https://claude.ai/artifact/5RTwBJxg8JHXCgUTbLAGyD> (kay
 
 ## 4. Mimari
 
-Şartname belgeleri: `docs/sartname/OZELLIK_HARITASI.md` (63 özellik → eski kod, test, veri, modül), `VERI_SOZLESMESI.md` (korunacak adlar), `TEST_ENVANTERI.md` (1.761 eski test/denetim, 1.627'si çevrilir). Ham okuma notları: `docs/sartname/bulgular/` (kısmi).
+Şartname belgeleri: `docs/sartname/OZELLIK_HARITASI.md` (63 özellik → eski kod, test, veri, modül), `VERI_SOZLESMESI.md` (korunacak adlar), `TEST_ENVANTERI.md` (1.761 eski test/denetim, 1.607'si çevrilir), aşama şartnameleri (`CORE.md`: Aşama 2). Ham okuma notları: `docs/sartname/bulgular/` (kısmi).
 
 ### 4.1 Katmanlar ve derleme
 
@@ -214,5 +214,7 @@ Toplam 48 oturumluk görev (`docs/WEEM_ISLER.md`; aksamalarla kabaca 50–55 otu
 | 2026-10-17 | A1.1 Gradle iskeleti: `logic/` ayrı build (8 modül, testler yeşil), kök Android build (9 boş modül), modül yönü denetimi | Claude | `6776b9a`; Android katmanı yerelde derlenmedi (`dl.google.com` kapalı) |
 | 2026-10-17 | A1.2 kimlik ve imza: Rawstats anahtarı, `.dev` debug + `com.kuryelog.app` release, tek kaynak sürüm, yedek kuralları, `WatchService`/`NotifService`, izinler, `ci/check_identity.sh` | Claude | `7dd7b6a`; Android katmanı ilk kez yerelde derlendi, kimlik denetimi yeşil; CI ve telefon yok |
 | 2026-10-17 | A1.4 CI: `ci.yml` (PR: logic + Android testleri, lint, derleme, kimlik denetimi), `apk.yml` (.dev APK → Release), `lint.xml` | Claude | PR #1; ilk GitHub koşusu yeşil; `apk.yml` koşmadı, telefon yok |
+| 2026-10-17 | A1.3 kabuk (alt menü, tema, TR/AZ) + A1.5 kullanıcı onayı: Aşama 1 tamam | Claude | `90475d2`; `.dev` APK yedek telefonda denendi |
+| 2026-10-17 | A2.1 Aşama 2 şartnamesi `docs/sartname/CORE.md`: tek vardiya kuralı (Rawstats `HomeShift`), YolGo farkları senaryo senaryo, ev, `NotificationIds` (5103 ve bahşiş çakışması çözümü), çökme kaydı, depolama, test eşlemesi; veri sözleşmesi tercih listesi tamamlandı, test envanteri hedefleri kesinleşti (1.607 çevrilir) | Claude | yalnız belge |
 
 **Sıradaki:** `docs/WEEM_ISLER.md` → "Şu an".

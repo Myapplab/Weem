@@ -18,17 +18,17 @@ Durum: A0.1, 17 Ekim 2026. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c0
 |---|---:|---:|
 | :app | 4 | 10 |
 | :capture | 15 | 203 |
-| :core | 27 | 172 |
+| :core | 23 | 148 |
 | :economics | 11 | 101 |
 | :link | 1 | 8 |
-| :map | 62 | 397 |
-| :orders | 52 | 325 |
+| :map | 64 | 414 |
+| :orders | 53 | 331 |
 | :scooter | 18 | 344 |
 | sonra | 13 | 100 |
-| uyarlanır | 8 | 67 |
-| çevrilmez | 7 | 34 |
+| uyarlanır | 6 | 48 |
+| çevrilmez | 10 | 54 |
 
-Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **1.627** (sonra 100 ve çevrilmez 34 hariç; uyarlanır 67 dahil). Satır tahmini plan Bölüm 6'da.
+Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **1.607** (sonra 100 ve çevrilmez 54 hariç; uyarlanır 48 dahil). A2.1 (17 Ekim) `:core` satırlarını test gövdelerine göre kesinleştirdi: 4 dosya başka modüle, 3 dosya çevrilmeze (`CORE.md` Bölüm 6); dosya içinde kısmen çevrilmeyen testler orada. Satır tahmini plan Bölüm 6'da.
 
 ## Test listesi
 
@@ -68,11 +68,11 @@ Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **
 | `HomeRepositoryTest` | 7 | tek ev kaydı | G2 | :core |
 | `HomeShiftE6Test` | 9 | E6 ev çıkışında vardiya başlatma | G1 | :core |
 | `HomeShiftK38Test` | 11 | K38 ev kuralıyla vardiya | G1 | :core |
-| `RecordJsonTest` | 6 | kayıt JSON biçimi | R12 R17 | :core |
+| `RecordJsonTest` | 6 | kayıt JSON biçimi | R12 R17 | :orders (A2.1: yolculuk/teklif tipleri orada; `CORE.md` 6.1) |
 | `RedactorParityTest` | 4 | gizleme ref.py/redact.py ile eşit | R18 | :core |
 | `ShiftDistanceD8Test` | 4 | D8 vardiya mesafesi, scooter odometresi yedeği | G1 R12 | :core |
 | `ShiftInterruptH4Test` | 3 | H4 kesilen vardiya | G1 | :core |
-| `ShiftStateF41Test` | 5 | F4.1 vardiya durumu yükü | G1 N1 | :core |
+| `ShiftStateF41Test` | 5 | F4.1 vardiya durumu yükü (3 çevrilir; sağlayıcı yolu ve izni çevrilmez, S7) | G1 N1 | :core |
 | `EconomicsLogsTest` | 21 | ekonomi v2 log satırları | R4 | :economics |
 | `EconomicsObservationTest` | 13 | sürekli teklif olayı, boşta aralıkları | R4 | :economics |
 | `EconomicsV2GoldenTest` | 8 | altın vektörler (ref.py ile eşitlik) | R4 | :economics |
@@ -168,12 +168,12 @@ Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **
 | Test dosyası | Sayı | Neyi doğrular | Özellik | Hedef |
 |---|---:|---|---|---|
 | `scooter_language_section_test` | 3 | scooter/dil bölümü | G3 S2 | :app |
-| `home_day_controller_test` | 5 | gün denetleyicisi | G1 | :core |
+| `home_day_controller_test` | 5 | gün denetleyicisi (1–3 `:core`; 4–5 `:map` A6; `CORE.md` 6.2) | G1 | :core |
 | `home_day_e6_test` | 10 | E6 çıkış bölgesi 200 m | G1 | :core |
 | `home_day_end_rule_test` | 5 | ev bitişi 50 m / 30 sn | G1 | :core |
 | `home_day_rules_test` | 19 | ev günü kuralları | G1 | :core |
-| `native_telemetry_test` | 1 | yerel telemetri günlüğü | G1 | :core |
-| `shift_engine_test` | 9 | gün motoru | G1 Y11 | :core |
+| `native_telemetry_test` | 1 | yerel telemetri günlüğü (Flutter kanal yarışı; ilkesi `ShiftMachine` testinde) | G1 | çevrilmez |
+| `shift_engine_test` | 9 | YolGo gün motoru: km, duruş, ışık, sipariş aşaması | G1 Y11 | :map (A2.1) |
 | `offer_engine_test` | 7 | ek teklif fırsat maliyeti | R4 N5 | :economics |
 | `route_costing_test` | 6 | rota maliyeti (teklif) | R4 N5 | :economics |
 | `address_parser_test` | 17 | bağlantı ve adres ayrıştırma | Y5 Y6 | :map |
@@ -243,9 +243,9 @@ Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **
 | `road_calibration_score_test` | 10 | kalibrasyon skoru | Y14 | sonra (Y14) |
 | `road_calibration_screen_test` | 4 | kalibrasyon ekranı | Y14 | sonra (Y14) |
 | `road_calibration_test` | 7 | kalibrasyon | Y14 | sonra (Y14) |
-| `rawstats_home_stale_test` | 6 | Rawstats ev eşitleme bayatlığı (WEEM'de tek ev) | G2 | uyarlanır :core |
-| `rawstats_home_sync_test` | 13 | Rawstats ev eşitleme | G2 | uyarlanır :core |
-| `rawstats_shift_end_test` | 11 | Rawstats vardiyası → YolGo günü (WEEM'de tek vardiya) | G1 | uyarlanır :core |
+| `rawstats_home_stale_test` | 6 | Rawstats ev eşitleme bayatlığı (WEEM'de tek ev, S7) | G2 | çevrilmez (A2.1) |
+| `rawstats_home_sync_test` | 13 | Rawstats ev eşitleme (WEEM'de tek ev, S7) | G2 | çevrilmez (A2.1) |
+| `rawstats_shift_end_test` | 11 | Rawstats vardiyası → YolGo günü; WEEM'de `ShiftFollower` (`CORE.md` 6.2) | G1 | uyarlanır :core |
 | `rawstats_signals_test` | 10 | değişiklik sinyalleri | N1 | uyarlanır :link |
 | `app_version_test` | 1 | Flutter sürüm dosyası | — | çevrilmez |
 | `ci_apk_workflow_test` | 15 | Flutter CI iş akışı | — | çevrilmez |
@@ -256,7 +256,7 @@ Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **
 | Test dosyası | Sayı | Neyi doğrular | Özellik | Hedef |
 |---|---:|---|---|---|
 | `NotifyPolicyTest` | 2 | bildirim politikası | G4 | :core |
-| `TelemetryJournalTest` | 8 | telemetri günlüğü 3000 satır | G1 Y18 | :core |
+| `TelemetryJournalTest` | 8 | telemetri günlüğü 3000 satır (YolGo servis → Flutter tamponu; A6.1 karar verir) | G1 Y18 | :map (A2.1) |
 | `DatasetContractTest` | 6 | veri seti sözleşmesi | Y19 | :map |
 | `DatasetMatchingTest` | 4 | veri seti eşleştirme | Y19 | :map |
 | `DatasetReadsTest` | 6 | veri seti okuma | Y19 | :map |
@@ -288,6 +288,6 @@ Eksik: Sürüş Paneli ve YolGo için saha kaydı tabanlı altın test yok (YolG
 
 ## Çevrilmeyenler ve bekleyenler
 
-- **Çevrilmez (7 dosya, 34):** `FeedSignerTest`, `OfferFeedAccessTest`, `YolGoButtonE5Test`, `HomeShareTest`, `app_version_test`, `ci_apk_workflow_test`, `offer_navigation_removed_test` — davranışları WEEM'de yok; 2 telefon eşleştirme/izin testleri A8'de yeniden yazılır.
+- **Çevrilmez (10 dosya, 54):** `FeedSignerTest`, `OfferFeedAccessTest`, `YolGoButtonE5Test`, `HomeShareTest`, `app_version_test`, `ci_apk_workflow_test`, `offer_navigation_removed_test`, `native_telemetry_test`, `rawstats_home_sync_test`, `rawstats_home_stale_test` — davranışları WEEM'de yok; 2 telefon eşleştirme/izin testleri A8'de yeniden yazılır.
 - **Sonra (13 dosya, 100):** Y13/Y14 testleri. Y12 testleri (6 dosya, 45; `ww_clean_run_test` ve `ww_no_problem_green_test` zaten `:map`) 17 Ekim'de `:map`'e alındı (S3; A6.2a, A6.11).
-- **Uyarlanır (8 dosya, 67):** Rawstats ↔ YolGo eşitleme testleri (`rawstats_shift_end_test`, `rawstats_home_*`, `rawstats_signals_test`, `RawstatsObserverTest`, `CourierFeedPayloadTest`, `LogFeedV3Test`, `HomePickContractTest`): tek uygulamada iç arayüz, 2 telefon modunda `:link` mesajı olarak yeniden yazılır.
+- **Uyarlanır (6 dosya, 48):** Rawstats ↔ YolGo eşitleme testleri (`rawstats_shift_end_test`, `rawstats_signals_test`, `RawstatsObserverTest`, `CourierFeedPayloadTest`, `LogFeedV3Test`, `HomePickContractTest`): tek uygulamada iç arayüz, 2 telefon modunda `:link` mesajı olarak yeniden yazılır.

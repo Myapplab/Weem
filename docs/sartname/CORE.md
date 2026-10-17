@@ -47,7 +47,7 @@ Intent action'ları (`GpsService.kt:310-315`): `com.kuryelog.app.MANUAL_START` (
 
 Her fix `runCatching` içinde (hata `errors.jsonl` `gps`, fırlatılmaz). Sıra önemlidir:
 
-1. Vardiya kapalıysa yok say. Fix yaşı = `elapsedRealtime − loc.elapsedRealtimeNanos/1e6`; **0–12 000 ms dışı** ya da önceki mesafe fix'inden eski/eşit zaman → yok say (`:199`).
+1. Vardiya kapalıysa yok say. Fix yaşı = `elapsedRealtime − loc.elapsedRealtimeNanos/1e6`; **0–12 000 ms dışı** ya da mesafe çapasından (adım 6) eski/eşit zaman → yok say (`:199`).
 2. Türetilmiş hız (`:200-207`): önceki ve bu fix doğruluğu ≤30 m, 0 < dt < 15 sn, yer değişimi > max(8 m, iki doğruluğun toplamı) ise `d/dt`, değilse null. Hız = GPS hızı varsa o, yoksa türetilmiş. `MotionGate.observe(at, max(hız, türetilmiş), doğruluk)` (ekran okuma kuralı, Aşama 3).
 3. `Store.lastLocation = loc`.
 4. **Ev kuralı önce:** `HomeLocation.observe(loc, shiftActive=true, busy = OrderTracker.hasOpenOrder())`; `END` → `stopShift("home_arrival")` ve **çık** — bitiş fix'i `gps.csv`'ye yazılmaz (`:213`). `busy` = açık (aktif) bir sipariş var.
@@ -256,7 +256,7 @@ YolGo evi Rawstats'tan okur (`SHARE_HOME`, istek 703, 20 sn zaman aşımı, 6 sa
 - **Rapor** `json(at, version, thread, e)`: `{at (ms), version (versionName ya da "?"), thread, error (sınıf tam adı), message (ilk satır, ≤200), stack}`. `stack` = `stackTraceToString` satırları; sekme/boşlukla başlamayan (başlık: "X: mesaj", "Caused by: …") satırlar 200 karaktere kırpılır; toplam ≤ 8 000 (`STACK_CHARS`, `MESSAGE_CHARS`).
 - `trim(lines, maxChars=200 000, keep=10)`: `Σ(uzunluk+1) ≤ maxChars` ise hepsi, değilse son 10.
 - **Android çıkış kayıtları** (API 30+): `getHistoricalProcessExitReasons(pkg, 0, 5)` içinden `exitShown` olan ilki: neden `5` NativeCrash, `6` ANR, `7` InitializationFailure ve `0 ≤ now − at ≤ 3 gün`. `exitJson(at, "?", reason, description, process)` = `{at, version:"?", thread:"android", exit, error: etiket (yoksa "Exit<n>"), message: açıklamanın ilk satırı ≤200, stack: "Android exit reason <n> (<etiket>) · <süreç ya da ?>\n<mesaj>"}`.
-- **Kart:** `unseen` = `last` (dosyadaki en yeni ayrıştırılabilir satır) ve `lastExit` içinden `at > crashSeenAt` olanların en yenisi; Gizle → `crashSeenAt = at` (yeni çökme yeniden görünür). Özet `summary`: `<sınıf kısa adı>[: <mesaj ≤120>][ (<ilk uygulama karesi>)]`; ilk kare deseni `at (?:com\.kuryelog\.app|az\.ninebot\.logger)\.[^(\s]*\(([^)]+)\)` → **WEEM:** `com\.kuryelog\.(?:app|logic)` (WEEM kodu bu iki pakette; Sürüş Paneli paketi kalkar). Paylaşılan metin `"<ad> <sürüm> · <saat> · <thread>\n<stack>"`, ad "Rawstats" → **"WEEM"**. Kartta kopyala, paylaş, Gizle (`MainActivity.kt:367-378`).
+- **Kart:** `unseen` = `last` (dosyadaki en yeni ayrıştırılabilir satır) ve `lastExit` içinden `at > crashSeenAt` olanların en yenisi; Gizle → `crashSeenAt = at` (yeni çökme yeniden görünür). Özet `summary`: `<sınıf kısa adı>[: <mesaj ≤120>][ (<ilk uygulama karesi>)]`; ilk kare deseni `at (?:com\.kuryelog\.app|az\.ninebot\.logger)\.[^(\s]*\(([^)]+)\)` → **WEEM:** `at (?:com\.kuryelog\.(?:app|logic)|az\.ninebot\.logger)\.…` (WEEM kodu `com.kuryelog.app`/`com.kuryelog.logic`'te; eski Sürüş Paneli paketi zararsız kalır, eski test aynen geçer). Paylaşılan metin `"<ad> <sürüm> · <saat> · <thread>\n<stack>"`, ad "Rawstats" → **"WEEM"**. Kartta kopyala, paylaş, Gizle (`MainActivity.kt:367-378`).
 - Çizilemeyen sayfa (`renderFailure`, `MainActivity.kt:345-364`): aynı biçimde kart + `Store.failure("page_<ad>")`; vardiya düğmesi çalışır kalır. WEEM: her sekme kendi hata sınırında; sekmenin çizimi hata verirse sekme yerine kart, alt menü ve vardiya düğmesi çalışır.
 
 ### 4.2 Çökmeyen hatalar ve korumalı girişler
@@ -307,40 +307,9 @@ YolGo evi Rawstats'tan okur (`SHARE_HOME`, istek 703, 20 sn zaman aşımı, 6 sa
 - İşlemler (hepsi tek kilitte): `saveTrip(j)` / `saveOffer(j, result?)` = `id`, `pkg`, `day` alanları yüklemden, `payload = j.toString()`, çakışmada **REPLACE**; `trips(day?)` ve `offers(day)` `id` sırasıyla; `offer(id)`; `offerCount(day, result)` SQL'de sayar (yük ayrıştırılmaz); `session()` / `session(j)` tek satır `k='active'`; `batch {}` tek işlem; `clear()` üç tabloyu tek işlemde boşaltır.
 - **WEEM:** ad, sürüm ve DDL aynı; DDL dizgileri `logic/core`'da sabit (birebir dizgi testi), Android yardımcısı onları çalıştırır. Yeni tablo gerekirse sürüm 2 + gerçek göç (boş `onUpgrade` kalmaz). Müşteri telefonu yalnız burada (`withPhone=true`, `VERI_SOZLESMESI` 9).
 
-### 5.6 `kuryelog` tercihleri — tam liste (A2.1'de kaynaktan çıkarıldı; `VERI_SOZLESMESI` 5.1'in yerine geçer)
+### 5.6 `kuryelog` tercihleri
 
-| Anahtar | Tip (varsayılan) | Anlam | Sahibi · aşama |
-|---|---|---|---|
-| `lang` | String `tr`\|`az`\|yok | dil | `:app` · A1.3 |
-| `theme` | String `system`\|`light`\|`dark` | **yeni** (A1.3) | `:app` |
-| `shift`, `manualSession`, `autoStarted`, `autoShift` | Bool (false) | 1.1 | `:core` · A2.4 |
-| `manualPolicy` | **Int** (0) | göç işareti | `:core` · A2.4 |
-| `shiftStart`, `shiftEndedAt`, `shiftInterruptedAt` | Long ms (0) | 1.1, 1.5 | `:core` · A2.4 |
-| `shiftStartReason`, `shiftEndReason` | String | 1.1 | `:core` · A2.4 |
-| `dist` | Float m (0) | 1.3 | `:core` · A2.4 |
-| `home.lat`, `home.lon` | **String** | 2.1 | `:core` · A2.4 |
-| `home.updatedAt` | Long (yok = bilinmiyor) | 2.1 | `:core` · A2.4 |
-| `home.startBlocked`, `home.endArmed` | Bool (false) | 1.6 | `:core` · A2.4 |
-| `crashSeenAt` | Long (0) | 4.1 | `:core` · A2.3 |
-| `weem.deviceId` | String | **yeni** (1.10) | `:core` · A2.4 |
-| `targets` | StringSet | izlenen uygulamalar | `:capture` · A3 |
-| `userPicked`, `structuredMigration07` | Bool (false) | 5.4 | `:capture` / `:orders` · A3 |
-| `ocr`, `overlay` | Bool | OCR, rozet | `:capture` / `:orders` · A3 |
-| `bx`, `by` | Int (12, 95) | rozet konumu | `:orders` · A3 |
-| `commission`, `commission:<pkg>` | Float | filo komisyonu | `:orders` · A3 |
-| `customerCard` | Bool | müşteri kartı | `:orders` · A3 |
-| `customerCardSizePct`, `restaurantBubbleWidthPct` | Int (85, 90) | balon boyu | `:orders` · A3 |
-| `onlineSessions.v1`, `economicsIdle.v1`, `openWaits.v1` | String JSON | açık oturum/bekleme | `:orders` · A3 |
-| `cashPending.azn`, `cashPending.at` | String / Long | son Wolt nakit borcu | `:orders` · A3 |
-| `economics.vehicle`, `economics.zone`, `economics.appMode` (`shadow`), `economics.scooterId` | String | ekonomi ayarları | `:economics` · A4 |
-| `dailyPack` | Bool (true) | günlük paket | `:core` · A4.3 |
-| `scooter.autoConnect` | Bool (true) | vardiyada scooter'a bağlan | `:scooter` · A5 |
-| `scooter.shiftLink` | Bool | bağlantıyı vardiya açtı | `:scooter` · A5 |
-| `shiftOdoFirstKm`, `shiftOdoLastKm` | Long m (−1) | 1.4 D8 | `:scooter` · A5 (okuyan `:core`) |
-| `shiftOdoLastAt` | Long ms | 1.4 | `:scooter` · A5 |
-| `economics.share` | Bool | YolGo'ya paylaşım anahtarı | **kalkar** (S7; okunmaz, silinmez) |
-
-`home.ui.*` tercih değildir (Activity durum paketi, 2.2). `pocket_cash`, `cash_received` bildirim yanıt (`RemoteInput`) anahtarlarıdır, tercih değil.
+Tam liste (anahtar, tip, varsayılan, sahibi modül ve aşama) A2.1'de kaynaktan çıkarıldı ve `VERI_SOZLESMESI.md` 5.1'e yazıldı (tek kaynak). Aşama 2'nin anahtarları: vardiya (1.1), ev (2.1), `crashSeenAt` (4.1), yeni `weem.deviceId` (1.10).
 
 ## 6. Test eşlemesi (A2.2 bunu izler)
 
@@ -359,7 +328,7 @@ Yer: saf testler `logic/core/src/test/kotlin/com/kuryelog/logic/core/` (JVM, And
 | `ShiftDistanceD8Test` (4) | saf aynen | A2.2 → A2.4 | |
 | `HomeRepositoryTest` (7) | saf aynen (sahte `Storage`) | A2.2 → A2.4 | |
 | `HomeDraftTest` (5), `HomeFixesTest` (4), `HomeFixRegressionTest` (2) | saf aynen | A2.2 → A2.4 | |
-| `CrashReportTest` (7) | saf; iki beklenti WEEM'e uyarlanır: paylaşılan metin "WEEM …", ilk kare deseni `com.kuryelog.(app\|logic)` | A2.2 → A2.3 | 4.1 |
+| `CrashReportTest` (7) | saf; bir beklenti WEEM'e uyarlanır: paylaşılan metin "WEEM …"; ilk kare deseni eski kareleri yine tanır, `com.kuryelog.logic` kareleri için ek test | A2.2 → A2.3 | 4.1 |
 | `CrashGuardTest` (10) | `everyProcessStartInstallsTheCrashRecorderFirst`, `pagesAndTapsDoNotCloseTheApp` → A2.3 (WEEM `Application`, sekme hata sınırı); `gpsServiceStartFixAndStopAreGuarded`, `refusedForegroundStartStillReachesStartForeground` → A2.4 (vardiya servisi); `everyScreenReadGoesThroughTheGuard`, `accessibilityEventsAreGuarded`, `tickRecordsAFailureAndAlwaysRunsAgain`, `notificationListenerNeverThrows`, `screenServiceStartAndOcrCallbacksAreGuarded`, `gpsOrderStepsAreGuarded` → **A3** (bileşenleri orada). Ek saf test: `guarded` yakalar/kaydeder, `VirtualMachineError`'ı fırlatır | A2.3 / A2.4 / A3 | 4.2 |
 | `DailyRecordsTest` (8) | saf aynen (`TemporaryFolder`); `everyFileWrittenByTheAppIsInTheBackupList` WEEM kaynağını tarar (`append(…, "<ad>")`) | A2.2 → A2.3 | |
 | `RecordJsonTest` (6) | **`:orders`'a** (yolculuk/teklif tipleri orada) | A3 | |
@@ -373,7 +342,7 @@ Aşama 2 toplamı: 79 test (+ yeni `guarded`, `NotificationIdsTest`, `ShiftMachi
 
 | Test (sayı) | WEEM | Görev |
 |---|---|---|
-| `home_day_rules_test` (19) | **aynen 8:** "50 m ötede iki tutarlı…", "10 km/s sınırın altında…", "GPS hız vermezse (0)…", "dışarıda dururken GPS titremesi…", "başlangıçta doğruluk >20 m ve sıra dışı zaman…", "evde elle bitirince…", "dışarıda elle bitirince…", "eve dönünce otomatik bitince…". **Fark 1:** "sıçrayan fix…" → beklenti 1.9 (a: hiç başlamaz; b: 31. sn'de başlar). **F4.5b'ye ölçeklenir 8** (`legacy()` grubu 200 m/10 km/s/2 dk ile parametreliydi; WEEM kuralı parametresiz): konumlar 150→20 m, giriş hızı 6→4 km/s, 2 dk→30 sn; beklentiler: "tam 120. sn" → ilk `end` giriş fix'inden 30 sn sonra (dizin 2+30); "günü evde başlatıp…" (40 m) → hiç; "tek sapan fix" (70 m, doğruluk 30) → **kurar**, 40 m'de 30 sn sonra `end` (doğruluk 31–35 ile kurmaz); "10 m'yi aşan kayma" (10,5 m) → hiç; "bölgeye ≥10 km/s" (≥5 km/s'ye) → yavaşlayınca 30. fix'te `end`; "süren siparişte…" → hiç (ayar kısmı çevrilmez); "dışarıya çıkınca pencere iptal" → gerçekçi çıkışla (380 m/60 sn) 30. fix'te `end`, 2 sn'lik sıçramayla ayrıca dönüşteki ilk fix'te `end` (fark, 1.9); "yeni gün eski günün kurulumunu taşımaz" → yeni vardiya `onManualStart` sonrası 20 m'de hiç. **Çevrilmez 1:** "ayar kapalıysa başlamaz" (ayar yok). **Uyarlanır 1:** "kalıcı durum koordinat içermez…" → `home.startBlocked`/`home.endArmed` iki bool, koordinat yok; ev değişince koruyucular düşer (`HomeRepository.set`) | A2.2 → A2.4 |
+| `home_day_rules_test` (19) | **aynen 8:** "50 m ötede iki tutarlı…", "10 km/s sınırın altında…", "GPS hız vermezse (0)…", "dışarıda dururken GPS titremesi…", "başlangıçta doğruluk >20 m ve sıra dışı zaman…", "evde elle bitirince…", "dışarıda elle bitirince…", "eve dönünce otomatik bitince…". **Fark 1:** "sıçrayan fix…" → beklenti 1.9 (a: hiç başlamaz; b: 31. sn'de başlar). **F4.5b'ye ölçeklenir 8** (`legacy()` grubu 200 m/10 km/s/2 dk ile parametreliydi; WEEM kuralı parametresiz): konumlar 150→20 m, giriş hızı 6→4 km/s, 2 dk→30 sn; beklentiler: "tam 120. sn" → ilk `end` giriş fix'inden 30 sn sonra (dizin 2+30); "günü evde başlatıp…" (40 m) → hiç; "tek sapan fix" (70 m, doğruluk 30) → **kurar**, 40 m'de 30 sn sonra `end` (doğruluk 31–35 ile kurmaz); "10 m'yi aşan kayma" (10,5 m) → hiç; "bölgeye ≥10 km/s" (≥5 km/s'ye) → yavaş ilk fix'ten 30 sn sonra `end` (dizin 30); "süren siparişte…" → hiç (ayar kısmı çevrilmez); "dışarıya çıkınca pencere iptal" → gerçekçi çıkışla (380 m/60 sn) dönüşün ilk fix'inden 30 sn sonra `end` (dizin 30), 2 sn'lik sıçramayla ayrıca dönüşteki ilk fix'te `end` (fark, 1.9); "yeni gün eski günün kurulumunu taşımaz" → yeni vardiya `onManualStart` sonrası 20 m'de hiç. **Çevrilmez 1:** "ayar kapalıysa başlamaz" (ayar yok). **Uyarlanır 1:** "kalıcı durum koordinat içermez…" → `home.startBlocked`/`home.endArmed` iki bool, koordinat yok; ev değişince koruyucular düşer (`HomeRepository.set`) | A2.2 → A2.4 |
 | `home_day_e6_test` (10) | aynen 9; **fark 1:** "elle bitirdikten sonra 50–200 m içinde…" → hepsi `none`, `startBlocked == true` | A2.2 → A2.4 |
 | `home_day_end_rule_test` (5) | "varsayılanlar" → `HomeShift` sabitleri; "29 sn yetmez…", "60 m ışık", "sipariş açıkken" aynen; **fark 1:** "50 m içinde 30 sn dur" → ilk `end` **36. sn** | A2.2 → A2.4 |
 | `home_day_controller_test` (5) | 1–2 `ShiftMachine` saf testi (neden `home_departure`/`manual`/`home_arrival`, elle bitirince evde yeniden başlamaz, 30 sn sonra `home_arrival`); 3'ün "ev yoksa başlamaz" kısmı aynı (ayar kısmı çevrilmez); 4 (feed aşamaları) ve 5 (gün istatistiği nedeni metni) → **`:map` A6** | A2.4 / A6 |
