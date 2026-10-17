@@ -7,7 +7,7 @@ Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 
 - Tercihler `kuryelog` dosyasında: `lang` (eski anahtar) + yeni `theme` (`system|light|dark`). Debug (.dev) yapıda her yer tutucu sekmede sayaç düğmesi var (A1.5 için).
 - Compose BOM `2026.02.01`: yenileri (1.12+) compileSdk 37 ister, AGP 9.1.0 en çok 36 destekler; BOM yükseltmesi AGP ile birlikte yapılır.
 - Doğrulama: yerelde `-p logic test`, kök `test lintDebug assembleRelease`, iki APK'da `check_identity.sh` yeşil. CI koşusu ve telefon (A1.5) yok. Menü simgeleri geçici emoji.
-- Açık kalan: A1.5 (K): `.dev` APK'da sekmeler arası geçişte sayaç korunuyor mu. Sonra Aşama 2 (A2.1 şartname, Opus · high).
+- Telefonda denendi (kullanıcı, A1.5): sekme sayacı korunuyor, TR/AZ, gündüz/gece, ayarlar yeniden açılışta kalıyor. Açık kalan: Aşama 2 (A2.1 şartname, Opus · high).
 
 ## 2026-10-17 — A1.4 CI (Claude; dal `ccr-49f4c0da-gcd3vx`, PR #1, `main`'e birleşti)
 - Yapılan: `.github/workflows/ci.yml` (PR + elle; `.md`/`docs/` hariç; `logic/` testleri, Android `test lintDebug assembleDebug assembleRelease`, iki APK'da `ci/check_identity.sh`), `apk.yml` (`weem-v*` etiketi ya da elle → yalnız `.dev` APK, `gh release create`; elle koşuda `weem-dev-<no>` önsürüm), `lint.xml` (sürüm ve yazım uyarıları kapalı; simge uyarısı açık) + `abortOnError`.

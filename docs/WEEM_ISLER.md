@@ -6,8 +6,8 @@ Kurallar: `AGENTS.md` → "Birden çok Claude hesabı". Durumlar: `bekliyor` · 
 
 ## Şu an
 
-- **Son yapılan:** 17 Ekim — A1.3 (kabuk: `:app` Compose alt menü, gece/gündüz teması, TR/AZ; saf mantık `logic/app`; palet ve çeviri kapsam testleri). Yerelde `-p logic test`, `test lintDebug assembleRelease`, `check_identity.sh` yeşil.
-- **Sıradaki iş:** A1.5 (K, kullanıcı: `.dev` APK'yı kur, sekmeler arası sayaç korunuyor mu) ve paralelde A2.1 (Aşama 2 şartnamesi `docs/sartname/CORE.md`) — Opus · high.
+- **Son yapılan:** 17 Ekim — A1.3 kabuk bitti, A1.5 kullanıcı onayladı (`.dev` APK yedek telefonda): Aşama 1 tamam.
+- **Sıradaki iş:** A2.1 (Aşama 2 şartnamesi `docs/sartname/CORE.md`) — Opus · high, tek ajan.
 - **Devam eden (yarım) iş:** yok
 - **Kullanıcıdan beklenen:** K0.1 kodsuz saha denemesi; uygulama simgesi; kalıcı Receiver telefonu (bugün Poco); her hesabın ortam ağ ayarında `dl.google.com` izni (Android'i yerelde derlemek için; nasıl: `AGENTS.md` → "Ortam").
 
@@ -27,7 +27,7 @@ Kurallar: `AGENTS.md` → "Birden çok Claude hesabı". Durumlar: `bekliyor` · 
 | A1.2 | Kimlik: `applicationId` `com.kuryelog.app`, debug `.dev`; imza = `rawstats` `ci/kuryelog-test.keystore` (alias ve şifre Rawstats `app/build.gradle.kts`'teki gibi); sürüm kodu tek kaynaktan, >33; minSdk 29, target/compile 36; `allowBackup=false` + Rawstats `data_extraction_rules.xml`; manifestte `com.kuryelog.app.WatchService` ve `NotifService` (boş gövde), izinler (`VERI_SOZLESMESI` Bölüm 3) | CI'da `aapt2 dump badging`: paket, sürüm, imza SHA-256 Rawstats ile aynı | Opus · high | A1.1 | bitti (`7dd7b6a`; `ci/check_identity.sh` yerelde yeşil: `.dev` ve `com.kuryelog.app`, imza SHA-256 Rawstats ile aynı; CI'da A1.4) |
 | A1.3 | Kabuk: tek Activity + Compose alt menü (Harita · Siparişler · Scooter · Uzaktan · Daha fazla), sekme durumu korunur, açılış Harita; gece/gündüz teması (renk karşıtlığı testi, `RawPaletteContrastTest` karşılığı); dil TR/AZ (G3) ve çeviri kapsam testi (`I18nCoverageTest` karşılığı) | Kabuk testleri yeşil; `.dev` APK derlenir | Sonnet · high | A1.1 | bitti (`90475d2`; yerelde testler, lint, iki APK yeşil; `logic/app` eklendi) |
 | A1.4 | CI: `ci.yml` (PR: `logic` testleri + Android birim testleri + lint + `assembleDebug`; Gradle önbelleği; `.md` hariç) ve `apk.yml` (`weem-v*` etiketi ya da elle → Release) | Bir yeşil koşu | Sonnet · high | A1.2 | bitti (PR #1; ilk koşu yeşil: logic + Android testleri, lint, iki APK'da kimlik denetimi) |
-| A1.5 | (K) `.dev` APK yedek telefonda açılır, sekmeler arası geçişte durum korunur | Kullanıcı onayı | — | A1.4 | bekliyor |
+| A1.5 | (K) `.dev` APK yedek telefonda açılır, sekmeler arası geçişte durum korunur | Kullanıcı onayı | — | A1.4 | bitti (kullanıcı onayı, 17 Ekim 2026: `.dev` APK yedek telefonda; sekme sayacı korunuyor, TR/AZ, gündüz/gece, ayarlar yeniden açılışta kalıyor) |
 
 ## Aşama 2 — Çekirdek (`:core`)
 
