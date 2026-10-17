@@ -4,7 +4,7 @@ import org.json.JSONObject
 import com.kuryelog.logic.capture.*
 import com.kuryelog.logic.core.*
 
-// İskelet (A3.2): imzalar Rawstats'tan (PlatformTotals.kt @ 6388c04); testlerin derlenmesi için. Gövdeler A3.6'te.
+// İskelet (A3.2): imzalar Rawstats'tan (PlatformTotals.kt @ 6388c04); testlerin derlenmesi için. Gövdeler A3.6'da.
 object PlatformTotals {
     const val FILE = "economics-platform-totals.jsonl"
     const val SCHEMA_VERSION = 1

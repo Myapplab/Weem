@@ -4,7 +4,7 @@ import org.json.JSONObject
 import com.kuryelog.logic.capture.*
 import com.kuryelog.logic.core.*
 
-// İskelet (A3.2): imzalar Rawstats'tan (CashPending.kt @ 6388c04); testlerin derlenmesi için. Gövdeler A3.6'te.
+// İskelet (A3.2): imzalar Rawstats'tan (CashPending.kt @ 6388c04); testlerin derlenmesi için. Gövdeler A3.6'da.
 object CashPending {
     const val FILE = "economics-cash-pending.jsonl"
     const val SCHEMA = 1

@@ -6,7 +6,7 @@ import java.math.RoundingMode
 import com.kuryelog.logic.capture.*
 import com.kuryelog.logic.core.*
 
-// İskelet (A3.2): imzalar Rawstats'tan (PocketCash.kt @ 6388c04); testlerin derlenmesi için. Gövdeler A3.6'te.
+// İskelet (A3.2): imzalar Rawstats'tan (PocketCash.kt @ 6388c04); testlerin derlenmesi için. Gövdeler A3.6'da.
 object PocketCash {
     const val FILE = "economics-pocket-cash.jsonl"
     const val SCHEMA = 1
