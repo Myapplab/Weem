@@ -103,7 +103,7 @@ object OrderHistory {
             }
         }
         val temp = tl("Sıcaklık", "Temperatur") + " " + (temperatureText(t)?.let { it + " (" + tl("kabul anı", "qəbul anı") + ")" }
-            ?: "— (" + (if (o == null) noCard else tl("YolGo'dan hava gelmedi", "YolGo-dan hava gəlmədi")) + ")")
+            ?: "— (" + (if (o == null) noCard else tl("hava bilgisi gelmedi", "hava məlumatı gəlmədi")) + ")") // WEEM: YolGo adı yok (ORDERS.md 16)
         return "$boost · $temp"
     }
 

@@ -11,7 +11,7 @@ import com.kuryelog.logic.core.*
  * at the pickup, which is made at the restaurant. The departure stays Wolt's "Collect" (the first customer frame after it,
  * [PickupRecord.pickedAt]). Pure: [DeliveryCore.venueArrived] records the arrival.
  *
- * The restaurant's coordinate: E8's navigation target from YolGo (Faz 3, [SOURCE_YOLGO], [YolGoNav.pickupOf]), else the Android
+ * The restaurant's coordinate: E8's navigation target from YolGo (Faz 3, [SOURCE_YOLGO], [NavBinding.pickupOf]), else the Android
  * geocode of the pickup address ([SOURCE_GEOCODE]). A street-only address ("Mammad Afandiyev, AZ1001 Baku") may land far from
  * the door, and a navigation target may be the wrong place too, so at the pickup the courier's own last fix is the fallback
  * ([SOURCE_PICKUP_POINT]). Fixes worse than [MAX_ACCURACY_M] say
