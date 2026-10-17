@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="watch_service_label">WEEM ekran kaydı</string>
+    <string name="notif_service_label">WEEM bildirim kaydı</string>
+    <!-- Rawstats acc_desc ile aynı söz; WEEM'in okuma davranışı Aşama 3'te bununla aynı kalır. -->
+    <string name="acc_desc">WEEM yalnızca elle başlattığın vardiyada seçili kurye uygulamalarını okur. Metin okunamazsa görünür uygulama penceresine cihazda OCR uygular. Sipariş, adres ve müşteri notu bu telefona kaydedilir; teslimata yaklaşınca müşteri kartı gösterilir. Müşteri kartından arama yaptığında telefon uygulamasındaki numarayı karta yazar ve yalnızca bu telefondaki sipariş veritabanında saklar; kayıt dosyalarına ve dışa aktarmaya yazmaz. Sipariş kabul veya ret düğmelerine basmaz.</string>
+</resources>

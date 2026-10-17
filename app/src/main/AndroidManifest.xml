@@ -1,6 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
 
-    <application android:label="WEEM" />
+    <!-- İzinler: docs/sartname/VERI_SOZLESMESI.md Bölüm 3 (Rawstats + Sürüş Paneli + YolGo birleşimi).
+         İnternet var; ekran okuma (:capture) ağ kullanmaz, test denetler. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+
+    <!-- Scooter (Sürüş Paneli ile aynı). -->
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
+    <!-- allowBackup=false bulut/adb yedeğini kapatır; Android 12'den itibaren kurallar siparişleri, müşteri numaralarını,
+         scooter kayıtlarını ve eşleşme deposunu cihazdan cihaza aktarımın da dışında tutar (Rawstats ile aynı).
+         Android 12 öncesinde allowBackup=false ikisini de kapsar; fullBackupContent gerekmez (lint DataExtractionRules). -->
+    <application
+        tools:ignore="DataExtractionRules"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:label="${appLabel}" />
 
 </manifest>
