@@ -1,9 +1,13 @@
 package com.kuryelog.logic.core
 
+import com.kuryelog.logic.core.Msg.putN
 import org.json.JSONException
 import org.json.JSONObject
 
-/** Vardiya durumu v1 (CORE.md 1.8, plan 4.4); koordinat yok. Alan tipleri A2.5'te sabitlenir. */
+/**
+ * `ShiftState` v1 (CORE.md 1.8, plan 4.4; bugünkü `shift/v1/state` alanları): `:core` → hepsi (P → R). Koordinat yok. Başlangıç ve
+ * bitiş 0/yok ise null; [interrupted] yalnız süren vardiya için (H4).
+ */
 data class ShiftState(
     val active: Boolean,
     val startedAtMs: Long? = null,
@@ -12,7 +16,12 @@ data class ShiftState(
     val interrupted: Boolean = false,
     val generatedAtMs: Long = 0L,
 ) {
+    fun toJson(): JSONObject = JSONObject().put("schemaVersion", SCHEMA).put("active", active).putN("startedAtMs", startedAtMs)
+        .putN("endedAtMs", endedAtMs).putN("endReason", endReason).put("interrupted", interrupted).put("generatedAtMs", generatedAtMs)
+
     companion object {
+        const val SCHEMA = 1
+
         /** Bozuk, boş ya da başka şema → null (bilinmiyor; izleyen modül hiçbir şeyi değiştirmez). */
         fun parse(raw: String?): ShiftState? {
             if (raw.isNullOrEmpty()) return null
