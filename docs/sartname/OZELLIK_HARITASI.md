@@ -1,6 +1,6 @@
 # Özellik haritası — 63 özellik → eski kod, testler, veri, bağımlılık, WEEM modülü
 
-Durum: A0.1, 17 Ekim 2026; Aşama 3 satırlarının (R1–R3, R5–R13, R15, R16, R19) Ayrıntı bağlantıları A3.1'de `CAPTURE.md`/`ORDERS.md`'ye çevrildi. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c04` (**RS** = `app/src/main/java/com/kuryelog/app/`, **NB** = `ninebot-logger/app/src/main/java/az/ninebot/logger/`) ve `yolgo-test` @ `870ab6e` (**YG**). Kapsam ve kararlar: `docs/WEEM_PLANI.md` Bölüm 3 ve 8. Test adları ve sayıları `TEST_ENVANTERI.md` ile aynı betikten (elle yazılmadı). Veri adları: `VERI_SOZLESMESI.md`.
+Durum: A0.1, 17 Ekim 2026; Aşama 3 satırlarının (R1–R3, R5–R13, R15, R16, R19) Ayrıntı bağlantıları A3.1'de `CAPTURE.md`/`ORDERS.md`'ye çevrildi; Aşama 5 satırları (S1–S8, R14) A5.1'de `SCOOTER.md`'ye bağlandı. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c04` (**RS** = `app/src/main/java/com/kuryelog/app/`, **NB** = `ninebot-logger/app/src/main/java/az/ninebot/logger/`) ve `yolgo-test` @ `870ab6e` (**YG**). Kapsam ve kararlar: `docs/WEEM_PLANI.md` Bölüm 3 ve 8. Test adları ve sayıları `TEST_ENVANTERI.md` ile aynı betikten (elle yazılmadı). Veri adları: `VERI_SOZLESMESI.md`.
 
 **Nasıl kullanılır:** bir modüle başlamadan önce o modülün satırlarındaki eski dosyalar ve testler o aşamanın şartname görevinde (A2.1, A3.1, A5.1, A6.1) okunur; davranış ayrıntısı (eşikler, durum geçişleri) varsa `bulgular/` dosyasındadır. `bulgular/` ham ve kısmidir (çok ajanlı okuma usage nedeniyle yarıda durduruldu); boş kalan özelliklerin ayrıntısı şartname görevinde çıkarılır.
 
@@ -324,7 +324,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `economics-energy.jsonl`, `economics-scooter.jsonl`
 - **Bağımlı:** S1–S4, R5, N1 (R→P)
 - **WEEM:** `:scooter` + `:economics` · 5 (A5.3)
-- **Ayrıntı:** `bulgular/X_protocol.md` §P5
+- **Ayrıntı:** `SCOOTER.md` 8, 12.2 (blok satırı `:economics`: `bulgular/X_protocol.md` §P5)
 
 ### R15 Teklif anının havası
 - **Eski kod:** RS `OfferWeather.kt`, `WeatherFeedReader.kt`
@@ -379,6 +379,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `pairing-v1`, Keystore `NinebotLogger.Pairing.v1`, `device`, `crypto_mode`
 - **Bağımlı:** —
 - **WEEM:** `:scooter` `logic/` + BLE · 5 (A5.2)
+- **Ayrıntı:** `SCOOTER.md` 2 (GATT, çerçeve, şifreleme, el sıkışma, oturum sabitleri), 3 (registerlar), 4 (`pairing-v1`/Keystore)
 
 ### S2 Canlı panel
 - **Eski kod:** NB `NinebotMetrics`, `NinebotDashboard`, `DashboardView`, `DashboardActivity`, `Ui`, `RawPalette`
@@ -386,7 +387,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** yük `scooter/v1/live`
 - **Bağımlı:** S1
 - **WEEM:** `:scooter` · 5 (A5.3)
-- **Ayrıntı:** `bulgular/X_protocol.md` §P4
+- **Ayrıntı:** `SCOOTER.md` 6.1–6.2, 11.5 (yük: `bulgular/X_protocol.md` §P4)
 
 ### S3 Sürüş kaydı
 - **Eski kod:** NB `RecordingService`, `LogStore`, `LogExport`, `NinebotEventQueue`, `NinebotLogPolicy`, `NinebotGpsPolicy`
@@ -394,6 +395,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `ninebot-logger.db`, dışa aktarma ZIP (`manifest.json` schema 1)
 - **Bağımlı:** S1
 - **WEEM:** `:scooter` · 5 (A5.3)
+- **Ayrıntı:** `SCOOTER.md` 7
 
 ### S4 Yolculuk sayacı
 - **Eski kod:** NB `TripMeter`, `ScooterEnergy`
@@ -401,6 +403,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** sayaç (yük `trip`)
 - **Bağımlı:** S2
 - **WEEM:** `:scooter` `logic/` · 5 (A5.3)
+- **Ayrıntı:** `SCOOTER.md` 8.1–8.3
 
 ### S5 Harici batarya
 - **Eski kod:** NB `PackPresence`, `BleCapture.batteryFound` (BMS kartı arama)
@@ -408,6 +411,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `external_bms_boards`, `battery_probe`
 - **Bağımlı:** S1
 - **WEEM:** `:scooter` · 5 (A5.3) — enerji ölçümü açık sorun
+- **Ayrıntı:** `SCOOTER.md` 9
 
 ### S6 Yeniden bağlanma
 - **Eski kod:** NB `NinebotLink`/`RecordingService` (yeniden deneme), RS `ScooterReconnect.kt` (M23)
@@ -415,6 +419,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** kanal `scooter_link` 4902; olaylar `scooter_data_back/missing`
 - **Bağımlı:** S1
 - **WEEM:** `:scooter` · 5 (A5.2)
+- **Ayrıntı:** `SCOOTER.md` 5
 
 ### S7 Yüzen panel
 - **Eski kod:** NB `FloatingPanel`, `FloatPainter`, `FloatGeometry`, `PanelField`
@@ -422,6 +427,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `floating`, `float_*`
 - **Bağımlı:** S2
 - **WEEM:** `:scooter` + `:app` · 5 (A5.4)
+- **Ayrıntı:** `SCOOTER.md` 6.3
 
 ### S8 Tanı araçları
 - **Eski kod:** NB `BleCapture` ayrıntılı kayıt, sweep, `InfoSheet`; `tools/g3_readonly.py`
@@ -429,6 +435,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `sweep`, `detailed_diagnostics`, `export_full`
 - **Bağımlı:** S1, S3
 - **WEEM:** `:scooter` · 5 (A5.4)
+- **Ayrıntı:** `SCOOTER.md` 10
 
 ### G1 Tek vardiya / gün
 - **Eski kod:** RS `HomeShift.kt`, `HomeLocation.kt` (`HomeWatch`), `GpsService.kt`, `ShiftStateFeed.kt`, `EndedShiftMinutes.kt`; YG `lib/tracking/shift_engine.dart`, `shift_controller.dart`, `home_day.dart`, `rawstats_shift.dart`, `nav_only.dart`
