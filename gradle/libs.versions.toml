@@ -9,6 +9,8 @@ compose-bom = "2026.02.01"
 activity-compose = "1.13.0"
 # Compose zaten bu sürümü çeker; logic/core StateFlow için (plan 4.3, 4.7).
 kotlinx-coroutines = "1.9.0"
+# Ekran OCR (CAPTURE.md 3.3, 7.3; Rawstats ile aynı; model APK içinde, Latin yazısı).
+mlkit-text-recognition = "16.0.1"
 
 [libraries]
 junit = { module = "junit:junit", version.ref = "junit" }
@@ -17,6 +19,7 @@ compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose-
 compose-ui = { module = "androidx.compose.ui:ui" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity-compose" }
+mlkit-text-recognition = { module = "com.google.mlkit:text-recognition", version.ref = "mlkit-text-recognition" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 
 [plugins]

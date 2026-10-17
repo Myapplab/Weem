@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Sınıf adları değişmez (plan Bölüm 2): kullanıcının verdiği erişilebilirlik ve bildirim izni bileşen adına bağlı.
          Rawstats ile aynı bildirim; gövde Aşama 3'te. -->
@@ -27,6 +28,17 @@
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
+        </service>
+
+        <!-- Ağsız OCR (S17, CAPTURE.md 7.3): ML Kit kullanım ölçümünü Google veri aktarımına (CCT arka ucu) verir. Arka ucun kaydı
+             kaldırılır: aktarım kütüphanesi arka uç bulamaz, olayları gönderilmeden siler. Sınıflar kalır (ML Kit CCTDestination'a
+             doğrudan bakar; kütüphaneyi çıkarmak OCR'ı NoClassDefFoundError ile bozar). -->
+        <service
+            android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery"
+            tools:node="merge">
+            <meta-data
+                android:name="backend:com.google.android.datatransport.cct.CctBackendFactory"
+                tools:node="remove" />
         </service>
 
     </application>
