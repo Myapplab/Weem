@@ -8,7 +8,7 @@ Kurallar: `AGENTS.md` → "Birden çok Claude hesabı". Durumlar: `bekliyor` · 
 
 - **Son yapılan:** 17 Ekim — A1.3 kabuk bitti, A1.5 kullanıcı onayladı (`.dev` APK yedek telefonda): Aşama 1 tamam.
 - **Sıradaki iş:** A2.1 (Aşama 2 şartnamesi `docs/sartname/CORE.md`) — Opus · high, tek ajan.
-- **Devam eden (yarım) iş:** A2.1 — dal `claude/weem-continuation-pmd9q3`; başlandı, `docs/sartname/CORE.md` bölüm bölüm yazılıyor
+- **Devam eden (yarım) iş:** A2.1 — dal `claude/weem-continuation-pmd9q3`; `docs/sartname/CORE.md` Bölüm 0–1 (G1) yazıldı; sırada Bölüm 2 (G2), 3 (G4), 4 (R20), 5 (depolama), 6 (test eşlemesi), 7 (açık noktalar)
 - **Kullanıcıdan beklenen:** K0.1 kodsuz saha denemesi; uygulama simgesi; kalıcı Receiver telefonu (bugün Poco); her hesabın ortam ağ ayarında `dl.google.com` izni (Android'i yerelde derlemek için; nasıl: `AGENTS.md` → "Ortam").
 
 ## Aşama 0 — Planın son hâli
