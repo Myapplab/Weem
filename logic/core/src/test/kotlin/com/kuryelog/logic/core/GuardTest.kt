@@ -32,4 +32,12 @@ class GuardTest {
         assertNull(guarded("gps", broken) { throw IllegalArgumentException() })
         assertThrows(OutOfMemoryError::class.java) { guarded("gps", FailureSink { _, _ -> throw OutOfMemoryError() }) { error("x") } }
     }
+
+    @Test fun attemptKeepsTheFailureForTheCard() {
+        val e = IllegalStateException("draw")
+        val r = attempt("page_orders", sink) { throw e }
+        assertSame(e, r.exceptionOrNull())
+        assertEquals(listOf("page_orders" to e), seen)
+        assertEquals("ok", attempt("page_orders", sink) { "ok" }.getOrNull())
+    }
 }

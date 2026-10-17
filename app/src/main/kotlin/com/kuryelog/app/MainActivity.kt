@@ -9,7 +9,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.kuryelog.logic.app.Lang
+import com.kuryelog.app.core.Store
+import com.kuryelog.logic.core.Lang
 import java.util.Locale
 
 /** Tek Activity: alt menü kabuğu. Ekranlar sonraki aşamalarda sekmelere takılır. */
@@ -17,6 +18,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // RS `MainActivity`: eski otomatik oturumlar güncellemeden sonra sürmez (CORE.md 1.1).
+        safely("start") { Store.ensureManualMode(this) }
         val prefs = ShellPrefs(this)
         setContent {
             var langSetting by remember { mutableStateOf(prefs.langSetting) }

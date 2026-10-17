@@ -10,10 +10,13 @@ fun interface FailureSink {
  * yoksa null. `VirtualMachineError` (bellek, yığın taşması) yeniden fırlatılır: süreç kapanır ve çökme raporu yazılır.
  * Kaydın kendisi hata verirse o da yutulur (koruma hiçbir zaman fırlatmaz).
  */
-inline fun <T> guarded(source: String, sink: FailureSink, block: () -> T): T? = try {
-    block()
+inline fun <T> guarded(source: String, sink: FailureSink, block: () -> T): T? = attempt(source, sink, block).getOrNull()
+
+/** [guarded] gibi; hatayı da döndürür (çizilemeyen sekmenin kartı onu gösterir). */
+inline fun <T> attempt(source: String, sink: FailureSink, block: () -> T): Result<T> = try {
+    Result.success(block())
 } catch (e: Throwable) {
     if (e is VirtualMachineError) throw e
     try { sink.failure(source, e) } catch (inner: Throwable) { if (inner is VirtualMachineError) throw inner }
-    null
+    Result.failure(e)
 }

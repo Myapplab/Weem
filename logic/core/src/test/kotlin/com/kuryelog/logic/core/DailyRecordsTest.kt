@@ -6,8 +6,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
 
-/** WEEM: `everyFileWrittenByTheAppIsInTheBackupList` (WEEM kaynağını `append(…, "<ad>")` için tarar) gün dosyası yazan kod
- *  gelince A2.3'te eklenir (CORE.md 6.1). Burada saf kısım. */
+/** WEEM (CORE.md 6.1): `everyFileWrittenByTheAppIsInTheBackupList` WEEM'in bütün kaynağını (Android + `logic/`) `append(…, "<ad>")` için tarar. */
 class DailyRecordsTest {
     @get:Rule val temp = TemporaryFolder()
     private fun setup(): DailyRecords {
@@ -75,5 +74,12 @@ class DailyRecordsTest {
             assertEquals("2026-10-02/$name",BackupFiles.checkedPath("2026-10-02/$name"))
         }
         assertEquals(5,r.files("2026-10-02").size)
+    }
+    @Test fun everyFileWrittenByTheAppIsInTheBackupList() {
+        // Guards future features: each day-file append target must be exportable (Store.append(ctx, "x"), log.append("x")).
+        val call = Regex("""\bappend\((?:\s*[\w.]+\s*,)?\s*"([\w.-]+\.(?:jsonl|csv))"""")
+        val written = RepoSource.mainKotlin().flatMap { f -> call.findAll(f.readText()).map { it.groupValues[1] }.toList() }.toSet()
+        assertTrue(written.containsAll(setOf("events.jsonl", "errors.jsonl")))
+        assertEquals(emptySet<String>(), written - BackupFiles.logNames)
     }
 }

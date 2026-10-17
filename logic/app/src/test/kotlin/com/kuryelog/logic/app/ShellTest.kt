@@ -1,5 +1,6 @@
 package com.kuryelog.logic.app
 
+import com.kuryelog.logic.core.Lang
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

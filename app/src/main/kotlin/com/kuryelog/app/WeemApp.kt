@@ -17,9 +17,11 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
@@ -29,7 +31,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import com.kuryelog.logic.app.Lang
+import com.kuryelog.app.core.CrashLog
+import com.kuryelog.app.core.Store
+import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.app.Tab
 import com.kuryelog.logic.app.Text as Str
 import com.kuryelog.logic.app.ThemeMode
@@ -39,7 +43,10 @@ private val tabIcon = mapOf(
     Tab.MAP to "🗺", Tab.ORDERS to "📋", Tab.SCOOTER to "🛵", Tab.REMOTE to "📱", Tab.MORE to "⋯",
 )
 
-/** Alt menü kabuğu (A1.3). Her sekmenin kendi durumu (kaydırma, sayaç…) sekme değişince saklanır. */
+/**
+ * Alt menü kabuğu (A1.3). Her sekmenin kendi durumu (kaydırma, sayaç…) sekme değişince saklanır. Her sekme kendi hata sınırında
+ * ([GuardedPage], CORE.md 4.1): çizilemeyen sekme yerine kart, alt menü çalışır. Son çökme gizlenene dek en üstte kart.
+ */
 @Composable
 fun WeemApp(
     lang: Lang,
@@ -52,6 +59,8 @@ fun WeemApp(
     var selectedKey by rememberSaveable { mutableStateOf(Tab.start.key) }
     val selected = Tab.fromKey(selectedKey)
     val holder = rememberSaveableStateHolder()
+    val ctx = LocalContext.current
+    var crash by remember { mutableStateOf(Store.guarded(ctx, "crash_card") { CrashLog.unseen(ctx) }) }
     Scaffold(
         bottomBar = {
             NavigationBar {
@@ -67,11 +76,14 @@ fun WeemApp(
         },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
+            crash?.let { j -> CrashCard(j, lang) { CrashLog.hide(ctx, j); crash = null } }
             holder.SaveableStateProvider(selected.key) {
-                if (selected == Tab.MORE) {
-                    MoreScreen(lang, langSetting, theme, versionName, onLangSetting, onTheme)
-                } else {
-                    PlaceholderScreen(selected, lang)
+                GuardedPage(selected.key, lang, build = {}) {
+                    if (selected == Tab.MORE) {
+                        MoreScreen(lang, langSetting, theme, versionName, onLangSetting, onTheme)
+                    } else {
+                        PlaceholderScreen(selected, lang)
+                    }
                 }
             }
         }
@@ -107,8 +119,17 @@ private fun MoreScreen(
     onLangSetting: (String) -> Unit,
     onTheme: (ThemeMode) -> Unit,
 ) {
+    var records by rememberSaveable { mutableStateOf(false) }
+    if (records) {
+        RecordsScreen(lang) { records = false }
+        return
+    }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Text(Str.SETTINGS_TITLE.get(lang), style = MaterialTheme.typography.headlineMedium)
+
+        Section(Str.RECORDS_TITLE.get(lang)) {
+            TextButton(onClick = { records = true }) { Text(Str.RECORDS_OPEN.get(lang)) }
+        }
 
         Section(Str.SETTINGS_LANGUAGE.get(lang)) {
             Choice(Str.LANG_SYSTEM.get(lang), langSetting.isEmpty()) { onLangSetting("") }

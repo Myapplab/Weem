@@ -26,7 +26,9 @@
     <!-- allowBackup=false bulut/adb yedeğini kapatır; Android 12'den itibaren kurallar siparişleri, müşteri numaralarını,
          scooter kayıtlarını ve eşleşme deposunu cihazdan cihaza aktarımın da dışında tutar (Rawstats ile aynı).
          Android 12 öncesinde allowBackup=false ikisini de kapsar; fullBackupContent gerekmez (lint DataExtractionRules). -->
+    <!-- WeemApplication: çökme kaydı her girişten önce kurulur (CORE.md 4.1). -->
     <application
+        android:name=".WeemApplication"
         tools:ignore="DataExtractionRules"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"

@@ -16,21 +16,6 @@ enum class Tab(val key: String) {
     }
 }
 
-/** Dil ayarı (G3). Tercih anahtarı `lang` (`kuryelog` dosyası): `tr` | `az` | boş = telefon dili. */
-enum class Lang(val key: String) {
-    TR("tr"),
-    AZ("az");
-
-    companion object {
-        const val PREF_KEY = "lang"
-
-        /** Ayar `tr`/`az` ise o; değilse telefon dili `az` ise Azerice, aksi hâlde Türkçe (YolGo `I18n.resolve`). */
-        fun resolve(setting: String?, systemLanguage: String?): Lang =
-            entries.firstOrNull { it.key == setting }
-                ?: if (systemLanguage?.lowercase() == "az") AZ else TR
-    }
-}
-
 /** Tema seçimi: gece/gündüz ya da telefonu izle. Yeni tercih anahtarı `theme` (`kuryelog` dosyası). */
 enum class ThemeMode(val key: String) {
     SYSTEM("system"),

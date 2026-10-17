@@ -2,7 +2,7 @@ package com.kuryelog.app
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.kuryelog.logic.app.Lang
+import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.app.ThemeMode
 
 /** Kabuk tercihleri: Rawstats'ın `kuryelog` dosyası (veri sözleşmesi Bölüm 5.1); `lang` aynı, `theme` yeni. */
