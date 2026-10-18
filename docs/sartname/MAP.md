@@ -27,7 +27,7 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 | 6 | Y1, Y2 harita ekranı | A6.5 | ajan N | bekliyor <!-- st:6 --> |
 | 7 | Y4 navigasyon | A6.6 | ajan N | bekliyor <!-- st:7 --> |
 | 8 | Y5, Y6 bağlantılar ve adres | A6.6 | ajan N | bitti (12:34 UTC) <!-- st:8 --> |
-| 9 | Y12 yol kalitesi öğrenme | A6.11 | ajan Q | bekliyor <!-- st:9 --> |
+| 9 | Y12 yol kalitesi öğrenme | A6.11 | ajan Q | kısmen: 9.1–9.3 yazıldı; sırada 9.4–9.8 (12:37 UTC) <!-- st:9 --> |
 | 10 | Y9, N5, Y10 | A6.7 | ajan T | bekliyor <!-- st:10 --> |
 | 11 | Y11 ve YolGo gün motoru | A6.8 | ajan T | bekliyor <!-- st:11 --> |
 | 12 | Y17, Y18 | A6.9 | ajan T | bekliyor <!-- st:12 --> |
@@ -543,7 +543,111 @@ Bu bölümün çeviri payı: **5 dosya, 29 test** (hepsi A6.2b, saf `logic/map`)
 <!-- BEGIN sec:9 -->
 ## 9. Y12 — Yol kalitesi öğrenme (A6.11; sıfırdan, S3)
 
-_Yazılıyor (ajan Q)._
+Y12 = sürüşten ve sürücünün elle girdiklerinden sokak bilgisi biriktirip rota maliyetine katmak: elle kalite puanı (%), ters yön (ww) geçiş/sorun sayaçları ve "Sorun yok" onayı, "yol yok" (hayalet) parçalar, ana caddede kesim bazlı ters yön izni, otomatik dur-kalk istatistiği. Girişler: Ses+/Ses− tuşları, ekran kartları, harita uzun basış menüsü, Yollarım ekranı. **1.11.0 gerçeği:** otomatik dur-kalk/titreşim öğrenmesi (`roads.ways.v1`) rotayı **etkilemez** (yalnız ekranda); rotayı etkileyen Y12 girdileri elle puan, ww sayaçları, hayalet ve ww kesimidir (9.9). YolGo'daki "Yol puanları" (E10/E11 sokak puanı), "Haritada yüzey renkleri" ve kalibrasyon Y13/Y14'tür (9.8, 9.13). YolGo'nun iç değişiklik kodları "Y7" (yaya bölgesinden çıkış) ve "Y9" (ters yön temiz sürüş onayı, 8 Ekim saha) WEEM özellik kodu değildir; burada **YG-Y9** diye anılır. WEEM sıfırdan öğrenir: `roads.*` aktarılmaz (S1, S3), ilk açılışta bütün Y12 verisi boştur.
+
+### 9.1 Kaynak ve kapsam
+
+| Dosya (YG) | Satır | İçerik | WEEM |
+|---|---|---|---|
+| `lib/roads/road_knowledge.dart` | 1–593 | `WayStats` 25–59, `WwStats` 61–80, `GhostMark` 82–121, `RoadKnowledge` 123–251, `LearnFix` 258–286, `WwRunWay`/`WwRun` 288–317, `wwCleanApprovals` 320–331, `WwPass` 333–352, `RoadLearner` 365–593 | `logic/map/roads` birebir |
+| `lib/roads/road_controller.dart` | 1–442 | `RoadController` (Riverpod): yükle/kaydet, vardiya kapsamı, soru akışı, elle eylemler, gün silme | saf çekirdek `roads.RoadBook` + Android bağ (9.12) |
+| `lib/roads/day_contributions.dart` | 1–102 | `RoadDayContributions`: gün kovaları, gün silme | `roads` birebir |
+| `lib/roads/quality_prompt.dart` | 1–77 | "%" sorusu, 6 sn otomatik kayıt | `roads.QualityPrompt` saf |
+| `lib/roads/street_ratio.dart` | 1–56 | cadde kötü kesim oranı | `roads` (1.0'da yalnız kötü noktalarla) |
+| `lib/roads/street_scores.dart` | 1–183 | E11 sokak puanı (Y13 parçaları + Y14 kalibrasyonu) | **sonra** (9.11, SORU-Q2) |
+| `lib/routing/quality.dart` | 1–77 | `priorQuality`, `learnedScore`, `learnedConfidence`, `blendQuality`, `QualityRating`, ww oranları, `QualityBand` | `route/Quality.kt` (A6.4 yazar; `CostModel` ister) |
+| `lib/surface/bad_spots.dart`; `surface_models.dart:16-37`; `surface_store.dart:92-93, 113, 284-287, 369-379` | — | Ses− kötü noktası (`SurfaceMark`), `manual-marks.json` | alt küme `logic/map/surface` (SORU-Q1) |
+| `lib/ui/roads_screen.dart` | 1–700 | Yollarım (4 sekme), kalite sayfası, ww satırı, hayalet listesi/seçici, `WrongWayCard`, `QualityPromptCard` | `:app` Compose |
+| `lib/ui/surface_screen.dart` | 46–97 | `SurfaceQualityTab` (Yollarım → Kalite gövdesi; çoğu Y13/Y14) | yalnız Y12 parçaları (9.8) |
+| `lib/nav/nav_controller.dart` | 235–247, 480–506, 578–751, 761–779, 781–830 | yeniden rota tetikleri, plan girdileri, ses tuşları, hayalet önbelleği, öğrenme fix'i, ters yön önerisi | `nav` (Bölüm 7) + `roads` |
+| `lib/tracking/map_matcher.dart` | 1–103 | eşleme, ters yön tespiti (öğrenmenin girdisi) | Bölüm 7 (ajan N); özet 9.3.1 |
+| `lib/ui/nav_screen.dart` | 61–146, 155–330, 357–366 | kart yerleşimi, uzun basış menüsünün Y12 satırları, 👍/👎 | menü Bölüm 6; metinler 9.4, 9.8 |
+| `lib/ui/settings_screen.dart` | 243–308 | Ayarlar → Yollarım akordeonu, ses tuşu anahtarı | `:app` Harita ayarları |
+| `lib/core/settings.dart` | 40–43, 84–97, 150, 253–257, 301–305 | `volumeKeys`, `qualityTolerancePct`, `showQualityLayer`, `wwMaxProblemPct`, `wwAskAlways` | `settings.MapSettings` (Bölüm 14) |
+| `android_overlay/MainActivity.kt` | 54–65, 110–113, 478–503 | ses tuşu yakalama | `:app` `MainActivity` + `:map` `VolumeKeys` |
+| `lib/input/clipboard_sniffer.dart` | 86–100, 154–161, 238–242 | köprü `onVolume`, `onVolumeDownHold`, `setVolumeCapture` | doğrudan çağrı |
+| `lib/tracking/day_deletion.dart` | 15–70 | gün silmede yol katkıları | Bölüm 12 (ajan T) + 9.3.5 |
+| `lib/ui/road_score.dart` | 1–150 | `RoadScoreDisplay`, kalibrasyon istemleri | **Y14, Y12 değil** (sonra) |
+
+Bulgu doğrulaması: `Y_contract.md` `roads.*` satırı (`road_controller.dart:53-58, 94-98`) doğru (`roads.days.v2`, `roads.days.damaged.v2` dizge olarak 91–99). `Y_routing.md` §Y3 "`learned` (Y12)" → **(bulgu düzeltmesi:** `learned` yalnız **elle puanları** taşır; `learnedForRouting()` `ratings`'ten `(q 0, c 0, r)` üretir, otomatik `WayStats` bilerek atlanır — `road_knowledge.dart:159-168`, yorum "traffic stops/vibration … must not affect surface routing costs"). "Y12/Y13 sonra olduğundan WEEM 1.0'da learned/surface/marks/wwRatio boş gelebilir" → **(bulgu düzeltmesi:** S3 ile Y12 1.0'da; `learned`, `wwRatio`, `wwAvoid`, `ghost`, `wrongWayEdges` dolu gelir; `surface`/`surfaceQuality` boş (Y13/Y14); `marks` yalnız elle kötü nokta, SORU-Q1). `OZELLIK_HARITASI` Y12 eski kodundaki `lib/ui/road_score.dart` → **(düzeltme:** Y14 kalibrasyon UI'ı). Y12 test sayısı 9.11'de bölündü.
+
+### 9.2 Kavramlar ve veri modeli
+
+- **Kimlik:** sokak = OSM way id (`Long`, grafın `wayOsmId`); harita güncellense de kalır (`road_knowledge.dart:10`). Kenar kimliği haritaya özgüdür: kenara bağlı işaretler (hayalet, ww kesimi) **orta nokta koordinatıyla** saklanır, her haritada `nearestEdge(lat, lon, maxDist 30, accept: aynı way)` ile yeniden bulunur; `all` hayalet way'in bütün kenarlarıdır (`edgesOfOsmWay`) (`road_knowledge.dart:198-219`).
+- **Kalite** 0 (kötü) – 1 (mükemmel) = akıcılık: az dur-kalk, az sarsıntı (`quality.dart:4-9`). Üç kaynak: OSM ön tahmini `priorQuality`, otomatik `learnedScore` (+ güven `learnedConfidence`), elle yüzde `r` (1–100, 0 = yok). `LearnedQuality = (q, c, r)`.
+- **`QualityRating`** (`quality.dart:12-19`): `good = 90` (👍), `bad = 25` (👎), `none = 0`; eski 1/−1 → `migrate`: 1→90, −1→25, diğer aynen.
+- **`WayStats`** (sokak başına, otomatik): `m` sürülen metre, `s` süre sn, `stops` dur-kalk (tam durma 1, durmadan yavaşlama 0,5), `vibSum`/`vibN` titreşim RMS toplamı/sayısı, `passes` geçiş, `lastAt` ms. Türetilen: `vib` = `vibN < 10 ? null : vibSum/vibN`; `stopsPerKm` = `m ≤ 0 ? 0 : stops/(m/1000)`; `avgKmh` = `s ≤ 0 ? 0 : m/s×3,6`; `score` = `learnedScore(m, stops, vib)`; `confidence` = `learnedConfidence(m)` (`road_knowledge.dart:25-59`).
+- **`WwStats`** (yalnız onaylı sokakta ters yön): `passes`, `problems` (cevap "evet" 1; olaylı ama cevapsız 0,5), `lastAt`; `ratio` = ham `wrongWayRatio` (`road_knowledge.dart:61-80`).
+- **`GhostMark`** "haritada var, gerçekte yok": `way`, `lat`/`lon` (parçanın orta noktası), `name`, `at` ms, `all` (sokağın tamamı). Aynı tip **ww kesimi** listesinde de kullanılır (`wwSegs`: ana caddede kesim bazlı ters yön izni; `all` hiç kullanılmaz) (`road_knowledge.dart:82-145`).
+- **`RoadKnowledge`** = `ways: Map<Long, WayStats>`, `ww: Map<Long, WwStats>`, `ghosts`, `wwSegs: List<GhostMark>`, `ratings: Map<Long, Int>`, `names: Map<Long, String>` + `touchedWays`/`touchedWw` (gün katkısı için; `stats(way)`/`wwStats(way)` çağrısı ekler, yoksa yeni kayıt açar) (`road_knowledge.dart:123-154`). `nameOf(way)`: yok/boş → "isimsiz yol" / "adsız yol". `learnedKm` = Σm/1000 (kullanılmıyor).
+- **Gün katkısı:** otomatik artışlar vardiya kimliği kovasına, elle eylemler ve ilk açılıştaki toplamlar "taban"a yazılır (9.3.5).
+
+### 9.3 Öğrenme
+
+#### 9.3.1 Girdi `LearnFix` (`nav_controller.dart:781-804`)
+
+Her konum fix'inde harita eşleştirmesinden sonra, **yalnız vardiya (gün) açıkken**:
+
+| Alan | Değer |
+|---|---|
+| `t`, `lat`, `lon`, `accuracy` | fix (zaman fix'in kendi zaman damgası) |
+| `kmh` | `speed < 0 ? 0 : speed × 3,6` |
+| `way`, `name` | eşleşme `info.dist ≤ 20 m` ise `osmId`/ad, değilse `null`/"" |
+| `wrongWay` | eşleştirici: hareketli (hız ≥ 2 m/s ve yön ≥ 0) + tek yönün tersi + `contraflow` yok (`map_matcher.dart:57, 71-75`) |
+| `approved` | `streets.approved` way'i içeriyor (Y8, Bölüm 4) |
+| `vib` | `SensorHub.vibRms` — **1.11.0'da hep 0** (`ride_logger.dart:33, 41-44`: `start()` boş, fiziksel yüzey Y13'ün ayrı hattında) |
+| `excludeStops` | sipariş aşaması `atRestaurant` / `readyForCustomer` / `atCustomer` (Bölüm 11'deki aşama eşlemesi) **ya da** bir durağa < 60 m **ya da** varılan noktaya < 80 m |
+| `mainRoad` | `isMainRoad(cls)` = trunk / primary / secondary (`road_graph.dart:54-55`) |
+
+Eşleştirici özeti (ayrıntı Bölüm 7): doğruluk > 35 m fix'te güncellenmez, önceki eşleşmeyi döner; `nearestEdge(maxDist 30)` önce yönlü (hareketliyse), olmazsa yönsüz; "yol yok" kenarları kabul edilmez; ww kesimleri `allowedEdges` (öneri/uyarı üretmez) (`map_matcher.dart:54-101`).
+
+#### 9.3.2 `RoadLearner.feed` (`road_knowledge.dart:414-495`)
+
+1. `accuracy > 25` → yok say (boş liste).
+2. Adım: önceki fix varsa `dt` = fark (sn, ms/1000); `0 < dt ≤ 5` ise `d = haversine`, `d > 100 m` → `d = 0` (sıçrama); aksi `dt = 0`, `d = 0`. Son zaman, konum ve **önceki hız** saklanır.
+3. **Sokak istatistiği:** way değişince eski way'de `passM ≥ 20 m` ise `passes++`; `passM = 0`. Way varsa: ad boş değil ve farklıysa `names[way] = ad`; `d > 0` ise `m += d`, `s += dt`, `lastAt = t`, `passM += d`; `kmh ≥ 10 && vib > 0` ise `vibSum += vib`, `vibN++`.
+4. **Dur-kalk** (`_stopAndGo`, 546-593; sabitler 370-374: akıyor ≥ 12, yavaş < 8, durdu < 5 km/s; `stopMinS` 3, `stopMaxS` 150 sn):
+   - `kmh ≥ 12`: yavaşlamış, durma sayılmamış, `slowWay` var ve bu fix `excludeStops` değilse `stops(slowWay) += 0,5`; `moving = true`; yavaşlama durumu sıfırlanır.
+   - `!moving` ya da `kmh ≥ 8` → hiçbir şey (8–12 arası ölü bölge).
+   - Yavaşlama başlar: `slowSince ??= t`; ilk kez ise `slowWay = way ?? sonWay`. `kmh < 5`, süre (tam saniye, `inSeconds`) ≥ 3 ve sayılmamışsa → `stops(way ?? slowWay) += 1` (`excludeStops` değilse), `stopWay` saklanır.
+   - Süre > 150 sn (park/teslimat): `stopWay` varsa `stops = max(0, stops − 1)`; `moving = false`; sıfırla.
+5. **Kesintisiz ters yön sürüşü** (`_trackRun`, 510-521): way yoksa çık. Son sürüşün son fix'inden > 10 sn (`runGapS`) geçtiyse sürüş bitmiş sayılır. `wrongWay` fix sürüşü uzatır (yoksa yeni `WwRun(t)` açar); ters yön değil ama aynı way'de `kmh < 8` (durma/yavaşlama: eşleştirici hareketsizken yön veremez) de uzatır. Uzatma: parça (`WwRunWay(ad, main)`) yoksa eklenir, boş ad sonradan dolar, `meters += d`, `last = t`, `lastWay = way`. Onaylı/onaysız her parça girer; ana cadde `main` işaretli.
+6. **Ters yön geçişi** (yalnız onaylı sokak; 450-494): `wrongWay && approved && way` → oturum başka way'deyse kapanır (geçiş döner), yoksa `_WwSession(way, ad, t)` açılır; `wwOff = 0`, `meters += d`, olay denetimi. Oturum varken: aynı way'de `kmh < 8` → sürer (`meters += d`, olay); aksi `wwOff++`, 3 fix ya da başka way'e geçiş → kapanır.
+   - **Olay** (`_incident`, 497-508): sert fren (`0 < dt ≤ 2,5` ve `öncekiHız − kmh ≥ 9`) ya da durma (`kmh < 5`, önceki ≥ 5); iki olay arası ≥ 5 sn.
+   - **Kapanış** (`_endWw`, 525-544): oturum yok ya da `meters < 25` (`wwMinM`) → geçiş yok. Aksi `ww[way].passes++`, `lastAt` = son fix zamanı; geçişte "Sorun yaşadım" işaretlendiyse `problems += 1`; `WwPass(way, ad, metre, olay, bitiş, reported, run = (sürüş bu way'i içeriyorsa) sürüş)`.
+   - `flush()`: süren oturumu kapatır (gün sonu). `liveWw`: süren oturum `(way, ad, metre)`; `markLiveReported()`: süren oturuma "sorun" işareti (yoksa `false`).
+
+#### 9.3.3 Denetleyici (`RoadController`, `road_controller.dart:80-158, 180-202, 398-441`)
+
+- Açılış: `roads.*` okunur (9.10), `RoadLearner` kurulur, gün katkı defteri yüklenir (bozuksa 9.3.5). Öğrenme kapsamı vardiyaya bağlı: gün açılınca `learningDay = dayId`, 5 sn'de bir tik; kapanınca `flush` + katkı yakalama + `learningDay = null` + yeni öğrenici + soru/son geçiş/canlı/"temiz sürüş" sıfır + zorla kayıt (103-111).
+- `onFix(f)`: gün kapalıysa çık; `feed`; biten her geçiş `_onPass` (9.6); canlı geçiş değiştiyse yayın; katkı yakala; kayıt (141-158).
+- Tik (5 sn): açık soru ≥ 20 sn (`askTimeoutS`) ise zaman aşımı (9.6); kayıt.
+- Kayıt (`_save`, 407-432): kirli değil ve zorla değilse atla; zorla değilse en çok **30 sn'de bir**; son yazılan dizgeyle aynıysa yazma (`_written`). Zorla: cevap, sonradan sorun ekleme, bütün elle değişiklikler, gün sonu, uygulama arka plana (`AppLifecycleListener.onPause`), kapanış. `roads.days.v2` yazımları zincirli (`_writes`), gün silme yazımın bitmesini bekler.
+- Yeniden rota tetikleri (`nav_controller.dart:235-247`): `ghostRev` (hayalet/ww kesimi değişti), `approvedRev` ("Sorun yok" onayı ya da geri alma), ayarlar `qualityTolerancePct`, `wwMaxProblemPct` (+ `turnPenaltyS`, `bikewayCostPct`) değişince rota varsa `replan('prefs')`. Elle puan (%, 👍/👎, kalite sayfası) kaydı da rota varsa yeniden rota çağırır.
+
+#### 9.3.4 Elle eylemler (`road_controller.dart:297-396`)
+
+| Eylem | Etki |
+|---|---|
+| `rate(way, r, ad?)` | ad yazılır; `r == 0` → puan silinir, aksi `ratings[way] = r`; `_changed` (katman sayacı++, zorla kayıt, yayın) |
+| `resetQuality(way)` | defterde way sıfırlanır; `ways` ve `ratings`'ten silinir |
+| `resetAllQuality()` | hepsi — **UI'da kullanılmıyor (ölü)** |
+| `addWwPass(way, problem, ad?)` | `passes++`, sorunsa `problems += 1`, `lastAt = şimdi`; katkı **tabana** (`manual`) |
+| `resetWw(way)` | defterde ww satırı sıfır; `ww`'den silinir |
+| `markGhost(g, edge, all)` | aynı way'in `all` işareti varsa onu döner; orta nokta (`geometry(edge, f0 .5, f1 .5).first`), ad; aynı way'de (`all` ise hepsi, değilse orta noktaya < 15 m olan) eski işaret silinir; eklenir; olay `ghost {way, all?}`; `ghostRev++` |
+| `setWwSegment(g, edge, allow)` | aynı way'de orta noktaya < 15 m kesim silinir; `allow` ise eklenir; olay `ww_segment {way, allow}`; `ghostRev++` |
+| `removeGhost(m)`, `clearGhosts()` | `ghostRev++` |
+
+#### 9.3.5 Gün katkıları (`RoadDayContributions`, `day_contributions.dart`)
+
+- Amaç: bir günün **otomatik** artışlarını gün silmede geri almak; ilk açılıştaki toplamlar ve elle eklenenler korunur (5-6).
+- Satırlar: way `[m, s, stops, vibSum, vibN, passes, lastAt]` (7 double), ww `[passes, problems, lastAt]` (3 double); son eleman (`lastAt`) toplanmaz, **en büyüğü** alınır (26-27, 46-47, 90).
+- `capture(k, day)`: dokunulan her way/ww için (`touchedWays/Ww`) son görülen değere göre fark o günün kovasına eklenir, görülen güncellenir, dokunulanlar temizlenir (37-52). `manual(k)`: fark tabana (41).
+- `deleteDate(k, date)`: anahtarı `yolgo-<ms>` olan ve `bakuDay(ms) == date` olan kovalar silinir; `k.ways`/`k.ww` **taban + kalan kovalardan** baştan kurulur; silinen kimlikler döner (53-60, 83-98). Başka önekli kova silinmez; `RoadKnowledge`'ın elle alanları (puan, ad, hayalet, ww kesimi) dokunulmaz.
+- `resetWay(id?, wrongWay)`: tabandan ve bütün kovalardan (id yoksa hepsi) siler, görüleni unutur (61-82).
+- İlk açılış (kayıt yok): mevcut toplamlar taban (17-19). Bozuk kayıt: ham dizge `roads.days.damaged.v2`'ye kopyalanır, defter mevcut toplamları taban alarak yeniden başlar — geçmiş gün üyeliği uydurulmaz (`road_controller.dart:94-100`).
+- Gün silme (`day_deletion.dart:21-53`; ayrıntı Bölüm 12): seçilen tarih aktif günse önce gün kapatılır; … `deleteContributions(date)` = önce yakala, sonra `deleteDate`, zorla kayıt, yazımı bekle; dönen kimlikler gün kaydından da silinir. Onay metni: "Bu tarihin sürüş, sipariş, olay, istatistik ve otomatik yol ölçümleri silinir. Diğer günler ve elle kaydedilen yollar korunur." / "Bu tarixdəki sürüş, sifariş, hadisə, statistika və avtomatik yol ölçmələri silinir. Başqa günlər və əl ilə qeyd olunan yollar saxlanır."
+- **WEEM:** kova anahtarı aynen `yolgo-<vardiya başlangıcı ms>` (`ShiftPort.state.startedAtMs`; test ve `deleteDate` ayrıştırması birebir kalsın, anlamı WEEM vardiyası); `bakuDay` → `:core` tek saat kuralı `LogTime.day(ms, Clock.zone)` (`CORE.md` "Gün sınırı", 176. satır: Azerbaycan'da fark yok). Gün silme hangi ekrandan tetiklenirse (Y17 gün silme, R12 Kayıtlar; Bölüm 12/15) `:map` kancası `RoadBook.deleteContributions(date)`'i çağırır.
 <!-- END sec:9 -->
 
 <!-- BEGIN sec:10 -->
