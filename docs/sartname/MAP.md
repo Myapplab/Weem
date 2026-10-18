@@ -24,7 +24,7 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 | 3 | Y3 rota motoru | A6.4 | ajan R | bitti (17:15 UTC) <!-- st:3 --> |
 | 4 | Y8 sokak kararları | A6.4 | ajan R | bitti (17:15 UTC) <!-- st:4 --> |
 | 5 | Y15, Y16, Y21 | A6.8 | ajan R | bitti (17:15 UTC) <!-- st:5 --> |
-| 6 | Y1, Y2 harita ekranı | A6.5 | ajan N | kısmen: 6.1–6.5 yazıldı; sırada 6.6 katmanlar ve uzun basış menüsü (17:18 UTC) <!-- st:6 --> |
+| 6 | Y1, Y2 harita ekranı | A6.5 | ajan N | kısmen: 6.1–6.12 yazıldı; sırada 6.13 veri, testler, yerleşim, farklar (17:23 UTC) <!-- st:6 --> |
 | 7 | Y4 navigasyon | A6.6 | ajan N | bitti (12:40 UTC) <!-- st:7 --> |
 | 8 | Y5, Y6 bağlantılar ve adres | A6.6 | ajan N | bitti (12:34 UTC) <!-- st:8 --> |
 | 9 | Y12 yol kalitesi öğrenme | A6.11 | ajan Q | bitti (17:16 UTC) <!-- st:9 --> |
@@ -749,6 +749,102 @@ Fixture'lar aynen: `_single(tags)` (way 500, 400 m kuzey), `_parallel(east)` (ba
 - Düğme (`smart-locate`, 64×64, daire, panel zemini, çerçeve; simge 30, mavi): `free` → `location_searching_rounded`, ipucu "Konumuma dön" / "Mövqeyimə qayıt"; `followNorth` → `my_location_rounded`, "Gidiş yönüne çevir" / "Hərəkət istiqamətinə çevir"; `followHeading` → `navigation_rounded`, "Kuzey yukarı" / "Şimal yuxarı". Simge anahtarı `locate-<kip>`.
 - Basınca (`smartLocate`): takipte ama elle yakınlaştırılmışsa yalnız standart yakınlığa döner (`recenter`); aksi `locateActionFor`: `free` → konuma dön (yön tercihi korunur), `followNorth` → yön-yukarı, `followHeading` → kuzey-yukarı (kuzeye geçerken kamera hemen 0°'ye döner); yön değişiminde de takip ve otomatik yakınlık yeniden açılır.
 - `recenter(resetZoom = true)`: bekleyen geri-takip iptal, takip açık, `resetZoom` ise otomatik yakınlık açık; işaret yoksa son konum, o da yoksa konum servisi başlatılır; kamera hazırsa `resetZoom ? otomatikYakınlık : şimdiki` ve yön-yukarıysa kamera yönüyle.
+
+### 6.6 Haritadaki katmanlar ve işaretler
+
+Çizim sırası (flutter_map, `map_view.dart:502-619`; Google'da aynı içerik çizgi ve işaret olarak):
+1. Altlık (6.4) ve sade sokak katmanı.
+2. **Yer katmanı** (`PoiLayer`, :972-1031). Kaynak `displayPoisProvider` (:902-918): düzeltilmiş POI kümesi (Bölüm 5) + yerel ışık işaretleri (Y11, Bölüm 11): "ışık yok" işaretinin 25 m içindeki OSM ışıkları gizlenir; 25 m içinde ışık olmayan "ışık var" işareti eklenir. Yakınlık <12'de hiçbir şey; görünen alanda öncelik ışık < metro (`s`) < AVM (`m`) < diğerleri; en çok 180 işaret, 55 ad.
+
+| Tür | Görünür yakınlık | İşaret | Ad etiketi |
+|---|---|---|---|
+| metro `s` | ≥13 | 30×30 kırmızı `#E30613` daire, beyaz 2,5 kenar, "M" (w900, 15) | ≥16 |
+| AVM `m` | ≥15 | 32×32 mor `#7B4DFF` yuvarlak kare (r 9), beyaz 2 kenar, `local_mall` | ≥17 |
+| ışık `l` | ≥16,5 | 16×16 `#222222` (r 4), beyaz 1 kenar, sarı `#FFB13D` ışık simgesi | yok |
+| restoran `r`, fast food `f`, kafe `c`, dükkân `t` | ≥16,5; ekranın 34 px ızgarasında hücre başına bir | 30×30 yemek rengi daire, beyaz 1,5 kenar; simge `f` fastfood, `c` local_cafe, `t` storefront, aksi restaurant | ≥17,6 |
+
+   Ad: 11 pt w700, iki katlı gölge, 145×35 px kutular çakışmaz, işaretin üstünde.
+3. Bisiklet yolları (Y15, Bölüm 5); sokak katmanı (`streetOverlayProvider`, :82-144: ww kesimi, hayalet, onaylı, kara liste, eğimli; ölçüler 9.8.7; Y13 yüzey çizgileri `showQualityLayer` — WEEM 1.0'da yok).
+4. Öteki modun planı (soluk gri 4 px `#66A0A8B8`) ve etkin rota (Bölüm 7.11).
+5. İşaretler (harita yönüyle döner): bekleme sürerken ışık (`lightAt`, Y11; 24×24, `#1B1B1B` zemin, turuncu `#FF9F1C` 3 px halka, ışık simgesi 14, 900 ms'de 0,85↔1,15 nabız); varılan hedef (`reached-pin`, 34×34, siyah zemin, yeşil 3 px halka + 12 bulanık parıltı, bayrak 18); duraklar (34×34; numara 1, 2…; ilk durak tam mor, diğerleri %60; 15 pt w800); ilk durakta yeni rota halkası (`Ripple`, 180×180, 1 600 ms, üç halka 0,18 arayla, 3 px mor, saydamlık `(1 − k) × 0,9`, yarıçap 12 → kutunun yarısı).
+6. Doğruluk dairesi ve konum işareti (6.5); atıf yazısı (6.4).
+
+### 6.7 Uzun basış menüsü (`nav_screen.dart:155-366`)
+
+Basılan nokta için: 40 m içindeki en yakın kenar (yol adı; adsızsa "isimsiz yol" / "adsız yol"), 30 m içindeki en yakın yer (türler `r`, `f`, `c`, `t`, `m`), 25 m içindeki en yakın ışık. Alttan açılan, kaydırılabilir sayfa; satıra dokununca sayfa kapanır ve eylem çalışır. Satırlar sırayla:
+
+| # | Koşul | Metin TR / AZ (alt yazı) | Eylem → veri bölümü |
+|---|---|---|---|
+| 1 | her zaman | "Buraya git" / "Bura get" | `goTo(nokta)`, kaynak `map` → 7.3 |
+| 2 | her zaman | "Durak olarak ekle (çifte sipariş)" / "Ünvan kimi əlavə et (ikiqat sifariş)" | `addStop` → 7.3 |
+| 3 | yakın yer `r`/`f`/`c` | "Restorana git: <ad>" / "Restorana get: <ad>" | `goTo(yer, label = ad, restaurant = true)` |
+| 3' | aksi | "Bu noktayı restoran olarak seç" / "Bu nöqtəni restoran kimi seç" | `goTo(nokta, restaurant = true)` |
+| 4 | her zaman | "Bu konuma günlük iş ekle" / "Bu ünvana gündəlik iş əlavə et" | görev düzenleyici → 13 |
+| 5 | her zaman | "Burada kaldırımda bekliyorum" / "Burada səkidə gözləyirəm" ("Yakındaki ışıkla karıştırma" / "Yaxındakı işıqforla qarışdırma") | kaldırım işareti → 11 |
+| 6 | her zaman | "Kaldırım işaretini kaldır" / "Səki işarəsini sil" | kaldırım işaretini sil → 11 |
+| 7 | yol var | "Yüzey türü / geçilebilirlik" / "Səth növü / keçid" (yol adı) | yüzey işareti (Y13) — **WEEM 1.0'da satır yok** |
+| 8 | yol, ana cadde değil | "Saatli çift yön izni" / "Saatla iki istiqamət icazəsi" (yol adı) | saat izni sayfası → 4.5 |
+| 9 | ana cadde ve tek yön | izinliyse "Bu kesimde ters yön iznini kaldır" / "Bu hissədə əks istiqamət icazəsini sil", değilse "Bu kesimde ters yöne izin ver" / "Bu hissədə əks istiqamətə icazə ver" ("<ad> · yalnız bu kavşak arası, ana cadde" / "<ad> · yalnız bu kəsişmələr arası, əsas küçə") | ww kesimi + bildirim → 9.8.6 |
+| 10 | yol | "Elle yüzey puanı · <ad>" / "Əl ilə səth balı · <ad>"; sağda 👍 "Kaliteli yol" / "Keyfiyyətli yol", 👎 "Kalitesiz yol" / "Keyfiyyətsiz yol" | puan penceresi, `rate` → 9.4.1, 9.4.2 |
+| 11 | yol | cadde kötü kesim oranı ("Ölçülmüş kötü kesimler + kötü noktalar (±25 m)" / "Ölçülmüş pis hissələr + pis nöqtələr (±25 m)") | → 9.7 |
+| 12 | yol | kapalıysa "Yol kapatmayı kaldır" / "Yolun bağlanmasını ləğv et", değilse "Bu yolu tamamen kapat" / "Bu yolu tam bağla" ("<ad> · Ses− artık yalnız ±25 m işaretler" / "<ad> · Səs− indi yalnız ±25 m qeyd edir") | `streets.blocked`; rota varsa `replan(prefs)` → 4.4 |
+| 13 | yol | "Bisiklet yolu olarak işaretle" / "Velosiped yolu kimi qeyd et" ya da "Bisiklet yolu işaretini kaldır" / "Velosiped yolu qeydini sil"; OSM'de zaten bisiklet yoluysa pasif ("<ad> · OSM'de zaten bisiklet yolu" / "<ad> · OSM-də artıq velosiped yoludur"), aksi "<ad> · bütün sokak; rotada tercih edilir" / "<ad> · bütün küçə; marşrutda üstünlük verilir" | geri alınabilir işaret → 5 (Y15) |
+| 14 | yol | "Burada yol yok" / "Burada yol yoxdur" ("<ad> · bu parça rotaya hiç girmez" / "<ad> · bu hissə marşruta heç vaxt düşməyəcək") | hayalet kenar → 9.8.5 |
+| 15 | yol | "Bu sokağın tamamı yok" / "Bu küçə ümumiyyətlə yoxdur" (yol adı) | hayalet yol → 9.8.5 |
+| 16 | her zaman | "Burada trafik ışığı var" / "Burada işıqfor var" | ışık var → 11 |
+| 17 | her zaman | "Bu noktada ışık yok" / "Bu nöqtədə işıqfor yoxdur" | 25 m içindeki ışığın (yoksa noktanın) "yok" işareti → 11 |
+| 18 | her zaman | yer yoksa "Buraya işletme ekle" / "Bura obyekt əlavə et", varsa "İşletme adını düzelt" / "Obyektin adını düzəlt" (yer adı) | POI düzenleyici → 5 (Y16) |
+
+Satır 7–15 yalnız yol bulunduğunda (40 m). **WEEM:** koşullar ve sıra saf `ui.LongPressMenu` (girdi: nokta, kenar bilgisi, yakın yer, yakın ışık, ww izni, kapalı mı, bisiklet durumu → satır listesi); `MapTab` yalnız çizer.
+
+### 6.8 Tema ve marka
+
+- **Paletler** (`theme.dart:30-68`; gece / gündüz): zemin `#0A101B` / `#F3F5F8`, panel `#F20F1725` / `#F2FFFFFF`, yüzey `#101827` / `#FFFFFF`, yüksek yüzey `#1B2638` / `#E6EAF0`, çizgi `#2B384C` / `#CBD2DB`, mavi (düz/iniş) `#8BB5FF` / `#1765D1`, turuncu (hafif yokuş) `#FF9F1C` / `#D45D00`, kırmızı (dik) `#FF2D55` / `#D7002E`, yeşil (onaylı/iyi) `#8ACDB8` / `#137D65`, pembe (duraklar) `#B68CFF` / `#C0008A`, eğimli sokak `#B26BFF` / `#7B2FD0`, yemek `#FF8A3D` / `#E2580B`, yürüme `#E8F7FF` / `#16222E`, yazı `#E8F7FF` / `#0B1218`, soluk yazı `#A5B0C1` / `#55616D`, gölge `#99000000` / `#33000000`; bisiklet yolu `#3DDCE8` / `#00838F`.
+- **Eğim rengi** (`forGrade`): eğim > %8 kırmızı, > %3 turuncu, aksi mavi (iniş dahil).
+- **Material teması** (:109-189): Material 3, yazı tipi Inter; birincil mavi, ikincil yeşil, hata kırmızı; giriş alanı dolgulu (r 18), iletişim kutusu r 24, alt sayfa r 28 + tutamak, dolu düğme en az 48×52 (r 18), çerçeveli 48×48; uygulama çubuğu başlığı 22 pt w700; sayılarda sabit genişlikli rakam (`tabularFigures`).
+- **Marka** (`brand.dart`): `BrandMark` (108'lik ızgara; lacivert geçişli zemin `#1C3157` → `#0B1428`, r 26; yeşil yol `#8ACDB8` 10 px; mavi iğne `#8BB5FF`) ve `BrandTitle` ("YolGo" + "kurye navigasyonu" / "kuryer naviqasiyası"). `assets/brand/yolgo-logo.png|svg` hiçbir yerde kullanılmıyor.
+- **WEEM:** HUD panelleri ve metinler `:app` paletindedir (`logic/app` `Palette`, `PaletteContrastTest` 4,5:1; A1.3). Harita çizim renkleri (rota eğimi, duraklar, eğimli/onaylı/kara liste, yemek, yürüme, bisiklet yolu) saf `ui.MapPalette` (gece/gündüz, yukarıdaki değerler) + `forGrade`. Inter taşınmaz (sistem yazı tipi, `:app`); sayılar `fontFeatureSettings = "tnum"`. YolGo markası ve logosu taşınmaz (WEEM adı ve simgesi `:app`).
+
+### 6.9 İlk kurulum, açılış ve ayarlar yapısı
+
+- **Kurulum ekranı** (`setup_screen.dart:15-131`; graf yokken; zemin `#0A0E17`): marka + dil seçici TR/AZ (`lang`'a yazar); "Scooter için yokuş, batarya ve yol kalitesi bilinçli navigasyon" / "Skuter üçün yoxuşu, batareyanı və yolun keyfiyyətini nəzərə alan naviqasiya"; adım 1 "Konum izni" / "Məkan icazəsi" — "Navigasyon, sürüş kaydı ve batarya tahmini için. "Uygulama kullanılırken" yeterli." / "Naviqasiya, sürüş qeydi və batareya hesabı üçün. "Tətbiqdən istifadə edərkən" kifayətdir.", "İzin ver" / "İcazə ver" (konum servisini başlatır, izin ister); adım 2 "Bakü yol haritası" / "Bakı yol xəritəsi" (metin ve bölge seçici "Merkez Bakü" / "Mərkəzi Bakı", "Geniş Bakü" / "Böyük Bakı", ⓘ "Bölgeler neyi kapsıyor?"; Bölüm 2.9); indirme sürerken 10 px ilerleme, yüzde, aşama ve "Ekranı açık tut. Uygulamayı kapatma." / "Ekranı açıq saxla. Tətbiqi bağlama."; aksi "İndir ve başla" / "Yüklə və başla"; hata kırmızı; altta "Harita © OpenStreetMap katkıcıları · Yükseklik: SRTM" / "Xəritə © OpenStreetMap iştirakçıları · Hündürlük: SRTM".
+- **Açılış ekranı** (:134-157): marka; gömülü harita açılırken "Bakü haritası hazırlanıyor…" / "Bakı xəritəsi hazırlanır…".
+- **WEEM:** ayrı kurulum ekranı yok: dil ve izinler `:app` ilk açılışında (G5); graf yokken Harita sekmesi vardiya kartının altında kurulum kartını gösterir (adım 2 ve ilerleme; harita yüzeyi yok, YolGo'daki gibi), açılırken aynı kartta "Bakü haritası hazırlanıyor…".
+- **Ayarlar** (`settings_screen.dart`): her satır aynı yuvarlak kart (r 20); uzun açıklamalar ⓘ simgesinde (`info-toggle`, ipucu "Bilgi" / "Məlumat"), dokununca 220 ms'de aşağı açılır; açılır gruplar oturum boyunca açık kalır (tercih değildir).
+
+| YolGo yeri (sıra) | İçerik | Sahibi | WEEM |
+|---|---|---|---|
+| Ayarlar → "Yol Kalitesi Kalibrasyonu" | kalibrasyon ekranı | Y14 (sonra) | yok |
+| Ayarlar → "Teklif veri seti" | veri seti ekranı | Bölüm 13 (Y19) | Harita ayarları |
+| Ayarlar → "Yollarım" | Yolları görüntüle, Sürüş kayıtları, Sokak bilgileri (fiziksel ölçüm; Yollarım: kalite · ters yön · yol yok; onaylı/kapalı/eğimli listeleri; ışık mesafesi `lightMaxM`; ses tuşları `volumeKeys`) | Bölüm 9, 12, 4, 11 (fiziksel ölçüm Y13, sonra) | Harita ayarları → "Yollarım" |
+| Ayarlar → "Hatırlatıcılar", "Günlük işler" | | Bölüm 13 (Y20) | Harita ayarları |
+| Ayarlar → "Harita görünümü" / "Xəritənin görünüşü" | altlık seçici (6.4), ⓘ "Sade görünümde ayrıntılar yaklaşınca belirir. Google Maps bağlantı kontrolü İlave ayarlar → Geliştirici ayarları → API ve bağlantılar'da; rota ve sokak kararlarını yine YolGo hesaplar." / AZ | **Bölüm 6** | Harita ayarları (seçenekler SORU-N5) |
+| Ayarlar → İlave ayarlar → "Rawstats bilgileri" | Rawstats canlı değerleri; Ev konumu + Yenile | S2 (`:scooter`), G2 (`:core`) | kalkar (S7): scooter canlı değerleri Scooter sekmesinde, ev Daha fazla → Ev konumu |
+| İlave ayarlar → "Hava durumu" | | Bölüm 10 | Harita ayarları |
+| İlave ayarlar → Geliştirici ayarları → "Navigasyon bağlantıları" / "Naviqasiya keçidləri" ("Waze, Yandex ve konum bağlantılarını YolGo ile aç" / AZ) | iletişim kutusu "YolGo ile aç" / "YolGo ilə aç": "Android seçim ekranında YolGo → Her zaman seç. Web bağlantıları için aşağıdaki varsayılan ayarları aç. Wolt doğrudan Waze uygulamasını çağırıyorsa bu seçim Android tarafından YolGo’a aktarılamaz; konumu Paylaş → YolGo ile gönder." / "Android seçim pəncərəsində YolGo → Həmişə seç. Veb keçidləri üçün aşağıdakı standart parametrləri aç. Wolt birbaşa Waze tətbiqini açırsa, Android bu keçidi YolGo-a ötürmür. Məkanı Paylaş → YolGo ilə göndər."; "Kapat" / "Bağla", "Android ayarlarını aç" / "Android parametrlərini aç" (`openLinkSettings`, 8.2) | Bölüm 8 | Harita ayarları; "YolGo" → "WEEM" |
+| Geliştirici → "Harita verisi" | | Bölüm 2.9 | Harita ayarları |
+| Geliştirici → "API ve bağlantılar" ("Maps · CARTO · Places · ORS · Open-Meteo") | | Bölüm 8.9 | Harita ayarları |
+| Ayarlar sonu: "Görünüm" (Otomatik / Açık / Koyu; eski `dark-ui` Koyu görünür ve korunur), "Dil" (Otomatik / TR / AZ), "YolGo 1.11.0 · az.duzyol.app" | | `:app` (G3, A1.3) | Daha fazla (tek tema/dil) |
+
+- **WEEM:** Daha fazla → "Harita ayarları" (`:app` `MapSettingsScreen`; emsal `ScooterSettingsScreen`); sıra YolGo'daki gibi, kalkan satırlar çıkar. Harita üstündeki ayar düğmesi (6.3) bu sayfayı açan kısayol olarak kalır.
+
+### 6.10 Google Maps anahtarı ve yardım
+
+- **Derleme** (`ci/build.sh:87-104`): CI gizli değişkeni `GOOGLE_MAPS_API_KEY` yalnız ortamdan okunur; biçim `AIza[0-9A-Za-z_-]{35}` değilse derleme "Google Maps anahtarı biçimi geçersiz" ile durur; günlüğe yalnız son 4 karakter yazılır; `res/values/google_maps.xml` → `google_maps_key` (`translatable="false"`) ve `GOOGLE_MAPS_ENABLED=true`. Değişken yoksa kaynakta boş `google_maps_key` kalır, Google seçeneği kapalıdır. Manifest `com.google.android.geo.API_KEY = @string/google_maps_key`. Değer hiçbir belgeye, günlüğe ya da dışa aktarmaya yazılmaz.
+- **Durum** (`mapsStatus`, `MainActivity.kt:114-126`): anahtar `AIza` ile başlıyor mu, son 4 karakter, paket, imza SHA-1 (iki noktalı büyük onaltılık), Play Services kodu (`isGooglePlayServicesAvailable`; okunamazsa −1).
+- **Yardım sayfası** (`maps_help.dart`): başlık "Google Maps"; "APK harita anahtarı" / "APK xəritə açarı": anahtarsız derleme ya da anahtar yok → "Anahtar eklenmemiş" / "Açar əlavə edilməyib", durum gelmeden "Kontrol ediliyor…" / "Yoxlanılır…", aksi `••••<son 4>`; "Google Play Services": 0 "Hazır" / "Hazırdır", −1 "Kontrol edilemedi" / "Yoxlama tamamlanmadı", diğer "Güncelleme veya etkinleştirme gerekiyor (kod N)" / "Yeniləmək və ya aktivləşdirmək lazımdır (kod N)"; açıklama "Google Cloud’da bu anahtarın projesinde Maps SDK for Android ve faturalandırma açık olmalı. Anahtar kısıtlaması Android uygulamaları olmalı; paket ve SHA-1 aşağıdaki değerlerle eşleşmeli." / "Google Cloud-da bu açarın layihəsində Maps SDK for Android və ödəniş hesabı aktiv olmalıdır. Açar Android tətbiqləri üçün olmalı, paket və SHA-1 aşağıdakı məlumatlarla uyğun gəlməlidir."; seçilebilir `Paket: <paket>` / `SHA-1: <sha1>`; "SHA-1 kopyala" / "SHA-1-i kopyala"; "Anahtar ayarlarını aç" / "Açar parametrlərini aç" (`https://console.cloud.google.com/apis/credentials`); "Maps SDK ayarlarını aç" / "Maps SDK parametrlərini aç" (`https://console.cloud.google.com/apis/library/maps-android-backend.googleapis.com`); "Tamam" / "Oldu". Bağlantılar `openUrl` ile (`ACTION_VIEW` + yeni görev; açılamazsa false).
+- **WEEM:** Gradle aynı gizli değişkeni okur (CI; yerelde `local.properties`), aynı biçim denetimi ve son-4 günlüğü, `resValue("string", "google_maps_key", …)` + `BuildConfig.MAPS_ENABLED`; imza SHA-1 `GET_SIGNING_CERTIFICATES` ile. API ekranının denetimleri Bölüm 8.9.
+
+### 6.11 Haritadan ev seçme (`home_picker.dart`, `HomePickActivity.kt`)
+
+- **YolGo:** `HomePickActivity` (dışa açık, eylem `com.myapplab.yolgo.PICK_HOME`) önce `RESULT_CANCELED` koyar; çağıran `com.kuryelog.app` ve eylem eşleşmiyorsa kapanır; aksi dışa kapalı `HomePickMapActivity`'yi (ayrı Dart girişi `pickHomeMain`, kanal `kurye_nav/home_pick`: `load`, `attribution`, `save`, `cancel`) açar. Girdi `lat/lon` yalnız `Double`, sonlu ve aralıkta (`HomePickContract`). YolGo ayarına yazmaz, YolGo evini okumaz; dil ve tema `settings.v1`'den salt okunur.
+- **Ekran:** başlık "Ev konumunu seç" / "Ev məkanını seç"; geri oku ve sistem geri tuşu = iptal; OSM karoları (`tile.openstreetmap.org`), yakınlık 17, döndürme kapalı; koyu temada karolar renk matrisiyle ters çevrilir; seçili nokta = kamera merkezi (kaydırınca değişir); uzun basış kamerayı basılan noktaya taşır; nokta çevresinde 50 m daire (birincil renk %15 dolgu, 2 px kenar); ortada sabit iğne (`location_pin` 40, 20 px yukarı); sağ altta "© OpenStreetMap contributors" (11 pt; dokununca `https://www.openstreetmap.org/copyright`). Altta "Haritayı kaydır veya uzun bas" / "Xəritəni sürüşdür və ya uzun bas", koordinat `%.6f, %.6f` ya da "—", "İptal" / "İmtina" ve "Kaydet" / "Saxla" (nokta yokken ya da kapanırken pasif). Açılış: girdi varsa o; yoksa izin `denied` ise istenir, yüksek doğrulukla en çok 8 sn konum; hata → "Konum alınamadı · Tekrar dene" / "Məkan alınmadı · Yenidən yoxla" (dokununca yeniden), İptal yine çalışır.
+- **WEEM:** `:map` `HomePickScreen` (Compose; MapLibre OSM raster stili; aynı kurallar ve metinler); Daha fazla → Ev konumu → haritadan seç (`:app`, CORE.md 2) girdiyi (taslak ya da kayıtlı ev, yoksa yok) verir; dönüş `HomePickResult.parse(ok, lat, lon)` → `HomeDraft(lat, lon, accuracy = null)` (A2.2). Dışa açık Activity, `PICK_HOME`, `SHARE_HOME` yok (S7). Koyu temada ters çevirme MapLibre raster boyasıyla (`raster-brightness-min = 1`, `raster-brightness-max = 0`; görsel eşdeğerlik A6.5'te gözle denetlenir).
+
+### 6.12 Gün kartı (`ShiftBar`) ve WEEM vardiya kartı sınırı
+
+- **YolGo** (`shift_widgets.dart:22-174`; içerik satırları Bölüm 11/12): katlı hâl sol kenarda tek sırada üç simge — "Eve dön" / "Evə qayıt" (`shift-home`, `home_rounded`), "İstatistik" / "Statistika" (`shift-stats`, `bar_chart_rounded`), "Günü bitir" / "Günü tamamla" (`shift-end`, `stop_circle_outlined`); simge 27, dokunma yüksekliği ≥48 px; sağda tutamak. Soldan sağa ≥24 px (ya da hız >250) kaydırma veya tutamak kartı açar; açık kart yalnız bilgi + aynı üç düğme; sağdan sola kaydırma, kart dışına dokunma ya da 20 sn (`collapseAfter`) katlar. Gün/sipariş no/aşama/sıradaki sipariş/teslim sayısı/ışık beklemesi ya da rota/hesap/bekleyen hedef değişince kendiliğinden açılır. Gün kapalıyken Eve dön ve Günü bitir pasif, İstatistik açık; kart satırı "Gün kapalı · evden çıkınca otomatik başlar" / "Gün bağlıdır · evdən çıxanda avtomatik başlayır". "Günü Başlat", sipariş ve aşama düğmeleri yok (aşamalar Rawstats'tan). Onaylar: "Eve dön" — "Evine rota çizilsin mi? Aktif gün devam eder." / "Evə marşrut çəkilsin? Aktiv gün davam edir." (ev yoksa "Ev konumu Rawstats'ta ayarlanır." / "Ev ünvanı Rawstats-da təyin olunur.", onay düğmesi yok), "Vazgeç" / "Ləğv et", "Eve dön" / "Evə qayıt" (`confirm-home`) → `goHome` (7.3); "Günü bitir?" / "Günü tamamlamaq istəyirsən?" — "Kayıt durur ve günün istatistiği açılır." / "Günün qeydi tamamlanır və statistika açılır.", "Bitir" / "Tamamla". Aşama satırları: `toRestaurant` "Restorana gidiyorsun" / "Restorana gedirsən", `atRestaurant` "Restorana vardın" / "Restorana çatdın", `readyForCustomer` "Sipariş alındı" / "Sifariş götürüldü", `toCustomer` "Müşteriye gidiyorsun" / "Müştəriyə gedirsən", `atCustomer` "Müşteriye vardın" / "Müştəriyə çatdın".
+- **WEEM sınırı (öneri, SORU-N7):** Harita sekmesindeki tek vardiya kartı `:app` `ShiftCard`'dır (A2.4; `ShiftPort.state`, başlat/bitir, ekran okuma uyarısı, scooter satırları). YolGo gün kartı ayrı kart olarak gelmez: "Günü bitir" = `ShiftCard`'ın bitir düğmesi (vardiya = gün, G1); "Eve dön" ve "İstatistik" `:map`'in `ShiftCard`'a eklediği eylemlerdir (`MapShiftActions`; ev yoksa metin "Ev konumu ayarlanmamış — Daha fazla → Ev konumu", 7.17); aşama satırı `OrderEvents.stages`'ten (`:orders` metinleriyle); katlanma kuralı (20 sn, kaydırma, değişiklikte açılma, konum/rota düğmelerinin yanına inmesi) Harita sekmesinin alt panelinde `ShiftCard`'ın katlı hâli olarak.
 <!-- END sec:6 -->
 
 <!-- BEGIN sec:7 -->
