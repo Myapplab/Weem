@@ -182,7 +182,7 @@ class LinkRuntime(
         return id!!
     }
 
-    /** Teslim zorunlu: dönmeden `files/link/outbox/`'a yazılır, onaya ya da TTL'ye kadar yeniden gider. */
+    /** Teslim zorunlu: dönmeden `files/link/outbox/`'a yazılır (yazılamazsa istisna çağırana), onaya ya da TTL'ye kadar yeniden gider. */
     fun publishReliable(type: String, payload: ByteArray, ttlMs: Long = MessengerConfig.DAY_MS): UUID {
         var id: UUID? = null
         locked(rethrow = true) { id = stack.publishReliable(type, payload, ttlMs, now(), wall()) }
@@ -266,7 +266,7 @@ class LinkRuntime(
 
     /**
      * [block] ve komutların uygulanması kilit altında, dinleyiciler kilit dışında; gelen ileti verildiyse dinleyiciler döndükten
-     * sonra `delivered` (teslim zorunlu onayı, LINK.md 3.8). [rethrow] = yayınlamadaki geçersiz girdi çağırana döner.
+     * sonra `delivered` (teslim zorunlu onayı, LINK.md 3.8). [rethrow] = yayınlama: geçersiz girdi ya da disk hatası çağırana döner.
      */
     private fun locked(rethrow: Boolean = false, block: () -> Unit) {
         val callbacks = ArrayList<() -> Unit>()
@@ -274,10 +274,8 @@ class LinkRuntime(
         synchronized(lock) {
             try {
                 block()
-            } catch (t: IllegalArgumentException) {
-                if (rethrow) throw t
-                failures.failure("link", t)
             } catch (t: Exception) {
+                if (rethrow) throw t
                 failures.failure("link", t)
             }
             try {
