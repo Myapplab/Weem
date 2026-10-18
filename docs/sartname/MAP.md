@@ -34,7 +34,7 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 | 13 | Y19, Y20 | A6.9 | ajan T2 | yazılıyor (ajan T2 başladı) (17:51 UTC) <!-- st:13 --> |
 | 14 | veri sözleşmesi | tümü | koordinatör | yazılıyor (kısmen: 14.1–14.11 taslak; Bölüm 11–13 satırları ajanlar bitince) (18:01 UTC) <!-- st:14 --> |
 | 15 | WEEM yerleşimi | tümü | koordinatör | bekliyor <!-- st:15 --> |
-| 16 | test eşlemesi A6.2a/A6.2b | A6.2a, A6.2b | koordinatör | bekliyor <!-- st:16 --> |
+| 16 | test eşlemesi A6.2a/A6.2b | A6.2a, A6.2b | koordinatör | yazılıyor (kısmen: 16.1–16.4 Bölüm 2–10 dosyaları; 11–13 ve toplamlar ajanlar bitince) (18:05 UTC) <!-- st:16 --> |
 | 17 | açık noktalar ve sorular | tümü | koordinatör | bekliyor <!-- st:17 --> |
 
 Dosya dağılımı (YG; her dosyanın tek sahibi var, başkası yalnız başvurur):
@@ -2031,7 +2031,101 @@ _Yazılıyor (koordinatör)._
 <!-- BEGIN sec:16 -->
 ## 16. Test eşlemesi (A6.2a, A6.2b)
 
-_Yazılıyor (koordinatör; ajan bölümlerindeki test tablolarından)._
+Her bölümün "Testler" alt bölümü test test ayrıntıdır (neyi doğrular, değerler, yardımcılar); bu bölüm **dosya dizini**, görev bölüşümü ve toplamlardır. Sayım: YT `^\s*(test|testWidgets)\(` tanımı (döngüyle üretilenler tek), YK `@Test` (`TEST_ENVANTERI` sayım komutları). Bir dosya birden çok bölüme dağılıyorsa satırı her görevde yalnız o görevin payıyla yer alır.
+
+### 16.1 Çeviri kuralları (A6.2a, A6.2b)
+
+- **"Testler derlenir, kırmızı":** çeviri görevi testleri ve testlerin derlenmesi için gereken **en küçük API iskeletini** (bölümlerin "WEEM yerleşimi" adları; gövde `TODO()`) yazar; uygulama görevi (A6.3 …) iskeleti doldurup testleri yeşil yapar. İskelet adı ya da imzası uygulamada değişirse test aynı commit'te güncellenir; beklenen değer değişmez (değişirse şartname farkı olarak bölümüne yazılır).
+- **Yer:** saf testler `logic/map/src/test/kotlin/com/kuryelog/logic/map/<paket>/<Ad>Test.kt` (JUnit 4, `org.json` var; paketler 15.1). Ekran testleri `:app` Robolectric (Compose `createComposeRule`; emsal `OrdersTabTest`, `OrdersSettingsScreenTest`), Android'e değen `:map` testleri `:map` Robolectric. YolGo `Key('…')` → `Modifier.testTag("…")` aynı dizge; metin denetimleri TR ve AZ birebir.
+- **Ad:** test işlevi adı Dart açıklamasının Türkçesi (ters tırnaklı Kotlin adı), sınıf KDoc'unda kaynak dosya ve sayı (emsal `ShiftFollowerTest`). Döngüyle üretilen testler (`for lang in Lang.values`, `for dark …`) tek test içinde döngü ya da `@RunWith(Parameterized::class)`; sayımda tanım sayılır.
+- **Girdiler:** `test/fixtures/*` → `logic/map/src/test/resources/fixtures/` aynı adlarla; sentetik graflar (`_graph`, `footGraph`, `plazaGraph`, `_turnGraph`, `_mainOneway`, …) tek test yardımcısında (`route` `TestGraphs`, Bölüm 3.14); Dart `Random(seed)` dizisi sabit örnek dizisine (10.12); saat `DateTime.now()` yerine sahte `Clock` (`:core`), Bakü günü `LogTime`; ağ sahte `HttpPort`; konum sahte fix akışı.
+- **Bölünmez kural:** bir YolGo testinin beklentisi WEEM kararıyla değişiyorsa (S1, S7, S9 …) test **uyarlanır** ve satırında neden yazılır; sessizce düşülmez. Çevrilmeyen her test 16.4'te gerekçesiyle.
+
+### 16.2 A6.2a — rota, harita verisi, Y12 (Y3, Y7, Y8, Y12, Y15, Y16)
+
+| Dosya | Sayı (A6.2a payı) | WEEM hedefi | Uygulama | Bölüm |
+|---|---:|---|---|---|
+| YT `overpass_test` | 3 | `graph.OverpassProblemTest` | A6.3 | 2.13 |
+| YT `map_data_update_test` | 2 | `graph.MapDataStateTest`, `AtomicFileTest` (saf `java.io.File`) | A6.3 | 2.13 |
+| YT `router_test` | 31 (38'in; 7'si sonra) | `graph.RoadGraphFileTest` 1 (A6.3) · `route.RouterTest` 20, `route.StartWalkOutTest` 3, `route.PlannerTest` 2, `route.RouteEngineTest` 3, `route.BadSpotCostTest` 1 (A6.4) · `roads.StreetRatioTest` 1 (A6.11) | A6.3, A6.4, A6.11 | 2.13, 3.14, 4.6, 9.11 |
+| YT `park_paths_test` | 4 | `graph.ParkPathsTest` 2 (A6.3), `route.ParkPathsTest` 2 (A6.4) | A6.3, A6.4 | 2.13, 3.14 |
+| YT `push_segments_test` | 5 | `route.PushSegmentsTest` | A6.4 | 3.14 |
+| YT `route_hours_test` | 3 | `route.ReverseHoursTest` | A6.4 | 3.14, 4.6 |
+| YT `ww_green_two_way_test` | 4 | `route.WrongWayCostTest` | A6.4 | 3.14, 4.6 |
+| YT `bikeway_e13_test` | 17 (18'in; 1'i A6.2b) | `graph.BikewayTagsTest` 3, `graph.RoadGraphFileTest` 2 (A6.3) · `route.BikewayCostTest` / `route.RouteEngineTest` 6 (A6.4) · `nav` denetleyici 2 (A6.6) · `settings.MapSettingsTest` + `route.BikewayMarksTest` 2, `route.BikewayMenuTest` + `ui.BikewayLayerRulesTest` 2 (A6.8) | A6.3, A6.4, A6.6, A6.8 | 5.2 |
+| YT `pois_test` | 4 | `graph.PoiSetTest` | A6.8 | 5.6 |
+| YT `quality_test` | 9 | `route.QualityTest` | A6.4 | 9.11 |
+| YT `road_learner_test` | 9 | `roads.RoadLearnerTest` | A6.11 | 9.11 |
+| YT `road_save_test` | 1 | `roads.RoadBookTest` | A6.11 | 9.11 |
+| YT `day_contributions_test` | 2 (3'ün; 1'i sonra) | `roads.DayContributionsTest` | A6.11 | 9.11 |
+| YT `ww_clean_run_test` | 5 | `roads.WwCleanRunTest` | A6.11 | 9.11 |
+| YT `ww_no_problem_green_test` | 5 | `roads.WwAnswerFlowTest` | A6.11 | 9.11 |
+| YT `street_scores_test` | 1 (12'nin; 11'i sonra) | `roads.RoadNamesTest` | A6.11 | 9.11 |
+| YT `v140_features_test` | 5 (14'ün; 9'u A6.2b) | Y3/Y8 3 → `route.RouterTest`, `route.RouteEngineTest`; ayar 2 → `settings.MapSettingsTest` | A6.4 | 10.12, 14.2 |
+| **Yeni** (karakterizasyon) | — | `graph.*` (2.13), `route.StreetPrefsTest` (4.6), `route.*` (3.14) | A6.3, A6.4 | 2.13, 3.14, 4.6 |
+
+**Koordinatör düzeltmesi:** `v140_features_test`'in iki "ayar" testi 10.12'de A6.2b'ye yazılmıştı; `MapSettings` rota motorunun girdisi olduğundan (A6.4 yalnız A6.3 ← A6.2a'ya bağlı) **A6.2a**'ya alındı.
+
+### 16.3 A6.2b — navigasyon, adres, ekran, batarya, hava, gün motoru ve ışık, kayıtlar, veri seti, görevler
+
+| Dosya | Sayı (A6.2b payı) | WEEM hedefi | Uygulama | Bölüm |
+|---|---:|---|---|---|
+| YT `hud_layout_test` | 2 | `:app` `MapTabLayoutTest` 1 (A6.5); 2. test (hava saati ayrıntısı, %40 klavyeli sayfa) `:app` `WeatherDetailSheetTest` 1 (A6.7) | A6.5, A6.7 | 6.14 (2. test 10.9) |
+| YT `locate_button_test` | 3 | `ui.LocateButtonTest` 2, `:app` `SmartLocateButtonTest` 1 | A6.5 | 6.14 |
+| YT `map_hud_gesture_test` | 2 | `:app` `MapHudLayoutTest` | A6.5 | 6.14 |
+| YT `puck_arrow_test` | 3 | `ui.PuckStyleTest` 2, `:map` `LocationPuckTest` 1 | A6.5 | 6.14 |
+| YT `yolgo_sade_2_test` | 9 (10'un; 1'i çevrilmez) | `:app` `MapShiftActionsTest` 5 (A6.5) · `day.ShiftEngineStagesTest` 4 (A6.8) | A6.5, A6.8 | 6.14, 11 |
+| YT `home_picker_test` | 5 | `:map` `HomePickScreenTest` | A6.5 | 6.14 |
+| YT `approach_zoom_test` | 4 | `nav.ApproachZoomTest` | A6.6 | 7.15 |
+| YT `arrival_focus_test` | 4 | `nav.ArrivalFocusTest` | A6.6 | 7.15 |
+| YT `arrival_pin_test` | 3 | `nav.NavControllerArrivalTest` | A6.6 | 7.15 |
+| YT `native_fast_fix_test` | 2 | `nav.FastFixGateTest` | A6.6 | 7.15 |
+| YT `nav_assistant_test` | 1 | `nav.NavAssistantTest` (görev kısmı A6.9) | A6.6 | 7.15 |
+| YT `nav_feed_test` | 11 | `nav.RouteProgressTest`, `nav.RouteStatusGateTest`, `nav.NavControllerOriginTest` 9 · `input.IncomingLinkTest` 2 | A6.6 | 7.15 |
+| YT `nav_only_location_test` | 2 | `nav.NavOnlyTest` | A6.6 | 7.15 |
+| YT `remaining_km_e12_test` | 7 | `nav.RouteProgressTest` + `:app` `MapMetricsTest` | A6.6 (gösterge A6.7) | 7.15 |
+| YT `route_warnings_h2_h3_test` | 3 | `nav.RerouteGateTest` | A6.6 | 7.15 |
+| YT `v150_features_test` | 10 (15'in; 5'i çevrilmez) | `nav.RouteOriginTest` 3 (A6.6) · `ride.SpeedOptionsTest` 3 (A6.7) · `ui.GoogleMapStyleTest` 1 (A6.5) · `:app` `MapMetricsTest`/`SpeedSheetTest` 3 (A6.5/A6.7) | A6.5, A6.6, A6.7 | 7.15 |
+| YT `yolgo_rules_test` | 4 | `nav.RerouteGateTest` 1 (A6.6) · `day` 2 (A6.8) · `weather` 1 (A6.7) | A6.6, A6.7, A6.8 | 7.15, 11 |
+| YT `offer_navigation_removed_test` | 2 (4'ün; 2'si çevrilmez) | `:app` `MapTabTest` (uyarlanır) | A6.5, A6.6 | 7.15 |
+| YK `NavFeedContractTest` | 2 (6'nın; 2'si A2.5'te karşılandı, 2'si çevrilmez) | `input.IncomingLinkTest` | A6.6 | 7.15, 8.11 |
+| YT `address_parser_test` | 17 | `input.AddressParserTest`, `input.PlusCodeTest` | A6.6 | 8.11 |
+| YT `place_search_test` | 8 | `input.PlaceSearchTest`, `input.PlacesRestTest` | A6.6 | 8.11 |
+| YT `geocoder_scope_test` | 1 | `input.GeocoderTest` | A6.6 | 8.11 |
+| YT `api_settings_test` | 1 | `input.ApiChecksTest` | A6.6 | 8.11 |
+| YT `battery_estimator_test` | 5 | `ride.EnergyOdometerTest` | A6.7 | 10.12 |
+| YT `v140_features_test` | 9 (14'ün; 5'i A6.2a) | Y11 5 → `day.LightRuleTest`, `day.LightTrackerTest`, `day.ShiftEngineTest` (A6.8) · Y18 3 → `logs.RouteRecorderTest`, `logs.RideLogStoreTest` (A6.9) · Y9 1 → `ride.SpeedOptionsTest` (A6.7) | A6.7, A6.8, A6.9 | 10.12, 11, 12 |
+| YT `v160_y1_y2_test` | 5 | `weather.WeatherReportTest` 3, `:app` `WeatherChipTest` 1 (A6.7) · `ui.PuckStyleTest` 1 (A6.5) | A6.5, A6.7 | 10.12 |
+| YT `v170_features_test` | 6 (13'ün; 2'si A2.5/A5.3'te karşılandı, 4'ü çevrilmez, 1'i sonra) | `ride.BatteryEstimatorTest` 1 · `:app` `MapMetricsTest` 2, `WeatherChipTest` 1 · gün kartı simgeleri 1, alt yer düğmesi boyu 1 (`:app`, Bölüm 6) | A6.5, A6.7 | 10.12 |
+| YT `weather_section_test` | 4 | `:app` `MapWeatherSettingsTest` | A6.7 | 10.12 |
+| YK `WeatherFeedTest` | 2 | `weather.WeatherSummaryTest` | A6.7 | 10.12 |
+| _Bölüm 11–13 dosyaları_ | | _ajanlar bitince eklenecek_ | A6.8, A6.9 | 11, 12, 13 |
+| **Yeni** (karakterizasyon) | — | `ui.MapStylesTest`, `ui.MapPaletteTest`, `ui.PuckMotionTest`, `ui.LongPressMenuTest` (6.14), `:app` `RegionInfoSheetTest` (5.4), `graph`/`ui` POI katmanı (5.6) | A6.5, A6.8 | 5, 6 |
+
+### 16.4 Çevrilmeyenler, sonraya kalanlar, başka görevde karşılananlar
+
+| Dosya (sayı) | Durum | Gerekçe | Bölüm |
+|---|---|---|---|
+| `street_prefs_migration_test` (1) | çevrilmez | S1: eski Ses− kara listesi WEEM'de olamaz, göç yazılmaz | 4.6, 4.8 |
+| `yolgo_sade_2_test` ayar testi (1) | çevrilmez | `followCourierStages` ayarı yok (14.2), S1 | 6.14 |
+| `v150_features_test` "evden çıkınca gün" (5) | çevrilmez | `HomeDepartureDetector` ölü kod, `autoStartDay` göçü; ev kuralı `:core` `ShiftMachine` | 7.15 |
+| `offer_navigation_removed_test` son 2 | çevrilmez | kaldırılmış teklif sayfası; veri seti tetikleri Bölüm 13 | 7.15, 13 |
+| `NavFeedContractTest` `pathsMatchRawstatsReader`, `everyQueryRechecksTheCallersPackageAndSigner` (2) | çevrilmez | sağlayıcı ve imza kalkar (S7) | 7.15 |
+| `NavFeedContractTest` (2) | A2.5'te karşılandı | `logic/core` `MessagesTest.routeStatusFromTodaysNavFeed` | 7.15 |
+| `v170_features_test` yük ayrıştırma/tazelik (2) | A2.5/A5.3'te karşılandı (uyarlanır) | `MessagesTest` (`ScooterLive`), `:scooter` `ScooterLiveMapper` | 10.12 |
+| `v170_features_test` (4) | çevrilmez | Rawstats yoklaması, zaman aşımı, StateFlow eşitliği, Rawstats ev cevabı (S7) | 10.12 |
+| `offer_engine_test` (7), `route_costing_test` `planLeavesBox` (1) | **SORU-T1-2** (öneri: çevrilmez) | v1 teklif motoru ölü kod; v2 `:economics`'te (A4.1) | 10.12, 10.14 |
+| `router_test` ölçülmüş yüzey (7), `route_costing_test` (5), `v170` yüzey dizini (1), `day_contributions_test` (1), `street_scores_test` (11), `road_score_ui_test` (11) | sonra (Y13/Y14) | `SurfaceSummary`/kalibrasyon deposu (SORU-Q2: 23 Y12 testi) | 3.14, 9.11, 10.12 |
+| `road_surface_score` (4), `surface_gate` (11), `surface_single_flight` (2), `surface_store_exclusions` (4), `surface_store` (12), `road_calibration_channel` (6), `road_calibration_score` (10), `road_calibration_screen` (4), `road_calibration` (7); YK `SurfaceSignalTest` (11), `RoadCalibrationCountdownTest` (5), `RoadCalibrationRoadRmsTest` (6), `RoadCalibrationTest` (18) | sonra (Y13/Y14) | `BEKLEYEN_OZELLIKLER.md` | 1 |
+| `home_day_controller_test` 1–3, `home_day_e6` (10), `home_day_end_rule` (5), `home_day_rules` (19), YK `NotifyPolicyTest` (2) | `:core`'da çevrildi (A2) | ev kuralı, `ShiftMachine`, `NotifyPolicy` (CORE.md 6.2) | — |
+| `rawstats_shift_end_test` (11) | `:core`'da uyarlandı (A2) | `ShiftFollower`; `:map` gün motoru kullanır (Bölüm 11) | 11 |
+| `rawstats_signals_test` (10), YK `CourierFeedPayloadTest` (6), `RawstatsObserverTest` (5) | uyarlanır `:link` (A8) | uygulamalar arası duyuru/yük → `:link` | — |
+| `scooter_language_section_test` (3) | `:app` | dil ve scooter bölümü (A1.3/A5.4) | — |
+| `native_telemetry_test` (1), `offer_feed_versions_test` (6), `rawstats_home_stale_test` (6), `rawstats_home_sync_test` (13), `app_version_test` (1), `ci_apk_workflow_test` (15), YK `HomeShareTest` (3), `HomePickContractCheck` (main, `@Test` yok) | çevrilmez | Flutter/CI'a ya da iki uygulamaya özgü (A2.1, A3.1; S7) | — |
+
+### 16.5 Toplamlar ve denetim
+
+_Bölüm 11–13 bitince yazılır: görev başına toplam (A6.2a, A6.2b), uygulama görevi başına toplam (A6.3 … A6.11), çevrilmez/sonra/başka görev; 83 YT (564) ve 15 YK (88) dosyasının her birinin tek satırda olduğu denetimi._
 <!-- END sec:16 -->
 
 <!-- BEGIN sec:17 -->
