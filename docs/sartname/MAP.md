@@ -21,7 +21,7 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 | 0 | özet, WEEM kuralları, görev dizini | tümü | koordinatör | yazılıyor (ajanlardan sonra) (12:17 UTC) <!-- st:0 --> |
 | 1 | kaynak haritası | tümü | koordinatör | bitti (12:23 UTC) <!-- st:1 --> |
 | 2 | Y7 harita verisi | A6.3 | ajan R | bitti (12:32 UTC) <!-- st:2 --> |
-| 3 | Y3 rota motoru | A6.4 | ajan R | bekliyor <!-- st:3 --> |
+| 3 | Y3 rota motoru | A6.4 | ajan R | bitti (12:37 UTC) <!-- st:3 --> |
 | 4 | Y8 sokak kararları | A6.4 | ajan R | bekliyor <!-- st:4 --> |
 | 5 | Y15, Y16, Y21 | A6.8 | ajan R | bekliyor <!-- st:5 --> |
 | 6 | Y1, Y2 harita ekranı | A6.5 | ajan N | bekliyor <!-- st:6 --> |
@@ -277,7 +277,205 @@ Sabitler: `maxSpacing = 25 m` (sıklaştırma), `minGradeRun = 20 m` (eğim payd
 <!-- BEGIN sec:3 -->
 ## 3. Y3 — Rota motoru (A6.4)
 
-_Yazılıyor (ajan R)._
+### 3.1 Kaynak ve kapsam
+
+| Dosya (YG) | Satır | İçerik |
+|---|---|---|
+| `lib/core/physics.dart` | 1–126 | `VehicleProfile` 6–19, `RideMode` 21–26, `RideParams` 29–126 |
+| `lib/routing/router.dart` | 1–862 | `RoutingException` 13–18, `CostModel` 26–342 (`_eval` 242–341), `_Heap` 344–390, `_Step` 392–396, `_WalkingApproach` 400–454, itme sabitleri 457, yaya bölgesinden çıkış 459–566, `_routeLegFrom` 568–587, `_routeLeg` (A*) 589–862 |
+| `lib/routing/planner.dart` | 1–201 | `PlanRequest` 11–56, `computePlans` 65–77, yüzey adayı 82–101, `_planWithScale` 103–136, `_bestOrder` 140–189, `_permutations` 191–201 |
+| `lib/routing/route.dart` | 1–202 | `RoutePoint`, `RouteSeg`, `RouteTurn`, `RouteLeg`, `Plan`, `progressAlong` 159–174, `pushedRuns` 177–202 |
+| `lib/routing/route_worker.dart` | 1–163 | izole işçi, zaman aşımı |
+| `lib/core/settings.dart` | 133–153 | `gradeLimitFor`, `paramsFor` |
+| başvuru | — | `lib/routing/quality.dart` (Y12, Bölüm 9), `lib/surface/bad_spots.dart` (kötü nokta aralıkları), `lib/routing/route_hours.dart` (Bölüm 4), `lib/nav/nav_controller.dart:473–507, 976–985` (isteği kuran ve hatayı çeviren; ajan N, Bölüm 7), `lib/economics/dataset_runtime.dart:50–75` (Y19 rota çağrısı; ajan T) |
+
+Bulgu `Y_routing.md` §Y3 kaynakta doğrulandı. Düzeltmeler: satır aralıkları yukarıdaki gibi (`CostModel` 26–342, `_eval` 242–341); kara liste denetimi `_eval`'de **en sonda** (sonuç aynı: kenar kapalı); `walkable` (yürüme) ve `allowed` (sürüş) ayrı kurallardır (3.5); `softBlock` parametresi tanımlı ama **hiç kullanılmıyor** (ölü); `wrongWayKmh` (18) ve `parkPenaltyS` (15) ayardan değil `RideParams` varsayılanından gelir.
+
+### 3.2 Fizik ve parametreler (`RideParams`, physics.dart:29–126)
+
+| Alan | Varsayılan | Ayar kaynağı (`paramsFor(battery)`) |
+|---|---|---|
+| `flatWhPerM` | 0.0135 Wh/m | `settings.flatWhPerM` |
+| `climbWhPerM` | 0.38 Wh/dikey m | `settings.climbWhPerM` |
+| `climbSafety` | 1.0 | `settings.climbSafety` |
+| `flatKmh` / `climbKmh` / `walkKmh` | 28.5 / 18.5 / 4.5 | aynı adlar |
+| `maxGrade` | 0.18 | `gradeLimitFor(battery)` = (`battery != null && battery < lowBatteryPct (50)` ? `lowBatteryGradePct (10)` : `maxGradePct (18)`) / 100 |
+| `mainRoadPenalty` | 1.15 | `settings.mainRoadPenalty` |
+| `wrongWayKmh` | 18 | — (sabit) |
+| `walkRadius` | 150 m | `settings.walkRadius` |
+| `parkPenaltyS` | 15 sn | — (sabit) |
+| `qualityWeight` | 0.10 | `qualityTolerancePct / 100` (10; kaydırıcı 0–30, Yollarım → Kalite, Bölüm 9) |
+| `turnPenaltyS` | 12 sn | `settings.turnPenaltyS` |
+| `bikewayFactor` | 0.85 | `bikewayCostPct.clamp(50, 100) / 100` (Bölüm 5.1) |
+
+- Türetilen: `flatMps = flatKmh/3.6`, `walkMps`, `wrongWayMps`; `betaWhPerS = 0.02`, `gammaSPerWh = 1.0`.
+- `climbMps(grade)`: `grade ≤ 0.02` → `flatKmh`; `≤ 0.08` → `flatKmh − (flatKmh − climbKmh)·(grade − 0.02)/0.06`; üstü → `max(10, climbKmh·0.08/grade)`; sonuç `/3.6`.
+- `energyWh(L, climb) = flatWhPerM·L + climbWhPerM·climbSafety·climb`.
+- `combine(mode, s, wh)`: `time` → `s + 1.0·wh`; `battery` → `wh + 0.02·s`.
+- A* alt sınırları: `minRideCostPerM` = time `1/flatMps`, battery `flatWhPerM + 0.02/flatMps`; `minWalkCostPerM` = time `1/walkMps`, battery `0.02/walkMps`.
+- `withMaxGrade(g)`: yalnız `maxGrade` değişen kopya. `RideMode` sırası `battery`, `time` (planlayıcı bu sırayla dener); etiketler "BATARYA"/"BATAREYA", "ZAMAN"/"VAXT", simge 🔋/⚡.
+- `VehicleProfile`: `g3` "Max G3 (598 Wh)" 598 Wh; `g3x` "Max G3 + ek batarya (1066 Wh)" 1066 Wh; bilinmeyen id → ilki. (Batarya kullanımı Bölüm 10.)
+- 1.11'de bu katsayıların ekranı yok (yalnız JSON varsayılanı); ekranda değişenler: `qualityTolerancePct`, `bikewayCostPct`, bölge, ışık, ses tuşu, hızlar, ters yön ayarları.
+
+### 3.3 Maliyet modeli girdileri (`CostModel`, `PlanRequest`)
+
+| Girdi | Tür | Üreten (WEEM bölümü) | Boşken |
+|---|---|---|---|
+| `approved`, `blocked`, `steep` | OSM way id kümeleri | Y8 sokak kararları (4) | kural yok |
+| `reverseHours` | way id → `ReverseHours` | Y8 (4) | onaylı ters yön her saat |
+| `ghost` | **kenar indeksi** kümesi ("Burada yol yok") | Y12 `roads.ghost.v1` (9) | etkisiz |
+| `learned` | way id → `(q, c, r)` | Y12 (9) | kalite = OSM ön tahmini (aşağıda) |
+| `wwRatio`, `wwAvoid` | way id → oran / küme | Y12 ters yön soruları (9) | oran 0, yasak yok |
+| `wrongWayEdges` | kenar indeksi (ana caddede kesim izni) | Y12 `roads.wwseg.v1` (9) | yok |
+| `bikeways` | way id (elle bisiklet yolu) | Y15 (5.1) | yalnız OSM bayrağı |
+| `marks` | `SurfaceMark` listesi (Ses− kötü nokta, "geçilebilirlik: kapalı") | Y13 deposu; WEEM 1.0'da Ses− kaydı Bölüm 9 kararı | etkisiz |
+| `surface`, `surfaceQuality` | ölçülmüş yüzey parçaları, sokak puanı | Y13/Y14 (**sonra**) | etkisiz; planlayıcı tek aday |
+| `departure` | UTC an | çağıran (`DateTime.now().toUtc()`; Y19 kayıt anı) | şimdi |
+| `heading` | derece | çağıran: hız ≥ 2 m/s ve yön ≥ 0 iken (Bölüm 7) | yönsüz |
+| `fixedOrder` | bool | çağıran (Y19 `true`) | sıra denenir |
+| `avoidBad`, `surfaceScale` | — | planlayıcı (3.10) | — |
+
+**Önemli:** `learned` boşken bile kalite terimi nötr değildir: her way için `quality = priorQuality(sınıf, bayrak)` (trunk/primary 0.60, secondary 0.68, tertiary 0.76, unclassified/residential/road 0.82, livingStreet 0.70, service 0.75, track 0.45, cycleway 0.90, path/footway/pedestrian 0.60, steps 0; `unpaved` ≤ 0.35, `rough` ≤ 0.50; quality.dart:23–39). Öğrenilmiş değer gelince `blendQuality` (Bölüm 9). Kenar kalitesi = way kalitesi.
+
+### 3.4 Kenar maliyeti `_eval(e, dir)` (router.dart:242–341)
+
+Her kenarın iki yönü ayrı dizi hücresi: `i = e·2 + dir` (0 = çizim yönü `from→to`, 1 = ters). Diziler: `cost`, `time`, `wh` (f64), `wrong`, `pushed` (u8), `quality` (kenar başına f32). Başlangıçta `cost = +∞`. Sıra (her `return` = yasak):
+
+1. Kenar `_closed` (kullanıcının "kapalı" işareti: `marks` içinde `!removed`, `source == 'user'`, `access == closed`; aynı way'de `nearestEdge` ≤ 25 m) ya da `ghost` → yasak.
+2. `restricted` ya da `sidewalk` bayrağı → yasak. `service` sınıfı → yasak ("dükkan önü/cep yolları geçiş koridoru değildir"). `avoidBad` ve (`badWay(osm)` ya da `unpaved`) → yasak. `steps` → yasak.
+3. **İtme kipi** (madde 9): yaya sınıfı **ve** `bikeOk` yok **ve** onaysız **ve** `park` değil → `footNo` ya da kara listede ise yasak; değilse `t = len·1.2/walkMps`, `cost = combine(mode, t·2.5 + 20, 0)` (`pushCostFactor = 2.5`, `pushPenaltyS = 20`), `time = t`, `wh = 0`, `wrong = 0`, `pushed = 1`; bitti (tek yön kuralı uygulanmaz).
+4. **Ters yön:** `against` = (dir 0 ve `onewayBwd`) ya da (dir 1 ve `onewayFwd`); `wrongWay = against && !contraflow`. `wrongWay` ve değil (`(onaylı && !isMainRoad(sınıf)) || wrongWayEdges ∋ e`) → yasak. `wrongWay` ve `wwAvoid ∋ osm` → yasak. `twoWay = wrongWay && onaylı && !isMainRoad && (wwRatio[osm] ?? 0) == 0` (madde 10b: "sorun yok" yeşil sokak iki yönlü sayılır).
+5. Eğim: `maxGradeF/B` (yöne göre) `> params.maxGrade` → yasak.
+6. Aşırı eğimli (`steep ∋ osm`): `upHere = climb(bu yön)`, `upBack = climb(ters yön)`; iniş = `upBack ≥ 1.0 && upHere ≤ 0.3·upBack`; iniş değilse yasak (yükseklik yönü ayırt edemiyorsa iki yön de kapalı).
+7. Hız: `sf` = `unpaved` 0.6 / `rough` 0.8 / 1.0; `vFlat = flatMps·sf`; `vClimb = climbMps(up > 1 ? climb/up : 0)·sf` (`up` = bu yönün `upLen`). `wrongWay && !twoWay` → ikisi `min(…, wrongWayMps)`. Yaya sınıfı (onaylı ya da `bikeOk`) ve park değil → ikisi `min(…, 15/3.6)`. `t = (len − up)/vFlat + up/vClimb`.
+8. Enerji: `energyWh(len·(unpaved ? 1.3 : 1.0), climb)`.
+9. Maliyet: `tCost = t`; trunk|primary → `×mainRoadPenalty`; `wrongWay && !twoWay` → `×(1.2 + 2.0·(wwRatio[osm] ?? 0))`; `c = combine(mode, tCost, energy)`; `c ×= 1 + qualityWeight·(1 − quality[e])`; residential|livingStreet|unclassified|road → `c ×= 1.35`; `badWay(osm)` → `c ×= 4`; `!wrongWay` ve (bayrak `bikeway` ya da `bikeways ∋ osm`) → `c ×= bikewayFactor`.
+10. `blocked ∋ osm` → yasak. Değilse `cost = c`, `time = t`, `wh = energy`, `wrong = wrongWay ? 1 : 0`.
+
+`badWay(osm)`: `learned[osm]` yoksa false; `r > 0` → `r ≤ 25` (`QualityRating.bad`); değilse `c ≥ 0.8 && q < 0.3`.
+
+### 3.5 Yardımcı kurallar (CostModel)
+
+- `allowed(e, dir)` = `cost` sonlu. `rideable(e)` = bir yönde izinli **ve** o yön itilen değil (başlangıç, hedef ve yaya bölgesinden çıkış buna bağlanır).
+- `walkable(e, dir)` (son yürüyüş ve yaya çıkışı): `_closed`, `ghost`, `blocked` → hayır; `restricted` → hayır; `avoidBad` ve (`badWay` ya da `unpaved`) → hayır; `steps`, **`trunk`**, `footNo` → hayır; yön eğimi `> maxGrade` → hayır; `steep` ve iniş değil (`down ≥ 1 && up ≤ 0.3·down` değil) → hayır. `service` ve `sidewalk` yürünür; tek yön yürüyüşte geçerli değil.
+- `allowedAt(e, dir, elapsedS, portion = 1, f0 = 0, f1 = 1)`: `allowed` değilse hayır; `avoidBad` iken bu yönün ölçülmüş parçalarından (`calibrated && confidence ≥ 0.65 && score < 30`) aralığa değen varsa hayır (Y13); `avoidBad` iken doğrulanmış kötü nokta aralığına değiyorsa hayır; `portion ≤ 0` ya da ters yön değilse evet; yoksa `reverseHours[osm]` null → evet, değilse `allowsTrip(departure + elapsedS, time·portion)` (Bölüm 4.3).
+- `segmentCost(e, dir, f0, f1)`: `base = cost[i]` sonsuzsa ∞; `total = base·|f1 − f0|`; her ölçülmüş parça için `+ base·overlap·(1 − q)·conf·(q < 0.3 ? 3 : qualityWeight)·surfaceScale` (q = sokak puanı varsa o ve güven 1, yoksa `score/100` ve parçanın güveni); her kötü nokta aralığı için `+ base·overlap·(confirmed ? 6 : 3)`. Kötü nokta: `isBadSpot` (`!removed`, `source == 'user'`, `access != closed`, etiket ∈ {rough, pothole, raisedAsphalt, dirt, gravel, obstacle}); aralık = aynı way'de en yakın kenar (≤ 25 m) üstünde `fraction ± 25/len` (0–1'e kıstırılır); aynı way'de 30 m içindeki işaretler **farklı Bakü günlerinden** ≥ 2 ise `confirmed` (bad_spots.dart:9–51).
+- Dönüş: `startB/endB[e·2+dir]` = kenarın ilk/son geometri parçasının yönü (yöne göre); `turnAngle(inE, inDir, outE, outDir) = (startB[out] − endB[in] + 540) mod 360 − 180` (+ sağ, − sol). `turnCost = combine(mode, turnPenaltyS, 0)`; `turnExtra` = `|açı| < 35` → 0, `> 120` → `1.5·turnCost`, arası `turnCost` (turnCost ≤ 0 ise 0). `junctionCost = combine(mode, 2.0, 0)`.
+- `heuristicScale` = grafta `bikeway` bayrağı ya da elle `bikeways` varsa `min(1, bikewayFactor)`, yoksa 1.
+
+### 3.6 A* tek bacak (`_routeLeg`, router.dart:589–862)
+
+1. Başlangıç kenarı: `nearestEdge(from, 60 m, accept = rideable, heading)`, bulunamazsa yönsüz; yoksa `'Konumunun yakınında sürülebilir yol yok'`.
+2. Hedef: `_WalkingApproach(to, aday)` (3.7); hedef kenarı yoksa `'Hedefe bağlı yol bulunamadı; yol olmayan yerden geçiş çizilmedi'`. `dest` = hedef kenarı `rideable` ise o, değilse yok.
+3. Bitiş teklifleri (düğüm → (maliyet, tür); küçük olan kalır): `walkCost(m) = m ≤ 20 ? 0 : combine(m·1.2/walkMps + parkPenaltyS, 0)`; `dest` varsa tür 1: `from` düğümünden hedef oranına ileri sür (`segmentCost(e,0,0,f) + walkCost(dest.dist)`, yön izinliyse), tür 2: `to` düğümünden geri (`segmentCost(e,1,f,1) + walkCost`); yürüme yaklaşımının her düğümü tür 0: `d < 0.5 ? 0 : combine(d·1.2/walkMps + parkPenaltyS, 0)`. Hiç teklif yoksa `'Hedefe yürüyüş mesafesinde bağlı araç yolu bulunamadı'`.
+4. Sanal hedef düğümü = `nodeCount`. Sezgisel: `cMin = min(minRideCostPerM, minWalkCostPerM)·0.99·heuristicScale`; `h(v) = max(0, ‖v − to‖ − walkRadius − 300)·cMin` (uzaklık hedef noktaya yerel izdüşümde).
+5. Tohum: başlangıç kenarının oranı `sf`; `allowedAt(se, 0, startOffsetS, portion 1−sf, f0 sf, f1 1)` ise `to` düğümüne `segmentCost(se,0,sf,1)` (süre `time·(1−sf)`); `allowedAt(se, 1, …, portion sf, 0..sf)` ise `from` düğümüne `segmentCost(se,1,0,sf)`. Aynı kenarda doğrudan varış (`dest.edge == se`): `df ≥ sf` ileri, değilse geri (`allowedAt` ile), maliyet + `walkCost`; hedefe yazılır (`targetFrom = −2`). Hiç tohum yoksa `'Başlangıç yolu şu kurallarla sürülemiyor'`.
+6. Döngü: yığından çek; hedefse dur; kapalıysa geç; kapat. Düğümün bitiş teklifi varsa ve (tür 0 ya da `allowedAt(dest kenarı, yön, startOffsetS + elapsed[u], kısmi)`) ise `dist[u] + teklif < dist[hedef]` → hedefi güncelle ve yığına koy. Komşular (`adjStart` sırası): `c = segmentCost(e, dir, 0, 1)` sonsuzsa ya da `!allowedAt(e, dir, startOffsetS + elapsed[u])` ise geç; karşı düğüm kapalıysa geç; gelen kenar (tohumda başlangıç kenarı) ile dönüş ek maliyeti yalnız `degree(u) ≥ 3`; `nd = dist[u] + c + turn + (degree(v) ≥ 3 ? junctionCost : 0)`; küçükse güncelle, `elapsed[v] = elapsed[u] + time + (degree(v) ≥ 3 ? 2 : 0)`, yığına `nd + h(v)`.
+7. Hedef sonsuzsa `'Kurallara uyan rota bulunamadı'`.
+8. Geri kurulum: adımlar (başlangıç kısmı → ara kenarlar → hedef kenarı kısmı ya da yürüme yaklaşımının adımları).
+9. İstatistik: her adım için `segM = len·portion`, `RouteSeg(edge, startM = o ana kadarki rideM, segM, ad, walk = pushed)`; `rideM` itilen metreyi **içerir**; `pushM`; `timeS += time·portion`; `energy += wh·portion`; uzunluk ağırlıklı kalite; ters yön metresi ve `riskSum += wwRatio·segM`; geometri noktaları art arda aynıysa atlanır; `climbM` = ardışık nokta yükseklik artışları toplamı; sokak adları (boş değil, art arda tekrar yok).
+10. Dönüşler: ardışık iki adımın giriş düğümünde `degree ≥ 3` ve `|açı| ≥ 30` → `RouteTurn(atM, açı, girilen sokak adı, düğüm konumu)`; `sharpness` = `<60` 0 (hafif), `<135` 1, değilse 2.
+11. Son yürüme: `walkM > 0` ise `timeS += walkM·1.2/walkMps + parkPenaltyS`.
+12. Uyarılar: `pushM > 0` → `'Rotada yaklaşık <round(pushM)> m yaya yolu: scooter\'ı it'`; hedef kenarı uzaklığı > 20 m → `'Rota erişilebilir yolda biter; kapı girişi yaklaşık <round(dist)> m uzakta'`.
+
+Yığın (`_Heap`): dizi tabanlı ikili yığın; yukarı çıkarken `ebeveyn ≤ çocuk` ise dur, aşağı inerken sol/sağ yalnız **kesin küçükse** seçilir. Eşit maliyetli yollarda aynı rotayı vermek için WEEM aynı yığını yazar (`java.util.PriorityQueue` değil). Sözlükler ekleme sırasını korur (`LinkedHashMap`).
+
+### 3.7 Hedefe bağlanma (`_routeLegFrom`, `_WalkingApproach`)
+
+- `from` ya da `to` graf kapsamı dışında (`contains`, 100 m pay) → `'Konum veya hedef indirilen yol haritasının dışında'`.
+- Adaylar: `nearestEdges(to, 80 m, accept = bir yönde walkable, limit 4)`; boşsa `'Hedef yakınında erişilebilir yol yok; pini yol girişine taşı'`. Adaylar sırayla denenir; ilk başarılı bacak döner; hepsi düşerse son hata (yoksa `'Kurallara uyan rota bulunamadı'`).
+- `_WalkingApproach`: hedef kenarının iki ucundan (yön `walkable` ise, kenar üzeri uzaklık ≤ `walkRadius`) başlayarak **yalnız `walkable` kenarlarda** uzunlukla Dijkstra (`d > walkRadius` ya da daha kötü → geç); her düğüm için hedefe yürüme mesafesi ve adımları. Kuş uçuşu yürüme yok (bina/duvar üstünden çizgi çizilmez).
+
+### 3.8 Yaya bölgesinden çıkış (`routeLeg`, eski iç ad "Y7"; WEEM adı `StartWalkOut`)
+
+- `routeLeg(model, from, to, heading, startOffsetS)` önce normal bacak; hata mesajı `startFailures` = {`'Konumunun yakınında sürülebilir yol yok'`, `'Kurallara uyan rota bulunamadı'`, `'Başlangıç yolu şu kurallarla sürülemiyor'`} içindeyse çıkış denenir, o da yoksa ilk hata atılır.
+- Koşul: `from`'a 60 m içindeki en yakın `walkable` kenar **yaya sınıfı** olmalı; 60 m içindeki süzgeçsiz en yakın kenar araç yoluysa ve `dist + 3 < yaya kenarın dist`'i ise denenmez (araç yolunun üstünden "yürü" denmez).
+- Uzunlukla Dijkstra (`walkable`, ≤ `startWalkMaxM = 400` m); komşusunda `rideable` kenar olan düğüm "çıkış"tır (genişletilmez); en çok 6 çıkış. Her çıkıştan normal bacak (`startOffsetS + walkS`, `walkS = d·1.2/walkMps`); toplam `leg.cost + combine(walkS, 0)` en düşük olan seçilir.
+- Sonuç: `startWalk` (konumdan çıkışa çizgi), `startWalkM`, `timeS += startWalkM·1.2/walkMps` (park cezası yok), `cost` = toplam, uyarıların başına `'Önce yaya yolundan en yakın sürülebilir yola yürü'`.
+
+### 3.9 Çıktı modeli (`route.dart`)
+
+- `RouteLeg`: `ride` (yükseklikli nokta listesi), `walk` (park → kapı), `startWalk`, `rideM`, `walkM`, `startWalkM`, `timeS`, `energyWh`, `climbM`, `descentM` (ride boyunca sonlu düşüşler), `wrongWayM`, `cost`, `streets`, `destination`, `warnings`, `quality` (rideM > 0 değilse 1), `wrongWayRisk` (ters yön yoksa 0), `segs`, `turns`, `pushM`; `parkPoint` = son ride noktası (yoksa hedef); `withWarnings`.
+- `Plan(mode, order, legs)`: `rideM`, `walkM` (+ `startWalkM`), `timeS`, `energyWh`, `climbM`, `descentM`, `wrongWayM` toplamları; `warnings` bacakların sırasıyla; `quality` ve `wrongWayRisk` ağırlıklı ortalama.
+- `progressAlong(line, p)`: yerel izdüşümde en yakın parça; ilerleme = önceki parçaların haversine toplamı + `t·parça`.
+- `pushedRuns(leg)`: `walk = true` parçaların `[startM, startM + lenM]` aralıkları (aralarında < 0.5 m boşluk birleşir) ride çizgisinden haversine mesafesiyle kesilir (uçlar ara değer) → haritada kesikli çizim (Bölüm 6/7).
+
+### 3.10 Planlayıcı (`computePlans`, planner.dart)
+
+- `RideMode.values` sırasıyla (`battery`, `time`) her mod için plan; `RoutingException` → ilk hata saklanır; plan yoksa `error = ilk hata ?? 'Rota bulunamadı'`, varsa `error = null`. `RoutingException` dışındaki hatalar yukarı atılır.
+- Mod başına: `base = _planWithScale(0)`; `surface` boşsa base (WEEM 1.0'da hep böyle). Değilse `smooth = _planWithScale(15)` (`kQualitySeekScale`); `smooth.rideM ≤ base.rideM + 200` (`kQualityDetourM`) **ve** dönüş sayısı `≤ base + 2` (`kQualityExtraTurns`) ise smooth, değilse base; smooth hata verirse base.
+- `_planWithScale`: önce `avoidBad = true`; `RoutingException` → `avoidBad = false` ile tekrar ve her bacağın uyarılarının sonuna `'Kötü yolları tamamen dışlayan bağlantı yok; kalite puanı düşük yol gerekebilir'`. Kara liste, özel alan, "yol yok", eğim gevşetilmez.
+- `_bestOrder`: noktalar `[origin, ...stops]`; `fixedOrder` ya da durak > 4 → verilen sıra; değilse bütün permütasyonlar (özyinelemeli, ilk eleman sırasıyla; 4 durak → 24). Bacak: `reverseHours` boşsa önbellek anahtarı `i·100 + j` (başlangıç ofseti 0), doluysa önbelleksiz ve `startOffsetS = önceki bacakların timeS toplamı`; `heading` yalnız ilk noktadan çıkan bacakta. Toplam `cost` en küçük sıra (eşitlikte ilk); hiçbiri yoksa son hata (yoksa `'Rota bulunamadı'`). `order` 0 tabanlı durak indeksleri.
+
+### 3.11 Arka plan işçisi (`RouteWorker`) → WEEM `RouteEngine`
+
+- YolGo: tek izole; graf yalnız ilk istekte ya da graf nesnesi değişince kopyalanır; istekler sırayla; yanıt zaman aşımı 25 sn (testte 4 sn), açılış 10 sn; zaman aşımında işçi öldürülür, bekleyen istekler `RouteWorkerTimeout` alır; çöken işçi bekleyenleri hemen hatayla bitirir, sonraki istek yeni işçi açar; `dispose` sonrası istek `StateError`. Çağıranlar: `NavController` (kendi işçisi) ve Y19 veri seti (ayrı işçi).
+- **WEEM:** `logic/map` `route.RouteEngine` (coroutine): graf paylaşılan değişmez nesne (kopya yok); hesap `Dispatchers.Default` üstünde tek sıralı kuyrukta; 25 sn zaman aşımı → `RouteTimeout` (mesaj aynı), kuyruk kilitlenmez. A* döngüsü askıya alınmaz; iptal için yönlendirici her 1.024 yığın çekişinde ve planlayıcı her bacakta bir iptal bayrağına bakar (`ensureActive`). Yeni istek geldiğinde eskisi iptal edilebilir (YolGo sonucu zaten atıyordu; görünen davranış aynı). Çağıran başına ayrı motor ya da paylaşılan motor serbest; sonuç aynı.
+- Hata eşlemesi (Bölüm 7'de ekran): `RoutingException` → mesajın kendisi (dil çevirisiyle), zaman aşımı → `'Rota hesaplaması çok uzun sürdü; tekrar deneniyor'`, diğer motor hatası → `'Rota hesaplanamadı; tekrar dene'`.
+
+### 3.12 Kullanıcıya görünen metinler (TR → AZ; YolGo `trMsg` sözlüğü `i18n.dart:30–89` ile aynı sonuç)
+
+| TR | AZ |
+|---|---|
+| Konum veya hedef indirilen yol haritasının dışında | Məkan və ya ünvan yüklənmiş yol xəritəsinin xaricindədir |
+| Hedef yakınında erişilebilir yol yok; pini yol girişine taşı | Ünvanın yaxınlığında giriş yolu yoxdur; işarəni yolun girişinə çək |
+| Konumunun yakınında sürülebilir yol yok | Yaxınlığında sürülə bilən yol yoxdur |
+| Hedefe bağlı yol bulunamadı; yol olmayan yerden geçiş çizilmedi | Ünvana bağlı yol tapılmadı; yol olmayan yerdən keçid çəkilmədi |
+| Hedefe yürüyüş mesafesinde bağlı araç yolu bulunamadı | Ünvana piyada məsafəsində bağlı nəqliyyat yolu tapılmadı |
+| Başlangıç yolu şu kurallarla sürülemiyor | Olduğun yol bu qaydalarla sürülə bilmir |
+| Kurallara uyan rota bulunamadı | Qaydalara uyğun marşrut tapılmadı |
+| Rota bulunamadı | Marşrut tapılmadı |
+| Rotada yaklaşık N m yaya yolu: scooter'ı it | Marşrutda təxminən N m piyada yolu: skuteri it |
+| Rota erişilebilir yolda biter; kapı girişi yaklaşık N m uzakta | Marşrut giriş yolunda bitir; qapı təxminən N m uzaqdadır |
+| Önce yaya yolundan en yakın sürülebilir yola yürü | Əvvəlcə piyada yolu ilə ən yaxın sürülə bilən yola piyada get |
+| Kötü yolları tamamen dışlayan bağlantı yok; kalite puanı düşük yol gerekebilir | Pis yolları tam kənarda saxlayan marşrut yoxdur; zəif keyfiyyətli yol lazım ola bilər |
+| Rota hesaplaması çok uzun sürdü; tekrar deneniyor | Marşrut hesabı çox uzun çəkdi; yenidən yoxlanılır |
+| Rota hesaplanamadı; tekrar dene | Marşrut hesablanmadı; yenidən yoxla |
+
+Motor TR mesaj üretir (testler TR karşılaştırır); ekranda dil çevrilir. WEEM: motor hata **kodu** + sayı üretir (`RouteError.START_NOT_RIDEABLE` …), metin `:map` dil tablosundan; TR/AZ çıktısı yukarıdakiyle harfiyen aynı. Sözlükteki `'Hedef indirilen harita bölgesinin dışında'`, `'Kara liste ya da aşırı eğimli bir sokak kullanıldı (başka yol yok)'`, `'Eğim limiti aşıldı (başka yol yok)'` 1.11'de üretilmiyor (taşınmaz).
+
+### 3.13 Performans
+
+- Risk (YolGo `AI_HANDOFF` F6.3, plan Bölüm 5 "A* performansı için test"): itme kipiyle bütün yaya kenarları aramaya girdi; sezgisel `walkRadius + 300 m` (450 m) içinde sıfır, dışında zayıf (`cMin` en ucuz kenar maliyeti); ayrıca her istek `CostModel`'i bütün kenarlar için yeniden hesaplar (O(E); mod başına 1–2 kez, `avoidBad` düşüşünde 2 kez daha, yaya çıkışında çıkış başına bacak). Sahada ölçülmedi.
+- **WEEM (A6.4):** (1) yönlendiriciye sayaç (çekilen düğüm, değerlendirilen kenar) — sayılar Dart ile aynı girdide aynı olmalı (deterministik karşılaştırma); (2) `RouterPerfTest`: sentetik ızgara (ör. 150 × 150 düğüm, kenarların %40'ı yaya, 3–8 km bacak) — çekilen düğüm üst sınırı ve süre kaydı (CI'da süre eşiği yok, yalnız rapor); (3) A6.4 sonunda gerçek `graph_wide.bin` (CI `MapBuild` çıktısı) üstünde 20 tipik Bakü bacağı: ortalama/en kötü süre ve `CostModel` kurulum süresi belgeye (bu bölüm) yazılır; hedef: tipik bacak telefonda < 1 sn, en kötü < 25 sn zaman aşımının çok altında. Hızlandırma (ör. `CostModel` önbelleği, daha sıkı sezgisel) yalnız aynı rotayı verirse.
+
+### 3.14 Testler
+
+| Dosya | Sayı | Test adları → neyi doğrular (değerler) | WEEM hedefi | Görev | Not |
+|---|---:|---|---|---|---|
+| YT `router_test` | 38 | aşağıdaki gruplar | `logic/map/.../route/*Test.kt` | A6.2a → A6.4 | 1 test Bölüm 2.13'te (graf dosyası) |
+| ↳ temel kurallar | 18 | özel/kurum girişi onaylı olsa da yok (800 m); servis cebi yok (800); 70 m içerideki pin yol üstünde biter (park noktası < 2 m, uyarı var, `walk` boş); harita dışı hedef → "haritasının dışında"; yürüme limitini aşan bağlı hedef → "yürüyüş mesafesinde"; düz yolda kısa (400, `walk` boş); yokuş %12.5: ZAMAN tepeden 400, BATARYA dolambaç 800 ve daha az Wh, daha uzun süre; eğim limiti %10 → 800; tek yön onaysız 800 / onaylı 400 ve `wrongWayM` 400; ana caddede onay işe yaramaz (800); kara liste 800; aşırı eğimli yokuşta 800 / inişte 400 / işaretsiz 400; yön belirsiz tepe → 800; yol olmayan yere kuş uçuşu yok (hata); alternatif yoksa kara liste gevşemez (plan yok, hata var); son yürüyüş bağlı yaya yolunu izler (`walkM` 120); yakın ama bağlantısız yaya yoluna atlamaz; "yol yok" işareti son yürüyüşte de geçilmez | `route.RouterTest` | A6.2a → A6.4 | fixture: `_graph(hill, ramp, directTags, directReversed)`, `footGraph(connected)` (yerel metre → enlem/boylam, 40.40/49.85) aynen Kotlin'e |
+| ↳ yaya bölgesinden çıkış | 3 | yürür sonra sürer (`startWalkM` 250, `rideM` 400, ilk uyarı metni); kopuk servis yolu varken de çözülür; yaya yolu yoksa hata aynen, normal başlangıçta `startWalk` boş | `route.StartWalkOutTest` | A6.2a → A6.4 | `plazaGraph(stub)` |
+| ↳ saat izni | 1 | 23:00–00:00 Bakü: 18:30Z yasak (800), 19:00Z ters yön 400, 19:59:50Z geçiş bitmeden kapanır (ters yön 0) | `route.RouterTest` | A6.2a → A6.4 | `departure` UTC |
+| ↳ geometri | 1 | rampa inişte `climbM` ≈ 0, `descentM` ≈ 20 | `route.RouterTest` | A6.2a → A6.4 | — |
+| ↳ planlayıcı | 1 | çifte sipariş: 2 bacak, `order` 2 | `route.PlannerTest` | A6.2a → A6.4 | — |
+| ↳ öğrenilmiş kötü yol (Y12) | 1 | `learned {100: (0.2, 1.0, 25)}` → iki modda 800, way 100 hiç kullanılmaz | `route.PlannerTest` | A6.2a → A6.4 (A6.11 bağlar) | girdi doğrudan verilir |
+| ↳ işçi | 3 | sonraki sorgu ve yeni harita kullanılır (400 → kara listeyle 800 → `access=private` yeni haritayla 800); çöken işçi yenilenir, sonraki istek < 4 sn; kapatılan motor iş kabul etmez (`StateError`) | `route.RouteEngineTest` | A6.2a → A6.4 | "çökme" → iptal/istisna benzetimi; coroutine test dağıtıcısı |
+| ↳ kötü nokta (Ses−) | 1 | tek nokta yalnız ±25 m (400, uyarı yok); farklı günlerde 15 m içinde iki nokta doğrular → 800; aynı gün iki basış doğrulamaz (400); silinmiş işaret etkisiz | `route.BadSpotCostTest` | A6.2a → A6.4 | `SurfaceMark` alt kümesi; işaret deposu Bölüm 9 kararına bağlı |
+| ↳ cadde oranı | 1 | `streetRatio`: tek nokta 50 m (%13), ölçülmüş 50 m + nokta → ≈110 m, düşük güven sayılmaz | `roads.StreetRatioTest` (Bölüm 9) | A6.2a → A6.11 | Y13 ölçüm kısmı Bölüm 9 kararına bağlı |
+| ↳ ölçülmüş yüzey (Y13) | 7 | güven/yön eşleşmeli kötü parça (800/400/400); geçilebilir pürüzlü tek yol uyarıyla, "kapalı" işaret asla; 1.7.2 +200 m kuralı (400/600/400); E11 grubu 4 test (sokak puanı, +200 m/+2 dönüş, işçi taşır) | `route.SurfaceCostTest` | **sonra (Y13)** — SORU 1 | "kapalı" işaret (`_closed`) testi Y13 deposuna bağlı |
+| YT `park_paths_test` 3–4 | 2 (4'ün) | park içinden rota 400 (onaysız), park yoksa/`bicycle=no` 800; park yolunda hız > 15.5 km/s | `route.ParkPathsTest` | A6.2a → A6.4 | 1–2 Bölüm 2.13 |
+| YT `push_segments_test` | 5 | başka yol yoksa 60 m itilir (`pushM` 60, `rideM` 660, tek yürünen parça 300 m'de, uyarı "Rotada yaklaşık 60 m yaya yolu…", Wh > 0); itme süresi `> 60·1.2/walkMps − 15` fazla; ~260 m dolambaç varsa itilmez, ~1.860 m ise itilir; `foot=no`/merdiven → hata; `pushedRuns` tek parça ≈ 60 m, 300 m'den başlar | `route.PushSegmentsTest` | A6.2a → A6.4 | — |
+| YT `route_hours_test`, `ww_green_two_way_test` | 3 + 4 | Bölüm 4.6 | `route.ReverseHoursTest`, `route.WrongWayCostTest` | A6.2a → A6.4 | — |
+| YT `bikeway_e13_test` rota grubu | 6 | Bölüm 5.1 | `route.BikewayCostTest` | A6.2a → A6.4 | — |
+| **Yeni** | — | `RouterPerfTest` (3.13); yığın eşitlik sırası; hata kodu → TR/AZ metin tablosu (3.12) | `route.*` | A6.2a → A6.4 | — |
+
+### 3.15 WEEM yerleşimi
+
+- `logic/map` `route`: `RideParams`, `RideMode`, `VehicleProfile`, `CostModel`, `RoutingException` (kodlu), `Router` (`routeLeg`, A*, `WalkingApproach`, `StartWalkOut`), `MinHeap` (aynı sift kuralları), `Planner` (`computePlans`, `PlanRequest`, `PlanResult`), `RouteLeg`/`Plan`/`RouteSeg`/`RouteTurn`/`RoutePoint`, `progressAlong`, `pushedRuns`, `RouteEngine` (coroutine, zaman aşımı, iptal), `BadSpots` (kötü nokta aralıkları; girdisi Bölüm 9). Girdi tipleri `ReverseHours` (Bölüm 4), `LearnedQuality` (Bölüm 9).
+- `logic/map` `settings`: `MapSettings.paramsFor(batteryPct)` (alan tablosu Bölüm 14).
+- Android `:map`: yok (saf); `RouteEngine` örneğini `:map` tek örneği tutar, `NavController` karşılığı (Bölüm 7) ve Y19 (Bölüm 13) kullanır.
+- `:core` portları: rota sonucu `NavPort.route` (`RouteStatus`) Bölüm 7'de üretilir; batarya yüzdesi `ScooterBridge.batteryPct()` (≤ 15 sn taze) ya da Y9 tahmini (Bölüm 10) → `paramsFor`.
+- 2 telefon: rota motoru navigasyonun olduğu telefonda (Receiver; Receiver yoksa Provider) çalışır; mesaj yok (`NavTarget` gelir, `RouteStatus` gider — Bölüm 7).
+
+### 3.16 Farklar ve açık noktalar
+
+- `softBlock` ölü parametre: taşınmaz. Sözlükte üretilmeyen üç metin taşınmaz (3.12).
+- Eşit maliyet sırası: yığın, `LinkedHashMap` ekleme sırası, `adjStart` sırası, permütasyon sırası ve "ilk en küçük" kuralları aynen; aksi hâlde eşit rotalarda farklı yol seçilir (gölge karşılaştırmada fark görünür).
+- `departure` UTC verilir; saat izni Bakü UTC+4 sabit (Bölüm 4.3). Y19 kaydı kendi kayıt anını verir.
+- `heuristicScale` yalnız bisiklet yolu varsa küçülür; elle işaret eklemek bütün sorgularda sezgiyi zayıflatır (performans, sonuç aynı).
+- `RouteLeg.rideM` itilen metreyi içerir; `Plan.walkM` başlangıç yürüyüşünü içerir — ekranlar (Bölüm 7) bu tanımlarla.
+- **SORU 1 (koordinatöre):** Y13 (ölçülmüş yüzey, "sonra") girdileri `surface`/`surfaceQuality`/`surfaceScale` ve "geçilebilirlik: kapalı" işareti rota motoruna WEEM 1.0'da yazılsın mı? (a) Yazılmasın: girdiler yok, planlayıcı tek aday, 7 test "sonra (Y13)" (öneri; `BEKLEYEN_OZELLIKLER` kuralı); (b) Yazılsın (boşken nötr, Y13 gelince hazır), 7 test sentetik girdiyle şimdi çevrilir. Ses− kötü nokta aralıkları (`marks`) Y12 ses tuşu kararına bağlıdır (Bölüm 9): Ses− 1.11'deki gibi kalırsa kötü nokta maliyeti (3.5) ve testi WEEM 1.0'da yazılır.
 <!-- END sec:3 -->
 
 <!-- BEGIN sec:4 -->
