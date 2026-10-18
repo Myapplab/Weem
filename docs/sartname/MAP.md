@@ -1,6 +1,6 @@
 # MAP — Aşama 6 şartnamesi (`:map`: Y1–Y12, Y15–Y21, N5)
 
-Durum: A6.1, 18 Ekim 2026 (Claude Opus · xhigh + ultracode; en çok 3 paralel ajan, S13) — **yazılıyor**, bölüm durumu 0.3'te. Kaynak: `Myapplab/kurye_nav` — `yolgo-test` @ `870ab6e` (YolGo `1.11.0+6006`; Dart paketi `kurye_nav`, uygulama kimliği `az.duzyol.app`, Kotlin paketi `az.kurye.kurye_nav`) ve gerektiğinde `rawstats` @ `6388c04`. Satır numaraları bu commit'te açılıp doğrulanır; ham bulgular (`bulgular/Y_routing.md`, `Y_nav.md`, `Y_tracking.md`, `Y_contract.md`) kaynakla karşılaştırılır, düzeltmeler "(bulgu düzeltmesi)" diye işaretlidir.
+Durum: A6.1, 18 Ekim 2026 (Claude Opus · xhigh + ultracode; en çok 3 paralel ajan, S13; 23:12 UTC'den beri tek oturum, alt ajansız) — **yazılıyor**, bölüm durumu 0.3'te. Kaynak: `Myapplab/kurye_nav` — `yolgo-test` @ `870ab6e` (YolGo `1.11.0+6006`; Dart paketi `kurye_nav`, uygulama kimliği `az.duzyol.app`, Kotlin paketi `az.kurye.kurye_nav`) ve gerektiğinde `rawstats` @ `6388c04`. Satır numaraları bu commit'te açılıp doğrulanır; ham bulgular (`bulgular/Y_routing.md`, `Y_nav.md`, `Y_tracking.md`, `Y_contract.md`) kaynakla karşılaştırılır, düzeltmeler "(bulgu düzeltmesi)" diye işaretlidir.
 
 Kısaltmalar: **YG** = `yolgo-test` kökü (`lib/…`, `android_overlay/…`, `tool/…`, `ci/…`, `assets/…`); **YT** = `test/` (Dart testleri), **YK** = `android_overlay/test/` (Kotlin testleri); **RS** = `rawstats` `app/src/main/java/com/kuryelog/app/`, **RT** = `rawstats` `app/src/test/java/com/kuryelog/app/`. Davranış metni kodun söylediğidir; "WEEM" satırları bu şartnamenin kararıdır. Kapsam ya da plan kararı gerektiren noktalar karar verilmeden Bölüm 17'ye soru olarak yazılır.
 
@@ -29,9 +29,9 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 | 8 | Y5, Y6 bağlantılar ve adres | A6.6 | ajan N | bitti (12:34 UTC) <!-- st:8 --> |
 | 9 | Y12 yol kalitesi öğrenme | A6.11 | ajan Q | bitti (17:16 UTC) <!-- st:9 --> |
 | 10 | Y9, N5, Y10 | A6.7 | ajan T | bitti (17:29 UTC) <!-- st:10 --> |
-| 11 | Y11 ve YolGo gün motoru | A6.8 | ajan T1 | yazılıyor (kısmen: 11.1–11.8 yazıldı, son alt bölüm gözden geçirilmeli; usage bitti, durduruldu) (18:09 UTC) <!-- st:11 --> |
-| 12 | Y17, Y18 | A6.9 | ajan T1 | bekliyor <!-- st:12 --> |
-| 13 | Y19, Y20 | A6.9 | ajan T2 | yazılıyor (kısmen: 13.1–13.5 yazıldı, son alt bölüm gözden geçirilmeli; usage bitti, durduruldu) (18:09 UTC) <!-- st:13 --> |
+| 11 | Y11 ve YolGo gün motoru | A6.8 | koordinatör (T1'den devir) | yazılıyor (11.1–11.8 var; sırada 11.9) (23:12 UTC) <!-- st:11 --> |
+| 12 | Y17, Y18 | A6.9 | koordinatör | bekliyor <!-- st:12 --> |
+| 13 | Y19, Y20 | A6.9 | koordinatör (T2'den devir) | yazılıyor (13.1–13.5 var; sırada 13.6) (23:12 UTC) <!-- st:13 --> |
 | 14 | veri sözleşmesi | tümü | koordinatör | yazılıyor (kısmen: 14.1–14.11 taslak; Bölüm 11–13 satırları ajanlar bitince) (18:01 UTC) <!-- st:14 --> |
 | 15 | WEEM yerleşimi | tümü | koordinatör | yazılıyor (kısmen: 15.1–15.5 Bölüm 2–10'dan; 11–13 ajanlar bitince) (18:08 UTC) <!-- st:15 --> |
 | 16 | test eşlemesi A6.2a/A6.2b | A6.2a, A6.2b | koordinatör | yazılıyor (kısmen: 16.1–16.4 Bölüm 2–10 dosyaları; 11–13 ve toplamlar ajanlar bitince) (18:05 UTC) <!-- st:16 --> |
