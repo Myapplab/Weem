@@ -29,7 +29,7 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 | 8 | Y5, Y6 bağlantılar ve adres | A6.6 | ajan N | bitti (12:34 UTC) <!-- st:8 --> |
 | 9 | Y12 yol kalitesi öğrenme | A6.11 | ajan Q | bitti (17:16 UTC) <!-- st:9 --> |
 | 10 | Y9, N5, Y10 | A6.7 | ajan T | bitti (17:29 UTC) <!-- st:10 --> |
-| 11 | Y11 ve YolGo gün motoru | A6.8 | ajan T1 | yazılıyor (ajan T1 başladı) (17:51 UTC) <!-- st:11 --> |
+| 11 | Y11 ve YolGo gün motoru | A6.8 | ajan T1 | yazılıyor (kısmen: 11.1–11.4 yazıldı; sırada 11.5 veri modeli ve shift.v1) (18:05 UTC) <!-- st:11 --> |
 | 12 | Y17, Y18 | A6.9 | ajan T1 | bekliyor <!-- st:12 --> |
 | 13 | Y19, Y20 | A6.9 | ajan T2 | yazılıyor (ajan T2 başladı) (17:51 UTC) <!-- st:13 --> |
 | 14 | veri sözleşmesi | tümü | koordinatör | yazılıyor (kısmen: 14.1–14.11 taslak; Bölüm 11–13 satırları ajanlar bitince) (18:01 UTC) <!-- st:14 --> |
@@ -1805,7 +1805,56 @@ Toplam (bu bölüm): 56 test tanımı; şimdi çevrilen 36 (A6.2b 33, A6.2a 3 �
 <!-- BEGIN sec:11 -->
 ## 11. Y11 Trafik ışığı duruşları ve YolGo gün motoru (A6.8)
 
-_Bekliyor (ajan T, ikinci dalga)._
+### 11.1 Kaynak ve kapsam
+
+| YG dosya | Satır | İçerik | WEEM |
+|---|---|---|---|
+| `lib/tracking/shift_engine.dart` | 13–37 · 39–73 · 75–121 · 125–196 · 198–237 · 238–367 | sabitler, `stoppedSince` · `startDay`/`endDay` · `startOrder`/`cancelOrder`/`setDestination` · `feed` (fix süzgeci, duruş adayı) ve `_odometer` · `_endStop` (duruş türü) · aşama geçişleri (`_arrive`, `_depart`, `advanceFromFeed`, `stageFromFeed`, `deliverFromFeed`, `_pickedUp`, `beginCustomerJourney`, `phaseRank`) | `logic/map` `day.ShiftEngine` |
+| aynı | 372–421 · 423–430 · 432–507 · 509–578 · 580–680 | `Fix`, `StopSurface`, `RoadInfo` (`atLight`, `allowsTrafficLight`) · `ShiftEvent`, `OrderPhase` · `StopRec`, `lightReviewTeaches` · `OrderRec` · `ShiftState` (`dayId`, `toJson`/`fromJson`), `_Cand` | `day.DayFix`, `day.RoadInfo`, `day.StopRec`, `day.OrderRec`, `day.DayState` (ad `:core` `ShiftState` ile çakışmasın diye; JSON biçimi aynı) |
+| `lib/tracking/shift_controller.dart` | 37–137 · 153–293 · 297–352 · 356–443 · 452–533 · 545–568 · 571–593 · 596–656 · 658–722 · 727–814 | `ShiftView`, kurulum, tıklar · komutlar (`markLight`, `forgetDay`, `startDay`, `endDay`, `setDestination`, `markSidewalk`, eve dönüş ölçümü, `reviewLight`) · gün raporu (`writeReport`, `summarize`) · fix akışı, Rawstats vardiya eşitlemesi, ev kuralı · feed v2 okuma düzeni · `_reconcileStops` · `history` · `_roadInfo` · `_apply`/`_notify` (günlük, toast) · `LightsDb` | `day.DayController` (saf), `day.RoadInfoBuilder`, `day.LightsDb`; Android `:map` `DayRuntime`; rapor/geçmiş Bölüm 12 |
+| `lib/tracking/light_tracker.dart` | 8–88 | canlı ışık ölçer `LightTracker` | `day.LightTracker` |
+| `lib/tracking/stop_semantics.dart` | 5–34 | `mallRadiusM`, `classifySurface`, `roadHalfWidthM`, `isRoadside` | `day.StopSemantics` |
+| `lib/core/day_scope.dart` | 1–9 | `bakuTime`, `bakuDay` (UTC+4 sabit), `passiveSessionExpired` | `:core` `LogTime.day(ms, Clock.zone())`; pasif oturum Bölüm 6 (`nav.PassiveSession`) |
+| `lib/economics/courier_stages.dart` | 7–24 · 26–149 · 172–350 | aşama adları ve `phaseOfStage` · feed v2 ve `stages` okuyucusu (`CourierFeedV2`, `CourierTimeline`) · `CourierStageFollower` | `day.CourierStageFollower` + `day.StageFeed` (`OrderEvents.stages` → izleyici girdisi); feed JSON okuyucusu **çevrilmez** |
+| `android_overlay/MotionReceiver.kt` | 9–20 | etkinlik tanıma → `TelemetryService.walkConfidence`, `activityAt` | **sonra (Y13)**: tek tüketicisi `lib/surface/motion_gate.dart:76-120` |
+| yalnız başvuru: `lib/tracking/home_day.dart`, `rawstats_shift.dart`; `lib/economics/offer_feed.dart:64-80`, `rawstats_signals.dart:84-108`; `android_overlay/NotifyPolicy.kt` | — | YolGo ev kuralı, Rawstats vardiya eşitlemesi, feed okuma, duyuru kapısı (`ReadGate`, 300 ms), bildirim kuralları | `:core` (CORE.md 1.6–1.11, 3): yazılmaz ya da orada; 11.2 |
+
+Kapsam dışı (başkalarında): uzun basış menüsündeki ışık/kaldırım satırları ve haritadaki ışık işaretleri (6.7, 6.5 `displayPoisProvider`), "Eve dön" düğmesi ve `goHome` (6.12, 7.3), `_bindShiftTarget`/`_restaurantTarget` çağrısı (5, 7.3; burada yalnız motor tarafı), gün kartı ve İstatistik ekranı içerikleri, gün raporu dosyası, sürüş günlüğü biçimi, gün silme (Bölüm 12), görev sinyalleri `activeDay`/`activeOrder`/`deliveryFinished` (Bölüm 13), yol kalitesi öğrenmenin `excludeStops` aşama eşlemesi (9; aşamalar 11.6).
+
+Bulgu doğrulaması (`Y_tracking.md` §G1, §Y11, §G4): eşikler, tür sırası, `RoadInfo.atLight` formülü, `classifySurface`/`isRoadside` sayıları, `LightTracker` kuralları, `LightsDb` biçimi, `lightReviewTeaches`, çift kayıt önleme ve toast metinleri `870ab6e`'de doğru. **(bulgu düzeltmeleri:** (1) `MotionReceiver` G1/Y11'e girdi değildir — `walkConfidence`/`activityAt` yalnız `TelemetryService` kanıt satırına yazılır ve tek okuyucusu Y13'ün `MotionGate`'idir (`motion_gate.dart:76-77`); ışık ve gün motoru yürüme bilgisi kullanmaz. (2) `LightsDb` `nearest` yalnız `yes ≠ no` olan noktaları tarar (`spots`, `:745-756`), `lookup` 25 m `_near` ile bütün noktaları (`:765-783`). (3) `endDay` sırasında ölçer kaydı motorun `_endStop`'undan **önce** eklenir (`:213-219`). (4) `light_answer` olayı gün kapandıktan sonra verilen cevapta **yazılmaz**: `RideLogger._write` gün kimliği yokken satırı atar (`ride_logger.dart:131-132`); başka bir gün açıksa o günün dosyasına ve kimliğiyle yazılır (11.16). (5) `stopHomeReturn` (`:254-257`), `ShiftView.stoppedSince` ve `lightsLearned` getter'ı arayüzde hiçbir yerden kullanılmıyor (ölü yol).**)**
+
+### 11.2 Gün = WEEM vardiyası
+
+- **YolGo:** gün kendi motorundadır (`ShiftEngine.s.active`); üç yoldan açılır/kapanır: YolGo ev kuralı (`home_departure`/`home_arrival`, `shift_controller.dart:417-443`), Rawstats vardiyası eşitlemesi (`rawstats_shift_start`/`rawstats_shift_end`, `:383-413`, 60 sn yedek `:72, :184`), "Günü bitir" (`manual`). `startDay(reason, at)`: `_ending` sürerken yok; `at` gelecekteyse şimdi; olay varsa `HomeDayRules.dayStarted()`, `CourierStageFollower.dayChanged()`, `rawstatsHomeProvider.refreshIfStale()` (`:191-202`). `endDay(reason, at)` tek `Future`'da birleşir (`_ending ??=`, `:206-207`); `at` [gün başı, şimdi] aralığına sıkıştırılır (`:211`).
+- **WEEM:** gün = `:core` vardiyası (G1, CORE.md 0, 1.11). `:map` gün motoru açılış/kapanış kararı **vermez**; `ShiftPort.state`'i `ShiftFollower` (`logic/core` `ShiftState.kt`; `rawstats_shift_end_test` uyarlaması, A2.2) ile izler: `follow(state, dayActive, dayStartedAtMs)` → `START_DAY` (`atMs = startedAtMs`) → `ShiftEngine.startDay(at, reason)`; `END_DAY` (`atMs = endedAtMs`) → `endDay(at, reason = state.endReason ?: "manual")`; `NONE` → hiçbir şey. Çağrı: her `ShiftPort.state` değişiminde ve 5 sn tıkta. İşlenmiş damgalar `map` tercih dosyasında `day.shift.handled.v1` = `{"end": ms?, "start": ms?}` (yeni ad; eski `rawstats.shiftEnd/Start.handled.v1` girmez, Bölüm 14). `at` sıkıştırma kuralı aynen (`at > şimdi` → şimdi; `at < gün başı` → gün başı).
+- **Gün kimliği** `dayId = "yolgo-<startedAt ms>"` (`shift_engine.dart:602`); WEEM'de `startedAt = ShiftState.startedAtMs` → kimlik vardiyanınkiyle aynı ms (Bölüm 9 kova anahtarı `yolgo-<startedAtMs>` ile tutarlı; yeniden açılış aynı kimliği verir). Gün gece yarısı bölünmez; takvim günü `bakuDay(start)` → `LogTime.day(startedAtMs, clock.zone())` (Azerbaycan'da aynı sonuç; CORE.md 1.10).
+- **Nedenler:** `startReason` ∈ `manual` · `home_departure` (WEEM'de `rawstats_shift_start` üretilmez); `endReason` ∈ `manual` · `home_arrival` (`ShiftMachine.stop`, `ShiftMachine.kt:182-195`). `ShiftState` v1'de başlangıç nedeni **yok** (yalnız `endReason`) → **SORU-11-1**. Eski (içe aktarılan) gün raporlarındaki `rawstats_shift_*` nedenleri okunur ve gösterilir (Bölüm 12 `dayReasons`).
+- **Yazılmayanlar:** YolGo `HomeDayRules` ve `day.home.v1` (CORE.md 1.9), Rawstats vardiya okuması (`readShiftRaw`, `decideRawstatsShift`), 60 sn yedek, `AppLifecycleListener` resume okuması, `refreshIfStale` (ev `:core`'da tek kayıt), `autoStartDay`/`autoEndDay`/`followCourierStages` ayarları (1.10.0'dan beri hep `true`, `settings.dart:311-314`), toast'lar "Rawstats vardiyası bitti — gün de bitti" / "Rawstats növbəsi bitdi — gün də bitdi" ve "Rawstats vardiyası başladı — gün de başladı" / "Rawstats növbəsi başladı — gün də başladı" (`:399-404`).
+- **Toast (gün):** `day_start` → "Gün başladı — km, süre ve durmalar kaydediliyor" / "Gün başladı — km, vaxt və işıqforlar qeyd olunur" (yeşil, `:689-690`). YolGo'da evden çıkışta hemen ardından "Evden çıkıldı — gün otomatik başladı" / "Evdən çıxdın — gün avtomatik başladı" önceki toast'ın yerine geçer (tek toast, 7.11), eve dönüşte "Eve döndün — gün otomatik bitti" / "Evə qayıtdın — gün avtomatik bitdi"; elle bitişte toast yok (İstatistik açılır, 6.12). **WEEM:** aynı metinler nedenden seçilir (`home_departure` → "Evden çıkıldı…", diğer başlangıç → "Gün başladı…", `home_arrival` bitişi → "Eve döndün…"); yalnız uygulama içi şerit, sistem bildirimi değil (G4; `:core`'un kendi vardiya bildirimleri ayrı, CORE.md 3).
+- **Tek vardiya güvencesi:** gün yalnız vardiyayı izlediğinden "elle bitirilen gün aynı vardiyada yeniden açılmaz" kuralı (`ShiftFollower`: gün açıkken görülen başlangıç işlendi) ve "kapanmış vardiyaya geç gelen başlatma günü açmaz" (`native_telemetry_test` ilkesi, CORE.md 6.2) korunur.
+
+### 11.3 Motor: fix süzgeci ve km sayacı (`feed`, `_odometer`)
+
+- `feed(f, road)` (`:126-157`): gün kapalı, doğruluk sonlu değil / < 0 / > 50 m, koordinat sonlu değil ya da |lat| > 90 / |lon| > 180, ya da zaman son kabul edilenden ileri değil → olay yok (`_lastFeedAt` yalnız kabulde ilerler). `kmh = speedMps < 0 ? 0 : speedMps × 3,6` — **bilinmeyen hız duruş sayacında 0 km/s sayılır**.
+- `_odometer(f, kmh)` (`:161-196`), sırayla: doğruluk > 35 m, < 0, sonlu değil ya da koordinat geçersiz → atla (hareket süresi de). Zaman `_prevT`'den ileri değil → atla. `_prevT = t`. Önceki varsa ve `kmh > 5`: `dt = t − prevT` (sn, ms/1000), `0 < dt ≤ 15` ise `movingS += dt`. Çapa (`_odo`) yoksa çapa = fix. `d = haversine(çapa, fix)`, `dt = t − çapa.t`; `dt ≤ 0` → dur; `dt > 30` ya da `d/dt > 16 m/sn` → çapa = fix (sıçrama/kesinti düz çizgi sayılmaz); hız biliniyor (`speedMps ≥ 0`) ve `kmh < 2,5` → çapa = fix; `d ≥ 3` ve `d ≥ 0,35 × doğruluk` → `distM += d`, süren siparişin `distM += d`, çapa = fix; değilse çapa kalır (yavaş hareket birikir). **Bilinmeyen hız km sayacında hareketli sayılır** (çapa taşınmaz).
+- Uzaklık: `haversine` (`lib/core/geo.dart:3-10`, R = 6 371 000 m) → WEEM `geo` paketindeki aynı fonksiyon (Bölüm 3).
+- `movingS` ve `distM` JSON'da yuvarlanır (`'m': distM.round()`, `'movingS': movingS.round()`, `:628-629`); motor içinde Double.
+- **Bu km = YolGo gün km'si** (Y17 istatistik, gün kartı); vardiya sonu `shift_end.km` (Rawstats D8, `:core` `ShiftDistance`) ayrı ölçümdür (CORE.md 0 "Mesafe"; ikisinin gösterimi **SORU-12-1**).
+
+### 11.4 Motor: duruş tespiti ve tür sırası
+
+- Sabitler (`:18-24`): `stopMinS = 10`, `stopRadiusM = 30`, `stopKmh = 5`, `departKmh = 10`, `lightMaxS = 180` (ışık sayılan en uzun duruş `lightMaxS × 2 = 360` sn; yorum "3 dk" der, kod 6 dk — davranış koddur), `lightLongS = 120`.
+- Aday (`feed`, `:137-155`): `_fast = kmh > 10 ? _fast + 1 : 0`. Aday yoksa ve `kmh ≤ 5` → aday `(t, lat, lon)`. Aday varken `d = haversine(aday, fix)`; **ayrılış** = `_fast ≥ 2` ya da (`d > 30` ve doğruluk ≤ 25): `_endStop(aday)`; yeni aday yalnız bu fix `kmh ≤ 5` ise. Ayrılış değilse: `kmh ≤ 5` ise `aday.last = t` (5–10 km/s arası fix duruşu ne uzatır ne bitirir); `last − start ≥ 10 sn` ve duyurulmadıysa bir kez `stopping` olayı (`t` = fix anı).
+- `stoppedSince` (`:33-37`): aday ≥ 10 sn ise başlangıcı (arayüzde kullanılmıyor; WEEM'de yazılmaz).
+- `_endStop(c, road)` (`:198-237`): `dur = last − start` (tam sn); `dur < 10` → kayıt yok (yol bilgisi de sorulmaz). Tür, sırayla:
+  1. aşama `atRestaurant` / `readyForCustomer` / `atCustomer` → `order`;
+  2. `info.mall` → `mall`;
+  3. `info.atLight` ve `dur ≤ 360` → `dur > 120` ise `light?` (+ `longWait`), değilse `light`;
+  4. `info.surface == sidewalk` → `sidewalk`;
+  5. diğer → `stop`.
+- Kayıt `StopRec(start, end = last, lat/lon = aday noktası, kind, onRoad, junctionM, inOrder = süren sipariş var, lightLat/Lon yalnız `light*` türünde, surface, longWait = kind == "light?")` → `stops`'a eklenir, olay `stop` (veri `StopRec.toJson`, zaman `end`).
+- Gün sonunda açık aday `_endStop` ile kapanır (`endDay`, `:58-60`); 10 sn'den kısa duruş, GPS sıçraması sonrası kaybolan aday ve 360 sn'yi aşan ışık beklemesi ışık sayılmaz (sonuncusu kaldırım/`stop` olur).
+- **Bilinen davranış (korunur):** motor `light?` türünü yalnız bilinen ışıkta 120–360 sn duruşa verir; bilinmeyen kavşak adayı yalnız canlı ölçerden gelir (11.9).
 <!-- END sec:11 -->
 
 <!-- BEGIN sec:12 -->
