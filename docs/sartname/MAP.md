@@ -22,7 +22,7 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 | 1 | kaynak haritası | tümü | koordinatör | bitti (12:23 UTC) <!-- st:1 --> |
 | 2 | Y7 harita verisi | A6.3 | ajan R | bitti (12:38 UTC) <!-- st:2 --> |
 | 3 | Y3 rota motoru | A6.4 | ajan R | bitti (12:37 UTC) <!-- st:3 --> |
-| 4 | Y8 sokak kararları | A6.4 | ajan R | bekliyor <!-- st:4 --> |
+| 4 | Y8 sokak kararları | A6.4 | ajan R | bitti (12:40 UTC) <!-- st:4 --> |
 | 5 | Y15, Y16, Y21 | A6.8 | ajan R | bekliyor <!-- st:5 --> |
 | 6 | Y1, Y2 harita ekranı | A6.5 | ajan N | bekliyor <!-- st:6 --> |
 | 7 | Y4 navigasyon | A6.6 | ajan N | bekliyor <!-- st:7 --> |
@@ -482,7 +482,102 @@ Motor TR mesaj üretir (testler TR karşılaştırır); ekranda dil çevrilir. W
 <!-- BEGIN sec:4 -->
 ## 4. Y8 — Sokak kararları (A6.4)
 
-_Yazılıyor (ajan R)._
+### 4.1 Kaynak ve kapsam
+
+| Dosya (YG) | Satır | İçerik |
+|---|---|---|
+| `lib/routing/street_prefs.dart` | 1–146 | `StreetPrefs` 10–24, `StreetList` 26, `StreetPrefsController` 31–146 (göç 43–51, okuma 52–70, yazma 73–82, işlemler 87–145) |
+| `lib/routing/route_hours.dart` | 1–31 | `ReverseHours` |
+| `lib/ui/road_hours.dart` | 1–66 | "Saatli çift yön izni" sayfası |
+| `lib/ui/settings_screen.dart` | 236–379 | Ayarlar → Yollarım → "Sokak bilgileri" sayıları ve listeler (`_streetList`) |
+| başvuru | — | `lib/nav/nav_controller.dart:575–740` (ses tuşu → sokak kararı, öneri; ajan N/Q), `:806–827` (ters yön önerisi), `lib/ui/nav_screen.dart:219–300` (uzun basış menüsü; ajan N), `lib/roads/road_controller.dart:226–260` ("Sorun yok" → onay; ajan Q, Bölüm 9), `lib/routing/router.dart` (kurallar Bölüm 3.4–3.5) |
+
+Bulgu: Y8 için ham bulgu yoktu (yalnız `Y_routing.md` §Y3'te girdi adları); bu bölüm kaynaktan çıkarıldı.
+
+### 4.2 Model, işlemler, kalıcılık (`StreetPrefs`)
+
+- Üç OSM way id kümesi: `approved` ("iki yönlü onaylı": ana cadde olmayan sokakta ters yön serbest), `blocked` ("Kötü Yol"/tamamen kapalı: sürüş ve yürüyüş yok), `steep` ("aşırı eğimli": yokuş yukarı yok, iniş serbest); `names` (way → ad, liste ekranı için); `reverseHours` (way → saat aralığı; Bölüm 4.3).
+- İşlemler (her biri hemen kaydeder):
+
+  | İşlem | approved | blocked | steep | names | reverseHours |
+  |---|---|---|---|---|---|
+  | `approve(id, ad)` | + | − (ikisi birden olamaz) | aynı | ad boş değilse yazılır | aynı |
+  | `block(id, ad)` | − | + | aynı | aynı kural | aynı (saat kalır) |
+  | `markSteep(id, ad)` | aynı | aynı | + | aynı kural | aynı |
+  | `clearWay(id)` | − | − | − | aynı (silinmez) | − |
+  | `remove(liste, id)` | yalnız o listeden; `approved`'dan çıkarınca saati de silinir | | | aynı | (yalnız `approved`) |
+  | `clearAll(liste)` | o liste boşalır; `approved` boşalınca bütün saatler de | | | aynı | (yalnız `approved`) |
+  | `setHours(id, h?)` | aynı | aynı | aynı | aynı | `h` geçersizse yok sayılır; `null` → silinir; değilse yazılır |
+
+- Tercihler (YolGo `FlutterSharedPreferences`, `flutter.` önekli; WEEM `map` dosyasında öneksiz, aynı biçim):
+
+  | Anahtar | Tip | Biçim | Okuma kuralı |
+  |---|---|---|---|
+  | `streets.approved`, `streets.blocked`, `streets.steep` | StringList | ondalık way id | `int.tryParse`, bozuk atlanır, küme |
+  | `streets.names` | StringList | `"<id>\|<ad>"` | ilk `|` konumu > 0 olmalı; ad `|` içerebilir |
+  | `streets.hours.v1` | StringList | `"<id>\|<başlangıç dk>\|<bitiş dk>"` | tam 3 alan, üçü tamsayı, `valid` olmalı |
+  | `streets.blocked.legacy.v1` | StringList | eski `streets.blocked` yedeği | hiç okunmaz |
+  | `streets.blocked.migrated.v2` | Bool | göç işareti | — |
+
+  Yazma her seferinde beş anahtarı birden yazar (küme ekleme sırasıyla). Göç (1.3.1, bir kez): işaret `true` değilse eski `streets.blocked` boş değilse `streets.blocked.legacy.v1`'e kopyalanır, `streets.blocked` boşaltılır, işaret yazılır (eski Ses− kayıtları bütün caddeyi kapatıyordu ve nerede basıldığı bilinmiyordu).
+- WEEM (S1): YolGo verisi aktarılmaz, liste boş başlar → göç ve `legacy`/`migrated` anahtarları yazılmaz (eski veri olamaz).
+
+### 4.3 Saatli ters yön izni (`ReverseHours`)
+
+- `ReverseHours(startMinute, endMinute)`; `valid` = ikisi de 0–1439 ve eşit değil. Saat **Bakü sabit UTC+4** (telefon saat diliminden bağımsız): `dakika = (an UTC + 4 sa).saat·60 + dakika`.
+- `allows(an)`: geçersizse false; `start < end` → `start ≤ dk < end`; değilse gece yarısını geçer: `dk ≥ start || dk < end`.
+- `allowsTrip(giriş, saniye)`: `allows(giriş)` değilse, saniye sonlu değilse ya da negatifse false; `s = 60, 120, … < saniye` her adımda `allows(giriş + s)`; son olarak `allows(giriş + ceil(saniye·1000) ms)`. Geçiş izin bitmeden tamamlanmalı.
+- `label` = `"HH:MM–HH:MM"`.
+- Rota motorunda (Bölüm 3.5 `allowedAt`): yalnız ters yön kenarında (`wrong = 1`) ve way'in saati varsa; an = `departure + startOffsetS + elapsed` (düğüme varış süresi), süre = kenarın (kısmi) süresi. Saat varken planlayıcı bacak önbelleğini kullanmaz (Bölüm 3.10). Onay olmadan saat tek başına izin açmaz; ana caddede ancak elle kesim izniyle (`wrongWayEdges`, Bölüm 9) ters yön varsa o kenara da saat uygulanır.
+
+### 4.4 Kararın verildiği yerler (eylem → etki → metin)
+
+| Yer (ekran sahibi) | Eylem | Etki | Metin TR / AZ |
+|---|---|---|---|
+| Sürüş, ses tuşları (Bölüm 9.4; yakalama ajan Q) | Ses+ tek (450 ms içinde ikincisi gelmezse) | eşleşen sokak `approve`; açık ters yön önerisi varsa (ana cadde değil) önerilen sokak | "Onaylandı: $ad (iki yön)" / "Təsdiqləndi: $ad (iki tərəfli)"; yeşil, 6 sn, "Geri al" / "Geri qaytar" (öncesindeki üç liste + saat geri yüklenir) |
+| 〃 | Ses+ ana caddede | yok | "Ana caddede ters yön onayı kapalı" / "Əsas küçədə əks istiqamət təsdiqi olmur" (kırmızı, titreşim) |
+| 〃 | Ses− iki kez (450 ms içinde) | `markSteep` | "Aşırı eğimli: $ad — yokuş yukarı kullanılmaz" / "Çox dik: $ad — yoxuşa çıxılmayacaq"; mor, 6 sn, geri al |
+| 〃 | Ses− tek | sokak kararı **değil**: ±25 m kötü nokta (Bölüm 9) | — |
+| 〃 | Ses− uzun (≥ 1.000 ms) | o yerde kötü nokta yoksa ve sokak kara listede (ya da elle puanı ≤ 25) ise `remove(blocked)` (+ puan sıfırlanır) | "Kötü yol işareti kaldırıldı: $ad" / "Pis yol qeydi silindi: $ad"; hiçbiri yoksa "Burada kötü nokta işareti yok" / "Burada pis nöqtə qeydi yoxdur" |
+| 〃 | eşleşen yol yok | yok | "Yol eşleşmedi — biraz daha sür" / "Yol tanınmadı — bir az da sür" (turuncu, titreşim) |
+| Sürüş, ters yön tespiti (Bölüm 7; ajan N) | onaysız ara sokakta ters yön | öneri 15 sn açık (Ses+ onu onaylar) | "Ters yön: $ad — onay için Ses+" / "Əks istiqamət: $ad — təsdiq üçün Səs+" (10 sn); ana caddede "Ana caddede ters yöndesin!" / "Əsas küçədə əks istiqamətdəsən!" |
+| Ters yön sorusu "Sorun yok" (Bölüm 9; ajan Q) | cevap | geçişin ve aynı kesintisiz ters yön sürüşünün sokakları `approve` (kara listedeki ve ana cadde hariç) | "Onaylandı: <adlar> (iki yön)", geri al |
+| Haritada uzun basış menüsü (Bölüm 6/7; ajan N) | "Saatli çift yön izni" / "Saatla iki istiqamət icazəsi" (yalnız ana cadde **değilse**) | 4.5 sayfası | — |
+| 〃 | "Bu yolu tamamen kapat" / "Bu yolu tam bağla" ↔ "Yol kapatmayı kaldır" / "Yolun bağlanmasını ləğv et" | `block` / `remove(blocked)`; rota varsa yeniden hesap | alt yazı "$ad · Ses− artık yalnız ±25 m işaretler" / "$ad · Səs− indi yalnız ±25 m qeyd edir" |
+| Ayarlar → Yollarım → "Sokak bilgileri" / "Küçə məlumatları" | sayılar ve listeler | liste sayfası: başlık "Onaylı sokaklar" / "Təsdiqli küçələr", "Kötü Yol listesi" / "Pis yol siyahısı", "Aşırı eğimli sokaklar" / "Çox dik küçələr"; satır ad (yoksa "isimsiz yol" / "adsız yol") + "OSM way <id>", çöp kutusu `remove`; "Tümünü sil" / "Hamısını sil" `clearAll`; boşsa "Liste boş" / "Siyahı boşdur" | satırlar: "Onaylı (iki yön): N" / "Təsdiqli (iki tərəfli): N" — "Sürerken Ses+ → bulunduğun sokak" / "Sürərkən Səs+ → olduğun küçə"; "Tamamen kapalı yol: N" / "Tam bağlı yol: N" — "Haritada yola uzun bas → \"Bu yolu tamamen kapat\". Ses− artık yalnız ±25 m kötü nokta işaretler." / "Xəritədə yola barmağını saxla → \"Bu yolu tam bağla\". Səs− indi yalnız ±25 m pis nöqtə qeyd edir."; "Aşırı eğimli: N" / "Çox dik: N" — "Sürerken Ses− iki kez → yokuş yukarı kullanılmaz (motor sağlığı)" / "Sürərkən Səs− iki dəfə → yoxuşa çıxılmır (motoru qorumaq üçün)" |
+
+Her kalıcı değişiklikten sonra rota açıksa `replan(reason: 'prefs')` (Bölüm 7). Olay günlüğü: `approve`/`block`/`steep` `{way}`, `undo` `{way}`, `bad_road_clear` `{way}` (Bölüm 12).
+
+### 4.5 "Saatli çift yön izni" sayfası (`road_hours.dart`)
+
+- Başlık sokak adı (boşsa "Sokak saatleri" / "Küçənin saatları"); açıklama "Bakü saati. Seçilen aralık dışında sokağın normal tek yön kuralı geçerli." / "Bakı vaxtı. Seçilən saatlardan kənarda küçənin adi tək istiqamət qaydası qalır."
+- Anahtar "Ters yön izni saatli" / "Əks istiqamət icazəsi saatla" (kayıtlı saat varsa açık). Açıkken "Başlangıç  HH:MM" / "Başlanğıc", "Bitiş  HH:MM" / "Son" (24 saat seçici); kayıt yoksa varsayılan **23:00 – 00:00**. Eşitse kırmızı "Başlangıç ve bitiş farklı olmalı." / "Başlanğıc və son fərqli olmalıdır." ve Kaydet pasif; değilse "Bitiş daha erkense izin gece yarısını geçer." / "Son saat daha erkəndirsə, icazə gecə yarısından keçir."
+- "Kaydet" / "Yadda saxla": sokak **onaylanır** (`approve`) ve saat yazılır (anahtar kapalıysa saat silinir → her saat onaylı); rota açıksa yeniden hesap.
+
+### 4.6 Testler
+
+| Dosya | Sayı | Test adları → neyi doğrular | WEEM hedefi | Görev | Not |
+|---|---:|---|---|---|---|
+| YT `route_hours_test` | 3 | "Bakü saatleri telefonun saat diliminden bağımsızdır" (11:00–19:00: 07:00Z ve 11:00+04 evet, 06:59:59Z ve 15:00Z hayır); "gece yarısını geçen aralık ve bitişten önce çıkış" (23:00–07:00: 19:00Z evet, 02:59Z evet, 03:00Z hayır; 02:59:30Z'den 20 sn evet, 40 sn hayır; 24 sa hayır); "bozuk aralık izin açmaz" ((0,0) hayır; −1 ve 1440 geçersiz) | `route.ReverseHoursTest` | A6.2a → A6.4 | — |
+| YT `ww_green_two_way_test` | 4 | onaysız ters yön kullanılmaz; onaylı + `wwRatio` yok → %10 uzun yasal yol yerine ters yön (400, `wrongWayM` 400); `wwRatio 0.1` ya da `wwAvoid` → yasal yol; ana cadde onaylı olsa da ters yok | `route.WrongWayCostTest` | A6.2a → A6.4 | `wwRatio`/`wwAvoid` doğrudan verilir (üretim Bölüm 9) |
+| YT `street_prefs_migration_test` | 1 | eski bütün-cadde yasakları bir kez yedeğe taşınır, yeni kapatmalar kalır, diğer listelere dokunulmaz | — | **çevrilmez** (öneri) | S1: WEEM'de eski Ses− kara listesi olamaz, göç yazılmaz; koordinatör onayı (4.8) |
+| YT `router_test` (onay, ana cadde, kara liste, aşırı eğim ×2, saat izni) | 6 | Bölüm 3.14 | `route.RouterTest` | A6.2a → A6.4 | — |
+| YT `ww_clean_run_test`, `ww_no_problem_green_test` | 5 + 5 | "Sorun yok"/Ses− geçiş kararları → onay | Bölüm 9 | A6.2a → A6.11 | ajan Q |
+| **Yeni** | — | `StreetPrefsTest`: işlem tablosu (4.2) satır satır; kodek: bozuk id, `|` konumu 0, 2 alanlı saat, geçersiz saat atlanır; yazma sırası; geri al öncesi durumu aynen kurar | `route.StreetPrefsTest` | A6.2a → A6.4 | eski testi olmayan davranış (karakterizasyon) |
+
+### 4.7 WEEM yerleşimi
+
+- `logic/map` `route`: `StreetPrefs` (değişmez model + işlemler + `StreetPrefsCodec` tercih biçimi), `ReverseHours`, `StreetList`. Kalıcılık arayüzü `MapPrefs` (anahtar → StringList/Bool); Android `:map` `MapPrefsStore` = `SharedPreferences("map")`.
+- Ekranlar `:app`: Daha fazla → Harita ayarları → "Yollarım" → "Sokak bilgileri" (sayılar, liste sayfası), uzun basış menüsü ve "Saatli çift yön izni" sayfası Harita sekmesinde (Bölüm 6/7). Toast ve "Geri al" ortak harita bildirim şeridi (Bölüm 7).
+- 2 telefon: kararlar sürüşte verilir → Receiver'da (ses tuşları, harita); veri o telefonda kalır, mesaj yok. Tek telefonda aynı telefon.
+- Rota motoruna girdi: `approved`, `blocked`, `steep`, `reverseHours` (Bölüm 3.3); Y19 veri seti rotası da aynı kümeleri kullanır (Bölüm 13).
+
+### 4.8 Farklar ve açık noktalar
+
+- `block` saati silmez, `remove(blocked)` da; saat ancak onay kaldırılınca gider (davranış korunur).
+- `streets.blocked.legacy.v1` YolGo'da hiç okunmaz (yalnız yedek).
+- Ses tuşu davranışının tamamı (yakalama, ayar `volumeKeys`, kötü nokta) Bölüm 9'dadır; bu bölüm yalnız sokak listelerine etkisini tanımlar.
+- **SORU 2 (koordinatöre):** `street_prefs_migration_test` (1) `TEST_ENVANTERI`'nde `:map` hedefli; S1 gereği WEEM'de göç kodu anlamsız. Öneri: "çevrilmez (S1)" olarak işaretlensin; ya da göç kodu boş veride etkisiz kalacak şekilde yazılıp test çevrilsin.
 <!-- END sec:4 -->
 
 <!-- BEGIN sec:5 -->
