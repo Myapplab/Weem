@@ -201,6 +201,7 @@ Toplam 48 oturumluk görev (`docs/WEEM_ISLER.md`; aksamalarla kabaca 50–55 otu
 | S13 Usage | Ultracode yalnız gerekli yerlerde (Aşama 3 ve 6 şartnameleri, son büyük denetim); paralel ajan en çok 2–3, çıktı bölüm bölüm repoya + push; kalite en yüksek (kural `AGENTS.md`) — 17 Ekim |
 | S14 A3.1 çalışma biçimi | A3.1 (Aşama 3 şartnamesi) tek ajanla, **Opus · max**; ultracode ve paralel ajan yok. S13'teki ultracode listesinden A3.1 çıkar (ultracode artık yalnız A6.1 ve A10.3). Şartname yine bölüm bölüm yazılır, her bölümde commit + push — 17 Ekim |
 | S19 AZ hava metni | Teklif havası gelmediğinde AZ metni "hava məlumatı gəlmədi" (TR "hava bilgisi gelmedi"; `BoostTempE3Test`, `OrderHistory.boostTempLine`) — 17 Ekim, A3.6 oturumunda kullanıcı onayı |
+| S21 A3.10 kayıtları | (c) A3.10, A4.3'ten sonra yapılır; WEEM `.dev` kayıtları A4.3'ün ZIP dışa aktarmasıyla alınır — 17 Ekim |
 
 ## 9. İlerleme
 
