@@ -303,8 +303,8 @@ class DashboardView(context: Context) : View(context) {
 
     override fun onInitializeAccessibilityNodeInfo(info: AccessibilityNodeInfo) {
         super.onInitializeAccessibilityNodeInfo(info)
+        // Dokunma eylemi adlandırılmaz: WEEM kaynağında erişilebilirlik eylem sabitleri yasak (NoGestureTest); ipucu çizilen satırda.
         info.text = ScooterPanel.accessibility(frame, lang)
-        info.addAction(AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, (if (immersive) T.TAP_MENU else T.TAP_FULL).get(lang)))
     }
 
     private companion object {

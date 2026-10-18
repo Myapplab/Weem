@@ -1,5 +1,8 @@
 package com.kuryelog.app
 
+import android.content.Intent
+import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -12,6 +15,8 @@ import androidx.compose.runtime.setValue
 import com.kuryelog.app.core.HomeWatch
 import com.kuryelog.app.core.Shift
 import com.kuryelog.app.core.Store
+import com.kuryelog.app.scooter.FloatingPanel
+import com.kuryelog.app.scooter.Scooter
 import com.kuryelog.logic.core.Lang
 import java.util.Locale
 
@@ -22,6 +27,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         // RS `MainActivity`: eski otomatik oturumlar güncellemeden sonra sürmez (CORE.md 1.1).
         safely("start") { Store.ensureManualMode(this); Shift.deviceId(this) }
+        openFrom(intent)
         val prefs = ShellPrefs(this)
         setContent {
             var langSetting by remember { mutableStateOf(prefs.langSetting) }
@@ -38,6 +44,42 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        openFrom(intent)
+    }
+
+    /** Yüzen panel: uzun basma canlı paneli, çift dokunma Scooter ayarlarını açar (A5.4). */
+    private fun openFrom(intent: Intent?) {
+        val target = intent?.getStringExtra(Scooter.OPEN_EXTRA) ?: return
+        intent.removeExtra(Scooter.OPEN_EXTRA)
+        ScooterNav.open = target
+    }
+
+    // Yüzen top WEEM ekranı görünürken gizli; sonuncusu durunca 400 ms sonra çıkar (SCOOTER.md 6.3). PiP'ten çıkış top göstermez.
+    override fun onStart() {
+        super.onStart()
+        safely("floating") { FloatingPanel.screenStarted() }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        safely("floating") { FloatingPanel.screenStopped(this, !isInPictureInPictureMode) }
+    }
+
+    /** Android 12 öncesi: bağlantı varken Ana ekran tuşu Scooter sekmesini küçük pencereye alır (12+ kendisi yapar). */
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (Build.VERSION.SDK_INT < 31 && Scooter.active && ScooterNav.pipWanted && !isInPictureInPictureMode) {
+            safely("pip") { enterPictureInPictureMode(ScooterNav.pipParams(true)) }
+        }
+    }
+
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        ScooterNav.pip = isInPictureInPictureMode
     }
 
     override fun onResume() {

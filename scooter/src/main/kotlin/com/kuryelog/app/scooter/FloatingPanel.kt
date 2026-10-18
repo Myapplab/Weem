@@ -10,6 +10,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PixelFormat
 import android.graphics.Rect
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
@@ -122,8 +123,12 @@ class FloatingPanel private constructor(private val context: Context) {
     }
 
     private fun screen(): IntArray {
-        val b = wm.currentWindowMetrics.bounds
-        return intArrayOf(b.width(), b.height())
+        if (Build.VERSION.SDK_INT >= 30) {
+            val b = wm.currentWindowMetrics.bounds
+            return intArrayOf(b.width(), b.height())
+        }
+        val m = context.resources.displayMetrics
+        return intArrayOf(m.widthPixels, m.heightPixels)
     }
 
     /** Ekrandaki dikdörtgen (top ya da açık bar). */
@@ -462,6 +467,8 @@ class FloatingPanel private constructor(private val context: Context) {
         private val MAIN = Handler(Looper.getMainLooper())
         private val ScooterSizes = com.kuryelog.logic.scooter.ScooterSettings.SIZES
         private val screens = FloatRules.Screens()
+        // Yalnız uygulama bağlamı tutulur (show(app)); süreç boyu tek top.
+        @SuppressLint("StaticFieldLeak")
         private var instance: FloatingPanel? = null
 
         fun enabled(c: Context): Boolean = LoggerPreferences.get(c).getBoolean(FloatRules.PREF_ON, true)

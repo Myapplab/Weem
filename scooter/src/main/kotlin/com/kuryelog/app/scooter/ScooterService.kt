@@ -96,18 +96,20 @@ class ScooterService : Service() {
             if (Scooter.active && !Scooter.recording && !Scooter.maintenance) worker.post { upgrade() } else if (!Scooter.active) stopSelf()
             return START_NOT_STICKY
         }
-        if (Scooter.active) return START_NOT_STICKY
         val live = intent != null && intent.getBooleanExtra("live_only", false)
-        if (Scooter.maintenance && !live) { stopSelf(); return START_NOT_STICKY }
-        if (intent == null || !permissions(this, live)) { stopSelf(); return START_NOT_STICKY }
+        // Every start below came from startForegroundService: it must reach startForeground even when refused, or Android closes
+        // the whole app (CORE.md 4.1, CrashGuardTest). Callers already check these, so the refusals are only a safety net.
+        if (Scooter.active) { refuseStart(running = true); return START_NOT_STICKY }
+        if (Scooter.maintenance && !live) { refuseStart(running = false); return START_NOT_STICKY }
+        if (intent == null || !permissions(this, live)) { refuseStart(running = false); return START_NOT_STICKY }
         val nm = getSystemService(NotificationManager::class.java)
         val lang = Store.lang(this)
         nm.createNotificationChannel(NotificationChannel(CHANNEL, ScooterUiText.CHANNEL.get(lang), NotificationManager.IMPORTANCE_LOW))
         // Live-panel-only mode uses no location, so it runs as a connected-device service only.
+        fgsType = if (live) ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
+        else ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
         startForeground(
-            NotificationIds.SCOOTER_FGS, notification((if (live) ScooterUiText.N_CONNECTING_LIVE else ScooterUiText.N_STARTING).get(lang), live),
-            if (live) ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
-            else ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE,
+            NotificationIds.SCOOTER_FGS, notification((if (live) ScooterUiText.N_CONNECTING_LIVE else ScooterUiText.N_STARTING).get(lang), live), fgsType,
         )
         // Both flags before the worker runs, so the toolbar never shows a new recording as a live panel.
         Scooter.active = true
@@ -121,6 +123,32 @@ class ScooterService : Service() {
         val sweepTo = intent.getIntExtra("sweep_to", 0xc0)
         worker.post { begin(device, name, pair, sweep, sweepBoard, sweepFrom, sweepTo, live) }
         return START_NOT_STICKY
+    }
+
+    private var fgsType = ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
+
+    /**
+     * A refused foreground start still calls startForeground: a running link re-posts its own notification with its type; a refused
+     * fresh start shows the channel's notification for a moment and removes it. A failure here is only logged (no permission at all).
+     */
+    private fun refuseStart(running: Boolean) {
+        val lang = Store.lang(this)
+        try {
+            getSystemService(NotificationManager::class.java)
+                .createNotificationChannel(NotificationChannel(CHANNEL, ScooterUiText.CHANNEL.get(lang), NotificationManager.IMPORTANCE_LOW))
+            startForeground(
+                NotificationIds.SCOOTER_FGS, notification(ScooterUiText.N_CONNECTING_LIVE.get(lang), !Scooter.recording),
+                if (running) fgsType else ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE,
+            )
+        } catch (e: RuntimeException) {
+            Store.failure(this, "scooter_refused_start", e)
+        }
+        // The next tick re-posts the live text over this placeholder.
+        lastNotice = null
+        if (!running) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+        }
     }
 
     @SuppressLint("MissingPermission")
