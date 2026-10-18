@@ -20,7 +20,7 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 |---|---|---|---|---|
 | 0 | özet, WEEM kuralları, görev dizini | tümü | koordinatör | yazılıyor (ajanlardan sonra) (12:17 UTC) <!-- st:0 --> |
 | 1 | kaynak haritası | tümü | koordinatör | bitti (12:23 UTC) <!-- st:1 --> |
-| 2 | Y7 harita verisi | A6.3 | ajan R | bitti (12:38 UTC) <!-- st:2 --> |
+| 2 | Y7 harita verisi | A6.3 | ajan R | bitti (17:15 UTC) <!-- st:2 --> |
 | 3 | Y3 rota motoru | A6.4 | ajan R | bitti (12:37 UTC) <!-- st:3 --> |
 | 4 | Y8 sokak kararları | A6.4 | ajan R | bitti (12:40 UTC) <!-- st:4 --> |
 | 5 | Y15, Y16, Y21 | A6.8 | ajan R | bitti (17:15 UTC) <!-- st:5 --> |
@@ -99,7 +99,7 @@ Testlerin bölüm ve görev eşlemesi: her bölümün "Testler" alt bölümü; t
 | `tool/build_map.dart` · `ci/osm_extract.py` · `ci/build.sh` | 1–120 · 1–71 · 202–231 | CI gömülü harita |
 | `assets/map/manifest.json` | — | repoda yalnız yer tutucu `{"version":"","regions":{}}` (28 bayt); graf/DEM/POI CI'da üretilir |
 
-Bulgu `Y_routing.md` §Y7 satır satır doğrulandı. Düzeltmeler: başlığın 7. alanı yaya bölgesi **nokta** sayısıdır (`zoneLat.length`), 6. alan `zoneStart.length`; 8 bayt hizası okurken de yazarken de uygulanır; `overpassProblem` 64 baytlık baş + 1.500 baytlık kuyruğa bakar; POI türlerinde `t` (market) de var (Bölüm 5.3); `regionBox` hiçbir yerde kullanılmıyor (ölü); `build_map` merkez grafiği üretmez, yalnız `graph_wide.bin.gz`.
+Bulgu `Y_routing.md` §Y7 satır satır doğrulandı; içerik doğru. Bulgu düzeltmesi: satır numaraları eski (doğrusu yukarıdaki tablo; ör. `buildRoadGraph` 85–274, ikili dosya 442–576, `_installBundled` 116–157, `_buildEntry` 296–366, `_loadPrebuilt` 392–426, `downloadPois` 430–468, `features = 3` graph_builder.dart:272, `ci/build.sh` 202–231); graf düğümü "≥ 2 yolda" değil "≥ 2 kez kullanılan" düğüm (aynı yolda iki kez geçen, ör. kapalı yolun başı/sonu, de sayılır) ya da yol ucu; `contains` sınırı geometri kutusu değil ızgara kapsamıdır (kuzey/doğu kenarında 100 m paya ek en çok bir hücre ≈ 55 m). Ekler: `overpassProblem` 64 baytlık baş + 1.500 baytlık kuyruğa bakar; `regionBox` ve `isInAbsheron` lib'de kullanılmıyor (ölü); POI türlerinde `t` (market) var, `pois.dart:11` yorumunda yok (Bölüm 5.3); hazır veri sunucusu manifesti bu ortamdan 404.
 
 ### 2.2 Coğrafya yardımcıları (`geo.dart`; WEEM `logic/map` `geo`)
 
@@ -249,9 +249,9 @@ Sabitler: `maxSpacing = 25 m` (sıklaştırma), `minGradeRun = 20 m` (eğim payd
 |---|---:|---|---|---|---|
 | YT `overpass_test` | 3 | "düzgün cevap kabul edilir" (`{"version":0.6,"elements":[]}` → null); "sondaki runtime error notu yakalanır" (remark değeri döner); "JSON olmayan ve boş cevap reddedilir" (`'JSON değil'`, `'boş cevap'`) | `logic/map` `graph.OverpassProblemTest` | A6.2a → A6.3 | — |
 | YT `map_data_update_test` | 2 | "güncelleme hatası eldeki haritayı korur" (`updateFailed` fazı `error`, graf aynı nesne, `ready == false`); "atomik yazma eski dosyayı … korur" (`.tmp` kalmaz; hedef klasör yoksa hata, eski dosya aynı) | `graph.MapDataStateTest` (saf durum) + `:map` `AtomicFileTest` (JVM dosya, Android'siz) | A6.2a → A6.3 | atomik yazma `logic/`'te `java.io.File` ile saf yazılabilir |
-| YT `router_test` "graf kurulur ve dosyaya yazılıp okunabilir" | 1 (38'in) | M iç nokta kavşak değil → N = 4, E = 4; serialize→deserialize sonrası `edgeCount`, `climbF`, `names` aynı | `graph.RoadGraphFileTest` | A6.2a → A6.3 | kalan 37 router testi Bölüm 3.12 |
+| YT `router_test` "graf kurulur ve dosyaya yazılıp okunabilir" | 1 (38'in) | M iç nokta kavşak değil → N = 4, E = 4; serialize→deserialize sonrası `edgeCount`, `climbF`, `names` aynı | `graph.RoadGraphFileTest` | A6.2a → A6.3 | kalan 37 router testi Bölüm 3.14 |
 | YT `bikeway_e13_test` "E13 etiketler" (3) + "E13 harita dosyası" (2) | 5 (18'in) | bayrak tablosu; Overpass sorgusu `cycleway` içerir + `out body`; eski başlık (`features` = 0, ofset 36) okunur ve uyarır; sürüm 1 (ofset 4) → `FormatException` | `graph.BikewayTagsTest`, `graph.RoadGraphFileTest` | A6.2a → A6.3 | dosyanın tamamı Bölüm 5.1'de eşlenir |
-| YT `park_paths_test` 1–2 | 2 (4'ün) | park bayrağı (park/garden/recreation, `bicycle=no` hariç, parktaki residential almaz), `hasParkData` | `graph.ParkPathsTest` | A6.2a → A6.3 | 3–4 Bölüm 3.12 |
+| YT `park_paths_test` 1–2 | 2 (4'ün) | park bayrağı (park/garden/recreation, `bicycle=no` hariç, parktaki residential almaz), `hasParkData` | `graph.ParkPathsTest` | A6.2a → A6.3 | 3–4 Bölüm 3.14 |
 | **Yeni (karakterizasyon)** | — | (a) KNG1 altın baytları: küçük sentetik OSM'den (router_test `_graph(hill: 10)`) üretilen dosyanın başlığı, hizaları, `u8/u16` alanları ve ad bölümü bayt bayt; little-endian; (b) `buildRoadGraph` sayıları: sıklaştırma (60 m parça → `ceil(60/25) = 3` adım, 2 ara nokta), 3'lü ortalama, `minGradeRun`, ad önceliği; (c) `HgtTile.sample` boşluk ortalaması ve kenar; (d) `BBox.split` 91/28 karo; (e) `nearestEdge` `heading` süzgeci ve `contains` payı | `graph.*Test` | A6.2a (yeni yazılır) → A6.3 | Dart tarafında ilgili sayılar YolGo üstünde bir kez çalıştırılıp sabitlenir; transandantal fonksiyonlarda (sin/cos/asin) ulp farkı için `closeTo` toleransı |
 
 ### 2.14 WEEM yerleşimi
