@@ -49,6 +49,8 @@ interface OrdersSource {
     fun recordCashTip(id: String, received: Double): JSONObject? = null
     fun confirmDelivered(id: String): Boolean = false
     fun showCustomerCard(id: String): Boolean = false
+    /** E4 (A4.1): sipariş kartının "Teklif puanı" satırı (`:economics` verir, `:app` bağlar); bağlı değilse ya da teklif yoksa null. */
+    fun offerScoreLine(trip: TripRecord, tl: (String, String) -> String): String? = null
 }
 
 /**
