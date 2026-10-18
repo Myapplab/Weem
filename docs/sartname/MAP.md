@@ -20,7 +20,7 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 |---|---|---|---|---|
 | 0 | özet, WEEM kuralları, görev dizini | tümü | koordinatör | yazılıyor (ajanlardan sonra) (12:17 UTC) <!-- st:0 --> |
 | 1 | kaynak haritası | tümü | koordinatör | bitti (12:23 UTC) <!-- st:1 --> |
-| 2 | Y7 harita verisi | A6.3 | ajan R | bitti (12:32 UTC) <!-- st:2 --> |
+| 2 | Y7 harita verisi | A6.3 | ajan R | bitti (12:38 UTC) <!-- st:2 --> |
 | 3 | Y3 rota motoru | A6.4 | ajan R | bitti (12:37 UTC) <!-- st:3 --> |
 | 4 | Y8 sokak kararları | A6.4 | ajan R | bekliyor <!-- st:4 --> |
 | 5 | Y15, Y16, Y21 | A6.8 | ajan R | bekliyor <!-- st:5 --> |
@@ -270,6 +270,7 @@ Sabitler: `maxSpacing = 25 m` (sıklaştırma), `minGradeRun = 20 m` (eğim payd
 - `regionBox` ve `isInAbsheron` ölü kod; `region` yalnız dosya adı. WEEM'de davranış aynı kalır (S9); ölü kod taşınmaz.
 - Yer tutucu manifestte `regions` sözlük, `build_map` liste yazar; kod yalnız `is List` denetler (uyumlu). WEEM yer tutucusu `{"version":"","regions":[]}`.
 - Gömülü harita sürümü değişince elle indirilmiş harita üzerine yazılır (YolGo davranışı; korunur).
+- **AZ çeviri hatası (eski hata, WEEM'de baştan doğru):** arka plan mesajları `trMsg` ile alt dize değişimiyle çevrilir ve sözlük sırası yüzünden karışık çıkar: `'Hazır yol verisi aranıyor'` → "Hazırdır yol məlumatı axtarılır", `'Tüm sunucular meşgul, 15 sn sonra tekrar'` → "Tüm sunucular məşğuldur, 15 san sonra yenidən", `'Yol verisi indirilemedi (…)'` → "Yol məlumatı indirilemedi (…)"; `'Harita dosyası eski sürüm'` hiç çevrilmez. WEEM: ilerleme ve hata metinleri kodlu (`MapDownload` aşaması + sayılar), dil tablosunda her mesajın bütün AZ karşılığı (sözlüğün hedef metinleri: "Hazır yol məlumatı axtarılır", "Bütün serverlər məşğuldur, N san sonra yenidən", "Yol məlumatı yüklənmədi (…)"; "Harita dosyası eski sürüm" için AZ A6.3'te yazılır). TR metinler harfiyen aynı.
 - `edgesOfOsmWay` vb. doğrusal tarama (performans; WEEM dizinle hızlandırabilir, sonuç aynı).
 - **SORU (koordinatöre):** hazır veri sunucusu `mehemmedsh/kurye_nav_data` bu ortamdan erişilemedi (manifest 404). Seçenekler: (a) zincir aynen kalsın (sunucu yoksa ≤ 20 sn sonra Overpass'a düşer); (b) WEEM'de kaldırılsın, doğrudan Overpass. Önerilen varsayılan (a) — davranış aynı (S9), zararsız.
 <!-- END sec:2 -->
