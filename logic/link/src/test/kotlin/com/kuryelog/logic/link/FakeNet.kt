@@ -1,22 +1,32 @@
 package com.kuryelog.logic.link
 
+import java.security.SecureRandom
 import java.util.PriorityQueue
 
 /**
- * Sahte ağ (LINK.md 1.8): telefon makinelerini TCP, UDP işareti ve Bluetooth benzetimiyle bağlar; zaman elle ilerler.
+ * Sahte ağ (LINK.md 1.8, 3.14): telefon yığınlarını ([LinkStack]) TCP, UDP işareti ve Bluetooth benzetimiyle bağlar; zaman elle ilerler.
  *
  * Wi-Fi: aynı [Node.lanName]'deki düğümler birbirine ulaşır; [wifiCut] = yerel ağda paketler sessizce kaybolur
  * (yarı açık bağlantı, istemci yalıtımı). Bluetooth: iki tarafta açık, karşılıklı eşleşmiş ve [btCut] değilse bağlanır.
+ * A8.2: her düğümün kimlik anahtarı ve güveni var ([pair] ikisini birbirine eşler); [tamper] yazılan her çerçeveyi görür
+ * (düşür, değiştir, çoğalt), [divert] bir IP'ye bağlananı başka düğüme götürür (araya giren).
  */
 class FakeNet(val cfg: LinkConfig = LinkConfig()) {
     var now = 0L
         private set
     var latencyMs = 5L
+    /** Bluetooth'ta yazma gecikmesi; `null` = [latencyMs]. */
+    var btLatencyMs: Long? = null
     var btConnectMs = 1_000L
     /** Yazılan baytlar alıcıya bu boyda parçalar hâlinde gider (0 = bölmeden). */
     var chunk = 0
     var wifiCut = false
     var btCut = false
+    /** Her çerçeve yazımı: dönen liste alıcıya sırayla gider (boş = düşür). */
+    var tamper: ((from: Node, to: Node, t: Transport, frame: ByteArray) -> List<ByteArray>)? = null
+    /** Wi-Fi'da bu adrese bağlanan, eşlenen düğüme varır (ARP zehirleme benzetimi). */
+    val divert = HashMap<String, Node>()
+    val random = SecureRandom()
 
     private class Ev(val at: Long, val seq: Long, val action: () -> Unit)
 
@@ -28,9 +38,17 @@ class FakeNet(val cfg: LinkConfig = LinkConfig()) {
         queue += Ev(t, seq++, action)
     }
 
-    fun node(name: String, id: String, bt: String): Node = Node(name, PeerId.of(id)!!, bt).also { nodes += it }
+    /** [messaging] = `Messenger`'lı yığın (A8.2 mesajları); değilse ham `DATA` (A8.1 testleri). */
+    fun node(name: String, id: String, bt: String, messaging: Boolean = false): Node =
+        Node(name, PeerId.of(id)!!, bt, messaging).also { nodes += it }
 
-    /** Zamanı [ms] ilerletir: sıradaki olaylar ve makine uyanmaları zaman sırasıyla işlenir. */
+    /** İki düğümü birbirine eşlenmiş yapar (QR'sız; eşleştirme testleri [Node.issue]/[Node.scan] kullanır). */
+    fun pair(a: Node, b: Node) {
+        a.trust = Trust.Paired(b.record())
+        b.trust = Trust.Paired(a.record())
+    }
+
+    /** Zamanı [ms] ilerletir: sıradaki olaylar ve uyanmalar zaman sırasıyla işlenir. */
     fun run(ms: Long) {
         val until = now + ms
         while (true) {
@@ -71,8 +89,19 @@ class FakeNet(val cfg: LinkConfig = LinkConfig()) {
 
     class Link(val node: Node, val channel: Int, val transport: Transport)
 
-    inner class Node(val name: String, val id: PeerId, val btAddress: String) {
-        val m = LinkMachine(cfg, random = { 0.5 })
+    inner class Node(val name: String, val id: PeerId, val btAddress: String, val messaging: Boolean) {
+        var keys: DhKeyPair = P256.generate(random)
+        var info = PeerInfo(id, LinkProtocol.MAJOR, LinkProtocol.MINOR, 34, "1.0.0", name)
+        val identity: LocalIdentity get() = LocalIdentity(id, keys, info)
+        /** [enable]'ın varsayılan güveni. */
+        var trust: Trust? = null
+        val store = MemoryMessengerStore()
+        /** Duvar saati = ortak taban + ağ zamanı + bu kayma. */
+        var wallSkewMs = 0L
+        val wall: Long get() = WALL_BASE + now + wallSkewMs
+        var stack = newStack()
+        val m: LinkMachine get() = stack.machine
+
         var ip: String? = null
         var lanName: String? = null
         var btOn = true
@@ -81,8 +110,15 @@ class FakeNet(val cfg: LinkConfig = LinkConfig()) {
         var mute = false
         val listening = HashSet<Transport>()
         val delivered = ArrayList<Pair<String, Transport>>()
+        val messages = ArrayList<Incoming>()
         val statuses = ArrayList<LinkStatus>()
-        val peersSeen = ArrayList<PeerId>()
+        val paired = ArrayList<PeerRecord>()
+        val peerInfos = ArrayList<PeerInfo>()
+        val acked = ArrayList<LinkCommand.Acked>()
+        val expired = ArrayList<LinkCommand.Expired>()
+        val clocks = ArrayList<LinkCommand.Clock>()
+        var unpaired = 0
+        var pairingExpired = 0
         val btLearned = ArrayList<String>()
         /** (zaman, komut) */
         val log = ArrayList<Pair<Long, LinkCommand>>()
@@ -90,7 +126,11 @@ class FakeNet(val cfg: LinkConfig = LinkConfig()) {
         private var nextIn = -1
         private val links = HashMap<Int, Link>()
 
-        val status: LinkStatus get() = m.status
+        private fun newStack() = LinkStack(cfg, if (messaging) store else null, random = { 0.5 }, secureRandom = random)
+
+        val status: LinkStatus get() = stack.status
+
+        fun record(): PeerRecord = PeerRecord(id, keys.public, info.deviceName, 0)
 
         fun links(t: Transport? = null) = links.filter { t == null || it.value.transport == t }
 
@@ -98,24 +138,63 @@ class FakeNet(val cfg: LinkConfig = LinkConfig()) {
 
         fun handle(e: LinkEvent) {
             if (mute) return
-            m.handle(e, now)
-            apply(m.drain())
+            stack.handle(e, now, wall)
+            apply(stack.drain())
         }
 
-        fun enable(expected: PeerId? = null, btPeer: String? = null, listenOnly: Boolean = false) =
-            handle(LinkEvent.Enable(id, expected, btPeer, listenOnly))
+        fun enable(trust: Trust? = this.trust, btPeer: String? = null, listenOnly: Boolean = false) =
+            handle(LinkEvent.Enable(identity, trust ?: error("$name: güven yok (net.pair)"), btPeer, listenOnly))
+
+        /** Veren telefon: QR üretir, pencere [windowMs]. */
+        fun issue(windowMs: Long = PairingQr.WINDOW_MS, token: ByteArray = ByteArray(32).also(random::nextBytes)): PairingQr {
+            enable(Trust.Issuer(token, now + windowMs))
+            return PairingQr(id, keys.public, token, info.deviceName)
+        }
+
+        /** Okuyan telefon: QR'ı okudu. */
+        fun scan(qr: PairingQr, windowMs: Long = PairingQr.WINDOW_MS) = enable(Trust.Scanner(qr, now + windowMs))
 
         fun send(text: String): SendResult = sendBytes(text.toByteArray())
 
         fun sendBytes(b: ByteArray): SendResult {
-            val r = m.send(b, now)
-            apply(m.drain())
+            val r = stack.send(b, now, wall)
+            apply(stack.drain())
             return r
         }
+
+        fun publishLatest(type: String, text: String, ttlMs: Long = 60_000) = stack.publishLatest(type, text.toByteArray(), ttlMs, now, wall).also { apply(stack.drain()) }
+
+        fun publishReliable(type: String, text: String, ttlMs: Long = 86_400_000L) = stack.publishReliable(type, text.toByteArray(), ttlMs, now, wall).also { apply(stack.drain()) }
+
+        fun publishReliableBytes(type: String, b: ByteArray) = stack.publishReliable(type, b, 86_400_000L, now, wall).also { apply(stack.drain()) }
+
+        fun unpair() {
+            stack.unpair(now, wall)
+            apply(stack.drain())
+        }
+
+        /** Süreç yeniden başladı: soketler kapanır (eş görür), bellek gider, [store] kalır. */
+        fun restart(enableAgain: Boolean = true) {
+            for ((ch, l) in links.toList()) {
+                links.remove(ch)
+                l.node.links.remove(l.channel)
+                if (!cut(l.transport) && !l.node.cut(l.transport)) at(now + latencyMs) { l.node.handle(LinkEvent.Closed(l.channel, "eof")) }
+            }
+            listening.clear()
+            wakeAt = null
+            stack = newStack()
+            if (lanName != null) handle(LinkEvent.Lan(true, gatewayOf()))
+            handle(LinkEvent.Bt(btOn, bonded))
+            if (enableAgain) enable()
+        }
+
+        private var gateway: String? = null
+        private fun gatewayOf() = gateway
 
         fun join(lan: String, address: String, gateway: String?) {
             lanName = lan
             ip = address
+            this.gateway = gateway
             handle(LinkEvent.Lan(true, gateway))
         }
 
@@ -123,6 +202,7 @@ class FakeNet(val cfg: LinkConfig = LinkConfig()) {
         fun leaveLan() {
             lanName = null
             ip = null
+            gateway = null
             handle(LinkEvent.Lan(false, null))
         }
 
@@ -137,9 +217,19 @@ class FakeNet(val cfg: LinkConfig = LinkConfig()) {
                     is LinkCommand.SendBeacon -> beacon(c.bytes)
                     is LinkCommand.Deliver -> delivered += String(c.payload) to c.transport
                     is LinkCommand.Status -> statuses += c.status
-                    is LinkCommand.PeerSeen -> peersSeen += c.peer
+                    is LinkCommand.Paired -> {
+                        paired += c.peer
+                        trust = Trust.Paired(c.peer)
+                    }
+                    is LinkCommand.Peer -> peerInfos += c.info
+                    is LinkCommand.PairingExpired -> pairingExpired++
                     is LinkCommand.BtPeerLearned -> btLearned += c.address
                     is LinkCommand.Wake -> wakeAt = c.atMs
+                    is LinkCommand.Message -> messages += c.message
+                    is LinkCommand.Acked -> acked += c
+                    is LinkCommand.Expired -> expired += c
+                    is LinkCommand.Clock -> clocks += c
+                    LinkCommand.Unpaired -> unpaired++
                 }
             }
         }
@@ -148,7 +238,8 @@ class FakeNet(val cfg: LinkConfig = LinkConfig()) {
             val me = this
             if (c.transport == Transport.WIFI) {
                 val lan = lanName
-                val target = nodes.firstOrNull { it !== me && it.ip == c.host && it.lanName == lan && lan != null }
+                val target = divert[c.host]?.takeIf { it.lanName == lan && lan != null }
+                    ?: nodes.firstOrNull { it !== me && it.ip == c.host && it.lanName == lan && lan != null }
                 when {
                     lan == null -> at(now + latencyMs) { handle(LinkEvent.Failed(c.channel, "no_network")) }
                     wifiCut -> at(now + cfg.tcpConnectTimeoutMs) { handle(LinkEvent.Failed(c.channel, "timeout")) }
@@ -176,20 +267,25 @@ class FakeNet(val cfg: LinkConfig = LinkConfig()) {
             at(now + delay) { target.handle(LinkEvent.Accepted(theirCh, t, myAddress)) }
         }
 
-        private fun cut(t: Transport) = if (t == Transport.WIFI) wifiCut || lanName == null else btCut || !btOn
+        fun cut(t: Transport) = if (t == Transport.WIFI) wifiCut || lanName == null else btCut || !btOn
 
         private fun write(ch: Int, bytes: ByteArray) {
             val l = links[ch] ?: return
             if (cut(l.transport) || l.node.mute || l.node.cut(l.transport)) return
-            val parts = if (chunk <= 0) listOf(bytes) else bytes.toList().chunked(chunk).map { it.toByteArray() }
-            for (p in parts) at(now + latencyMs) { l.node.handle(LinkEvent.Bytes(l.channel, p)) }
+            val frames = tamper?.invoke(this, l.node, l.transport, bytes) ?: listOf(bytes)
+            val delay = if (l.transport == Transport.BT) btLatencyMs ?: latencyMs else latencyMs
+            for (f in frames) {
+                val parts = if (chunk <= 0) listOf(f) else f.toList().chunked(chunk).map { it.toByteArray() }
+                for (p in parts) at(now + delay) { l.node.handle(LinkEvent.Bytes(l.channel, p)) }
+            }
         }
 
         private fun close(ch: Int) {
             val l = links.remove(ch) ?: return
             l.node.links.remove(l.channel)
             if (cut(l.transport) || l.node.mute || l.node.cut(l.transport)) return
-            at(now + latencyMs) { l.node.handle(LinkEvent.Closed(l.channel, "eof")) }
+            val delay = if (l.transport == Transport.BT) btLatencyMs ?: latencyMs else latencyMs
+            at(now + delay) { l.node.handle(LinkEvent.Closed(l.channel, "eof")) }
         }
 
         private fun beacon(bytes: ByteArray) {
@@ -206,5 +302,14 @@ class FakeNet(val cfg: LinkConfig = LinkConfig()) {
         fun listenMute(t: Transport) {
             listening += t
         }
+
+        override fun toString() = name
+    }
+
+    companion object {
+        const val WALL_BASE = 1_760_000_000_000L
+
+        /** Çerçeve türü (LINK.md 1.4); bozma kancaları için. */
+        fun frameType(frame: ByteArray): FrameType? = if (frame.size >= 5) FrameType.of(frame[4].toInt() and 0xff) else null
     }
 }

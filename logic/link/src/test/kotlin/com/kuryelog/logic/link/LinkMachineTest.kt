@@ -8,11 +8,15 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** LINK.md 1.8: iki makine sahte ağda. A'nın kimliği B'ninkinden küçük. */
+/** LINK.md 1.8: iki makine sahte ağda (A8.2'den beri eşleşmiş, el sıkışma Noise ile). A'nın kimliği B'ninkinden küçük. */
 class LinkMachineTest {
     private val net = FakeNet()
     private val a = net.node("A", "11111111-1111-4111-8111-111111111111", "AA:00:00:00:00:01")
     private val b = net.node("B", "22222222-2222-4222-8222-222222222222", "BB:00:00:00:00:02")
+
+    init {
+        net.pair(a, b)
+    }
 
     private fun assertLinked(t: Transport) {
         for ((n, peer) in listOf(a to b, b to a)) {
@@ -31,8 +35,7 @@ class LinkMachineTest {
         net.run(1_000)
         assertLinked(Transport.WIFI)
         assertTrue(b.connects(Transport.WIFI).any { (it.second as LinkCommand.Connect).host == "192.168.43.1" })
-        assertEquals(listOf(b.id), a.peersSeen)
-        assertEquals(listOf(a.id), b.peersSeen)
+        assertTrue(a.paired.isEmpty() && b.paired.isEmpty())
     }
 
     @Test
@@ -104,8 +107,10 @@ class LinkMachineTest {
         b.enable()
         assertEquals(SendResult.NO_LINK, a.send("x"))
         net.run(1_000)
-        assertEquals(SendResult.TOO_BIG, a.sendBytes(ByteArray(net.cfg.wifiMaxPayload + 1)))
-        assertEquals(SendResult.SENT, a.sendBytes(ByteArray(net.cfg.wifiMaxPayload)))
+        // Sınır şifreli boy üstünden (LINK.md 3.5): düz metin + 16 bayt etiket.
+        assertEquals(SendResult.TOO_BIG, a.sendBytes(ByteArray(net.cfg.maxPlaintext(Transport.WIFI) + 1)))
+        assertEquals(SendResult.SENT, a.sendBytes(ByteArray(net.cfg.maxPlaintext(Transport.WIFI))))
+        assertEquals(65_519, net.cfg.maxPlaintext(Transport.WIFI))
     }
 
     @Test
@@ -139,11 +144,12 @@ class LinkMachineTest {
     fun wrongPeerIsRejected() {
         val c = PeerId.of("33333333-3333-4333-8333-333333333333")!!
         net.hotspot(owner = a, client = b)
-        a.enable(expected = c)
+        a.enable(Trust.Paired(PeerRecord(c, P256.generate(net.random).public, "C", 0)))
         b.enable()
         net.run(30_000)
         assertFalse(a.statuses.any { it.state == LINKED })
-        // B beklenen eş tanımlamadığı için A'nın BYE'ına kadar (birkaç ms) bağlı görünebilir; denemeleri yine de seyrekleşir.
+        // B kimliği doğrulanmış kanal kuramaz; denemeleri seyrekleşir.
+        assertFalse(b.statuses.any { it.state == LINKED })
         assertEquals(SEARCHING, b.status.state)
         val times = b.connects(Transport.WIFI).map { it.first }
         assertTrue("geri çekilme: $times", times.size <= 6)
@@ -154,6 +160,7 @@ class LinkMachineTest {
     fun selfIsNeverAPeer() {
         net.hotspot(owner = a, client = b)
         val clone = net.node("A2", a.id.text, "AA:00:00:00:00:09")
+        clone.trust = Trust.Paired(b.record())
         clone.handle(LinkEvent.Lan(true, "192.168.43.1"))
         clone.ip = "192.168.43.78"
         clone.lanName = "hs"
@@ -199,8 +206,9 @@ class LinkMachineTest {
         assertEquals(listOf(b.btAddress), a.btLearned)
         assertEquals(listOf(a.btAddress), b.btLearned)
         assertEquals(SendResult.SENT, a.send("bt"))
-        assertEquals(SendResult.TOO_BIG_FOR_BT, a.sendBytes(ByteArray(net.cfg.btMaxPayload + 1)))
-        assertEquals(SendResult.SENT, b.sendBytes(ByteArray(net.cfg.btMaxPayload)))
+        assertEquals(SendResult.TOO_BIG_FOR_BT, a.sendBytes(ByteArray(net.cfg.maxPlaintext(Transport.BT) + 1)))
+        assertEquals(SendResult.SENT, b.sendBytes(ByteArray(net.cfg.maxPlaintext(Transport.BT))))
+        assertEquals(4_080, net.cfg.maxPlaintext(Transport.BT))
         net.run(100)
         assertEquals("bt" to Transport.BT, b.delivered.last())
 

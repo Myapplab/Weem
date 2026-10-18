@@ -2,6 +2,7 @@ package com.kuryelog.logic.link
 
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -29,22 +30,49 @@ class FramesTest {
 
     @Test
     fun helloRoundTrip() {
-        val frames = FrameDecoder(1024).feed(Frames.hello(a))
+        val frames = FrameDecoder(1024).feed(Frames.hello(a, pairing = false))
         assertEquals(1, frames.size)
         assertEquals(FrameType.HELLO, frames[0].type)
+        assertEquals(22, frames[0].payload.size)
         val h = Frames.parseHello(frames[0].payload)!!
+        assertEquals(2, Frames.LINK_VERSION)
         assertEquals(Frames.LINK_VERSION, h.version)
         assertEquals(a, h.peer)
-        assertEquals(2, Frames.parseHello(FrameDecoder(1024).feed(Frames.hello(a, version = 2))[0].payload)!!.version)
+        assertFalse(h.pairing)
+        assertTrue(Frames.parseHello(FrameDecoder(1024).feed(Frames.hello(a, pairing = true))[0].payload)!!.pairing)
+        assertArrayEquals(Frames.helloPayload(a, pairing = true), FrameDecoder(1024).feed(Frames.hello(a, pairing = true))[0].payload)
+    }
+
+    @Test
+    fun otherLinkVersionsAreRecognisedForTheVersionBye() {
+        // A8.1'in v1 HELLO'su (21 bayt) ve gelecekteki daha uzun bir v3: sürüm okunur, kimlik okunmaz.
+        val v1 = Frames.MAGIC + byteArrayOf(1) + a.bytes()
+        val h1 = Frames.parseHello(v1)!!
+        assertEquals(1, h1.version)
+        assertNull(h1.peer)
+        assertEquals(3, Frames.parseHello(Frames.MAGIC + byteArrayOf(3) + ByteArray(40))!!.version)
     }
 
     @Test
     fun helloRejectsForeignBytes() {
-        assertNull(Frames.parseHello(ByteArray(21)))
+        assertNull(Frames.parseHello(ByteArray(22)))
         assertNull(Frames.parseHello(ByteArray(3)))
-        val p = FrameDecoder(1024).feed(Frames.hello(a))[0].payload
+        val p = FrameDecoder(1024).feed(Frames.hello(a, pairing = false))[0].payload
         p[0] = 'X'.code.toByte()
         assertNull(Frames.parseHello(p))
+        val short = Frames.helloPayload(a, pairing = false).copyOf(21)
+        assertNull(Frames.parseHello(short))
+        val flags = Frames.helloPayload(a, pairing = false).also { it[21] = 0x82.toByte() }
+        assertNull("bilinmeyen bayrak biti", Frames.parseHello(flags))
+    }
+
+    @Test
+    fun newFrameTypesAndByeReasons() {
+        assertEquals(FrameType.NOISE, FrameType.of(6))
+        assertEquals(ByeReason.PAIRING, ByeReason.of(8))
+        assertEquals(ByeReason.AUTH, ByeReason.of(9))
+        val got = FrameDecoder(1024).feed(Frames.encode(FrameType.NOISE, byteArrayOf(1, 2, 3)))
+        assertEquals(FrameType.NOISE, got.single().type)
     }
 
     @Test
