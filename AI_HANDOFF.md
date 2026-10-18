@@ -2,6 +2,11 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-17 — A5.3 scooter servisi, kayıt, enerji, vardiya bağı (Claude Sonnet · high; dal `ccr-0dbbaca0-hn1xg2` → `main`)
+- Yapılan: `logic/scooter` saf parçalar (`ScooterSamples`, `ScooterBridgeImpl`/`EnergyShape`, `ScooterLiveMapper`, `LogExport` ZIP, `ScooterLinkRules`, `ScooterTelemetry`) + Rawstats scooter testleri Kotlin'e; `logic/core` `ScooterBridge.steps`/`EnergyStep`; Android `:scooter`: `ScooterService`, `LogStore` (`ninebot-logger.db`), `PairAttention`, `Scooter` (bridge/live/steps), `ScooterShiftLink` (vardiya aç/kapat, M23, D8, `economics-scooter.jsonl`); `:orders` `Orders.bindScooter` (teklif anı pili, sipariş enerjisi), `:app` dinleyici sırası + vardiya kartı scooter satırı. Ayrıntı `SCOOTER.md` 13.5.
+- Doğrulama: `./gradlew -p logic test` 901 test yeşil; kök `test lintDebug assembleDebug` yeşil. CI koşusu yok; **telefonda/scooter'da hiçbir şey denenmedi** (servis ömrü, GATT, kayıt, M23, enerji adımının siparişe düşmesi: A5.5).
+- Açık kalan: A5.4 (Scooter sekmesi, yüzen panel, tanı, ZIP paylaşımı; `Scooter.Viewers`/`frameListeners` hazır); 2 telefonda `ScooterShiftLink.providerRole` A8'de takılır; S18 açık (varsayılan (a)); `energy(from,to)` bacak satırları `:economics` (A4.1) bağlanınca `Scooter.bridge`'i kullanır — `Orders.scooter` zaten bağlı. Notlar: org.json JVM'de anahtar sırasını korumaz (testler küme karşılaştırır).
+
 ## 2026-10-17 — A3.9 gölge mod raporu (Claude Opus · high; dal `claude/a3-9-shadow-mode-report-7vy1z6` → `main`)
 - Yapılan: `logic/orders/src/shadow` (ayrı kaynak seti, APK'ya girmez): `ShadowExport` (ZIP/klasör), `ShadowCompare` (eşleme ve sert/yumuşak/beklenen kurallar, `ORDERS.md` 14.3, `CAPTURE.md` 6.5), `ShadowRules` (bilerek farklar), `ShadowReport` (metin + JSON), `:orders:shadowReport` görevi. Rawstats fikstürü `tools/shadow-fixture` (Rawstats @ `6388c04` saf sınıfları, `OrderTracker` sırası). Kayıt `ORDERS.md` 16.5.
 - Doğrulama: `./gradlew -p logic test` hepsi yeşil (orders 443: `ShadowSahaTest` 6 — saha kareleri sert 0 / yumuşak 0, ayrıştırıcı 6481/6481; `ShadowCompareTest` 14); kök `:orders`/`:app` `compileDebugKotlin` yeşil (Android koduna dokunulmadı). CI koşusu yok; gerçek iki uygulama ZIP'iyle denenmedi.
