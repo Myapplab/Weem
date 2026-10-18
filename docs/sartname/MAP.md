@@ -32,9 +32,9 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 | 11 | Y11 ve YolGo gün motoru | A6.8 | koordinatör (T1'den devir) | bitti (23:25 UTC) <!-- st:11 --> |
 | 12 | Y17, Y18 | A6.9 | koordinatör | bitti (23:36 UTC) <!-- st:12 --> |
 | 13 | Y19, Y20 | A6.9 | koordinatör (T2'den devir) | bitti (23:49 UTC) <!-- st:13 --> |
-| 14 | veri sözleşmesi | tümü | koordinatör | yazılıyor (kısmen: 14.1–14.11 taslak; Bölüm 11–13 satırları ajanlar bitince) (18:01 UTC) <!-- st:14 --> |
-| 15 | WEEM yerleşimi | tümü | koordinatör | yazılıyor (kısmen: 15.1–15.5 Bölüm 2–10'dan; 11–13 ajanlar bitince) (18:08 UTC) <!-- st:15 --> |
-| 16 | test eşlemesi A6.2a/A6.2b | A6.2a, A6.2b | koordinatör | yazılıyor (kısmen: 16.1–16.4 Bölüm 2–10 dosyaları; 11–13 ve toplamlar ajanlar bitince) (18:05 UTC) <!-- st:16 --> |
+| 14 | veri sözleşmesi | tümü | koordinatör | bitti (23:55 UTC) <!-- st:14 --> |
+| 15 | WEEM yerleşimi | tümü | koordinatör | bitti (23:55 UTC) <!-- st:15 --> |
+| 16 | test eşlemesi A6.2a/A6.2b | A6.2a, A6.2b | koordinatör | bitti (23:55 UTC) <!-- st:16 --> |
 | 17 | açık noktalar ve sorular | tümü | koordinatör | bekliyor <!-- st:17 --> |
 
 Dosya dağılımı (YG; her dosyanın tek sahibi var, başkası yalnız başvurur):
@@ -2464,7 +2464,8 @@ Toplam (bu bölüm): 47 test tanımı; çevrilen 45 (13'ü uyarlanır: `LogFeedV
 | Tercih dosyası **`map`** | `SharedPreferences("map", MODE_PRIVATE)`; saf arayüz `logic/map` `MapPrefs`, Android `:map` `MapPrefsStore` (Bölüm 4.7) | `settings.v1` (14.2) ve küçük durumlar (14.3); YolGo adları **`flutter.` öneki olmadan**, aynı ad ve biçim |
 | Tercih dosyası `kuryelog` | `:core` (`VERI_SOZLESMESI` 5.1) | YolGo'dan oraya geçenler: `lang` (`Lang.PREF_KEY`), `theme` (`Shell.PREF_KEY`), ev `home.lat`/`home.lon` (`KuryelogPrefs`) |
 | `files/mapdata/` | Y7 (Bölüm 2.12) | graf, DEM, POI, parça önbelleği (YolGo `files/` = support dizini; yol aynı) |
-| `files/map/` | WEEM `:map` (yeni alt klasör) | büyüyen JSON blobları (Y12 `roads/`, `manual-marks.json`), hava önbelleği; Bölüm 11–13'ün dosyaları 14.4 |
+| `files/map/` | WEEM `:map` (yeni alt klasör) | büyüyen JSON blobları (Y12 `roads/`, `manual-marks.json`), hava önbelleği, sürüş günlüğü ve gün raporları `files/map/logs/` (Bölüm 12) |
+| `files/TeklifVeriSeti/` | WEEM `:orders` (Y19, Bölüm 13.11) | teklif veri seti gün klasörleri ve ZIP'leri (YolGo `app_flutter/TeklifVeriSeti/`) |
 | APK asset'leri | `:map` modülü `assets/map/`, `assets/baku/` | gömülü harita, bölge fotoğrafları (Bölüm 2.12, 5.5) |
 
 Tip eşlemesi (`map` dosyası; YolGo Dart `SharedPreferences` → Android):
@@ -2538,20 +2539,21 @@ Türetilenler (`MapSettings` yöntemleri, saf): `vehicle` (profil), `regionBox` 
 | `search.recents.v2` | String JSON dizi (≤ 12) | 8.8, 8.10 | aynı |
 | `battery.setPct`, `battery.consumed`, `battery.setAt` | double, double Wh, int ms | 10.3 | aynı |
 | `weather.enabled.v1` (true), `weather.strip.v1` (true), `weather.key.v1` (""), `weather.permission.asked.v1` | bool, bool, String (**sır**), bool | 10.7 | aynı |
-| `lights.v1` | List<String> `"lat,lon,yes,no,waitS"` | 11 | Bölüm 11 |
-| `sidewalk.zones.v1` | String JSON dizi (`GeoPoint`) | 11 | Bölüm 11 |
-| `shift.v1`, `shift.last` | String JSON (`ShiftState`, `v: 2`; son gün) | 11, 12 | Bölüm 11–12 |
-| `courier.follow.v1` | String JSON (aşama izleyici) | 11 | Bölüm 11 |
-| `shift.deleted.days.v2` | List<String> | 12 | Bölüm 12 |
-| `ride.active.v1` | etkin sürüş kaydı | 12 | Bölüm 12 |
-| `daily.tasks.v1`, `daily.tasks.closed.v1` | String JSON dizi, String JSON harita | 13 | Bölüm 13 |
-| `reminders.v1`, `reminders.last.v1` | String JSON, List<String> `"<kind>:<ms>"` | 13 | Bölüm 13 |
+| `lights.v1` | List<String> `"lat,lon,yes,no,waitS"` (6 hane) | 11.11 | aynı (JSON dizi dizgesi) |
+| `sidewalk.zones.v1` | String JSON dizi `[{lat, lon}]` | 11.12 | aynı |
+| `shift.v1`, `shift.last` | String JSON (`DayState`, `v: 2`; son gün) | 11.5, 11.14 | aynı |
+| `courier.follow.v1` | String JSON (aşama izleyici) | 11.7 | aynı |
+| `day.shift.handled.v1` | String JSON `{"end": ms?, "start": ms?}` | 11.2 | **yeni** (`ShiftFollower` damgaları) |
+| `shift.deleted.days.v2` | List<String> gün kimlikleri | 12.9 | aynı (JSON dizi dizgesi) |
+| `ride.active.v1` | String, açık sürüş dosya adı | 12.3 | aynı |
+| `daily.tasks.v1`, `daily.tasks.closed.v1` | String JSON dizi, String JSON harita | 13.13 | aynı |
+| `reminders.v1`, `reminders.last.v1` | String JSON, List<String> `"<kind>:<ms>"` | 13.15, 13.16 | aynı (liste JSON dizi dizgesi) |
 | `day.home.v1` | ev kuralı durumu | G1 | **`map`'e girmez:** `:core` ev kuralı (`HomeShift`, CORE.md) |
-| `rawstats.shiftEnd.handled.v1`, `rawstats.shiftStart.handled.v1` | int ms | G1 | **girmez:** `ShiftFollower` durumu (CORE.md; Bölüm 11) |
+| `rawstats.shiftEnd.handled.v1`, `rawstats.shiftStart.handled.v1` | int ms | G1 | **girmez:** yerine `day.shift.handled.v1` (11.2) |
 | `rawstats.home.lastSuccessAt.v1` | int ms | G2 | **girmez** (S7: Rawstats ev okuması yok) |
 | `surface.paused.day`, `surface.raw.debug` | Y13 | — | sonra |
 
-YolGo'nun **yerel (Kotlin) tercih dosyaları**: `duzyol_weather` (Y10; WEEM'de `map` + `files/map/weather.json`, Bölüm 10.11), `yolgo_runtime_v2` (`TelemetryService`: `day`, `eligible` …; Bölüm 12 — `VERI_SOZLESMESI` 5.4'te eksikti, 14.11), `offer_dataset_v1` (`region`, `active`; Bölüm 13), `road_calibration_overlay_v1` (Y14, sonra). WEEM'de ayrı yerel dosya açılmaz; hepsi `map`'e ya da `files/map/`'e (ilgili bölümün kararı).
+YolGo'nun **yerel (Kotlin) tercih dosyaları**: `duzyol_weather` (Y10; WEEM'de `map` + `files/map/weather.json`, Bölüm 10.11), `yolgo_runtime_v2` (`TelemetryService`: `day`, `leg`, `eligible`, `paused`, `rawDebug`, `calibrationLabel`, `profile`, `boot`; `VERI_SOZLESMESI` 5.4'te eksikti, 14.11) — WEEM'de **yazılmaz** (servis yok, 12.11), `offer_dataset_v1` (`region`, `active`) — **yazılmaz** (servis yok, 13.11), `road_calibration_overlay_v1` (Y14, sonra). WEEM'de ayrı yerel dosya açılmaz.
 
 ### 14.4 Dosyalar ve asset'ler
 
@@ -2566,12 +2568,12 @@ YolGo'nun **yerel (Kotlin) tercih dosyaları**: `duzyol_weather` (Y10; WEEM'de `
 | `files/surface-v2/manual-marks.json` (Y13 deposu) | elle kötü noktalar | 9.10 | `files/map/manual-marks.json` (aynı biçim; SORU-Q1) |
 | tercihlerde `roads.*` (8 anahtar) | JSON blob | 9.10 | `files/map/roads/<anahtar>.json` (birebir JSON; S3 sıfırdan) |
 | `duzyol_weather` → `report` | Open-Meteo yanıtı + meta | 10.7 | `files/map/weather.json` (öneri, 10.11) |
-| `app_flutter/logs/YYYY-MM-DD.jsonl`, `…_ride_<ms>.jsonl`, `…[_HHMM].gun.json`, `…_route_<ms>.json` | sürüş günlüğü, sürüş, gün raporu, rota kaydı | 12 | Bölüm 12 |
-| `files/telemetry-v2.jsonl` (≤ 3000 satır) | yerel telemetri günlüğü | 12 | Bölüm 12 |
-| `app_flutter/TeklifVeriSeti/<gün>/…` | teklif veri seti | 13 | Bölüm 13 |
+| `app_flutter/logs/YYYY-MM-DD.jsonl`, `…_ride_<ms>.jsonl`, `…_HHMM.gun.json` (eski `….gun.json`), `…_route_<ms>.json` | sürüş günlüğü, sürüş, gün raporu, rota kaydı (`duzyol-route-v1`) | 12.2–12.6 | `files/map/logs/`, aynı adlar ve biçimler |
+| `files/telemetry-v2.jsonl` (≤ 3000 satır) | yerel telemetri günlüğü (Y13 kanıtı) | 12.11 | **yok** (Y13 ile gelir) |
+| `app_flutter/TeklifVeriSeti/<gün>/…`, `YolGo_teklif_<klasör>.zip` | teklif veri seti | 13.2, 13.7 | `files/TeklifVeriSeti/` (`:orders`), `yolgo-poll.jsonl` hariç aynı; ZIP `WEEM_teklif_<klasör>.zip` (M-13-1) |
 | `files/surface-raw-v2/…`, `files/road-calibration-v1/<id>.json` | Y13/Y14 | — | sonra |
 
-Bütün WEEM dosya yazımları `.tmp` + `rename` (YolGo Y12/Y13 depolarının ilkesi); okunamayan dosya silinmez, `<ad>.damaged-<ms>` olarak saklanır (Bölüm 9.10 kuralı bütün `files/map/` dosyalarına).
+Bütün WEEM tam dosya yazımları `.tmp` + `rename` (YolGo Y12/Y13 depolarının ilkesi); ekleme dosyaları (`.jsonl` günlükler, veri seti satırları) ekleme kipinde yazılır (12.2, 13.2); okunamayan JSON dosyası silinmez, `<ad>.damaged-<ms>` olarak saklanır (Bölüm 9.10 kuralı bütün `files/map/` dosyalarına).
 
 ### 14.5 Sürüş günlüğü olay adları (dizin)
 
@@ -2587,8 +2589,11 @@ Biçim ve dosya Bölüm 12'de; olay adları ve alanları **aynen** korunur (eski
 | `approve`, `block`, `steep` `{way}`, `undo {way}`, `bad_road_clear {way}` | | 4.4 |
 | `ww_pass {way, m, inc, reported?}`, `ww_answer {way, problem, approved?}`, `ww_report {way}`, `ghost {way, all?}`, `ww_segment {way, allow}`, `bad_spot {way}`, `bad_spot_clear {way, n}` | | 9.10 |
 | `battery_set` | — | 10.3: **üretilmez** (ölü yol) |
-| `shift_stop`, `light_answer {la, lo (5 hane), light, dur, jm?, long?}`, `stop_surface_override` ve gün olayları | | Bölüm 11 |
-| `task_route_opened`, `reminder {k, preview?}` | | Bölüm 13 |
+| `shift_day_start {reason}`, `shift_day_end {reason}`, `shift_order_start {n}`, `shift_order_cancel {n}`, `shift_order_target {n, restaurant}`, `shift_arrive_restaurant {n, auto}`, `shift_leave_restaurant {n, waitS}`, `shift_customer_journey {n}`, `shift_arrive_customer {n, auto}`, `shift_delivered {n, totalS, m}`, `shift_stopping`, `shift_stop {StopRec}`, `shift_home_return_start`, `shift_home_return_arrived` | aşama izleyiciden gelenlerde `source: "kuryeplus"` | 11.14, 11.15 |
+| `light_answer {la, lo (5 hane), light, dur, jm?, long?}`, `stop_surface_override {surface}` | | 11.11, 11.12 |
+| `ride_start {reason}`, `ride_end {reason}`, `route_end {reason, dev, m, avg?}` | | 12.3, 12.5 |
+| satır türleri `k: "gps" {la, lo (6 hane), ac, sp, hd, al}`, `k: "env" {hpa?, balt?, vr, vm}`, `k: "ev" {e, …}`; her satırda `t`, `dayId` | | 12.2 |
+| `task_route_opened`, `reminder {k, preview?}` | | 13.13, 13.16 |
 
 ### 14.6 Bildirimler, kanallar, arka plan işleri, servisler
 
@@ -2599,12 +2604,12 @@ Tek tablo `:core` `NotificationIds` (`CORE.md` 3.3); kanal kimlikleri eski adlar
 | 7100–7102 | `REMINDER` (`reminder(kind)`: `WATER`, `CHECK`, `FOOD`) | `hatirlatici` | 13 | vardiya sonu iptal |
 | 7201 | `TASK_NEARBY` | `hatirlatici` | 13 | vardiya sonu iptal |
 | 7301 | `WEATHER` | `duzyol_weather` | 10.8 | günde bir; vardiya sonu iptal |
-| 7401 | `DATASET_FGS` | `yolgo_offer_dataset` | 13 | ön plan servisi |
+| 7401 | `DATASET_FGS` | `yolgo_offer_dataset` | 13.11 | **kullanılmaz:** veri seti servisi yok (kayıt `:orders` akışında; CORE.md 3.3 tablosundan çıkar) |
 | 7402 | `NAV_ONLY_FGS` (**öneri**, SORU-N4) | `navigation` (yeni) | 7.12, 7.17 | vardiya bitince yalnız-nav ≤ 90 dk |
 | 7400 | — | `yolgo_recording` | 12 | **kullanılmaz:** YolGo gün kaydı servisi vardiya servisine (1, `shift`) birleşti (`VERI_SOZLESMESI` 8.2) |
 | 7435 | `CALIBRATION_FGS` | `yolgo_calibration` | — | Y14, sonra |
 
-Arka plan: WorkManager `duzyol_weather_v1` (periyodik 2 sa, ağ gerekli; 10.8). Ön plan servisleri: gün açıkken konum `:core` vardiya servisinde (1); `:map`'in kendi servisi yok (yalnız-nav için SORU-N4; veri seti Bölüm 13). Etkinlik tanıma `MotionReceiver` (Bölüm 11).
+Arka plan: WorkManager `duzyol_weather_v1` (periyodik 2 sa, ağ gerekli; 10.8). Ön plan servisleri: gün açıkken konum `:core` vardiya servisinde (1); `:map`'in kendi servisi yok (yalnız-nav için SORU-N4); YolGo `TelemetryService` (12.11) ve `DatasetRecordingService` (13.11) yazılmaz. Etkinlik tanıma (`MotionReceiver`) 1.0'da yok (Y13 ile; 11.1).
 
 ### 14.7 Ağ uç noktaları
 
@@ -2630,28 +2635,31 @@ Arka plan: WorkManager `duzyol_weather_v1` (periyodik 2 sa, ağ gerekli; 10.8). 
 
 - **Intent filtreleri** (Y5): YolGo `MainActivity`'nin 10 VIEW filtresi + SEND `text/plain` + PROCESS_TEXT `text/plain` aynen `:app` `MainActivity`'ye (Bölüm 8.2, `VERI_SOZLESMESI` 2).
 - **Kalkar (S7):** sağlayıcılar `az.duzyol.app.nav` (`nav/v1/current` → `NavPort.route`, 7.9) ve `az.duzyol.app.weather` (`weather/current` → `WeatherPort`, 10.10); `SHARE_HOME` (`az.duzyol.app.action.SHARE_HOME`, `com.kuryelog.app.action.SHARE_HOME`), `PICK_HOME` (`com.myapplab.yolgo.PICK_HOME`) ve ev seçici aktiviteleri (6.11); Rawstats sağlayıcısının YolGo okuyucuları (`offers/v2/current`, `scooter/v1/live`, `shift/v1/state`, `logs/v3/day/…`) → iç akışlar (`OrderEvents`, `ScooterBridge.live`, `ShiftPort`, Bölüm 13'te veri seti).
-- **Kalır:** `MotionReceiver` (Activity Recognition; `:map`, Bölüm 11), WorkManager hava işi.
-- **İzinler** (`VERI_SOZLESMESI` 3; `:map`'in kullandıkları): konum (fine/coarse; arka plan `:core` vardiya servisinde), `INTERNET`, `POST_NOTIFICATIONS`, `ACTIVITY_RECOGNITION`, `FOREGROUND_SERVICE_LOCATION` (vardiya ve SORU-N4), veri seti servisi gerekirse `FOREGROUND_SERVICE_SPECIAL_USE` (Bölüm 13), `SYSTEM_ALERT_WINDOW` yok (`:map` yüzen pencere açmaz).
+- **Kalır:** WorkManager hava işi. **1.0'da yok:** `MotionReceiver` ve Activity Recognition isteği (Y13 ile, 11.1), `TelemetryService` (12.11), `DatasetRecordingService` (13.11).
+- **İzinler** (`VERI_SOZLESMESI` 3; `:map`'in kullandıkları): konum (fine/coarse; arka plan `:core` vardiya servisinde), `INTERNET`, `POST_NOTIFICATIONS`, `FOREGROUND_SERVICE_LOCATION` (vardiya ve SORU-N4); `:map` 1.0'da `ACTIVITY_RECOGNITION` kullanmaz (Y13 ile), `FOREGROUND_SERVICE_SPECIAL_USE` gerekmez (13.11), `SYSTEM_ALERT_WINDOW` yok (`:map` yüzen pencere açmaz).
 
 ### 14.9 Eski YolGo verisi (S1) ve 2 telefon
 
 - **Yeniden girilir:** `settings.v1`'in kullanıcı alanları (14.2), sokak kararları ve saatler, bisiklet yolları, POI düzeltmeleri, ışık işaretleri, kaldırım bölgeleri, görevler, hatırlatıcılar, API anahtarları, son aramalar (`VERI_SOZLESMESI` 5.4).
 - **Yeniden öğrenilir / üretilir:** Y12 yol bilgisi (S3), harita verisi (Y7), batarya tahmini durumu, ışık veritabanının öğrenilmiş kısmı.
 - **Taşınmaz (anlık):** gün durumu (`shift.*`, `day.home.v1`, `courier.follow.v1`, `rawstats.*`, `ride.active.v1`, `passive.pausedAt.v2`), önbellekler.
-- **İçe aktarma adayı:** sürüş günlüğü `duzyol-journal-v1` (`VERI_SOZLESMESI` 7.3) — kararı ve biçimi Bölüm 12.
-- **2 telefon (plan 4.4):** `:map` verisi telefon başınadır (harita verisi, `map` dosyası, `files/map/`); `:link`'ten yalnız tanımlı mesajlar gider (`RouteStatus` R→P, `BatterySummary`, …; Bölüm 7.16, 10.4). Rota kaydı ve Y12 öğrenmesi konumun olduğu telefonda (Receiver) yazılır; Provider'ın ekranları gerekeni mesajdan gösterir (SORU-Q7 ve 17).
+- **İçe aktarma adayı:** sürüş günlüğü `duzyol-journal-v1` (`VERI_SOZLESMESI` 7.3) — SORU-12-2 (öneri: Sürüş kayıtları'nda içe aktarma; dosyalar ham metniyle `files/map/logs/`'a, var olan ezilmez).
+- **2 telefon (plan 4.4):** `:map` verisi telefon başınadır (harita verisi, `map` dosyası, `files/map/`); `:link`'ten yalnız tanımlı mesajlar gider (`RouteStatus` R→P, `BatterySummary`, …; Bölüm 7.16, 10.4). Rota kaydı, Y12 öğrenmesi, gün motoru, sürüş günlüğü, gün raporları, görevler ve hatırlatıcılar konumun ve haritanın olduğu telefonda (Receiver) yazılır (11.17, 12.14, 13.19); teklif veri seti Provider'da (13.11). Provider'ın ekranları gerekeni mesajdan gösterir (SORU-Q7, SORU-11-2 ve 17).
 
 ### 14.10 Gizlilik ve sırlar
 
 - **Sırlar:** `googleKey`, `orsKey`, `cartoKey`, `weather.key.v1` ve APK Maps anahtarı hiçbir kayda, olaya, dışa aktarmaya, yedeğe, çökme kaydına ve belgeye yazılmaz; günlükte yalnız var/yok (YolGo CI'daki gibi en çok son 4 karakter). `map` dosyası yedeğe girerse (17) bu dört alan çıkarılır.
 - **Koordinat:** ev koordinatı `:core`'da kalır; `:map` olaylarına, gün raporuna, sürüş kaydına yazılmaz (YolGo `home_day.dart:8-10` ilkesi). Olaylardaki koordinatlar hane sınırlı (`arrive` 4, `light_answer` 5). Hava özeti konum taşımaz (10.10).
-- **Müşteri verisi:** `:map` müşteri adı/telefonu tutmaz; navigasyon hedefi adres metni ve koordinatı (S5) yalnız rota için; dışa aktarmada `Redactor` kuralları (`VERI_SOZLESMESI` 9).
+- **Müşteri verisi:** `:map` müşteri adı/telefonu tutmaz; navigasyon hedefi adres metni ve koordinatı (S5) yalnız rota için; dışa aktarmada `Redactor` kuralları (`VERI_SOZLESMESI` 9). Gün raporu ve rota kaydı restoran ve müşteri hedef noktalarını (yuvarlanmadan) ve tam izi taşır; telefondan yalnız kullanıcı "kaydet/paylaş" deyince çıkar (YolGo davranışı, 12.12). Teklif veri setinde adres metni yok, noktalar 3 ondalık (13.17).
 
 ### 14.11 `VERI_SOZLESMESI.md`'ye işlenecek düzeltmeler
 
 - 5.4 "YG native" satırına `yolgo_runtime_v2` (`TelemetryService` durumu) eklenir.
 - 5.4 notu: YolGo göç işaretleri (`lightMaxMv2`, `lightMaxMv3`, `mapDesignV1`, `streets.blocked.legacy.v1`, `streets.blocked.migrated.v2`) WEEM'de yazılmaz (S1).
 - `map` tercih dosyası ve `files/map/` WEEM'in yeni yerleri olarak 5 ve 7'ye (`yeni`) eklenir; tip eşlemesi 14.1.
+- 5.4 "YG native" satırı: `yolgo_runtime_v2` ve `offer_dataset_v1` WEEM'de yazılmaz (12.11, 13.11).
+- 7.3: sürüş kayıtları satırının "içe aktar" kararı SORU-12-2'ye bağlanır, WEEM yolu `files/map/logs/`; veri seti satırına WEEM yolu `files/TeklifVeriSeti/` (`:orders`, yeni veri seti) ve ZIP adı (M-13-1).
+- 8.2 ve CORE.md 3.3: 7401 `DATASET_FGS` kullanılmaz (13.11).
 <!-- END sec:14 -->
 
 <!-- BEGIN sec:15 -->
@@ -2675,15 +2683,19 @@ Kurallar (plan 4.2–4.3, `gradle/module-graph.properties`): **`map=core`** — 
 | `ride` | `SpeedOptions`, `BatteryState`, `EnergyOdometer`, `BatteryEstimator`, `RangeInputs` | 10.13 | `geo`, `route`, `settings` | A6.7 |
 | `weather` | `WeatherRequest`, `WeatherReport`, `WeatherSummary`, `WeatherText`, `WeatherIcons`, `WeatherSchedule` | 10.13 | `net` | A6.7 |
 | `roads` (Y12) | `WayStats`, `WwStats`, `GhostMark`, `RoadKnowledge`, `RoadLearner`, `RoadDayContributions`, `StreetRatio`, `QualityPrompt`, `VolumeDispatch`, `RoadBook` | 9.12 | `geo`, `graph`, `route`, `surface`, `settings` | A6.11 |
-| `day`, `logs` + Bölüm 11–13 paketleri | gün motoru ve ışıklar, sürüş kayıtları, istatistik, veri seti, görevler, hatırlatıcılar | 11–13 | _ajanlar bitince_ | A6.8, A6.9 |
+| `day` | `DayFix`, `RoadInfo`, `StopSemantics`, `RoadInfoBuilder`, `StopRec`, `OrderRec`, `OrderPhase`, `DayState`, `DayEvent`, `ShiftEngine`, `LightTracker`, `LightsDb`, `SidewalkMarks`, `StopReconciler`, `CourierStageFollower`, `FollowerFeed`/`StageFeed`, `HomeReturn`, `DayController`, `DayView`, `DayText` | 11.17 | `geo`, `graph`, `settings` | A6.8 |
+| `logs` | `RideLogWriter`, `RideLogNames`, `RideLogStore`, `JournalExport`, `RouteRecorder`, `RouteDeviation`, `RideLogStatus` | 12.14 | `geo`, `route` | A6.9 |
+| `stats` | `DayStats`, `DayReportFile`, `DayHistory`, `DayReasons`, `StatsTabs`, `LightStats`, `DurationText`, `StreetLabel`, `DayDeletionPlan` | 12.14 | `graph`, `day`, `logs` | A6.9 |
+| `tasks` | `DailyTask`, `TaskTrigger`, `TaskController` | 13.19 | `geo` | A6.9 |
+| `reminders` | `ReminderKind`, `ReminderItem`, `ReminderSettings`, `ReminderDue`, `ReminderController` | 13.19 | — | A6.9 |
 
-**Yön kuralı:** tablo sırası aşağıdan yukarıya; bir paket yalnız kendinden önceki satırları kullanır, döngü yok (`nav` → `roads` değil: Y12'nin navigasyona etkisi rota girdileriyle (`RoadBook.forPlan`) ve Android `:map`'teki çalışma zamanı üstünden; `nav` ↔ gün motoru bağı Bölüm 11'deki olay arayüzüyle). Saat yalnız `:core` `Clock` (+ `LogTime`), metinler `logic/core` `Bilingual` (`MapText`). `logic/map` `org.json` ve `kotlinx.coroutines` dışında bağımlılık almaz (öteki `logic/` modülleri gibi).
+**Yön kuralı:** tablo sırası aşağıdan yukarıya; bir paket yalnız kendinden önceki satırları kullanır, döngü yok (`nav` → `roads` değil: Y12'nin navigasyona etkisi rota girdileriyle (`RoadBook.forPlan`) ve Android `:map`'teki çalışma zamanı üstünden). `nav` ↔ `day`: `NavController` hedef bağını (`setDestination`) ve eve dönüşü (`startHomeReturn`) çıktı olayı olarak verir, Android çalışma zamanı `DayController`'a iletir (11.14); `tasks` "Rota Oluştur"u çıktı isteği olarak verir, çalışma zamanı `NavController.goTo(purpose = task)` çağırır (13.13). Y19 teklif veri seti `logic/map`'te değil, `logic/orders` `dataset` paketindedir (13.19); `:map`'ten yalnız `RouteMeasurePort` ile ölçüm alır. Saat yalnız `:core` `Clock` (+ `LogTime`), metinler `logic/core` `Bilingual` (`MapText`). `logic/map` `org.json` ve `kotlinx.coroutines` dışında bağımlılık almaz (öteki `logic/` modülleri gibi).
 
 ### 15.2 Android `:map` (`com.kuryelog.app.map`)
 
 | Bileşen | Ne | Bölüm |
 |---|---|---|
-| `Maps` (tek giriş nesnesi; emsal `Orders`, `Scooter`, `Economics`) | süreç başına tek örnekler: `MapData`, `MapSettingsStore`, `NavRuntime`, `RoadsRuntime`, `BatteryRuntime`, `WeatherRuntime`, Bölüm 11–13 çalışma zamanları; dışa portlar `nav: NavPort`, `weather: WeatherPort`, `range: RangePort`; içe dikişler `bindOrders(OrderEvents)`, `bindScooter(ScooterBridge)` | 15.3 |
+| `Maps` (tek giriş nesnesi; emsal `Orders`, `Scooter`, `Economics`) | süreç başına tek örnekler: `MapData`, `MapSettingsStore`, `NavRuntime`, `RoadsRuntime`, `BatteryRuntime`, `WeatherRuntime`, `DayRuntime`, `RideLogRuntime`, `TaskRuntime`, `ReminderRuntime`; dışa portlar `nav: NavPort`, `weather: WeatherPort`, `range: RangePort`, `routeMeasure: RouteMeasurePort`; içe dikişler `bindOrders(OrderEvents)`, `bindScooter(ScooterBridge)` | 15.3 |
 | `MapPrefsStore`, `MapSettingsStore` | `SharedPreferences("map")`, `settings.v1` (`StateFlow<MapSettings>`) | 14.1, 14.2 |
 | `AndroidHttp` | `HttpPort` (`HttpURLConnection`; yeni bağımlılık yok) | 8.12 |
 | `MapData` | graf/DEM/POI açma, asset, indirme işi | 2.14 |
@@ -2693,9 +2705,13 @@ Kurallar (plan 4.2–4.3, `gradle/module-graph.properties`): **`map=core`** — 
 | `LinkIntake`, `ClipboardWatch` | intent ve pano → `IncomingLink` | 8.12 |
 | `RoadFilesAndroid`, `VolumeKeys`, `RoadsRuntime` | Y12 dosyaları, ses tuşu yakalama, öğrenme döngüsü | 9.12 |
 | `BatteryRuntime`, `WeatherRuntime`, `WeatherFetch`, `WeatherWork`, `WeatherPortImpl`, `RangePortImpl` | batarya tahmini, hava, `duzyol_weather_v1` | 10.13 |
-| Bölüm 11–13 bileşenleri | gün motoru çalışma zamanı, `MotionReceiver`, kayıt yazıcısı, veri seti servisi, görev/hatırlatıcı zamanlayıcısı | 11–13 |
+| `DayRuntime` | gün motoru, ışık ölçer, aşama izleyici (`OrderEvents.stages`), `ShiftFollower` bağı, `map` tercihleri, toast/titreşim istekleri, `StateFlow<DayView>` | 11.14, 11.17 |
+| `RideLogRuntime`, `DayReportWriter`, `DayDeletionRuntime` | sürüş günlüğü ve rota dosyaları (`files/map/logs/`), gün raporu, gün silme | 12.14 |
+| `TaskRuntime`, `ReminderRuntime` | görev tetiği (konum, 30 sn), hatırlatıcı zamanlayıcısı (20 sn), `NotifyPort` | 13.19 |
+| `RouteMeasurePortImpl` | veri seti için rota ve yükseklik ölçümü (`:orders`'a) | 13.4, 13.11 |
+| — (yazılmaz) | `MotionReceiver` (Y13), `TelemetryService` (12.11), `DatasetRecordingService` (13.11) | 11.1, 12.11, 13.11 |
 
-**Açılış dikişi** (`WeemApplication.onCreate`, öteki modüllerden sonra): `Maps.bind(this)` → `Maps.bindOrders(Orders.events)` (aşamalar, `busy`, teklifler), `Maps.bindScooter(Scooter.bridge)`; ters yönde (yeni dikişler, öneri adları) `Orders.bindMap(Maps.nav, Maps.weather)` → `OrderFlow.Env.weather` (bugün `NONE`; R15 `OfferWeather`) ve `NavPort.route` akışı → `OrderFlow.navigation(state, now)` (E8 hedef bağı), `Economics.bindMap(Maps.weather, Maps.range)` → `EconomicsObserver.Env.weather` (bugün `NONE`) ve N5 girdileri (`RangePort`, SORU-T1-1). İkisi de A3/A4'te `:map` yokken `NONE` ile yazıldı; dikiş A6.6 (nav) ve A6.7 (hava, menzil) görevlerinde kurulur. Gün başı/sonu işleri `ShiftHub.listeners`'a ad ve sırayla eklenir (Bölüm 11'deki sıra). Bağlama hatası `Store.guarded` ile kaydedilir; bağlanmamış port `NONE` kalır (veri uydurulmaz).
+**Açılış dikişi** (`WeemApplication.onCreate`, öteki modüllerden sonra): `Maps.bind(this)` → `Maps.bindOrders(Orders.events)` (aşamalar, `busy`, teklifler), `Maps.bindScooter(Scooter.bridge)`; ters yönde (yeni dikişler, öneri adları) `Orders.bindMap(Maps.nav, Maps.weather)` → `OrderFlow.Env.weather` (bugün `NONE`; R15 `OfferWeather`) ve `NavPort.route` akışı → `OrderFlow.navigation(state, now)` (E8 hedef bağı), `Economics.bindMap(Maps.weather, Maps.range)` → `EconomicsObserver.Env.weather` (bugün `NONE`) ve N5 girdileri (`RangePort`, SORU-T1-1). İkisi de A3/A4'te `:map` yokken `NONE` ile yazıldı; dikiş A6.6 (nav) ve A6.7 (hava, menzil) görevlerinde kurulur. `Maps.bindOrders` `Orders.bind`'dan (geri yükleme dahil) sonra çağrılır: süreç başındaki boş `TripStages` eksik okuma sayılmasın (11.14). `Orders.bindRouteMeasure(Maps.routeMeasure)` veri setinin rota ölçümünü bağlar (13.11). `:map` gün motoru vardiyayı `ShiftHub` dinleyicisi olarak değil `ShiftPort.state` akışından izler (`ShiftFollower`, 11.2); veri setinin gün sonu işi `ShiftHub.listeners`'a `:orders`'ın kendi gün sonu yazımlarından sonra eklenir (13.11). Bağlama hatası `Store.guarded` ile kaydedilir; bağlanmamış port `NONE` kalır (veri uydurulmaz).
 
 ### 15.3 `:core` portları ve yeni `:core` girdileri
 
@@ -2704,14 +2720,15 @@ Kurallar (plan 4.2–4.3, `gradle/module-graph.properties`): **`map=core`** — 
 | `ShiftPort.state` | `:core` → `:map` | gün açık mı, başlangıç (`startedAtMs` → kova `yolgo-<ms>`), yalnız-nav geçişi, öğrenme kapsamı, hava zamanlayıcısı, gün motoru (`ShiftFollower`) | 6, 7, 9, 10, 11 |
 | `OrderEvents` (`stages`, `busy`, `offers`) | `:orders` → `:map` | sipariş aşaması (restoran/müşteri hedefi, `excludeStops`, gün motoru aşamaları), teslimat bitti (görevler) | 7, 9, 11, 13 |
 | `ScooterBridge` (`live`, `batteryPct`) | `:scooter` → `:map` | canlı batarya, eğim limiti | 3, 10 |
-| `NotifyPort` + `NotificationIds` | `:map` → `:core` | 7100–7102, 7201, 7301, 7401, (7402) | 14.6 |
+| `NotifyPort` + `NotificationIds` | `:map` → `:core` | 7100–7102, 7201, 7301, (7402); 7401 kullanılmaz (13.11) | 14.6 |
 | `Clock`, `LogTime` | `:core` | bütün saatler; Bakü günü | 9, 10, 11 |
 | ev (`KuryelogPrefs` `home.*`, `HomePickResult`) | `:core` → `:map` | eve dön, ev kuralı dışı her şey, haritadan seçme | 6.11, 7.8 |
 | `NavPort` (`route: StateFlow<RouteStatus?>`, `open(NavTarget)`) | `:map` → `:orders`, `:link` | `NavPortImpl` | 7.9, 8.12 |
 | `WeatherPort.current()` | `:map` → `:orders`, `:economics` | `WeatherPortImpl` (≤ 90 dk) | 10.10 |
 | **`RangePort`** (yeni, öneri) | `:map` → `:economics` | `battery()`, `rideTo(from, to)` | 10.6 |
+| **`RouteMeasurePort`** (yeni, öneri) | `:map` → `:orders` | `measure(courier, pickup, dropoff, atMs)`: veri seti satırının altı ölçüsü (13.4) | 13.11 |
 
-Yeni `:core` girdileri (öneri; ilgili uygulama görevinde, `NotificationIdsTest`/`PortsTest` ile): `RangePort` (+ `NONE`), `NotificationIds.NAV_ONLY_FGS = 7402` ve kanal `navigation` (SORU-N4), Bölüm 11–13'ün önerdikleri.
+Yeni `:core` girdileri (öneri; ilgili uygulama görevinde, `NotificationIdsTest`/`PortsTest` ile): `RangePort` (+ `NONE`), `RouteMeasurePort` (+ `NONE`, 13.11), `NotificationIds.NAV_ONLY_FGS = 7402` ve kanal `navigation` (SORU-N4), `NotificationIds`'ten `DATASET_FGS` (7401) ve kanal `yolgo_offer_dataset` çıkar (13.11), SORU-11-1 (a) seçilirse `ShiftState.startReason`.
 
 ### 15.4 `:app` ekranları
 
@@ -2721,7 +2738,11 @@ Yeni `:core` girdileri (öneri; ilgili uygulama görevinde, `NotificationIdsTest
 | Harita sekmesi sayfaları | `SpeedSheet`, `ScooterValuesSheet`, `WeatherDetailSheet`, `MapsHelpSheet`, bölge bilgisi, POI düzeltme, "Saatli çift yön izni" | 4.5, 5, 6.10, 10 |
 | Daha fazla → **Harita ayarları** (`MapSettingsScreen`; sıra 6.9) | Teklif veri seti · Yollarım (`RoadsScreen` 4 sekme + Bisiklet, Sürüş kayıtları, Sokak bilgileri, ışık mesafesi, ses tuşları) · Hatırlatıcılar · Günlük işler · Harita görünümü · Hava durumu · Harita verisi · API ve bağlantılar (`MapApiSettingsScreen`) · Navigasyon bağlantıları | 6.9, 8.9, 9.8, 10.9, 12, 13 |
 | Daha fazla → Ev konumu | "Haritadan seç" → `HomePickScreen` | 6.11 |
-| Bölüm 11–13 ekranları | İstatistik, Sürüş kayıtları, Teklif veri seti, Günlük işler, hatırlatıcı kartları | 11–13 |
+| Harita sekmesi `ShiftCard` + `MapShiftActions` | gün kartı satırları (km, ışık sayacı, aşama, tamamlanan sipariş), "İstatistik", "Eve dön" | 6.12, 11.9, 12.8 |
+| İstatistik (`StatsScreen`, `DayStatsPage`, `LightsMiniMap`) | gün sekmeleri, ışık soruları, paylaş, sil | 12.7, 12.9 |
+| Harita ayarları → Yollarım → Sürüş kayıtları (`RideLogsScreen`) | günlükler, sürüşler, rota kayıtları, kaydet/paylaş/sil | 12.10 |
+| Harita ayarları → Teklif veri seti (`DatasetScreen`, `DatasetManualSheet`), Günlük işler (`TasksScreen`, `TaskEditorSheet`), Hatırlatıcılar (`ReminderSettingsSection`) | | 13.8, 13.9, 13.14, 13.16 |
+| Uygulama kabuğu (her sekmenin üstünde) | `TaskAlertCard`, `ReminderCard` (WEEM öndeyken sistem bildirimi yok, CORE.md 3.1) | 13.14, 13.16 |
 
 Tema ve dil `:app`'in (`theme`, `lang`; 6.2); Harita sekmesi kendi tema anahtarı tutmaz. Metinler TR/AZ birebir, `TextCoverageTest` kuralıyla.
 
@@ -2736,7 +2757,9 @@ Tema ve dil `:app`'in (`theme`, `lang`; 6.2); Harita sekmesi kendi tema anahtar�
 | Y9 batarya tahmini | var | GPS + canlı scooter | `BatterySummary`'den (GPS tahmini yok) | `BatterySummary` R→P |
 | Y10 hava | var | kendi interneti | kendi interneti (S6) | — |
 | N5 menzil | var | — | `:economics` (teklifler burada) | `BatterySummary`; sonuç alanı A8.3 |
-| Y11, gün motoru, Y17–Y20 | var | Bölüm 11–13 | Bölüm 11–13 | Bölüm 11–13 |
+| Gün motoru, Y11, Y17, Y18 | var | **asıl** (konum, harita) | yok; ekranlar SORU-11-2 (`DaySnapshot` R→P önerisi) | `ShiftState`, `TripStages` P→R |
+| Y19 teklif veri seti | var | — | **asıl** (`:orders`; rota ölçümü kendi `:map` verisiyle) | — (scooter kapsaması SORU-13-2) |
+| Y20 görevler, hatırlatıcılar | var | **asıl** (SORU-13-3) | yok | `TripStages` (teslim) P→R |
 
 Vardiya (`ShiftState`) her iki telefonda aynı arayüzle izlenir (Receiver'da uzak, A8.3); `:map` farkı görmez.
 <!-- END sec:15 -->
@@ -2812,8 +2835,30 @@ Her bölümün "Testler" alt bölümü test test ayrıntıdır (neyi doğrular, 
 | YT `v170_features_test` | 6 (13'ün; 2'si A2.5/A5.3'te karşılandı, 4'ü çevrilmez, 1'i sonra) | `ride.BatteryEstimatorTest` 1 · `:app` `MapMetricsTest` 2, `WeatherChipTest` 1 · gün kartı simgeleri 1, alt yer düğmesi boyu 1 (`:app`, Bölüm 6) | A6.5, A6.7 | 10.12 |
 | YT `weather_section_test` | 4 | `:app` `MapWeatherSettingsTest` | A6.7 | 10.12 |
 | YK `WeatherFeedTest` | 2 | `weather.WeatherSummaryTest` | A6.7 | 10.12 |
-| _Bölüm 11–13 dosyaları_ | | _ajanlar bitince eklenecek_ | A6.8, A6.9 | 11, 12, 13 |
+| YT `bikeway_e13_test` | 1 (18'in; 17'si A6.2a) | `:app` `BikewayTabTest` | A6.8 | 5.2 |
+| YT `shift_engine_test` | 9 | `day.ShiftEngineTest` | A6.8 | 11.16 |
+| YT `light_tracker_test` | 4 | `day.LightTrackerTest` | A6.8 | 11.16 |
+| YT `light_leaks_f52_test` | 3 | `day.LightLeaksTest` | A6.8 | 11.16 |
+| YT `light_rule_m14_test` | 12 (14'ün; 2'si çevrilmez) | `day.LightRuleTest` 5, `day.ShiftEngineTest` 1, `day.LightTrackerTest` 1, `day.LongLightTest` 5 | A6.8 | 11.16 |
+| YT `courier_stage_follow_test` | 13 (14'ün; 1'i çevrilmez) | `day.CourierStageFollowerTest` 11, `day.StageFeedTest` 2 (uyarlanır) | A6.8 | 11.16 |
+| YT `courier_stages_e8_test` | 12 (13'ün; 1'i çevrilmez) | `day.CourierStageTimelineTest` 11, `day.StageFeedTest` 1 (uyarlanır) | A6.8 | 11.16 |
+| YT `home_day_controller_test` | 2 (5'in; 3'ü `:core`'da) | `day.DayControllerTest` 1 (uyarlanır; A6.8) · `stats.DayReasonsTest` 1 (A6.9) | A6.8, A6.9 | 11.16, 12.13 |
+| YT `assistant_test` | 14 | `day.*` 6 (A6.8) · `tasks.TaskTriggerTest` 5 (A6.9) · `input.AddressParserTest` 1, `nav.HeadingFilterTest` 1 (A6.6) · `weather.WeatherReportTest` 1 (A6.7) | A6.6–A6.9 | 11.16, 13.18 |
+| YT `log_store_test` | 7 | `logs.RideLogStoreTest` 4, `logs.RideLogWriterTest` 3 | A6.9 | 12.13 |
+| YT `ride_log_status_test` | 2 | `logs.RideLogStatusTest` 1, `:app` `RideLogStatusTextTest` 1 | A6.9 | 12.13 |
+| YT `dataset_days_test` | 2 | `logic/orders` `dataset.DatasetDaysTest` (1'i uyarlanır) | A6.9 | 13.18 |
+| YT `dataset_screen_test` | 5 | `:app` `DatasetScreenTest` (1'i uyarlanır) | A6.9 | 13.18 |
+| YT `task_controller_test` | 1 | `tasks.TaskControllerTest` (uyarlanır, S9) | A6.9 | 13.18 |
+| YT `reminders_test` | 5 | `reminders.ReminderDueTest` 4, `reminders.ReminderSettingsTest` 1 | A6.9 | 13.18 |
+| YT `reminder_card_test` | 3 | `:app` `ReminderCardTest` 2, `reminders.ReminderTimingTest` 1 | A6.9 | 13.18 |
+| YK `DatasetContractTest` | 6 | `logic/orders` `dataset.DatasetContractTest` | A6.9 | 13.18 |
+| YK `DatasetMatchingTest` | 4 | `logic/orders` `dataset.DatasetPackTest` | A6.9 | 13.18 |
+| YK `DatasetReadsTest` | 4 (6'nın; 2'si çevrilmez) | `logic/orders` `dataset.DatasetMeasureTest` 1, `dataset.OfferRowGateTest` 3 | A6.9 | 13.18 |
+| RT `LogFeedV3Test` (Rawstats) | 10 | `logic/orders` `dataset.DayLogSnapshotTest` (uyarlanır) | A6.9 | 13.6, 13.18 |
 | **Yeni** (karakterizasyon) | — | `ui.MapStylesTest`, `ui.MapPaletteTest`, `ui.PuckMotionTest`, `ui.LongPressMenuTest` (6.14), `:app` `RegionInfoSheetTest` (5.4), `graph`/`ui` POI katmanı (5.6) | A6.5, A6.8 | 5, 6 |
+| **Yeni** (karakterizasyon) | — | `day.LightsDbTest`, `day.StopReconcilerTest`, `day.RoadInfoBuilderTest`, `day.HomeReturnTest`, `day.DayShiftSyncTest`, `day.DayTextTest`, `day.StageFeedTest` (11.16) · `logs.RideLogWriterTest`, `stats.DayReportFileTest`, `stats.DayStatsTest`, `stats.DayHistoryTest`, `stats.StatsTabsTest`, `stats.DayDeletionPlanTest`, `:app` `StatsScreenTest`, `RideLogsScreenTest` (12.13) · `dataset.DatasetRecorderTest`, `dataset.DatasetManualTest`, `dataset.DatasetToolTest`, `nav.TaskTargetTest`, `reminders.ReminderControllerTest`, `:app` `AppAlertsTest` (13.18) | A6.8, A6.9 | 11–13 |
+
+**Koordinatör düzeltmesi (2):** `assistant_test` (14) hiçbir bölümün test tablosunda yoktu; payları yukarıda (8.11'e 1, 7.15'e 1, 10.12'ye 1, 11.16'ya 6, 13.18'e 5) — 7.15, 8.11 ve 10.12'nin tabloları bu satırla birlikte okunur. `bikeway_e13_test`'in A6.2b payı (1, `BikewayTabTest`, 5.2) 16.3'e eklendi.
 
 ### 16.4 Çevrilmeyenler, sonraya kalanlar, başka görevde karşılananlar
 
@@ -2830,6 +2875,11 @@ Her bölümün "Testler" alt bölümü test test ayrıntıdır (neyi doğrular, 
 | `offer_engine_test` (7), `route_costing_test` `planLeavesBox` (1) | **SORU-T1-2** (öneri: çevrilmez) | v1 teklif motoru ölü kod; v2 `:economics`'te (A4.1) | 10.12, 10.14 |
 | `router_test` ölçülmüş yüzey (7), `route_costing_test` (5), `v170` yüzey dizini (1), `day_contributions_test` (1), `street_scores_test` (11), `road_score_ui_test` (11) | sonra (Y13/Y14) | `SurfaceSummary`/kalibrasyon deposu (SORU-Q2: 23 Y12 testi) | 3.14, 9.11, 10.12 |
 | `road_surface_score` (4), `surface_gate` (11), `surface_single_flight` (2), `surface_store_exclusions` (4), `surface_store` (12), `road_calibration_channel` (6), `road_calibration_score` (10), `road_calibration_screen` (4), `road_calibration` (7); YK `SurfaceSignalTest` (11), `RoadCalibrationCountdownTest` (5), `RoadCalibrationRoadRmsTest` (6), `RoadCalibrationTest` (18) | sonra (Y13/Y14) | `BEKLEYEN_OZELLIKLER.md` | 1 |
+| `light_rule_m14_test` F9.1 göç testleri (2) | çevrilmez | S1: `lightMaxMv2/v3` göçü yazılmaz (14.2) | 11.16 |
+| `courier_stage_follow_test` ayrıştırma 2. (1), `courier_stages_e8_test` ayrıştırma 2. (1) | çevrilmez | feed v2 zarfı ve eski Rawstats yok (S7); `TripStages.parse` A2.5 `MessagesTest`'te | 11.16 |
+| YK `DatasetReadsTest` yoklama sabitleri ve `PollRowGate` (2) | çevrilmez | okuma ve yoklama yok (13.11) | 13.18 |
+| YK `TelemetryJournalTest` (8) | sonra (Y13) | `telemetry-v2.jsonl`'ın tek kullanıcısı Y13; Y18 bu günlüğü kullanmaz (12.11; CORE.md 6.2'deki karar) | 12.13 |
+| `tools/veri_seti/kontrol.py` öz-testleri (8, Python) | çevrilmez (araçla kalır) | WEEM `tools/veri_seti/` aynı araç; `logic/orders` testinden koşturulur | 13.10 |
 | `home_day_controller_test` 1–3, `home_day_e6` (10), `home_day_end_rule` (5), `home_day_rules` (19), YK `NotifyPolicyTest` (2) | `:core`'da çevrildi (A2) | ev kuralı, `ShiftMachine`, `NotifyPolicy` (CORE.md 6.2) | — |
 | `rawstats_shift_end_test` (11) | `:core`'da uyarlandı (A2) | `ShiftFollower`; `:map` gün motoru kullanır (Bölüm 11) | 11 |
 | `rawstats_signals_test` (10), YK `CourierFeedPayloadTest` (6), `RawstatsObserverTest` (5) | uyarlanır `:link` (A8) | uygulamalar arası duyuru/yük → `:link` | — |
@@ -2838,7 +2888,22 @@ Her bölümün "Testler" alt bölümü test test ayrıntıdır (neyi doğrular, 
 
 ### 16.5 Toplamlar ve denetim
 
-_Bölüm 11–13 bitince yazılır: görev başına toplam (A6.2a, A6.2b), uygulama görevi başına toplam (A6.3 … A6.11), çevrilmez/sonra/başka görev; 83 YT (564) ve 15 YK (88) dosyasının her birinin tek satırda olduğu denetimi._
+Sayım YolGo `870ab6e`'den betikle yapıldı (YT `^\s*(test|testWidgets)\(`, YK `@Test`); her dosyanın 16.2–16.4'teki payları toplamı gerçek sayısına eşit (uyuşmazlık yok). Rawstats `LogFeedV3Test` ayrıca sayılır.
+
+| Kategori | YT (83 dosya, 564) | YK (15 dosya, 88) | Toplam |
+|---|---:|---:|---:|
+| **A6.2a** (çevrilir) | 110 (17 dosya) | — | **110** |
+| **A6.2b** (çevrilir) | 228 | 18 | **246** (+ RT `LogFeedV3Test` 10 = 256) |
+| başka görevde karşılandı / uyarlandı (A1.3, A2, A2.5, A5.3–A5.4) | 53 | 4 | 57 |
+| uyarlanır `:link` (A8) | 10 | 11 | 21 |
+| SORU-T1-2 (öneri: çevrilmez) | 8 | — | 8 |
+| çevrilmez | 59 | 7 | 66 |
+| sonra (Y13/Y14) | 96 | 48 | 144 |
+| **Toplam** | **564** | **88** | **652** |
+
+Uygulama görevi başına çevrilen testler (A6.2a + A6.2b): **A6.3** 13 · **A6.4** 63 · **A6.5** 24 · **A6.6** 75 (A6.2a 2 + A6.2b 73) · **A6.7** 29 · **A6.8** 80 (A6.2a 8 + A6.2b 72) · **A6.9** 48 (+ `LogFeedV3Test` 10 = 58) · **A6.11** 24 — toplam 356 (+ 10). Yeni karakterizasyon testleri (her bölümün "Yeni" satırı) bu sayılara girmez; çeviri görevi onları da yazar.
+
+Görev bağımlılığı için sonuç: A6.8 ve A6.6 iki çeviri görevinin de testlerini kullanır (A6.8: Y15/Y16 A6.2a'da, Y11 ve gün motoru A6.2b'de; A6.6: `bikeway_e13` yeniden rota testleri A6.2a'da) → `WEEM_ISLER.md`'de A6.8'in bağımlılığına A6.2a eklenir (A6.6 zaten A6.4 ← A6.3 ← A6.2a üstünden bağlı).
 <!-- END sec:16 -->
 
 <!-- BEGIN sec:17 -->
