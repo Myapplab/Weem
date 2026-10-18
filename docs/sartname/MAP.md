@@ -35,7 +35,7 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 | 14 | veri sözleşmesi | tümü | koordinatör | bitti (23:55 UTC) <!-- st:14 --> |
 | 15 | WEEM yerleşimi | tümü | koordinatör | bitti (23:55 UTC) <!-- st:15 --> |
 | 16 | test eşlemesi A6.2a/A6.2b | A6.2a, A6.2b | koordinatör | bitti (23:55 UTC) <!-- st:16 --> |
-| 17 | açık noktalar ve sorular | tümü | koordinatör | bekliyor <!-- st:17 --> |
+| 17 | açık noktalar ve sorular | tümü | koordinatör | bitti (23:58 UTC) <!-- st:17 --> |
 
 Dosya dağılımı (YG; her dosyanın tek sahibi var, başkası yalnız başvurur):
 - **Ajan R (2–5):** `lib/data/*` (road_graph, graph_builder, overpass, elevation, map_data_service, pois, poi_corrections), `lib/routing/` router, planner, route, route_worker, route_hours, street_prefs, bikeways; `lib/core/physics.dart`, `geo.dart`; `lib/ui/bikeway_layer.dart`, `poi_editor.dart`, `region_info.dart`, `road_hours.dart`; `tool/build_map.dart`, `ci/osm_extract.py`, `ci/build.sh` harita kısmı, `assets/map/`, `assets/baku/`. Testler: `router`, `park_paths`, `push_segments`, `bikeway_e13`, `route_hours`, `ww_green_two_way`, `street_prefs_migration`, `overpass`, `map_data_update`, `pois`.
@@ -2221,7 +2221,7 @@ Toplam (bu bölüm): 22 test tanımı; çevrilen 13 (A6.2b), sonra 8 (Y13), çev
 - **WEEM farkları:** klasör `files/map/logs/`; takvim günü ve `_HHMM` telefon saat dilimiyle (`LogTime`, CORE.md 1.10; Bakü'de aynı sonuç); `<Ad>` = WEEM; dışa aktarma dosya adı (M-12-1); yerel telemetri servisi yok (12.11); gün silme yalnız harita verisini siler ve vardiyayı bitirmez (12.9, M-12-3); "Rawstats" metni (M-12-2); İstatistik mini haritası MapLibre (S4).
 - **SORU-12-1 (CORE.md 7 (1); koordinatöre):** iki km ölçüsü bir uygulamada. (a) İkisi de eski yerinde: İstatistik ve gün kartı YolGo gün km'si (`:map`, 11.3), Siparişler gün sayfası ve `shift_end` olayı vardiya km'si (D8; scooter odometresi varsa o); (b) İstatistik'e ikinci kutu "vardiya km" (D8) eklenir, fark görünür; (c) tek km: her yerde D8 (harita km'si yalnız gün raporunda). Öneri (a): davranış iki eski uygulamayla aynı kalır, gölge mod ve A6.10 karşılaştırması kolay; fark sahada büyük çıkarsa (b).
 - **SORU-12-2 (koordinatöre; S1 kapsamı):** eski YolGo sürüş kayıtlarını içe aktarma (`VERI_SOZLESMESI` 7.3 "içe aktar"; YolGo'da dışa aktarma zaten var, ek gerekmez). (a) Sürüş kayıtları'na "YolGo kayıtlarını içe aktar" eylemi: belge seçiciyle `duzyol-journal-v1` dosyası; her `files[]` öğesi adı kalıba uyuyorsa ve aynı adlı dosya yoksa ham metniyle `files/map/logs/`'a yazılır (var olan dosya ezilmez); sonuç "N dosya eklendi, M atlandı"; içe aktarılan gün raporları İstatistik'te WEEM günleri gibi görünür (ışık cevabı `lights.v1`'e öğretir, `rawstats_*` neden metinleri gösterilir); (b) içe aktarma yok: eski kayıtlar eski YolGo'da ya da dışa aktarılmış dosyada kalır; `rawstats_*` metinleri yazılmaz. Öneri (a): küçük iş (A6.9), veri kaybı olmaz.
-- **SORU-12-3 (koordinatöre; S22 yedek kapsamı, SORU-Q5 ile birlikte Bölüm 17):** `files/map/logs/` haftalık şifreli yedeğe girsin mi? Sürüş günlüğü sürüş saati başına ~0,8 MB (gps satırı ~125 bayt/sn, sürüşteyken iki dosyada), 10 saatlik gün ~7 MB. (a) Hepsi; (b) yalnız gün raporları (`.gun.json`, gün başına birkaç KB) ve rota kayıtları; (c) hiçbiri (bugünkü S22). Öneri (b).
+- **SORU-12-3 (koordinatöre; S22 yedek kapsamı; 17.1 #16'da SORU-Q5 ile birleşik):** `files/map/logs/` haftalık şifreli yedeğe girsin mi? Sürüş günlüğü sürüş saati başına ~0,8 MB (gps satırı ~125 bayt/sn, sürüşteyken iki dosyada), 10 saatlik gün ~7 MB. (a) Hepsi; (b) yalnız gün raporları (`.gun.json`, gün başına birkaç KB) ve rota kayıtları; (c) hiçbiri (bugünkü S22). Öneri (b).
 - **M-12-1 (metin onayı):** dışa aktarma dosya adı `WEEM_surus_<gün | tum_kayitlar>.json`.
 - **M-12-2 (metin onayı):** "Sipariş yok · Wolt/Bolt'ta sipariş başlayınca burada görünür" / "Sifariş yoxdur · Wolt/Bolt-da sifariş başlayanda burada görünəcək".
 - **M-12-3 (metin onayı):** gün silme onay metinleri (12.9).
@@ -2909,5 +2909,80 @@ Görev bağımlılığı için sonuç: A6.8 ve A6.6 iki çeviri görevinin de te
 <!-- BEGIN sec:17 -->
 ## 17. Açık noktalar, riskler ve kullanıcı soruları
 
-_Yazılıyor (koordinatör)._
+Bölümlerin sorularının tek listesi (ayrıntı ve gerekçe kendi bölümünde; kodlar aynı). Her soruda **varsayılan** yazılıdır: kullanıcı cevap verene kadar uygulama görevleri varsayılanla ilerler; cevap `WEEM_PLANI.md` Bölüm 8'e tarih ve S numarasıyla yazılır, bu bölüm ve ilgili bölüm aynı commit'te güncellenir. Hiçbir soru A6.2a/A6.2b'yi (test çevirisi) engellemez; uygulama görevlerinden hangisini etkilediği satırında.
+
+### 17.1 Kullanıcıya sorulacaklar (kapsam ve davranış)
+
+| # | Kod | Soru | Seçenekler | Varsayılan | Görev | Bölüm |
+|---|---|---|---|---|---|---|
+| 1 | SORU-T1-1 | N5 "Menzil uyarısı" nasıl görünsün? (eski uygulamada yok) | (a) teklif kartında tek satır "Batarya yetmeyebilir · eve ~<km> km" + haritada var olan "eve dön?" kartı; (b) yalnız kayıt (gölge mod), görünür uyarı sonra; (c) ayrı menzil ekranı | (a) | A6.7 | 10.6, 10.14 |
+| 2 | SORU-Q1 | Ses− tek basış (±25 m kötü nokta) Y13 deposuna yazar; Y13 1.0'da yok | (a) 1.0'da elle kötü nokta alt kümesi (dosya, 25 m/30 m/2 gün kuralı, rota cezası, uzun basışla silme); (b) Ses− 1.0'da etkisiz | (a) | A6.4, A6.11 | 9.5, 9.13 |
+| 3 | SORU 1 | Y13 ölçülmüş yüzey girdileri ve "geçilebilirlik: kapalı" rota motoruna 1.0'da yazılsın mı? | (a) yazılmasın (7 test sonra); (b) boşken nötr yazılsın | (a) | A6.4 | 3.16 |
+| 4 | SORU-N5 | Harita altlıkları ve vektör kaynağı (S4'ün kapsamı) | altlık: (a) Google (anahtar varsa) + MapLibre OSM raster + MapLibre vektör, Esri/Uydu/CARTO kalkar; (b) (a) + Esri ve Uydu; (c) YolGo'nun beşi + CARTO; vektör: (a) kendi Bakü PMTiles dosyası, (b) OpenFreeMap | (a) / (a) | A6.5 | 6.4, 6.16 |
+| 5 | SORU-N7 | YolGo gün kartı ile WEEM `ShiftCard` | (a) tek kart: `ShiftCard` + harita eylemleri (Eve dön, İstatistik) + aşama, km, ışık satırları + katlanma kuralı; (b) iki ayrı kart | (a) | A6.5, A6.8, A6.9 | 6.12, 12.8 |
+| 6 | SORU-N6 | Ekran yönü | (a) dikey kilit (gidon montajı); (b) serbest (yatay HUD düzeni ve test) | (a) | A6.5 | 6.16 |
+| 7 | SORU-Q4 | Ses+/Ses− yakalama ne zaman? | (a) yalnız Harita sekmesi ve alt ekranları öndeyken; (b) WEEM öndeyken her an | (a) | A6.11 | 9.5 |
+| 8 | SORU-12-1 | İki km ölçüsü (CORE.md 7 (1)): YolGo gün km'si ve vardiya km'si (D8) | (a) ikisi de eski yerinde (İstatistik/gün kartı harita km'si; Siparişler gün sayfası D8); (b) İstatistik'e ikinci kutu "vardiya km"; (c) her yerde tek km (D8) | (a) | A6.9 | 11.3, 12.15 |
+| 9 | SORU-11-1 | Gün raporundaki "Evden çıkınca başladı" için başlangıç nedeni | (a) `ShiftState` v1'e isteğe bağlı `startReason` (`:core` küçük ek); (b) hep `manual` (satır görünmez); (c) ayrı port | (a) | A6.8 (+ `:core`) | 11.2, 11.18 |
+| 10 | SORU-12-2 | Eski YolGo sürüş kayıtlarını (`duzyol-journal-v1`) içe aktarma | (a) Sürüş kayıtları'nda "YolGo kayıtlarını içe aktar" (dosyalar ham metniyle, var olan ezilmez); (b) içe aktarma yok | (a) | A6.9 | 12.15 |
+| 11 | SORU-13-1 | Teklif veri setinde alış noktası (çoğu teklifte boş) | (a) YolGo gibi (yalnız adres metninde koordinat/Plus Code); (b) restoran kaydı ya da POI ad eşleşmesi (yeni davranış); (c) (b) yalnız gölge modda | (a); (b) `BEKLEYEN_OZELLIKLER` adayı | A6.9 | 13.11, 13.20 |
+| 12 | SORU-Q6 | Ters yön madde 10b "iki yönlü" kuralı yumuşatılmış oranla neredeyse hiç işlemiyor | (a) aynen (rota YolGo ile aynı); (b) niyete göre (`problems == 0` onaylı ara sokak iki yönlü) | (a) | A6.11 | 9.9, 9.13 |
+| 13 | SORU (2.15) | Hazır harita verisi sunucusu (`kurye_nav_data`) bu ortamdan erişilemedi | (a) zincir aynen (sunucu yoksa ≤ 20 sn sonra Overpass); (b) kaldırılsın, doğrudan Overpass | (a) | A6.3 | 2.9, 2.15 |
+| 14 | SORU-N4 | Gün bitince rota açıksa (yalnız-nav ≤ 90 dk) arka plan konumu için bildirim | yeni `NAV_ONLY_FGS` 7402 + kanal `navigation` ("WEEM navigasyon" / "WEEM naviqasiya"; vardiya sonu iptal listesinde değil) | öneri | A6.6 (+ `:core`) | 7.12, 7.17 |
+| 15 | SORU-N1 | Kapı notundaki domofon kodu Receiver'a gitsin mi? (S5) | (a) gider (kapıda Receiver ekranında gerekir); (b) gitmez | (a) | A6.6, A8.3 | 8.13 |
+| 16 | SORU-Q5 + SORU-12-3 | Harita verisi haftalık şifreli yedeğe (S22) girsin mi? Bugün girmiyor: telefon değişince Y12 öğrenmesi, sokak kararları, ışıklar, bisiklet işaretleri, görevler ve sürüş kayıtları kaybolur | (a) S22 aynen (hiçbiri); (b) küçük harita verisi: `map` tercihleri (sırlar hariç; 14.10), `files/map/roads/`, `manual-marks.json`, gün raporları ve rota kayıtları; sürüş günlükleri hariç; (c) hepsi (sürüş günlükleri dahil, haftada ~40 MB) | (a) cevaba kadar; öneri (b) (A6.11 sonrası ayrı iş) | A4.3 eki, A6.9, A6.11 | 9.13, 12.15, 14.1 |
+| 17 | SORU-13-2 | 2 telefonda veri seti Provider'da; scooter kaydı Receiver'da → paketin scooter kapsaması boş | (a) kabul ("Bilinmiyor"); (b) A8.3'te Receiver gün sonunda scooter örnek zamanlarını ve kimliğini gönderir; (c) veri seti Receiver'da toplanır | (a) | A6.9, A8.3 | 13.11 |
+| 18 | SORU-11-2 | 2 telefonda Provider'ın gün kartı ve İstatistik'i (gün motoru Receiver'da) | (a) A8.3'te R → P `DaySnapshot` (60 sn'de bir + gün sonu raporu); (b) gizli + "Receiver'da" notu; (c) Provider ayrı gün tutar (çift km) | (a) A8.3'te; o zamana kadar (b) | A8.3 | 11.17 |
+| 19 | SORU-13-3 | Görevler ve hatırlatıcılar hangi telefonda? | (a) Receiver; (b) Provider; (c) ikisi (çift bildirim) | (a) | A6.9, A8.3 | 13.19 |
+| 20 | SORU-Q7 | Provider'da Yollarım (Y12 verisi Receiver'da) | (a) Kalite/Ters yön/Yol yok sekmeleri ve uzun basış Y12 satırları gizli + not; (b) `:link` üstünden gösterilir, eylemler Receiver'a | (a) | A6.11, A8.3 | 9.12, 9.13 |
+
+### 17.2 Koordinatör kararları (test ve belge kapsamı; ürün davranışını değiştirmez, itiraz yoksa böyle)
+
+| Kod | Karar | Bölüm |
+|---|---|---|
+| SORU 2 | `street_prefs_migration_test` çevrilmez (S1: göç kodu yazılmaz) | 4.8, 16.4 |
+| SORU-Q2 | Y12'ye yazılmış 23 test (`street_scores` 11, `road_score_ui` 11, `day_contributions` 1) Y13/Y14 testidir → "sonra" | 9.13, 16.4 |
+| SORU-T1-2 | `offer_engine_test` (7) ve `route_costing_test` `planLeavesBox` (1) çevrilmez (v1 teklif motoru ölü kod; ekonomi v2 `:economics`'te); N5 testleri v2 girdileriyle yeni yazılır | 10.14, 16.4 |
+| — | `TelemetryJournalTest` (8) Y18'e çevrilmez, Y13 ile gelir (CORE.md 6.2'nin "A6.1 karar verir" maddesi) | 12.11 |
+| — | `LogFeedV3Test` (10) `logic/orders` `dataset`'te uyarlanır (A6.9) | 13.6, 13.18 |
+| — | YolGo `TelemetryService`, `DatasetRecordingService` ve `MotionReceiver` WEEM 1.0'da yazılmaz; 7401 kullanılmaz | 12.11, 13.11, 14.6 |
+
+### 17.3 Metin onayları (S19 gibi; kullanıcı onaylayınca kesinleşir)
+
+| Kod | Yer | Öneri TR / AZ | Bölüm |
+|---|---|---|---|
+| SORU-N2 | "GPS konumu eski veya belirsiz" (AZ'si yoktu) | AZ "GPS mövqeyi köhnə və ya qeyri-dəqiqdir" | 8.13 |
+| SORU-Q3 | Yollarım → Kalite: "Eski trafik kayıtları" | "Trafik kayıtları" / "Trafik qeydləri", alt "Rotayı etkilemez" / "Marşruta təsir etmir"; ses tuşu anahtarının TR metnine AZ'deki gibi "Ses+ ×2 kalite" | 9.13 |
+| 7.17 | ev yokken "Eve dön" | "Ev konumu ayarlanmamış — Daha fazla → Ev konumu" / "Ev ünvanı təyin edilməyib — Daha çox → Ev ünvanı" | 7.17 |
+| 10.9 | hava bildirimi anahtarı ("2 saatte bir" ama günde bir) | "Günde bir hava bildirimi" / "Gündə bir hava bildirişi" | 10.9 |
+| M-11-1 | aşama toast'ları | " (KuryePlus)" eki kalkar; "Sipariş N alınmadan bitti — iptal sayıldı" / "Sifariş N götürülmədən bitdi — ləğv sayıldı" | 11.14 |
+| M-12-1 | sürüş günlüğü dışa aktarma dosyası | `WEEM_surus_<gün \| tum_kayitlar>.json` | 12.4 |
+| M-12-2 | gün kartı, sipariş yokken | "Sipariş yok · Wolt/Bolt'ta sipariş başlayınca burada görünür" / "Sifariş yoxdur · Wolt/Bolt-da sifariş başlayanda burada görünəcək" | 12.8 |
+| M-12-3 | gün silme onayı | "Bu tarihin harita kayıtları (sürüşler, gün özeti, olaylar, otomatik yol ölçümleri) silinir. Siparişler ve kazanç kayıtları, diğer günler ve elle kaydedilen yollar korunur." + "Haritanın aktif günü durdurulacak; vardiya sürer." (AZ 12.9) | 12.9 |
+| M-13-1 | veri seti ZIP ve paylaşım | `WEEM_teklif_<klasör>.zip`; "WEEM teklif veri seti · <gün>" / "WEEM təklif məlumat dəsti · <gün>" | 13.7 |
+| M-13-2 | Teklif veri seti ekranı | açıklama, "RAW Stats" → "gün kayıtları", "YolGo" → "canlı kayıt", hata metni; bütün metinlerin AZ karşılıkları | 13.8 |
+| M-13-3 | görev "Rota Oluştur" başarısız | "Rota açılamadı; iş bekliyor." / "Marşrut açılmadı; iş gözləyir." | 13.13 |
+| M-13-4 | Hatırlatıcılar → "Nasıl çalışır" | TR ve AZ eşit, 30 sn, "WEEM öndeyken" (13.16) | 13.16 |
+| — | yalnız uygulama adı | "YolGo" → "WEEM" (POI penceresi notu 5.8, paylaşım metinleri 12.6/12.10, `<Ad>` geçen her yer) | 5.8, 12 |
+
+Metin değişikliği olmayan eski çeviri hataları (2.15 arka plan mesajlarının bozuk AZ'si, 13.16 hatırlatıcı bilgi metninin AZ farkı) WEEM'de baştan doğru yazılır.
+
+### 17.4 Riskler
+
+- **Performans:** büyük haritada A* süresi (A6.4 ölçümü, 3.13); `RouteMeasurePort` her teklif satırında rota ister (13.20); MapLibre yerel kütüphanelerinin APK boyutu ve yüzey değişiminde bellek (6.16).
+- **Arka plan ve pil:** Wolt/Bolt öndeyken navigasyon ve gün motoru `:core` vardiya servisinin ömrüne bağlı; Xiaomi/Poco arka plan kısıtı ve pil iyileştirmesi telefonda denenmeli (7.17, A6.10); 500 ms Fused + vardiya servisinin 2 sn GPS isteği birlikte; sürüş günlüğü saniyede bir satır (12.15).
+- **Depolama:** sürüş günlükleri (~0,8 MB/sürüş saati), veri seti `rawstats/` kopyaları ve ZIP'ler otomatik silinmez (YolGo'da da) — A10'da ölçülür, gerekirse saklama süresi kullanıcıya sorulur.
+- **Sayısal eşitlik:** Dart VM ile JVM'de trigonometri son hanede farklı olabilir → testler `closeTo`, bayt eşitliği yalnız tamsayı/yapı alanlarında (2.15); eşit maliyetli rotalarda sıra kuralları aynen korunmazsa gölge karşılaştırmada fark görünür (3.16).
+- **2 telefon:** Provider'daki `BatterySummary` 60 sn'lik, v2'nin 15 sn tazelik kuralına uymaz (10.14); gün motoru ve Y12 yalnız Receiver'da olduğundan Provider ekranları A8.3'e kadar eksik (17.1 #18, #20).
+- **Geçiş (A10, kullanıcı işi):** Google Cloud anahtar kısıtına `com.kuryelog.app`, `com.kuryelog.app.dev` ve WEEM imzasının SHA-1'i (6.16); Android "Varsayılan olarak aç" ve Wolt/Bolt'taki navigasyon uygulaması seçimi WEEM için yeniden (8.13).
+- **Dış hizmet:** hazır harita verisi sunucusu erişilemedi (17.1 #13); Overpass aynalarının hız sınırları (2.8).
+- **Doğrulanmadı:** bu şartnamenin hiçbir davranışı telefonda denenmedi; ilk karşılaştırma A6.10 (eski YolGo ile yan yana sürüş; Y12 sıfırdan öğrendiği için farklar açıklanır).
+
+### 17.5 Belge tutarlılığı (A6.1 sonunda yapıldı)
+
+- `OZELLIK_HARITASI.md` Y15 ve Y16 "Veri" satırları: "(içe aktar)" → "yeniden girilir" (S1; 5.8).
+- `TEST_ENVANTERI.md`: `:map` hedefli satırlar Bölüm 16'daki görev ve kararlarla (`street_prefs_migration` çevrilmez, Y12'nin 23 testi sonra, `offer_engine`/`route_costing` SORU-T1-2, `TelemetryJournalTest` sonra, `LogFeedV3Test` `logic/orders`).
+- `VERI_SOZLESMESI.md`: 14.11'deki düzeltmeler.
+- `CORE.md` 3.3: 7401 `DATASET_FGS` kullanılmaz; 6.2 `TelemetryJournalTest` satırı karara bağlandı.
+- `WEEM_ISLER.md`: A6.8'in bağımlılığına A6.2a (16.5).
 <!-- END sec:17 -->
