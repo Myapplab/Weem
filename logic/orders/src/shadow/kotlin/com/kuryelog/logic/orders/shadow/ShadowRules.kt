@@ -7,7 +7,11 @@ import com.kuryelog.logic.capture.NoteFields
  * Rawstats değerini WEEM'in yazacağı biçime çevirir; çeviriden sonra eşitse fark beklenendir, değilse yumuşak ya da sert kalır.
  */
 object ShadowRules {
-    /** A4.1'e kadar yalnız Rawstats'ın yazdığı ekonomi dosyaları (`OrderObserver.NONE`) ve A5'e kadar scooter dosyaları. */
+    /**
+     * A4.1'e kadar yalnız Rawstats'ın yazdığı ekonomi dosyaları (`OrderObserver.NONE`) ve A5'e kadar scooter dosyaları. A4.1'den sonra
+     * WEEM de ekonomi dosyalarını yazar; satırları iki uygulamanın kendi teklif/sipariş kimlikleriyle olduğundan rapor içeriği
+     * karşılaştırmaz, yalnız sayar ("iki tarafta" / "yalnız …"). Satır içeriği eşitliği `logic/economics` `SahaEconomicsTest`'te (ECONOMICS.md 5).
+     */
     val notYetWritten = setOf("economics-offers.jsonl", "economics-legs.jsonl", "economics-idle.jsonl", "economics-penalties.jsonl",
         "economics-waits.jsonl", "economics-exposure.jsonl", "economics-energy.jsonl", "economics-offer-scores.jsonl", "economics-offer-ratings.jsonl",
         "economics-scooter.jsonl", "scooter.jsonl", "scooter_events.jsonl", "scooter_averages.jsonl")
