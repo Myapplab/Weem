@@ -2,6 +2,11 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-18 — A6.1 devam, yarım (Claude Opus · xhigh, 2 paralel ajan; dal `ccr-8018b28f-d13a8v` = `main`)
+- Yapılan: `MAP.md` 14 (veri sözleşmesi: `map` tercih dosyası ve tip eşlemesi, `settings.v1` alan tablosu, anahtarlar, dosyalar, olay dizini, bildirimler, ağ, manifest, S1, gizlilik), 15 (yerleşim: `logic/map` paketleri ve yön kuralı, Android `:map`, açılış dikişi, portlar, ekranlar, 2 telefon), 16 (test çeviri kuralları, A6.2a/A6.2b dosya dizini, çevrilmeyenler) taslakları; ajanlar 11.1–11.8 ve 13.1–13.5.
+- Doğrulama: yalnız belge (kod yok); satırlar YolGo `870ab6e` ve Rawstats `6388c04` açılarak. Usage bittiği için kullanıcı isteğiyle durduruldu.
+- Açık kalan: 11.9–sonu, 12, 13.6–sonu, 14–16'ya 11–13 satırları ve 16.5 toplamlar, 17, 0, tutarlılık — sıra ve ayrıntı `WEEM_ISLER.md` "Devam eden".
+
 ## 2026-10-18 — A8.2 eşleştirme, Noise, şifreli zarf, kuyruk, `ack`, saat farkı, sürüm (Claude Opus · xhigh; dal `ccr-48b9991f-b1tq43` → `main`)
 - Yapılan: şartname `LINK.md` Bölüm 3 (tehdit modeli; Noise `XX`/`XXpsk3` + P-256 + AES-256-GCM, yalnız JCA, X25519 API 33+ olduğu için seçilmedi; QR `weem://pair` tek kullanımlık 5 dk jeton; bilgi yükü yalnız doğrulanmış eşe; zarf, son durum/teslim zorunlu kuyruk, onay, saat, sürüm, kaldırma, saklama); karar S24 (QR: Google code scanner + ZXing, ekran A8.3); `VERI_SOZLESMESI` 5.3c (`weem-link`, Keystore `WEEM.Link.v1`) ve 7.4 (`files/link/`). `logic/link`: `Noise`, `P256`, `Pairing`, `SecureHandshake`, `LinkMachine` (`HELLO` v2, `NOISE`, `BYE` 8–9, `LinkStatus.channel`/`issue`), `Envelope`, `Messenger`, `ClockSync`, `MessengerStore`, `LinkStack`, `IdentityVault`. `:link`: `LinkVault`, `LinkRuntime` → `LinkStack` (`start`/`startPairing`/`pairWith`/`unpair`/`publishLatest`/`publishReliable`).
 - Doğrulama: `logic/link` 131 test (A8.2: 83; resmî Noise vektörleri cacophony + snow birebir; P-256 vektörleri bağımsız Python referansıyla birebir, `python3 -I tools/link-noise-reference.py --check … / --p256-verify …`); `logic/` 1231 test ve kök `test lintDebug assembleDebug` yerelde yeşil. CI koşusu yok (PR'sız, yerelde Android derlendi). **Telefonda denenmedi.**
