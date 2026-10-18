@@ -14,7 +14,7 @@ Durum: A8.1 (18 Ekim 2026, Claude Opus · xhigh) — Bölüm 1 (taşıma) ve Bö
 ### 1.2 Wi-Fi (birincil; S6)
 
 - Hotspot hangi telefondaysa o telefonun hotspot arayüzü (`ap0`, `swlan0`, `wlan1` …) ile öteki telefonun Wi-Fi'ı aynı yerel ağdadır. Rol (Provider/Receiver) ile hotspot sahibi bağımsızdır.
-- Her telefon TCP **47310**'u dinler (tüm arayüzler).
+- Her telefon TCP **47310**'u dinler (tüm arayüzler); gelen bağlantı ve işaret yalnız yerel ağ arayüzlerinin alt ağından kabul edilir (mobil veri tarafından gelen reddedilir).
 - Keşif üç yoldan, iki yönde: (a) Wi-Fi istemcisi olan telefon ağ geçidine (= hotspot sahibi) doğrudan bağlanır; (b) bağlı değilken UDP **47311** işareti her uygun IPv4 arayüzün yayın adresine gider (özel adres aralığı; mobil veri ve tünel arayüzleri hariç: `rmnet*`, `ccmni*`, `v4-*`, `tun*`, `ppp*`, `wwan*`, `pdp*`, `seth*`); ilk 60 sn 2 sn'de bir, sonra 5 sn'de bir; (c) işareti alan, gönderenin adresine bağlanır. Böylece hotspot hangi telefonda olursa olsun iki taraf da ötekini bulur.
 - İşaret 24 bayt: `WEEM` · sürüm 1 · tür 1 · kimlik 16 bayt (bugün `DeviceId`; A8.2 eşleşme kimliğine çevirebilir) · TCP portu (u16). Kendi işareti ve beklenen eşten başka kimlik yok sayılır.
 - targetSdk 36: yerel ağa erişim `INTERNET` izniyle örtük. targetSdk 37'ye geçince Android 17'nin `ACCESS_LOCAL_NETWORK` çalışma zamanı izni gerekir (risk; o gün eklenir).

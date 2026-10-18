@@ -56,6 +56,17 @@ class DiscoveryTest {
     }
 
     @Test
+    fun onLanAcceptsOnlyLocalSubnets() {
+        val ifs = listOf(NetIf("ap0", "192.168.43.1", 24), NetIf("rmnet_data0", "10.31.2.4", 30), NetIf("wlan0", "10.0.0.5", 24))
+        assertTrue(LanTargets.onLan("192.168.43.77", ifs))
+        assertTrue(LanTargets.onLan("10.0.0.6", ifs))
+        assertFalse(LanTargets.onLan("10.31.2.5", ifs))
+        assertFalse(LanTargets.onLan("8.8.8.8", ifs))
+        assertFalse(LanTargets.onLan("192.168.43.77", emptyList()))
+        assertFalse(LanTargets.onLan("::1", ifs))
+    }
+
+    @Test
     fun interfaceFilter() {
         val ifs = listOf(
             NetIf("wlan0", "192.168.43.77", 24),

@@ -62,6 +62,12 @@ object LanTargets {
     fun beaconTargets(ifs: List<NetIf>): List<String> =
         ifs.filter(::usable).mapNotNull { broadcast(it.address, it.prefix) }.distinct().sorted()
 
+    /**
+     * Uzak adres yerel ağımızda mı (uygun bir arayüzün alt ağında): gelen TCP bağlantısı ve işaret yalnız buradan kabul edilir;
+     * sunucu tüm arayüzleri dinlese de mobil veri tarafından gelen bağlantı reddedilir (LINK.md 1.2).
+     */
+    fun onLan(remote: String, ifs: List<NetIf>): Boolean = ifs.any { usable(it) && sameSubnet(remote, it.address, it.prefix) }
+
     /** İki IPv4 adresi aynı alt ağda mı (Android: istemci soketi Wi-Fi ağına bağlanacak mı). */
     fun sameSubnet(a: String, b: String, prefix: Int): Boolean {
         val x = parse(a) ?: return false

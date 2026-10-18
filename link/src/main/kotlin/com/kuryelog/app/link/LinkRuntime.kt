@@ -12,6 +12,7 @@ import android.os.Build
 import android.os.SystemClock
 import com.kuryelog.logic.core.FailureSink
 import com.kuryelog.logic.link.BondedDevice
+import com.kuryelog.logic.link.LanTargets
 import com.kuryelog.logic.link.LinkCommand
 import com.kuryelog.logic.link.LinkConfig
 import com.kuryelog.logic.link.LinkEvent
@@ -323,6 +324,12 @@ class LinkRuntime(
             } catch (e: IOException) {
                 break
             }
+            val remote = s.inetAddress?.hostAddress ?: ""
+            if (!LanTargets.onLan(remote, net.interfaces())) {
+                // Yalnız hotspot/Wi-Fi alt ağı; mobil veri tarafından gelen bağlantı kabul edilmez.
+                s.closeQuietly()
+                continue
+            }
             runCatching { s.tcpNoDelay = true }
             val id = -inboundIds.incrementAndGet()
             val pipe = Pipe(id, s)
@@ -333,7 +340,7 @@ class LinkRuntime(
                 continue
             }
             channels[id] = pipe
-            feed(LinkEvent.Accepted(id, Transport.WIFI, s.inetAddress?.hostAddress ?: "?"))
+            feed(LinkEvent.Accepted(id, Transport.WIFI, remote))
             pipe.startReading()
         }
         synchronized(lock) {
@@ -354,6 +361,7 @@ class LinkRuntime(
                 break
             }
             val from = p.address?.hostAddress ?: continue
+            if (!LanTargets.onLan(from, net.interfaces())) continue
             feed(LinkEvent.BeaconIn(from, buf.copyOf(p.length), p.length))
         }
     }
