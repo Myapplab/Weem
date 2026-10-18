@@ -2,6 +2,11 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-18 — A8.1 `:link` taşıma: hotspot Wi-Fi TCP + klasik Bluetooth yedeği (Claude Opus · xhigh; dal `claude/a8-1-link-transport` → `main`, PR #3)
+- Yapılan: şartname `docs/sartname/LINK.md` Bölüm 1 (taşıma) ve 2 (Bluetooth/Wi-Fi ↔ scooter BLE ölçüm planı K0–K4 + sürüş); karar S23 (klasik Bluetooth RFCOMM; telefonlar Android'den bir kez eşleştirilir). `logic/link`: `LinkConfig`, `PeerId`, `Frames`/`FrameDecoder`, `Beacon`, `LanTargets`, `BtTargets`, `Backoff`, `LinkMachine` (olay → komut: keşif ağ geçidi + UDP işareti iki yön, `HELLO`, tek kanal kuralı, `PING`/ölü kanal, yoklama, geri çekilme, Wi-Fi ↔ BT, BT ≤ 4 KiB). `:link`: `LinkRuntime` (kilit altında makine; TCP/UDP/RFCOMM soketleri, yazma kuyruğu, zamanlayıcı, `FailureSink`; gelen bağlantı ve işaret yalnız yerel ağ alt ağından), `LanWatch`; manifest `ACCESS_NETWORK_STATE`; `VERI_SOZLESMESI` port/UUID/izin satırları.
+- Doğrulama: `logic/link` 46 test (25 sahte ağ senaryosu) yerelde yeşil; **bu ortamda Maven Central ve services.gradle.org da kapalıydı** (`./gradlew` hiç çalışmadı): testler Gradle'ın gömülü Kotlin 2.0.21 derleyicisi + JUnit ile, Android katmanı elle yazılmış API taslaklarına karşı derlendi; asıl doğrulama CI (PR #3). Telefonda hiçbir şey denenmedi.
+- Açık kalan: uygulamaya bağlama, Tanı'da ölçüm aracı, `listenOnly`/beklenen eş/BT adresinin saklanması A8.3; kimlik doğrulama ve şifreleme A8.2 (A8.1 kanalı doğrulanmamış); targetSdk 37'de `ACCESS_LOCAL_NETWORK`; Wi-Fi istemcisinde ekran kapalıyken yayın süzülebilir (MulticastLock yok; istemci ağ geçidi yolunu kullanır).
+
 ## 2026-10-18 — A5.4 Scooter sekmesi, yüzen panel, tanı, ZIP paylaşımı (Claude Opus · high; dal `claude/a5-4-scooter-compose-tools-3urwtl` → `main`)
 - Yapılan: `logic/scooter` `ScooterUiText` (TR/AZ), `ScooterPanel`, `FloatRules`, `ScooterSettings`, `PanelField` AZ + `ScooterUiTest` 23; `:scooter` `DashboardView` (NB çizimi), `FloatPainter`, `FloatingPanel` (düz View overlay, `OwnOverlays`), `BleScan`, `Scooter.export` (İndirilenler/WEEM + paylaş)/`cleanOld`; bildirimler TR/AZ; `:app` `ScooterTab`, `ScooterSettingsScreen` (Tanı dahil), `ScooterPip`, `MainActivity` top sayacı + PiP. Ayrıntı `SCOOTER.md` 13.6, farklar F-S9…F-S14.
 - Düzeltme: `ScooterService` reddedilen ön plan başlatması `refuseStart()` (önce `startForeground`); `CrashGuardTest` A5.3 birleşmesinden beri `main`'de kırmızıydı, test genişletildi.
@@ -142,8 +147,3 @@ Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 
 - Usage: 10 paralel okuma ajanı hesabın usage'ını ~1 saatte bitirdi; kullanıcı isteğiyle durduruldu. Sürüş Paneli ve bazı Y/R özelliklerinin ayrıntısı şartname görevlerinde (A2.1, A3.1, A5.1, A6.1, tek ajan) çıkarılacak.
 - Doğrulama: yalnız belge; mekanik denetim (634 başvurudan 18'i geçersiz, test sayıları eşleşti). Kod yok, CI yok.
 - Açık kalan: kullanıcı açık soruları yanıtlar (A0.2); sıradaki iş A1.1.
-
-## 2026-10-17 — Repo Myapplab'a taşındı, son plan kontrolü (Claude; `9a4c75a`)
-- Yapılan: kullanıcı repoyu `mehemmedsh/Weem` → `Myapplab/Weem` taşıdı (eski adres yönleniyor). Plana 2 telefon akış ayrıntıları, Receiver donanım ölçütleri, en kritik bilinmeyen (Pixel cepteyken teklif okuma), kod sadeleştirme adımı (A10.2), satır tahmini eklendi. İş listesine Aşama 0: A0.1 (planın son hâli, ultracode) ve K0.1 (kodsuz saha denemesi).
-- Doğrulama: yalnız belge. Kod yok, CI yok.
-- Açık kalan: A0.1 yeni hesapta ultracode ile; sonra A1.1.
