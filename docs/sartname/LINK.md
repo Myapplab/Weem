@@ -42,8 +42,9 @@ Durum: A8.1 (18 Ekim 2026, Claude Opus · xhigh) — Bölüm 1 (taşıma). Böl�
 
 - Wi-Fi: 5 sn çerçeve gönderilmediyse `PING`; 15 sn hiç çerçeve gelmezse kanal ölü sayılır, `BYE(7)` + kapat. Bluetooth: 10 / 30 sn.
 - Bağlanma zaman aşımı: TCP 3 sn, Bluetooth 8 sn.
-- Geri çekilme hedef başına (ağ geçidi, işaret adresi, Bluetooth adresi): 1, 2, 4, 8, 16, 30 sn (üst sınır), ±%20 sapma; kanal açılınca o hedefinki sıfırlanır; ağ değişince (Wi-Fi ya da hotspot açıldı/kapandı, Bluetooth açıldı) hepsi sıfırlanır ve hemen denenir.
-- Açık kanal koparsa o hedef bir kez hemen denenir, sonra geri çekilme.
+- Geri çekilme hedef başına (ağ geçidi, işaret adresi, Bluetooth adresi): 1, 2, 4, 8, 16, 30 sn (üst sınır), ±%20 sapma. Ret (`BYE` yanlış eş/sürüm/protokol/kapanış), kurulamayan bağlantı ve el sıkışma zaman aşımı geri çekilmeyi büyütür. Ağ değişince (Wi-Fi ya da hotspot açıldı/kapandı, Bluetooth açıldı/kapandı) hepsi sıfırlanır ve hemen denenir.
+- Açık kanal koparsa: en az 10 sn açık kaldıysa o hedef hemen denenir (geri çekilme sıfırlanır); daha kısa ömürlüyse geri çekilme sürer (açılıp hemen kapanan kanal kısır döngüye girmesin). Çift kanal ve Wi-Fi'a geçiş kapanışı geri çekilmeyi etkilemez.
+- Ağ değişince ve eş Bluetooth'tan gelince açık TCP kanalı yoklanır (`PING`); 3 sn yanıt yoksa ölü sayılır (yarı açık bağlantı beklemesin).
 
 ### 1.7 Durum
 

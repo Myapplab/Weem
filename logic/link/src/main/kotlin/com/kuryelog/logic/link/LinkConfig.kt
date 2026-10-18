@@ -24,6 +24,8 @@ data class LinkConfig(
     val btDeadMs: Long = 30_000,
     /** Ağ değişince ya da öteki taşımada eş belirince açık kanal yoklanır: bu sürede yanıt yoksa ölü. */
     val probeMs: Long = 3_000,
+    /** Bu süre açık kalan kanal koparsa hedef hemen yeniden denenir; daha kısa ömürlüyse geri çekilme sürer. */
+    val stableMs: Long = 10_000,
     /** Yerel ağ var ama eş bulunamıyorsa Bluetooth'a geçmeden önce beklenen süre. */
     val btGraceMs: Long = 10_000,
     /** Wi-Fi kanalı canlıyken Bluetooth kanalının kapanmadan önce bekleme süresi. */
