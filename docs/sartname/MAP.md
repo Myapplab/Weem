@@ -22,7 +22,7 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 | 1 | kaynak haritası | tümü | koordinatör | bitti (12:23 UTC) <!-- st:1 --> |
 | 2 | Y7 harita verisi | A6.3 | ajan R | bitti (17:15 UTC) <!-- st:2 --> |
 | 3 | Y3 rota motoru | A6.4 | ajan R | bitti (17:15 UTC) <!-- st:3 --> |
-| 4 | Y8 sokak kararları | A6.4 | ajan R | bitti (12:40 UTC) <!-- st:4 --> |
+| 4 | Y8 sokak kararları | A6.4 | ajan R | bitti (17:15 UTC) <!-- st:4 --> |
 | 5 | Y15, Y16, Y21 | A6.8 | ajan R | bitti (17:15 UTC) <!-- st:5 --> |
 | 6 | Y1, Y2 harita ekranı | A6.5 | ajan N | bekliyor <!-- st:6 --> |
 | 7 | Y4 navigasyon | A6.6 | ajan N | bitti (12:40 UTC) <!-- st:7 --> |
@@ -534,7 +534,7 @@ Bulgu: Y8 için ham bulgu yoktu (yalnız `Y_routing.md` §Y3'te girdi adları); 
 
 | Yer (ekran sahibi) | Eylem | Etki | Metin TR / AZ |
 |---|---|---|---|
-| Sürüş, ses tuşları (Bölüm 9.4; yakalama ajan Q) | Ses+ tek (450 ms içinde ikincisi gelmezse) | eşleşen sokak `approve`; açık ters yön önerisi varsa (ana cadde değil) önerilen sokak | "Onaylandı: $ad (iki yön)" / "Təsdiqləndi: $ad (iki tərəfli)"; yeşil, 6 sn, "Geri al" / "Geri qaytar" (öncesindeki üç liste + saat geri yüklenir) |
+| Sürüş, ses tuşları (Bölüm 9.5 ve 7.13) | Ses+ tek (450 ms içinde ikincisi gelmezse) | eşleşen sokak `approve`; açık ters yön önerisi varsa (ana cadde değil) önerilen sokak | "Onaylandı: $ad (iki yön)" / "Təsdiqləndi: $ad (iki tərəfli)"; yeşil, 6 sn, "Geri al" / "Geri qaytar" (öncesindeki üç liste + saat geri yüklenir) |
 | 〃 | Ses+ ana caddede | yok | "Ana caddede ters yön onayı kapalı" / "Əsas küçədə əks istiqamət təsdiqi olmur" (kırmızı, titreşim) |
 | 〃 | Ses− iki kez (450 ms içinde) | `markSteep` | "Aşırı eğimli: $ad — yokuş yukarı kullanılmaz" / "Çox dik: $ad — yoxuşa çıxılmayacaq"; mor, 6 sn, geri al |
 | 〃 | Ses− tek | sokak kararı **değil**: ±25 m kötü nokta (Bölüm 9) | — |
