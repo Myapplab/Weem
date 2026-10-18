@@ -112,18 +112,19 @@ A8.1 kanalının üstüne kimlik doğrulama, şifreleme ve teslim katmanı. Tür
 - **`HELLO` v2 (22 bayt):** `WEEM` · bağlantı sürümü **2** · cihaz kimliği 16 · bayrak (bit 0 = eşleştirme). İki taraf da bağlantı kurulunca yollar (A8.1 gibi). Kabul güvene göre: eşleşmiş telefon yalnız eşin kimliğini ve bayrak 0'ı; B (okuyan) yalnız QR'daki kimliği ve bayrak 1'i; A (veren, pencere açık) kendisi dışındaki her kimliği ve bayrak 1'i. Bayrak uyuşmazsa `BYE(8)`, kimlik tutmazsa `BYE(5)`, sürüm `BYE(6)`.
 - **Noise:** iki `HELLO` da alınınca başlar; **başlatan = bağlantıyı açan** (TCP/RFCOMM istemcisi). prologue = `"WEEM link 2"` ‖ başlatanın `HELLO` yükü ‖ yanıtlayanınki (iki `HELLO` da el sıkışmaya bağlanır).
   - msg1 → `e` (yük boş)
-  - msg2 ← `e, ee, s, es` + yanıtlayanın **bilgi yükü**
-  - msg3 → `s, se` (eşleştirmede `+ psk`) + başlatanın bilgi yükü
-  - Bilgi yükü: `cihaz kimliği 16 · protokol ana u8 · küçük u8 · uygulama sürüm kodu u32 · sürüm adı (u8 boy + UTF-8 ≤ 32) · cihaz adı (u8 boy + UTF-8 ≤ 32)`; fazla bayt yok sayılır (ileri uyum).
-- **Denetim:** gelen kimlik anahtarı = eşleşme kaydındaki (eşleşmiş) ya da QR'daki (B) anahtar; A eşleştirmede her anahtarı alır, psk doğrular. Bilgi yükündeki kimlik = `HELLO`'daki. Tutmazsa `BYE(9)`. Başlatan, msg3'ü yanıtlayanı msg2'de doğruladıktan sonra yollar.
-- **Anahtar onayı:** yanıtlayan msg3'ü doğrulayınca boş bir taşıma iletisi (16 bayt) yollar ve kanalı açar; başlatan kanalı bu iletiyi çözünce açar (eşleştirmede başlatan, yanıtlayanın jetonu bildiğini ancak burada görür).
+  - msg2 ← `e, ee, s, es` (yük boş)
+  - msg3 → `s, se` (eşleştirmede `+ psk`) + başlatanın **bilgi yükü**
+  - onay ← yanıtlayanın ilk taşıma iletisi + yanıtlayanın bilgi yükü
+  - Bilgi yükü: `cihaz kimliği 16 · protokol ana u8 · küçük u8 · uygulama sürüm kodu u32 · sürüm adı (u8 boy + UTF-8 ≤ 32) · cihaz adı (u8 boy + UTF-8 ≤ 32)`; fazla bayt yok sayılır (ileri uyum). Bilgi yükü yalnız doğrulanmış eşe gider: yanıtlayanınki msg3'ten sonra, başlatanınki yanıtlayanı msg2'de doğruladıktan sonra (eşleştirmede veren başlatansa psk henüz doğrulanmamıştır; zararsız: adı ve anahtarı QR'da zaten var).
+- **Denetim:** gelen kimlik anahtarı = eşleşme kaydındaki (eşleşmiş) ya da QR'daki (B) anahtar; A eşleştirmede her anahtarı alır, psk doğrular. Bilgi yükündeki kimlik = `HELLO`'daki. Tutmazsa `BYE(9)`. Başlatan msg3'ü yanıtlayanı msg2'de doğruladıktan sonra yollar; tutmazsa kendi anahtarını ve bilgisini göndermeden bırakır.
+- **Anahtar onayı:** yanıtlayan msg3'ü doğrulayınca ilk taşıma iletisini (kendi bilgi yükü) yollar ve kanalı açar; başlatan kanalı bu iletiyi çözüp bilgi yükünü denetleyince açar (eşleştirmede başlatan, yanıtlayanın jetonu bildiğini ancak burada görür).
 - El sıkışma (iki `HELLO` dahil) **10 sn**'de bitmezse `BYE(7)`; ilk `HELLO` için 5 sn (A8.1). Çözülemeyen ileti, geçersiz anahtar → `BYE(9)`; yanlış sırada/türde çerçeve → `BYE(4)`; geri çekilme A8.1 1.6 (ret).
 - **Tek kanal kuralı** (A8.1 1.5) yalnız açılmış (doğrulanmış) kanallar arasında: sahte `HELLO` gerçek kanalı kapatamaz.
 - **`LinkStatus`'a eklenen:** `channel` (etkin kanalın numarası; değişince son durumlar yeniden gider, 3.7), `issue` (son ret nedeni `VERSION` · `AUTH` · `PAIRING`; bağlanınca silinir; A8.3 gösterir).
 
 ### 3.5 Şifreli iletim
 
-- Açık kanalda `DATA` yükü = Noise taşıma iletisi: AES-256-GCM, nonce = 4 sıfır bayt ‖ 64 bit büyük uçlu sayaç (yön başına 0'dan, her iletide +1, hiç tekrar etmez), AD boş, etiket 16 bayt. Yön anahtarları `Split()`'ten (başlatan → yanıtlayan ve tersi). Her kanalın anahtarı ayrı: Wi-Fi ↔ Bluetooth geçişinde iki kanal birlikte açıkken her biri kendi anahtarıyla.
+- Açık kanalda `DATA` yükü = Noise taşıma iletisi (yanıtlayanın ilk iletisi anahtar onayıdır, 3.4): AES-256-GCM, nonce = 4 sıfır bayt ‖ 64 bit büyük uçlu sayaç (yön başına 0'dan, her iletide +1, hiç tekrar etmez), AD boş, etiket 16 bayt. Yön anahtarları `Split()`'ten (başlatan → yanıtlayan ve tersi). Her kanalın anahtarı ayrı: Wi-Fi ↔ Bluetooth geçişinde iki kanal birlikte açıkken her biri kendi anahtarıyla.
 - Çözülemeyen `DATA` (değişmiş, tekrarlanmış, sırası bozulmuş ya da arada silinmiş ileti: sayaç tutmaz) → `BYE(9)` + kapat. Kanal içi tekrar saldırısı böyle düşer.
 - Sınır: şifreli yük Wi-Fi'da ≤ **65 535** bayt (Noise ileti sınırı; A8.1'in 1 MiB'ı indi), Bluetooth'ta ≤ 4 096 → düz metin ≤ 65 519 / 4 080 bayt.
 - `PING`/`PONG`/`BYE` şifresiz kalır (içerik yok; canlılık ve kapanış). Sahtesi en çok bağlantıyı düşürür ya da ölü kanalı biraz canlı gösterir (DoS düzeyi, kabul). Saat ölçümü şifreli (3.9).
@@ -167,7 +168,7 @@ A8.1 kanalının üstüne kimlik doğrulama, şifreleme ve teslim katmanı. Tür
 ### 3.10 Sürüm denetimi
 
 - Bağlantı sürümü (`HELLO`, 2) ya da Noise adı tutmazsa kanal kurulmaz (`BYE(6)` / `BYE(9)`).
-- Protokol sürümü (bilgi yükü; bugün **1.0**, `LinkProtocol`): ana sürüm farklıysa iki taraf da el sıkışmayı bitirir (bilgi yükü doğrulanmış gelir), `PeerInfo` bildirir, `BYE(6)` ile kapatır, `issue = VERSION` (A8.3: "Öteki telefondaki WEEM uyumsuz (<sürüm adı>); ikisini de güncelleyin"). Küçük fark bağlanır (bilinmeyen alan ve tür yok sayılır). Uygulama sürümü farklıysa yalnız bildirilir (Daha fazla'da uyarı; A8.3).
+- Protokol sürümü (bilgi yükü; bugün **1.0**, `LinkProtocol`): ana sürüm farklıysa iki taraf da el sıkışmayı bitirir (yanıtlayan onay iletisini yine yollar; bilgi yükleri doğrulanmış gelir), `PeerInfo` bildirir, `BYE(6)` ile kapatır, `issue = VERSION` (A8.3: "Öteki telefondaki WEEM uyumsuz (<sürüm adı>); ikisini de güncelleyin"). Küçük fark bağlanır (bilinmeyen alan ve tür yok sayılır). Uygulama sürümü farklıysa yalnız bildirilir (Daha fazla'da uyarı; A8.3).
 
 ### 3.11 Eşleşmeyi kaldırma
 
