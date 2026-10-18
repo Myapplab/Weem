@@ -26,7 +26,7 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 | 5 | Y15, Y16, Y21 | A6.8 | ajan R | bekliyor <!-- st:5 --> |
 | 6 | Y1, Y2 harita ekranı | A6.5 | ajan N | bekliyor <!-- st:6 --> |
 | 7 | Y4 navigasyon | A6.6 | ajan N | bekliyor <!-- st:7 --> |
-| 8 | Y5, Y6 bağlantılar ve adres | A6.6 | ajan N | bekliyor <!-- st:8 --> |
+| 8 | Y5, Y6 bağlantılar ve adres | A6.6 | ajan N | bitti (12:34 UTC) <!-- st:8 --> |
 | 9 | Y12 yol kalitesi öğrenme | A6.11 | ajan Q | bekliyor <!-- st:9 --> |
 | 10 | Y9, N5, Y10 | A6.7 | ajan T | bekliyor <!-- st:10 --> |
 | 11 | Y11 ve YolGo gün motoru | A6.8 | ajan T | bekliyor <!-- st:11 --> |
@@ -307,7 +307,237 @@ _Yazılıyor (ajan N)._
 <!-- BEGIN sec:8 -->
 ## 8. Y5 Wolt/Bolt navigasyon bağlantıları ve Y6 Adres bulma (A6.6)
 
-_Yazılıyor (ajan N)._
+### 8.1 Kaynak ve kapsam
+
+- **Y5:** YG `android_overlay/AndroidManifest.xml:27-120` (Activity ve filtreler), `MainActivity.kt:66-68, 95, 105-109` (bekleyen bağlantı), `:452-476` (`onNewIntent`, `linkOf`, `extractLink`), `:434-450` (`openLinkSettings`), `:145-168` (`openGoogleRoute`, S9 ile kalkar); `NavFeedProvider.kt:121-142` (`IncomingLink`); `lib/input/clipboard_sniffer.dart:86-127, 154-172, 229-236` (köprü, Dart `IncomingLink`).
+- **Y6:** `lib/input/clipboard_sniffer.dart:13-84` (pano), `address_parser.dart` (367), `plus_code.dart` (87), `destination_resolver.dart` (128), `geocoder.dart` (201), `place_search.dart` (198), `places_rest.dart` (224); `lib/nav/nav_controller.dart:270-441, 976-986` (hedefin kabulü); `lib/ui/map_hud.dart:14-76` (arama çubuğu), `widgets.dart:493-524` (`_Pending`), `api_settings.dart` (162); `lib/core/app_info.dart:16` (User-Agent), `geo.dart:43-50, 102-110`, `i18n.dart:57-61` (AZ hata metinleri).
+- **Bulgu:** `bulgular/Y_nav.md` §Y5 ve §Y6 satır satır doğrulandı; düzeltmeler 8.13'te. YolGo'da bu iki özelliğin kodu birdir (aynı ayrıştırıcı, aynı `onExternalText`); bu bölüm ikisini birlikte verir. Rotanın kendisi Bölüm 3, navigasyon Bölüm 7.
+
+### 8.2 Bağlantının gelişi (Y5)
+
+Activity `.MainActivity`: `exported=true`, `launchMode=singleTop`, `taskAffinity=""` (manifest :27-35). Filtreler (hepsi `DEFAULT`; VIEW'lerde ayrıca `BROWSABLE`; `autoVerify` YOK):
+
+| # | Eylem | Veri | YG satır |
+|---|---|---|---|
+| 1 | MAIN + LAUNCHER | — | :40-43 |
+| 2 | VIEW | şema `geo` | :46-51 |
+| 3 | VIEW | şema `google.navigation` | :53-58 |
+| 4 | VIEW | şema `waze` | :61-66 |
+| 5 | VIEW | https `waze.com`, `www.waze.com` | :67-73 |
+| 6 | VIEW | https `www.google.com`, pathPrefix `/maps` | :74-79 |
+| 7 | VIEW | https `maps.google.com` | :80-85 |
+| 8 | VIEW | https `maps.app.goo.gl` | :86-91 |
+| 9 | VIEW | şemalar `yandexnavi`, `yandexmaps` | :92-98 |
+| 10 | VIEW | https `yandex.az`, `yandex.ru`, `yandex.com`, pathPrefix `/maps` | :99-106 |
+| 11 | VIEW | https `maps.yandex.ru`, `maps.yandex.com` | :107-113 |
+| 12 | SEND | mimeType `text/plain` | :115-119 |
+
+- `PROCESS_TEXT` **filtre değil**, yalnız `<queries>`'de (:164-167) (bulgu düzeltmesi; `VERI_SOZLESMESI` 2'deki "PROCESS_TEXT `text/plain`" filtre satırı da düzeltilmeli).
+- `autoVerify` olmadığından https bağlantıları için kullanıcı Android "Varsayılan olarak aç" ayarından izin verir; `openLinkSettings` (`MainActivity.kt:434-450`): API ≥31'de `ACTION_APP_OPEN_BY_DEFAULT_SETTINGS`, olmazsa `ACTION_APPLICATION_DETAILS_SETTINGS` (`package:<paket>`, `FLAG_ACTIVITY_NEW_TASK`); ilk açılan kazanır. Ayarlar ekranından açılır (`settings_screen.dart:443`, Bölüm 6).
+- Metin (`extractLink`, :469-476): VIEW → `intent.dataString`; SEND → `EXTRA_TEXT`; başka eylem → yok.
+- `linkOf` (:463-467): `IncomingLink.payload(metin, action, referrerPackage(getReferrer()), System.currentTimeMillis())`. Gönderen yalnız o intent işlenirken bilinir (`getReferrer`).
+- Soğuk açılış (:95): intent teklif açılışı (`CourierFeedBridge.isLaunch`) değilse `pendingLink = linkOf(intent)`. Flutter `getInitialLink` çağırınca (:105-109) `linksReady = true`, bekleyen bir kez verilir ve silinir.
+- Uygulama açıkken (`onNewIntent`, :452-460): `setIntent`; teklif açılışıysa dur; `linksReady` ise hemen `onLink`, değilse `pendingLink` (yalnız **son** bağlantı tutulur).
+- Yük (`IncomingLink.payload`, `NavFeedProvider.kt:136-141`): `{text, action: "view"|"send"|"other", referrer, atMs}`. `referrerPackage` (:130-134): yalnız `android-app://` öneki; ilk `/`'a kadarki ad `[A-Za-z0-9_.]{1,100}` ile **tam** eşleşmeli, aksi null; yükte `referrer` aynı desenle yeniden süzülür.
+- Dart `IncomingLink.parse` (`clipboard_sniffer.dart:115-126`): düz String (eski köprü) → kırpılmış metin, `view=true`; Map → `text` kırpılmış ve dolu olmalı, `view = action == "view"`, `referrer` `^[A-Za-z0-9_.]{1,100}$` değilse null, `at` = `atMs` int ve >0 ise.
+- Teslim (`nativeBridgeProvider`, :86-96): `onExternalText(text, source: "intent", origin: view ? "intent" : "clipboard", referrer, requestedAt: at)` → 8.7.
+- **WEEM:** aynı 12 filtre `:app` `MainActivity`'de (`VERI_SOZLESMESI` 2: "aynı filtreler"); teklif açılışı (`CourierFeedBridge`) kalkar (S7). `IncomingLink` saf (`logic/map` `input`). Android `LinkIntake` (`:map`) `onCreate`/`onNewIntent`'ten çağrılır; "linksReady" yerine harita hazır olana dek tek elemanlı bekleyen (yenisi eskisinin üstüne yazar). `NavOrigin` eşlemesi (`logic/core` `NavMessages.kt`): VIEW → `INTENT`, SEND ve pano → `CLIPBOARD`, arama → `SEARCH`, haritadan seçim → `MAP`, sipariş hedefi → `ORDER`.
+
+### 8.3 Pano (Y6)
+
+- `ClipboardSniffer` (`clipboard_sniffer.dart:26-84`): uygulama öne gelince (`AppLifecycleListener.onResume`) ve ilk karede `check()`; aynı anda tek denetim (`_busy`). Android 10+ panoyu yalnız öndeki uygulamaya verir; arka planda okuma yok.
+- Okuma: `text/plain`, `trim`, boşsa yok; ilk okuma boşsa 400 ms sonra bir kez daha (odak geç gelir).
+- Tekrar önleme: FNV-1a 32 bit, UTF-16 kod birimleri üstünde: `h = 0x811c9dc5`; her birim için `h ^= c; h = (h * 0x01000193) & 0xFFFFFFFF` (:74-81). `clipboard.lastHash` eşitse işlenmez; değilse önce hash yazılır, sonra `onExternalText(metin, source: "clipboard")`.
+- `check(force: true)` ("Panodan oku") kodda var ama `lib/`'de çağıran yok (ölü).
+- Pano metni ayrıştırılamazsa **sessiz** (8.7); serbest metin ancak "güçlü" ise adres sayılır (8.4 adım 4), sohbet mesajı ya da sipariş kodu rota çizmez.
+- **WEEM:** `:map` `ClipboardWatch` (süreç öne gelince + Activity odağı; 400 ms tek tekrar); hash saf `ClipboardHash.fnv1a(String): Long` (0…2³²−1).
+
+### 8.4 Ayrıştırma (`AddressParser`, saf)
+
+Sonuç türleri (`address_parser.dart:5-33`): `CoordinateDestination(raw, point, label?, unitNote?)`, `ShortLinkDestination(raw, url, unitNote?)`, `AddressDestination(raw, query, strong, unitNote?)`.
+
+`parse(input)` (:108-155): `raw = trim(input)`; uzunluk 5–800 dışıysa null. Sıra:
+
+0. **Uygulama şemaları** (`_parseNavUri`, :164-197). İlk `:`'den önceki küçük harfli şema `_appSchemes` = {`waze`, `yandexnavi`, `yandexmaps`, `dgis`, `here-route`, `here-location`, `here.directions`, `comgooglemaps`} (:158-161) içindeyse `_parseAppScheme`. Değilse yalnız `geo:` ve `google.navigation:`: gövde = ilk `:` sonrası; `?` varsa yol ve sorgu ayrılır; `?` yoksa `google.navigation:`'da gövdenin tamamı sorgudur (`geo:`'da sorgu boş). Sorgu `splitQueryString` (hata → boş); `q ?? daddr ?? ll` içinde `_pair` varsa `_orient` → `CoordinateDestination(label = ilk "(…)" içeriği)`; çift yoksa ve kırpılmış uzunluk ≥4 ise `parse(q) ?? AddressDestination(raw, withCity(q.trim()), strong=true)`; son çare yoldaki ilk `_pair` (`0,0` reddedilir).
+   - `_parseAppScheme` (:202-223): sorgu parametreleri (hata → boş). Öncelik: `lat_to`+`lon_to` → `rtext`'in son `~` parçasındaki son çift → `ll, daddr, q, destination, to, pt` (her birinde son çift) → yoldaki son çift → ham metindeki son çift. "Son çift" (`_lastPair`, :226-233) = `_pair` eşleşmelerinden `_orient`'i geçen sonuncusu. Hiçbiri yoksa `q ?? text ?? daddr` (kırpılmış, ≥4) → `parse(text) ?? AddressDestination(raw, withCity(text), strong=true)`.
+1. **Metindeki linkler** (:117-127): `_url`'in her eşleşmesi; sondaki `).,;!?` dizisi silinir; `http` ile başlamıyorsa `https://` eklenir; URI çözülemezse sıradaki. Sırayla: `coordsFromUri` → koordinat; `isShortMapLink` → kısa link; `textQueryFromUri` → `parse(q) ?? AddressDestination(raw, withCity(q), strong=true)`.
+   - `coordsFromUri` (:246-296), öncelik: (1) `decodeFull(url)` içinde `!3d<lat>!4d<lon>` (gerçek pin); (2) OSM `mlat`+`mlon`; (3) `rtext` son `~` parçasının son çifti; (4) `lat_to`+`lon_to`; (5) `q, query, destination, daddr, ll, pt, center, sll` sırasıyla, her birinde ilk `_pair`; (6) yolda `dir` segmenti varsa **yalnız son durak** (`@` ve `data=` ile başlayan segmentler atılır); son durakta çift yoksa null (metin sorgusuna/geokoda düşer; başlangıç ya da `@` görünüm merkezi hedef sayılmaz); (7) yol segmentleri sondan başa, `@` ile başlayanlar atlanarak ilk çift (2GIS `/to/boylam,enlem`, HERE `/r/enlem,boylam`); (8) `@enlem,boylam` görünüm merkezi. Bozuk `%` kodlaması → null.
+   - `isShortMapLink` (:298-304): host `maps.app.goo.gl`; ya da `goo.gl` ve path `/maps` ile başlar; ya da `g.co`; ya da host'ta `yandex` ve path'te `/-/`.
+   - `textQueryFromUri` (:307-326): yalnız host `waze.com`, `*.waze.com`, `yandex.az`, `yandex.ru`, `yandex.com`, `maps.yandex.ru`, `maps.yandex.com`, `google.com`, `*.google.com`. Parametreler `q, query, destination, daddr, text` (kırpılmış, ≥4, `loc:` ile başlamayan) → `/dir/` son durağı (`+` → boşluk) → `/place/<ad>` (`+` → boşluk).
+2. **Plus Code** (:130-134): `PlusCode.pattern` ilk eşleşmesi `looksReal` ise (en az bir harf `[CFGHJMPQRVWX]`, "2345+67" gibi sayıları eler) `recover(kod, Baku.center)` → AZ içindeyse `CoordinateDestination(label = raw)`.
+3. **Çıplak koordinat** (:137-141): `_pairStrict` ilk eşleşmesi → `_orient`.
+4. **Serbest adres** (:144-154): metinde URL varsa null (harita dışı link, ör. Instagram); `_extractUnit` → `_clean`; `\p{L}{2,}` yoksa ya da uzunluk 4–250 dışıysa null; **güçlü değilse null**: `_streetWord` ya da `_district` ya da `_streetNumber` eşleşmeli. Sonuç `AddressDestination(raw, withCity(query), strong=true, unitNote)`.
+
+Yardımcılar:
+- `_orient(a, b)` (:329-336): iki sayı; (a, b) AZ kutusundaysa o, değilse (b, a) (Yandex/2GIS boylam-enlem sırası); ikisi de dışarıdaysa null → yalnız Azerbaycan içi hedef. Kutu `isInAzerbaijan`: enlem 38.3–42.0, boylam 44.7–51.0 (`geo.dart:45-46`).
+- `_extractUnit` (:338-351): önce **bütün** metinde `İ` → `i` (Dart'ın büyük/küçük harf eşlemesi `İ`'yi `i` saymaz); `_unitRules` sırayla (`Mənzil`, `Mərtəbə` iki kalıp, `Giriş`, `Kod`; :89-95), her eşleşme metinden silinir (yerine boşluk); etiket başına **ilk** değer tutulur; not = `"<etiket> <değer>"`lerin kural sırasıyla ` · ` ile birleşimi (ör. `Mənzil 45 · Mərtəbə 7 · Giriş 2 · Kod 1234`).
+- `_clean` (:353-364): telefon (`_phone`) → etiketler (`ünvan|unvan|address|adres|адрес` + `:`, :97) → parantez içi → `[\r\n\t]+` → `, ` → kısaltmalar (:99-105: `küç.|kuc.` → `küçəsi`, `pr.|prosp.` → `prospekti`, `şos.` → `şossesi`, `məh.` → `məhəlləsi`, `mkr.|m/r` → `mikrorayon`) → boşluklar teke → virgül dizileri tek `, ` → baş/sondaki `[\s,.;:–-]` atılır.
+- `_withCity(q)` (:366): `_city` (`bakı|baki|baku|баку|sumqayıt|xırdalan|abşeron`, :86) yoksa `q + ", Bakı"`.
+- `parseExplicit` (:38-44; elle arama): `parse` sonuç vermezse metin 2–250 karakter, ≥2 harf ve URL'siz ise `AddressDestination(raw, raw, strong=true)` (mekân adı; şehir eklenmez).
+- Listeler `_streetWord` (:65-72), `_district` (:74-84, `az\d{4}` posta kodu dahil), `_city`, `_unitRules`, `_labels`, `_abbr`, `_appSchemes` Kotlin'e **harfiyen** kopyalanır.
+
+Desenler ve WEEM yazımı (plan Bölüm 5: her desen ICU testinden geçer; kural `CAPTURE.md` 7.5). Dart `\s` Unicode boşluk (NBSP dahil), `\d` ve `\b` ASCII'dir; JDK 21 `\s`/`\b` ASCII, Android ICU Unicode'dur. WEEM yazımı Dart sonucunu hem JVM testinde hem cihazda verir:
+
+| Desen (YG satır) | Dart | WEEM Kotlin |
+|---|---|---|
+| `_url` (:45) | `(?:https?://\|www\.)[^\s<>"']+` (i) | `[^\s\p{Z}<>"']+` |
+| `_pair` (:46), `_pairStrict` (:48) | `(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)`; `(-?\d{1,2}\.\d{3,})\s*[,;]\s*(-?\d{1,3}\.\d{3,})` | `\d` → `[0-9]`, `\s` → `[\s\p{Z}]` |
+| `_pin3d4d` (:49), `_atPair` (:50) | `!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)`; `@(-?\d+\.\d+),(-?\d+\.\d+)` | `\d` → `[0-9]` |
+| `_phone` (:51-52) | `(?:\+?994\|\b0)[\s-]?\(?\d{2}\)?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}` | `\b0` → `(?<![A-Za-z0-9_])0` (Dart'ın ASCII sınırı; ICU'nun `\b`'si "а0…" gibi Kiril harfe bitişik sayıda farklı), `\s` → `[\s\p{Z}]`, `\d` → `[0-9]` |
+| `_hasLetters` (:53), `_streetNumber` (:56-58) | `\p{L}{2,}`; `^\s*\p{L}[\p{L}\s.'’-]{2,40}?\s\d{1,4}(?:[/-]\d{1,4})?\s?[\p{L}]?\s*(?:,\|$)` (u) | `\s` → `[\s\p{Z}]`, `\d` → `[0-9]` |
+| `_kw(alt)`, `_r(p)` (:60-63) | `(?<!\p{L})(?:alt)(?!\p{L})`, `(?<!\p{L})(?:p)` (i, u) | aynı; `RegexOption.IGNORE_CASE` (Kotlin/JVM Unicode harf eşlemesi ekler) |
+| `PlusCode.pattern` (`plus_code.dart:9-11`) | `(?<![0-9A-Z])([23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{2,3})(?![0-9A-Z])` (i) | aynı (IGNORE_CASE) |
+| `_clean`/`_snippet` içi | `\([^)]*\)`, `[\r\n\t]+`, `\s+`, `(?:\s*,\s*)+`, `^[\s,.;:–-]+\|[\s,.;:–-]+$` | `\s` → `[\s\p{Z}]` |
+
+Dart `Uri` davranışı da şartnamedir: WEEM `java.net.URI` kullanmaz (boşluk, `|`, `{` gibi karakterleri reddeder); saf `LinkUri`: şema, küçük harfli host, `%`-çözülmüş yol segmentleri, sorgu parametreleri (`+` → boşluk, `%XX` UTF-8; aynı anahtarda **son** değer; bozuk kodlama → o adımda parametre yok, istisna yok), `decodeFull` (`+`'ya dokunmaz).
+
+### 8.5 Plus Code (saf, ağsız)
+
+`plus_code.dart`: alfabe `23456789CFGHJMPQRVWX`; çift değerleri `[20, 1, 0.05, 0.0025, 0.000125]`.
+- `decode(kod)` (:20-41): büyük harf, `+` silinir, en az 10 karakter; 5 çift: `lat = -90 + Σ ...`, `lon = -180 + Σ ...`; sonraki ızgara hanelerinde hücre enlemde /5, boylamda /4; `lat += (d div 4)·hücre`, `lon += (d mod 4)·hücre`; sonuç hücre merkezi. Bilinmeyen harf → null.
+- `_prefix(lat, lon, n)` (:44-59): `lat` [−90, 89.9999999]'a sıkıştırılıp +90; `lon = ((lon+180) mod 360 + 360) mod 360`; her çiftte `floor(x/pv)` 0–19'a sıkıştırılır.
+- `recover(kod, ref)` (:62-86): `+` yoksa null; `+` 8. konumda ya da sonra → `decode`; dolgu `8 − konum` tekse null; `prefix(ref, dolgu) + kod` çözülür; çözünürlük `20^(2 − dolgu/2)`; referans hücre sınırına yakınsa en yakın hücre (`ref ± çözünürlük/2` dışındaysa ±çözünürlük kaydırılır).
+- Referans `Baku.center = (40.4093, 49.8671)` (`geo.dart:103`). Örnek: `8HGF9RQW+344` ve `recover("9RQW+344")` → (40.38764, 49.84533).
+
+### 8.6 Çözüm ve geokod
+
+`DestinationResolver.resolve(parsed, near, depth = 0)` (`destination_resolver.dart:63-110`):
+- Koordinat → `ResolvedDestination(point, label = kısaEtiket(label) ?? "Pin <lat 5 hane>, <lon 5 hane>", confidence = high, unitNote, source = "coord")`.
+- Kısa link → `depth > 1` ise `ResolveException("Kısa link çözülemedi")`; `_expand` (:113-127): en çok 5 `GET`, yönlendirme elle (`followRedirects = false`), her biri 6 sn, gövde atılır; `Location` yoksa dur; göreli adres çözülür; host `consent.` ile başlıyorsa `continue` parametresi izlenir; adreste koordinat bulununca dur. Sonra `parse(son adres)`; null ya da yine kısa link → `ResolveException("Linkte konum bulunamadı")`; değilse `depth + 1` ile özyineleme, `unitNote` öncelik dıştaki.
+- Adres → `geocoder.search(query, near)`; null → `ResolveException("Adres bulunamadı: <query>")`; `label = kısaEtiket(hit.label) ?? query`; `confidence = strong ? hit.confidence : low`; `source = hit.source`; `restaurant = hit.restaurant`.
+- `kısaEtiket` (:106-110): virgülle böl, kırp, boşları at, ilk iki parça `", "` ile.
+- `near` = son taze konum (≤30 sn, doğruluk ≤65 m; Bölüm 7) ?? `Baku.center`.
+
+Zincir (`destinationResolverProvider`, :16-27): `googleKey` doluysa `GoogleGeocoder` → `orsKey` doluysa `OrsGeocoder` → her zaman `NominatimGeocoder`. `FallbackGeocoder` (`geocoder.dart:43-63`): sırayla dener; istisna ya da null → sıradaki; güveni `low` değilse hemen döner; hepsi `low` ise ilk `low`.
+
+| Sağlayıcı | İstek (6 sn) | Sonuç kuralları |
+|---|---|---|
+| Google (`:66-114`) | `GET https://maps.googleapis.com/maps/api/geocode/json?address=<q>&bounds=40.25,49.55\|40.65,50.45&language=az&key=<kullanıcı anahtarı>` | 200 ve `status=OK` değilse null; ilk sonuç. "İnce" türler {`street_address`, `premise`, `subpremise`, `route`, `establishment`, `point_of_interest`, `intersection`, `plus_code`}; ince değil ve `locality`/`country`/`administrative_area*` varsa null. Güven: ince değil → low; `ROOFTOP`/`RANGE_INTERPOLATED` → high (`partial_match` → medium); `GEOMETRIC_CENTER` → medium; diğer → low. Etiket `formatted_address`. Restoran: `restaurant`/`cafe`/`meal_takeaway` → true; `street_address`/`subpremise` → false; aksi null. Ülke filtresi (`components`) YOK. **APK anahtarı kullanılmaz.** |
+| ORS (`:117-160`) | `GET https://api.openrouteservice.org/geocode/search?api_key=<anahtar>&text=<q>[&focus.point.lat&focus.point.lon]&size=1` | özellik yoksa null; katman {`country`, `macroregion`, `region`, `macrocounty`, `county`, `localadmin`, `locality`, `borough`} → null; `street`/`neighbourhood` → low; `confidence` ≥0.8 high, ≥0.5 medium, aksi low; etiket `properties.label`. |
+| Nominatim (`:163-200`) | `GET https://nominatim.openstreetmap.org/search?q=<q>&format=jsonv2&viewbox=49.55,40.65,50.45,40.25&limit=1&addressdetails=0&accept-language=az`, başlık `User-Agent: YolGo/1.11.0 (personal courier navigation)` | tür = `addresstype ?? type`; kaba {`country`, `state`, `region`, `province`, `county`, `municipality`, `city`, `town`, `village`, `city_district`, `district`, `borough`, `administrative`} → null; `house`/`building` ya da `class=amenity` → high; `road`/`street`/semt {`suburb`, `quarter`, `neighbourhood`, `residential`, `hamlet`, `locality`, `isolated_dwelling`} → low; aksi medium. Restoran: `type` ∈ {`restaurant`, `fast_food`, `cafe`} → true; tür ∈ {`house`, `apartments`, `residential`} → false. `viewbox` yalnız yön verir (`bounded` yok). |
+
+### 8.7 Hedefin kabulü (`NavController`)
+
+`onExternalText(text, source, origin?, referrer?, requestedAt?)` (`nav_controller.dart:276-342`):
+1. `asked = requestedAt ?? şimdi`.
+2. `source == "intent"` → sürüş günlüğüne `intent {scheme, host}` (adres yazılmaz).
+3. `parse(text)`; null ise `source != "clipboard"` olduğunda turuncu bildirim (simge `link_off`): "Bu linkte konum bulunamadı (<şema>)" / "Bu linkdə ünvan tapılmadı (<şema>)" (şema boşsa parantez yok); panodan gelende sessiz.
+4. `external {src, kind: coord|link|address}`; seçim titreşimi; meşgul metni "Adres çözülüyor…" / "Ünvan axtarılır…".
+5. `resolve(parsed, near)`; `resolved {src, by: coord|google|ors|osm, conf: high|medium|low, dm?}` (`dm` = konuma uzaklık, yuvarlanmış m).
+6. `Stop(point, label, unitNote, confidence, restaurant, origin = origin ?? (source == "clipboard" ? "clipboard" : "intent"), requestedAt = asked, sourcePackage = referrer)`.
+7. **<60 m kuralı:** `dm < 60` ve hedef restoran değilse rota çizilmez (meşgul kapanır, titreşim), hata:
+   - TR: `Adres bulunduğun yere çıktı (N m), yanlış olabilir.\nGelen metin: «<metin>»\nDoğru yeri haritada uzun basıp "Buraya git" ile seç.`
+   - AZ: `Ünvan olduğun yerə düşdü (N m), səhv ola bilər.\nGələn mətn: «<metin>»\nDüzgün yeri xəritədə barmağını saxlayıb "Bura get" ilə seç.`
+   - `<metin>` (`_snippet`, :381-384): boşluklar teke, 80 karakterden uzunsa ilk 80 + `…`.
+   - Restoran hedefi (`_restaurantTarget`, :420-430): çözümdeki `restaurant` bayrağı; null ise ve kapı notu yoksa 8 m içinde `r`, `f`, `c` türünde POI (Y16, Bölüm 5).
+8. Durak yoksa → `stops = [stop]`, `arrived`/`reached` silinir, `_bindShiftTarget` (Bölüm 7), `replan()`. Durak varsa → `pending = stop`.
+9. İstisna → meşgul kapanır, `error = _humanize(e)`, titreşim.
+
+`acceptPending(addStop)` (:345-352): true → durak sona eklenir (çifte sipariş, `reached` korunur); false → tek durak (yeni rota, `reached` silinir); `_bindShiftTarget`, `replan`. `dismissPending` yalnız kartı kapatır. Kart (`_Pending`, `widgets.dart:493-524`): "Yeni adres geldi" / "Yeni ünvan gəldi", etiket (en çok 2 satır), dolu düğme "Durak ekle" / "Ünvan əlavə et", çerçeveli "Yeni rota" / "Yeni marşrut", kapat ×. Hata ya da bekleyen gelince rota paneli kendiliğinden açılır (`map_hud.dart:89-91`).
+
+`search(text)` (:356-379; arama çubuğunda Enter): `parseExplicit`; null → bildirim "Adres, mekân adı, koordinat veya harita linki yaz" / "Ünvan, obyekt adı, koordinat və ya xəritə linki yaz"; meşgul "Adres aranıyor…" / "Ünvan axtarılır…"; sıra numarası (`_planSeq`) eski yanıtı atar; `Stop.origin = "search"`; doğrudan yeni rota (bekleyen kart yok, <60 m denetimi yok).
+
+`_humanize` (:976-986): `RoutingException`, `ResolveException`, `LocationUnavailable` → mesajı (AZ'de `trMsg`); `RouteWorkerTimeout` → "Rota hesaplaması çok uzun sürdü; tekrar deneniyor"; `StateError` → "Rota hesaplanamadı; tekrar dene"; zaman aşımı → "Ağ zaman aşımı — hotspot bağlı mı?" / "Şəbəkə cavab vermir — hotspot qoşuludur?"; HTTP istemci hatası → "İnternet yok" / "İnternet yoxdur"; diğer → `toString`. Bu bölümün AZ karşılıkları (`i18n.dart:57-61`): "Qısa link açılmadı", "Linkdə ünvan tapılmadı", "Ünvan tapılmadı" (+ `: <sorgu>`), "Məkan icazəsi yoxdur və ya GPS sönülüdür", "GPS siqnalı tutulmadı" ("GPS konumu eski veya belirsiz" için AZ yok → 8.13).
+
+### 8.8 Yer arama (`PlaceSearch`) ve Google Places (New)
+
+**Arama çubuğu** (`map_hud.dart:14-76`): ipucu "Adres veya mekân ara" / "Ünvan və ya obyekt axtar"; yazdıkça `query`; boşken dokununca `query("")` (son aramalar); Enter ya da → düğmesi ("Rota çiz" / "Marşrut çək") → `NavController.search`. Öneri listesi alan odaktayken ve (metin ≥2 ya da öğe var) iken; yükseklik ≤ ekranın %27'si; satır simgesi çevrimdışıysa `offline_pin`, değilse `location_on`; hata satırı (11 pt); öğe yoksa "Sonuç bulunamadı" / "Nəticə tapılmadı"; Google öğesi varsa altta "Google Maps" atfı. Seçim → `select` → nokta varsa `goTo(nokta, label = başlık, restaurant, origin "search")`; `restaurant` = vardiyada sipariş varsa aşama `toRestaurant`/`atRestaurant` mi, yoksa önerinin bayrağı (:35-38).
+
+**`query(value)`** (`place_search.dart:72-83`): kırp; aynı ve boş değilse yok say; debounce iptal; sıra++. Uzunluk <2 → boşsa son aramalar, 1 karakterse **boş liste** (`offline = true`). Oturum belirteci yoksa yeni (UUID v4, `newPlacesSessionToken`, `places_rest.dart:55-60`); meşgul; 350 ms sonra `_search`.
+
+**`_search`** (:105-140): `near` = son konum ?? `Baku.center`.
+- `googleKey` boş **ve** `orsKey` dolu → ORS: `GET https://api.openrouteservice.org/geocode/autocomplete?api_key&text&focus.point.lat&focus.point.lon&size=6` (6 sn; 200 değilse hata). Önbellek: anahtar `<orsKey>/<sorgu>/<lat 2 hane>,<lon 2 hane>`, 60 sn, en çok 32 kayıt (dolunca ilk eklenen atılır). Öğe (`_pelias`, :174-179): id `gid ?? id`, başlık `name ?? label`, adres `label`, nokta, restoran `category` ∈ {`restaurant`, `food`, `cafe`}.
+- Aksi → Google Places autocomplete (kimlik aşağıda).
+- `PlacesFailure` → kısa metin (tablo); başka her hata (Error dahil) → "Arama tamamlanamadı · çevrimdışı sonuçlar" / "Axtarış alınmadı · oflayn nəticələr". Hata varsa çevrimdışı dizin (o da düşerse son aramalar). Sıra ya da sorgu değiştiyse yanıt atılır.
+
+**Çevrimdışı dizin** (`buildOfflineIndex`, :181-198; ayrı iş parçacığı): adı olan POI'ler (id `osmRef`, boşsa `"lat,lon"`; adres "Bakü · kayıtlı mekân" / "Bakı · qeydə alınmış obyekt"; restoran = tür `r|f|c`) + graf yolları (OSM way başına bir; id `way/<id>`; adres "Bakü · sokak" / "Bakı · küçə"; nokta = ilk kenarın `from` düğümü). Etiketler ana iş parçacığında dile göre seçilir. Eşleşme: `normalizeSearch` (küçük harf; `ı→i, ə→e, ş→s, ç→c, ğ→g, ö→o, ü→u`; kırp; :172-173) sorgu sözcüklerinin **hepsi** `başlık + " " + adres` içinde; sıra: başlığı sorguyla başlayan önce, sonra konuma uzaklık; id tekil; ilk 6. Graf ya da POI düzeltmeleri değişince dizin yeniden kurulur.
+
+**`select(öneri)`** (:141-169): Google ise ayrıntı → nokta, adres (boşsa önerininki), restoran. Son aramalar: Google öğesi için **yalnız** `{id, title = kullanıcının yazdığı sorgu, address = "Son arama · bağlantı gerekir" / "Son axtarış · internet lazımdır", source "google"}` (nokta ve ayrıntı kalıcı yazılmaz: Google şartı); diğerleri seçilen öğenin tamamı. Liste başa eklenir, id tekil, en çok 12, `search.recents.v2`; oturum biter. Hata → "Mekânın konumu alınamadı · tekrar dene" / "Obyektin yeri alınmadı · yenidən yoxla".
+
+**Places (New) REST** (`places_rest.dart`), host `places.googleapis.com`:
+- Autocomplete `POST /v1/places:autocomplete`, gövde `{input, sessionToken?, languageCode: "tr"|"az" (dil), regionCode: "az", locationBias: {circle: {center: {latitude, longitude}, radius: 30000.0}}}`, 6 sn.
+- Ayrıntı `GET /v1/places/<id>?sessionToken&languageCode&regionCode=az`, başlık `X-Goog-FieldMask: id,location,formattedAddress,types`, 8 sn; id boş ya da `/` içeriyorsa hata.
+- Başlıklar: `X-Goog-Api-Key`; doluysa `X-Android-Package`, `X-Android-Cert` (imza SHA-1, onaltılık, büyük harf, iki noktasız).
+- Kimlik (`googleCredentialsProvider`, `place_search.dart:40-44`; `ApkGoogleConfig`, `places_rest.dart:36-51`): Ayarlar'daki anahtar varsa o + APK'nın paket ve SHA-1'i; yoksa APK anahtarı (`googleRestConfig`, `MainActivity.kt:130-144`: `AIza` ile başlamıyorsa boş). Anahtar yoksa `missingKey`, **istek atılmaz**.
+- `_send` (:123-139): zaman aşımı → `unavailable` (`TIMEOUT`); soket/istemci hatası → `offline`; 200 değilse `classify`; gövde nesne değilse `unavailable` (`BODY`).
+- `classify(status, body)` (:143-165): `error.details[]` içindeki ilk `reason` ve `error.status`: `API_KEY_INVALID|API_KEY_NOT_FOUND|API_KEY_EXPIRED` → keyInvalid; `API_KEY_ANDROID_APP_BLOCKED|API_KEY_HTTP_REFERRER_BLOCKED|API_KEY_IP_ADDRESS_BLOCKED|API_KEY_IOS_APP_BLOCKED` → appBlocked; `SERVICE_DISABLED|ACCESS_NOT_CONFIGURED` → apiDisabled; `API_KEY_SERVICE_BLOCKED` → apiBlocked; `BILLING_DISABLED|BILLING_NOT_ENABLED` → billing; `RATE_LIMIT_EXCEEDED|RESOURCE_EXHAUSTED` → quota; neden yokken HTTP 429 ya da durum `RESOURCE_EXHAUSTED` → quota; gövdede "API key not valid" → keyInvalid; aksi unavailable. Ham Google mesajı hiçbir yerde gösterilmez (anahtar/proje içerebilir).
+- `parseAutocomplete` (:167-181): `suggestions[].placePrediction` yoksa atla; `placeId` boşsa atla; başlık `structuredFormat.mainText.text`, boşsa `text.text` (o da boşsa atla); adres `structuredFormat.secondaryText.text`. `parseDetails` (:183-190): `location.latitude/longitude` sonlu sayı değilse `FormatException`; restoran türleri {`restaurant`, `cafe`, `meal_takeaway`, `fast_food_restaurant`, `bakery`}.
+
+| Tür | Kısa metin TR (`placesFailureShort`, :194-204) | AZ |
+|---|---|---|
+| offline | İnternet yok · çevrimdışı sonuçlar | İnternet yoxdur · oflayn nəticələr |
+| missingKey | Google anahtarı yok · çevrimdışı sonuçlar | Google açarı yoxdur · oflayn nəticələr |
+| keyInvalid | Google anahtarı geçersiz · çevrimdışı sonuçlar | Google açarı etibarsızdır · oflayn nəticələr |
+| appBlocked | Anahtar bu APK’ya izin vermiyor · çevrimdışı sonuçlar | Açar bu APK-ya icazə vermir · oflayn nəticələr |
+| apiDisabled, apiBlocked | Places API (New) kapalı · çevrimdışı sonuçlar | Places API (New) bağlıdır · oflayn nəticələr |
+| billing | Google faturalandırma kapalı · çevrimdışı sonuçlar | Google ödənişi bağlıdır · oflayn nəticələr |
+| quota | Google limiti doldu · çevrimdışı sonuçlar | Google limiti doldu · oflayn nəticələr |
+| unavailable | Arama API’si kullanılamıyor · API ayarlarını kontrol et | Axtarış API-si işləmir · API tənzimləmələrini yoxla |
+
+Ayrıntı metinleri (`placesFailureDetail`, :207-223) iki dilde aynen alınır; kod eki `" (<reason>)"`, yoksa `" (HTTP <status>)"`, status 0 ise boş; `appBlocked` metnindeki paket adı WEEM'de `com.kuryelog.app`.
+
+### 8.9 "API ve bağlantılar" ekranı
+
+`api_settings.dart` (başlık "API ve bağlantılar" / "API və bağlantılar"; Ayarlar'dan açılır, Bölüm 6):
+- Kartlar: (1) "Google Maps · SDK": denetim `mapsStatus` (`MainActivity.kt:114-126`: APK'da `AIza` anahtarı var mı, son 4 hane, paket, iki noktalı SHA-1, Play Services kodu) → anahtar yoksa "APK içinde Google anahtarı yok; harita sade altlıkla çalışır." / "APK-da Google açarı yoxdur; xəritə sadə altlıqla işləyir."; Play Services 0 değilse "Google Play Services hazır değil (kod N)." / AZ; aksi `probeGoogleKey(apkOnly)` → `mapsKeyVerdict` (:149-162). (2) "Google Maps uyumluluk modu" anahtarı (`googleMapCompatibility`, Bölüm 6). (3) "Maps anahtarı / paket / imza bilgileri" → `showMapsHelp` (Bölüm 6). (4) "CARTO · Harita" anahtarı + denetim (`https://a.basemaps.cartocdn.com/dark_all/0/0/0.png?key=<anahtar>`; Bölüm 6). (5) "Google Places (New) · Adres arama" (`googleKey`) + denetim `probeGoogleKey` (sorgu "Baku", `Baku.center`, oturumsuz, 10 sn) → "Places araması yanıt verdi · N gerçek öneri." / "Places axtarışı cavab verdi · N həqiqi təklif." ya da `placesFailureDetail`. (6) "OpenRouteService · Arama yedeği" (`orsKey`) + denetim (`/geocode/autocomplete?text=Baku&size=1`). (7) "Rota motoru": graf yoksa "Yol ağı yüklenmedi." / "Yol şəbəkəsi yüklənməyib.", varsa "<N> yol parçası hazır" / "<N> yol hissəsi hazırdır". (8) "Open-Meteo · Hava durumu" (`weather.key.v1`; Bölüm 10). Altta paket adı + "Kontroller yalnızca bu düğmelere dokununca yapılır; 5 dk önbellek."
+- Denetim (:41-51): aynı kart 5 dk içinde yeniden denetlenmez; 12 sn zaman aşımı ya da hata → "Bağlantı veya yetki doğrulanamadı; internet, API etkinliği ve anahtar kısıtlamasını kontrol et." / "Bağlantı və ya icazə təsdiqlənmədi; interneti, API aktivliyini və açar məhdudiyyətini yoxla."; sonucun altında "Son kontrol HH:mm".
+- `mapsKeyVerdict`: başarı → "APK anahtarı geçerli ve bu uygulamaya izinli. Harita gri kalırsa projede Maps SDK for Android açık mı bak." / AZ; keyInvalid, appBlocked, missingKey, billing → ayrıntı + " Bu durumda Google harita da yüklenmez." / " Bu halda Google xəritəsi də yüklənmir."; apiDisabled, apiBlocked → "APK anahtarı Google’da tanınıyor; Places API (New) bu anahtara kapalı. Harita için Maps SDK for Android ayrıca açık olmalı." / AZ; diğer → ayrıntı.
+- Anahtar penceresi (:29-40): gizli alan, göster/gizle, "Vazgeç"/"Ləğv et", "Kaydet"/"Yadda saxla"; kayıttan sonra denetim sonuçları silinir. `maskedKey` (:18-19): boş → "Anahtar girilmedi" / "Açar yazılmayıb"; aksi `••••` + son 4 karakter.
+
+### 8.10 Veri
+
+| Ad | Tür / biçim | YG | WEEM |
+|---|---|---|---|
+| `clipboard.lastHash` | int, FNV-1a 32 bit (0…2³²−1) | `clipboard_sniffer.dart:32` | `map` tercih dosyası, `Long` (aynı değer); S1: aktarılmaz |
+| `search.recents.v2` | String JSON dizi (≤12): `{id, title, address, source: google\|ors\|offline, point: {lat, lon}\|null, restaurant}`; Google öğesinde nokta yok | `place_search.dart:85, 158-160` | `map`, aynı ad ve biçim |
+| `settings.v1` → `googleKey`, `orsKey`, `cartoKey` | String, varsayılan `""` (kullanıcının anahtarı) | `settings.dart:34-36` | `MapSettings` aynı alan adları (Bölüm 14); değerler hiçbir kayda, dışa aktarmaya, belgeye yazılmaz |
+| APK Maps anahtarı | `@string/google_maps_key` ← CI gizli değişkeni `GOOGLE_MAPS_API_KEY` (biçim `AIza[0-9A-Za-z_-]{35}`, değilse derleme durur; günlüğe yalnız son 4) | `ci/build.sh:87-104`; manifest :25-26 | aynı düzen (CI gizli değişkeni → kaynak; A6.5) |
+| Sürüş günlüğü olayları | `intent {scheme, host}`; `external {src: intent\|clipboard, kind: coord\|link\|address}`; `resolved {src, by: coord\|google\|ors\|osm, conf: high\|medium\|low, dm?}` | `nav_controller.dart:282, 293-311` | aynı adlar ve alanlar (Y18, Bölüm 12) |
+| Ağ | Google Geocoding; Places (New) autocomplete/ayrıntı; ORS `geocode/search` ve `geocode/autocomplete`; Nominatim `search`; CARTO karo (yalnız denetim); kısa link yönlendirmeleri (herhangi host) | 8.6, 8.8, 8.9 | aynı; User-Agent `WEEM/<versionName> (personal courier navigation)` |
+| Intent filtreleri | 8.2 tablosu | manifest :40-119 | `:app` manifestinde aynı |
+| Kanal `kurye_nav/native`: `getInitialLink`, `onLink`, `openLinkSettings`, `googleRestConfig`, `mapsStatus`, `openGoogleRoute` | Flutter köprüsü | `MainActivity.kt` | çevrilmez (doğrudan Kotlin); `openGoogleRoute` kalkar (S9) |
+
+### 8.11 Testler
+
+| Dosya | Sayı | Test adları → neyi doğrular | WEEM hedefi | Görev | Not |
+|---|---:|---|---|---|---|
+| YT `address_parser_test` | 17 | Plus Code: tam kod `8HGF9RQW+344` ve `recover("9RQW+344", Baku.center)` → (40.38764, 49.84533) ±1e-4; Bolt "9RQW+344 Baku, Baku, AZ1000" → koordinat; Wolt "Mehdi Hüseyn 99" → güçlü, sorgu "Mehdi Hüseyn 99, Bakı"; "Təbriz 52, Баку" şehir korunur; İngilizce Bolt adresi güçlü; kapı notu + telefon → sorgu "Nizami küçəsi 12, Bakı", not "Mənzil 45 · Mərtəbə 7 · Giriş 2 · Kod 1234"; WhatsApp `q=`; Yandex `pt=` (boylam,enlem) çevrilir; `geo:…(Xengeland)` etiketi, `google.navigation:q=…&mode=b`, `geo:0,0?q=metin` → adres; kısa link; Waze (`ll`, web `ul`, `q` → adres); Yandex `lat_to`/`rtext` (uygulama ve web); 2GIS/HERE yol çiftleri; Google `/dir/` son durak (koordinat ve metin, görünüm merkezi değil); Waze/Yandex web metni → "Nizami küçəsi 12, Bakı"; 4 adres olmayan metin → null | `input.AddressParserTest`, `input.PlusCodeTest` (ilk 2 test) | A6.2b → A6.6 | saf; WEEM ek vektörleri 8.13 (NBSP, Kiril'e bitişik telefon, büyük harf, `BAKİ`) |
+| YT `place_search_test` | 8 | çevrimdışı dizin gerçek nokta ve restoran türü; Places 500 → çevrimdışı, meşgul kalmaz; `SocketException`/`StateError`/`TimeoutException` her biri çevrimdışına düşer (çökme yok); AZ'de hata ve etiket AZ; kimlik yokken istek atılmaz, "anahtarı yok"; debounce 350 ms (3 yazımda 1 istek), eski yanıt atılır, oturum belirteci ayrıntıya taşınır (≤36, `[A-Za-z0-9_-]`), başlıklar (`X-Goog-Api-Key`, `X-Android-Package`, `X-Android-Cert`), FieldMask `location` içerir, son aramada ayrıntı adresi yok, boş sorguda son arama (başlık = sorgu, nokta null); `classify` 6 neden + kısa/ayrıntı metinlerinde anahtar ve "secret project" yok + ayrıntıda paket adı; `parseDetails`/`parseAutocomplete` | `input.PlaceSearchTest`, `input.PlacesRestTest` | A6.2b → A6.6 | saf: sahte `HttpPort`, sanal saat (debounce), sahte konum, boş graf, POI listesi (`nav_assistant_test`'teki `TestLocation`/`EmptyMap` karşılıkları, Bölüm 7); paket beklentisi `az.duzyol.app` → `com.kuryelog.app` |
+| YT `geocoder_scope_test` | 1 | Google geokodda `components` (ülke filtresi) yok; Tbilisi (41.7, 44.8) `ROOFTOP` → high | `input.GeocoderTest` | A6.2b → A6.6 | sahte HTTP |
+| YT `api_settings_test` | 1 | `mapsKeyVerdict`: başarı "geçerli"; keyInvalid/appBlocked "harita da yüklenmez"; apiDisabled "tanınıyor", "geçersiz" geçmez | `input.ApiChecksTest` | A6.2b → A6.6 | saf |
+| YK `NavFeedContractTest` (6'nın 2'si) | 2 | `referrerIsAnAndroidAppPackage` (`android-app://paket[/…]`; null, boş, https, boş ad, boşluklu ad, 101 karakter → null); `aLinkCarriesItsActionReferrerAndTime` (view/send, referrer, `atMs`) | `input.IncomingLinkTest` | A6.2b → A6.6 | kalan 4 test (sağlayıcı sözleşmesi) Bölüm 7 |
+
+Bu bölümün çeviri payı: **5 dosya, 29 test** (hepsi A6.2b, saf `logic/map`). `offer_navigation_removed_test` Bölüm 6/7'de değerlendirilir.
+
+### 8.12 WEEM yerleşimi
+
+- **`logic/map` paketi `input`:** `AddressParser` + `ParsedDestination` (mühürlü: `Coordinate`, `ShortLink`, `Address`), `PlusCode`, `LinkUri` (8.4 sonu), `IncomingLink` (Android'den saf hâle), `ClipboardHash`, `DestinationResolver` (+ `ResolvedDestination`, `ResolveException`), `Geocoder`, `FallbackGeocoder`, `GoogleGeocoder`, `OrsGeocoder`, `NominatimGeocoder` (istek kurma ve yanıt ayrıştırma saf; ağ `HttpPort` üstünden), `PlacesRest` (+ `PlacesFailure`, `classify`, `parseAutocomplete`, `parseDetails`, `sessionToken`), `PlaceSearch` (durum makinesi; debounce için saat/zamanlayıcı enjekte), `OfflineIndex` (+ `normalizeSearch`), `SearchRecents`, `ApiChecks` (`mapsKeyVerdict`, `maskedKey`, 5 dk kısıtı), `MapText` (iki dilli metinler, `logic/core` `Bilingual`; YolGo'nun `trMsg` alt dize çevirisi yerine her mesaj iki dilli yazılır).
+- **`HttpPort`** (öneri, Y7/Y10 ile ortak; yeri Bölüm 15'te tekleşir): `suspend fun send(HttpRequest): HttpResponse` — yöntem, URL, başlıklar, gövde, zaman aşımı, `followRedirects` (kısa link için false).
+- **Android `:map`** (`com.kuryelog.app.map`): `LinkIntake` (intent → `IncomingLink`; gönderen `Activity.getReferrer()`), `ClipboardWatch`, `AndroidHttp` (`HttpURLConnection`; yeni bağımlılık yok), `ApkGoogleConfig` (anahtar derleme kaynağından, paket, imza SHA-1 `GET_SIGNING_CERTIFICATES`).
+- **`:app`:** `MainActivity` filtreleri, `onNewIntent` → `LinkIntake`; `MapTab` arama çubuğu ve bekleyen kartı; `MapApiSettingsScreen` (Daha fazla → Harita ayarları → API ve bağlantılar).
+- **`NavPort.open(NavTarget)`:** başka modülden ya da öteki telefondan gelen hedef → `NavController.openTarget` = `goTo` + Stop alanları (`origin`, `kind` → `restaurant`, `requestedAtMs`, `sourcePackage`, `label`) + 8.7'deki <60 m denetimi ve durak varken bekleyen kart.
+- **2 telefon (plan 4.5, S5):** Wolt/Bolt Provider'da olduğundan VIEW/SEND intent'i Provider'daki WEEM'e gelir. Provider ayrıştırır ve çözer (kendi interneti; kısa link ve geokod dahil), `NavTarget{requestId (UUID), lat, lon, kind (Stop.restaurant: true → restaurant, false → customer, null → unknown), origin INTENT|CLIPBOARD, sourcePackage, requestedAtMs = bağlantının geliş anı, label = çözülen etiket + kapı notu}` → P→R; Receiver `NavPort.open` ile rotayı açar. Receiver'a ulaşılamazsa rota Provider'da açılır. <60 m denetimi rotayı açan telefonda (konum oradadır). Pano her telefonda kendi panosu; elle arama hangi telefondaysa orada. Müşteri adı, telefonu ve notları `NavTarget`'a girmez (ayrıştırıcı telefonu zaten siler).
+- `:capture` ağsız kalır; okunan müşteri adresinin Android Geocoder ile çözümü `:orders`'ta (`ORDERS.md`); `:map` geokod zinciri ondan ayrıdır.
+
+### 8.13 Farklar ve açık noktalar
+
+**Bulgu düzeltmeleri:** (1) `PROCESS_TEXT` Activity filtresi değil, yalnız `<queries>` (`Y_nav.md` ve `VERI_SOZLESMESI` 2). (2) Tek karakterlik sorgu son aramaları göstermez; yalnız boş sorgu gösterir. (3) Nominatim isteğinde `addressdetails=0` da var. (4) Satırlar: `getInitialLink` `MainActivity.kt:105-109`, `openGoogleRoute` :145-168, `openLinkSettings` :434-450, `onNewIntent` :452-460, `linkOf`/`extractLink` :463-476. (5) "Panodan oku" (`force`) ölü kod. (6) Ayrıştırıcı `strong=false` hiç üretmez; `DestinationResolver`'daki "zayıf adres → low" yolu fiilen ölü (davranış: güven = geokodun güveni).
+
+**WEEM'de baştan doğru:**
+- F-N1 Nominatim isteklerine en az 1 sn aralık (OSM kullanım kuralı; YolGo'da sınırlayıcı yok). Zincir seyrek çalıştığından kullanıcı fark görmez.
+- F-N2 Desen taşınabilirliği (8.4 tablosu) ve `LinkUri`; WEEM'de ek test vektörleri: NBSP'li "Mehdi Hüseyn\u00A099" → güçlü (Dart `\s` NBSP'yi eşler); "а0501234567" (Kiril harfe bitişik telefon) → telefon silinir; büyük harf "MƏNZİL 45" → `Mənzil 45`, "КВ. 12" → `Mənzil 12`; "BAKİ" (noktalı büyük İ): Kotlin `İ`'yi `i` sayar, Dart saymaz → `_withCity` Kotlin'de `, Bakı` eklemez. WEEM Kotlin sonucunu kabul eder (Azerice doğru), test sabitler; `_extractUnit`'teki elle `İ → i` korunur.
+- F-N3 User-Agent `WEEM/<sürüm> (personal courier navigation)`; `appBlocked` ayrıntısındaki paket `com.kuryelog.app`.
+- F-N4 Her kullanıcı metni iki dilli (`MapText`): "GPS konumu eski veya belirsiz" (`location_service.dart:171`) AZ karşılığı YolGo'da yok (AZ'de Türkçe görünür) → SORU-N2.
+
+**Aynen korunan tutarsızlıklar:** Google Geocoding APK anahtarını kullanmaz, Places kullanır; `PlaceSearch` ORS'yi yalnız Google anahtarı boşken kullanır, geokod zincirinde ise ikisi sırayla; `GeoPoint.isInAbsheron` hiçbir yerde kullanılmaz (geokod sonucu Abşeron dışına düşebilir; `geocoder_scope_test` ülke filtresi olmamasını bekler); manifestte çıplak `google.com` ve `goo.gl` filtresi yok (ayrıştırıcı bu linkleri pano ve paylaşımda yine tanır).
+
+**Geçiş notu:** paket `az.duzyol.app` → `com.kuryelog.app`: Android'in "Varsayılan olarak aç" izni ve Wolt/Bolt'taki navigasyon uygulaması seçimi WEEM için yeniden yapılır (Rawstats'ta bu filtreler yoktu; A10 geçiş adımı, kullanıcı işi).
+
+**S9:** `openGoogleRoute` ve tek çağıranı (`task_controller.dart:112`, Y20 "Rota Oluştur") kalkar; WEEM'de "Rota Oluştur" `NavController.goTo` (Bölüm 13). Kanal yöntemi ve tarayıcı yedeği (`CATEGORY_APP_BROWSER`) de kalkar.
+
+**SORU-N1 (koordinatöre):** kapı notundaki `Kod` (domofon) Receiver'a gitsin mi? S5 adres metninin (sokak, bina, kat, giriş) gittiğini, notların gitmediğini söylüyor; domofon kodu adres ayrıntısı mı not mu belli değil. (a) gider (kapıda Receiver ekranında gerekir; önerilen varsayılan); (b) gitmez (yalnız Provider'da gösterilir).
+
+**SORU-N2 (koordinatöre):** YolGo'da AZ'si olmayan tek metin için AZ önerisi: "GPS mövqeyi köhnə və ya qeyri-dəqiqdir". Varsayılan: öneri kullanılır (S19 gibi kullanıcı onayına sunulur).
 <!-- END sec:8 -->
 
 <!-- BEGIN sec:9 -->
