@@ -33,7 +33,7 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 | 12 | Y17, Y18 | A6.9 | ajan T1 | bekliyor <!-- st:12 --> |
 | 13 | Y19, Y20 | A6.9 | ajan T2 | yazılıyor (kısmen: 13.1–13.5 yazıldı; sırada 13.6 gün toplama ve LogFeedV3) (18:08 UTC) <!-- st:13 --> |
 | 14 | veri sözleşmesi | tümü | koordinatör | yazılıyor (kısmen: 14.1–14.11 taslak; Bölüm 11–13 satırları ajanlar bitince) (18:01 UTC) <!-- st:14 --> |
-| 15 | WEEM yerleşimi | tümü | koordinatör | bekliyor <!-- st:15 --> |
+| 15 | WEEM yerleşimi | tümü | koordinatör | yazılıyor (kısmen: 15.1–15.5 Bölüm 2–10'dan; 11–13 ajanlar bitince) (18:08 UTC) <!-- st:15 --> |
 | 16 | test eşlemesi A6.2a/A6.2b | A6.2a, A6.2b | koordinatör | yazılıyor (kısmen: 16.1–16.4 Bölüm 2–10 dosyaları; 11–13 ve toplamlar ajanlar bitince) (18:05 UTC) <!-- st:16 --> |
 | 17 | açık noktalar ve sorular | tümü | koordinatör | bekliyor <!-- st:17 --> |
 
@@ -2205,7 +2205,88 @@ Arka plan: WorkManager `duzyol_weather_v1` (periyodik 2 sa, ağ gerekli; 10.8). 
 <!-- BEGIN sec:15 -->
 ## 15. WEEM yerleşimi
 
-_Yazılıyor (koordinatör)._
+Kurallar (plan 4.2–4.3, `gradle/module-graph.properties`): **`map=core`** — `:map` yalnız `:core`'u görür; `:orders`, `:economics`, `:scooter`, `:link` ile yalnız `:core` portları üstünden konuşur, dikişleri `:app` (`WeemApplication`) kurar. Saf mantık `logic/map` (Android'siz, yerelde test edilir), Android `:map` ince: sensör, dosya, ağ, servis, harita yüzeyi. Ekranlar `:app`'te (Compose). Her bölümün "WEEM yerleşimi" alt bölümü ayrıntıdır; bu bölüm toplu dizin ve aralarındaki bağlardır.
+
+### 15.1 `logic/map` paketleri (`com.kuryelog.logic.map.<paket>`)
+
+| Paket | İçerik (özet) | Bölüm | Kullandığı paketler | İlk görev |
+|---|---|---|---|---|
+| `geo` | `GeoPoint`, `BBox` (+ `sizeKmLabel`, `overpass`), `Baku`, `Geo` (haversine, bearing, `LocalProjection`, `pointToSegment`) | 2.2, 5.4 | — | A6.3 |
+| `net` (yeni) | `HttpPort` (`suspend send(HttpRequest): HttpResponse`; yöntem, URL, başlıklar, gövde, zaman aşımı, `followRedirects`), `UserAgent` (`WEEM/<sürüm> (personal courier navigation)`), sahte uygulama testlerde | 8.12, 2.14, 10.13 | — | A6.3 |
+| `graph` | `OsmRaw`, `RoadClass`, `WayFlag`, `GraphBuilder`, `RoadGraph` (KNG1), `HgtTile`, `ElevationModel`, `Overpass`/`OverpassFetcher`, `MapDataState`, `MapDownload`, `MapBuild` (CI), `Poi`/`PoiSet`/`PoiCorrections`, `BikewayTags` | 2, 5 | `geo`, `net` | A6.3 (POI düzeltmeleri A6.8) |
+| `surface` (Y13'ün 1.0 alt kümesi) | `SurfaceMark`, `SurfaceLabel`, `Passability`, `badSpotSpans`, sabitler 25/30 m | 9.12 (SORU-Q1) | `geo` | A6.4 |
+| `route` | `RideParams`, `VehicleProfile`, `CostModel`, `Router`, `MinHeap`, `Planner`, `Plan`/`RouteLeg`/…, `RouteEngine`, `BadSpots`, `StreetPrefs` (+ kodek), `ReverseHours`, `StreetList`, `BikewayMarks`, `Quality.kt` | 3, 4, 5, 9.12 | `geo`, `graph`, `surface` | A6.4 |
+| `settings` | `MapSettings` (+ `paramsFor`, `gradeLimitFor`), `MapSettingsCodec`, `MapPrefs` (tercih arayüzü, tip eşlemesi 14.1) | 14.1, 14.2 | `route` (`RideParams`) | A6.4 |
+| `ui` (saf görünüm kuralları) | `HudLayout`, `CameraMode`, `PuckStyle`, `PuckMotion`, `MapStyles`, `MapPalette`, `LongPressMenu`, `BikewayLayerRules`, `PoiLayerRules`, `BikewayMenuAction` | 5.7, 6.15 | `geo`, `graph`, `route`, `settings` | A6.5 (katmanlar A6.8) |
+| `input` | `AddressParser`, `PlusCode`, `LinkUri`, `IncomingLink`, `ClipboardHash`, `DestinationResolver`, geokodlayıcılar, `PlacesRest`, `PlaceSearch`, `OfflineIndex`, `SearchRecents`, `ApiChecks`, `MapText` | 8.12 | `geo`, `graph`, `net` | A6.6 |
+| `nav` | `NavController` (saf durum makinesi), `NavState`, `Stop`, `RerouteGate`, `ApproachZoom`, `ArrivalFocus`, `RouteLine`, `RouteProgress`, `RouteStatusGate`, `MapMatcher`, `NavOnly`, `RouteOrigin`, `FixGate`, `HeadingFilter`, `CompassSmoother`, `PassiveSession` | 6.15, 7.16 | `geo`, `graph`, `route`, `settings`, `input` | A6.6 |
+| `ride` | `SpeedOptions`, `BatteryState`, `EnergyOdometer`, `BatteryEstimator`, `RangeInputs` | 10.13 | `geo`, `route`, `settings` | A6.7 |
+| `weather` | `WeatherRequest`, `WeatherReport`, `WeatherSummary`, `WeatherText`, `WeatherIcons`, `WeatherSchedule` | 10.13 | `net` | A6.7 |
+| `roads` (Y12) | `WayStats`, `WwStats`, `GhostMark`, `RoadKnowledge`, `RoadLearner`, `RoadDayContributions`, `StreetRatio`, `QualityPrompt`, `VolumeDispatch`, `RoadBook` | 9.12 | `geo`, `graph`, `route`, `surface`, `settings` | A6.11 |
+| `day`, `logs` + Bölüm 11–13 paketleri | gün motoru ve ışıklar, sürüş kayıtları, istatistik, veri seti, görevler, hatırlatıcılar | 11–13 | _ajanlar bitince_ | A6.8, A6.9 |
+
+**Yön kuralı:** tablo sırası aşağıdan yukarıya; bir paket yalnız kendinden önceki satırları kullanır, döngü yok (`nav` → `roads` değil: Y12'nin navigasyona etkisi rota girdileriyle (`RoadBook.forPlan`) ve Android `:map`'teki çalışma zamanı üstünden; `nav` ↔ gün motoru bağı Bölüm 11'deki olay arayüzüyle). Saat yalnız `:core` `Clock` (+ `LogTime`), metinler `logic/core` `Bilingual` (`MapText`). `logic/map` `org.json` ve `kotlinx.coroutines` dışında bağımlılık almaz (öteki `logic/` modülleri gibi).
+
+### 15.2 Android `:map` (`com.kuryelog.app.map`)
+
+| Bileşen | Ne | Bölüm |
+|---|---|---|
+| `Maps` (tek giriş nesnesi; emsal `Orders`, `Scooter`, `Economics`) | süreç başına tek örnekler: `MapData`, `MapSettingsStore`, `NavRuntime`, `RoadsRuntime`, `BatteryRuntime`, `WeatherRuntime`, Bölüm 11–13 çalışma zamanları; dışa portlar `nav: NavPort`, `weather: WeatherPort`, `range: RangePort`; içe dikişler `bindOrders(OrderEvents)`, `bindScooter(ScooterBridge)` | 15.3 |
+| `MapPrefsStore`, `MapSettingsStore` | `SharedPreferences("map")`, `settings.v1` (`StateFlow<MapSettings>`) | 14.1, 14.2 |
+| `AndroidHttp` | `HttpPort` (`HttpURLConnection`; yeni bağımlılık yok) | 8.12 |
+| `MapData` | graf/DEM/POI açma, asset, indirme işi | 2.14 |
+| `MapSurface`, `GoogleMapSurface`, `MapLibreSurface`, `LocationPuck` | iki harita yüzeyi (S4), aynı çizgi desenleri | 6.15 |
+| `HomePickScreen`, `MapsKeyStatus`, `ApkGoogleConfig` | ev seçici, Maps anahtarı durumu ve paket/SHA-1 | 6.11, 6.10, 8.12 |
+| `NavLocation`, `CompassSensor`, `NavOnlyService`, `NavPortImpl`, rota işçisi | konum (Fused 500 ms), pusula, yalnız-nav servisi (SORU-N4), `NavPort` | 7.16 |
+| `LinkIntake`, `ClipboardWatch` | intent ve pano → `IncomingLink` | 8.12 |
+| `RoadFilesAndroid`, `VolumeKeys`, `RoadsRuntime` | Y12 dosyaları, ses tuşu yakalama, öğrenme döngüsü | 9.12 |
+| `BatteryRuntime`, `WeatherRuntime`, `WeatherFetch`, `WeatherWork`, `WeatherPortImpl`, `RangePortImpl` | batarya tahmini, hava, `duzyol_weather_v1` | 10.13 |
+| Bölüm 11–13 bileşenleri | gün motoru çalışma zamanı, `MotionReceiver`, kayıt yazıcısı, veri seti servisi, görev/hatırlatıcı zamanlayıcısı | 11–13 |
+
+**Açılış dikişi** (`WeemApplication.onCreate`, öteki modüllerden sonra): `Maps.bind(this)` → `Maps.bindOrders(Orders.events)` (aşamalar, `busy`, teklifler), `Maps.bindScooter(Scooter.bridge)`; ters yönde (yeni dikişler, öneri adları) `Orders.bindMap(Maps.nav, Maps.weather)` → `OrderFlow.Env.weather` (bugün `NONE`; R15 `OfferWeather`) ve `NavPort.route` akışı → `OrderFlow.navigation(state, now)` (E8 hedef bağı), `Economics.bindMap(Maps.weather, Maps.range)` → `EconomicsObserver.Env.weather` (bugün `NONE`) ve N5 girdileri (`RangePort`, SORU-T1-1). İkisi de A3/A4'te `:map` yokken `NONE` ile yazıldı; dikiş A6.6 (nav) ve A6.7 (hava, menzil) görevlerinde kurulur. Gün başı/sonu işleri `ShiftHub.listeners`'a ad ve sırayla eklenir (Bölüm 11'deki sıra). Bağlama hatası `Store.guarded` ile kaydedilir; bağlanmamış port `NONE` kalır (veri uydurulmaz).
+
+### 15.3 `:core` portları ve yeni `:core` girdileri
+
+| Port | Yön | `:map`'in kullanımı | Bölüm |
+|---|---|---|---|
+| `ShiftPort.state` | `:core` → `:map` | gün açık mı, başlangıç (`startedAtMs` → kova `yolgo-<ms>`), yalnız-nav geçişi, öğrenme kapsamı, hava zamanlayıcısı, gün motoru (`ShiftFollower`) | 6, 7, 9, 10, 11 |
+| `OrderEvents` (`stages`, `busy`, `offers`) | `:orders` → `:map` | sipariş aşaması (restoran/müşteri hedefi, `excludeStops`, gün motoru aşamaları), teslimat bitti (görevler) | 7, 9, 11, 13 |
+| `ScooterBridge` (`live`, `batteryPct`) | `:scooter` → `:map` | canlı batarya, eğim limiti | 3, 10 |
+| `NotifyPort` + `NotificationIds` | `:map` → `:core` | 7100–7102, 7201, 7301, 7401, (7402) | 14.6 |
+| `Clock`, `LogTime` | `:core` | bütün saatler; Bakü günü | 9, 10, 11 |
+| ev (`KuryelogPrefs` `home.*`, `HomePickResult`) | `:core` → `:map` | eve dön, ev kuralı dışı her şey, haritadan seçme | 6.11, 7.8 |
+| `NavPort` (`route: StateFlow<RouteStatus?>`, `open(NavTarget)`) | `:map` → `:orders`, `:link` | `NavPortImpl` | 7.9, 8.12 |
+| `WeatherPort.current()` | `:map` → `:orders`, `:economics` | `WeatherPortImpl` (≤ 90 dk) | 10.10 |
+| **`RangePort`** (yeni, öneri) | `:map` → `:economics` | `battery()`, `rideTo(from, to)` | 10.6 |
+
+Yeni `:core` girdileri (öneri; ilgili uygulama görevinde, `NotificationIdsTest`/`PortsTest` ile): `RangePort` (+ `NONE`), `NotificationIds.NAV_ONLY_FGS = 7402` ve kanal `navigation` (SORU-N4), Bölüm 11–13'ün önerdikleri.
+
+### 15.4 `:app` ekranları
+
+| Yer | Ekran / parça | Bölüm |
+|---|---|---|
+| Harita sekmesi (`Tab.MAP`, açılış sekmesi) | `MapTab`: harita yüzeyi, HUD (üst arama çubuğu + ayar kısayolu, hava yuvarlağı, sol göstergeler, konum düğmesi, rota paneli), uzun basış sayfası, varış kartı, bildirim şeridi ("Geri al"), ters yön ve kalite kartları, kurulum kartı; üstte `ShiftCard` + `MapShiftActions` (SORU-N7) | 6, 7, 9, 10 |
+| Harita sekmesi sayfaları | `SpeedSheet`, `ScooterValuesSheet`, `WeatherDetailSheet`, `MapsHelpSheet`, bölge bilgisi, POI düzeltme, "Saatli çift yön izni" | 4.5, 5, 6.10, 10 |
+| Daha fazla → **Harita ayarları** (`MapSettingsScreen`; sıra 6.9) | Teklif veri seti · Yollarım (`RoadsScreen` 4 sekme + Bisiklet, Sürüş kayıtları, Sokak bilgileri, ışık mesafesi, ses tuşları) · Hatırlatıcılar · Günlük işler · Harita görünümü · Hava durumu · Harita verisi · API ve bağlantılar (`MapApiSettingsScreen`) · Navigasyon bağlantıları | 6.9, 8.9, 9.8, 10.9, 12, 13 |
+| Daha fazla → Ev konumu | "Haritadan seç" → `HomePickScreen` | 6.11 |
+| Bölüm 11–13 ekranları | İstatistik, Sürüş kayıtları, Teklif veri seti, Günlük işler, hatırlatıcı kartları | 11–13 |
+
+Tema ve dil `:app`'in (`theme`, `lang`; 6.2); Harita sekmesi kendi tema anahtarı tutmaz. Metinler TR/AZ birebir, `TextCoverageTest` kuralıyla.
+
+### 15.5 2 telefon (plan 4.4–4.5; ayrıntı A8.3)
+
+| İş | Tek telefon | Receiver (scooter telefonu) | Provider (Wolt/Bolt telefonu) | `:link` |
+|---|---|---|---|---|
+| Harita verisi, `map` ayarları | var | kendi | kendi | — |
+| Navigasyon, rota motoru, takip | var | **asıl** | Receiver'a ulaşılamazsa | `NavTarget` P→R, `RouteStatus` R→P |
+| Bağlantı yakalama ve adres çözme (Y5/Y6) | var | elle arama | **asıl** (Wolt/Bolt burada) | `NavTarget` |
+| Y12 öğrenme, sorular, ses tuşu | var | **yalnız burada** | kapalı (SORU-Q7) | — |
+| Y9 batarya tahmini | var | GPS + canlı scooter | `BatterySummary`'den (GPS tahmini yok) | `BatterySummary` R→P |
+| Y10 hava | var | kendi interneti | kendi interneti (S6) | — |
+| N5 menzil | var | — | `:economics` (teklifler burada) | `BatterySummary`; sonuç alanı A8.3 |
+| Y11, gün motoru, Y17–Y20 | var | Bölüm 11–13 | Bölüm 11–13 | Bölüm 11–13 |
+
+Vardiya (`ShiftState`) her iki telefonda aynı arayüzle izlenir (Receiver'da uzak, A8.3); `:map` farkı görmez.
 <!-- END sec:15 -->
 
 <!-- BEGIN sec:16 -->
