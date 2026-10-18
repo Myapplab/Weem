@@ -202,6 +202,7 @@ Toplam 48 oturumluk görev (`docs/WEEM_ISLER.md`; aksamalarla kabaca 50–55 otu
 | S14 A3.1 çalışma biçimi | A3.1 (Aşama 3 şartnamesi) tek ajanla, **Opus · max**; ultracode ve paralel ajan yok. S13'teki ultracode listesinden A3.1 çıkar (ultracode artık yalnız A6.1 ve A10.3). Şartname yine bölüm bölüm yazılır, her bölümde commit + push — 17 Ekim |
 | S19 AZ hava metni | Teklif havası gelmediğinde AZ metni "hava məlumatı gəlmədi" (TR "hava bilgisi gelmedi"; `BoostTempE3Test`, `OrderHistory.boostTempLine`) — 17 Ekim, A3.6 oturumunda kullanıcı onayı |
 | S21 A3.10 kayıtları | (c) A3.10, A4.3'ten sonra yapılır; WEEM `.dev` kayıtları A4.3'ün ZIP dışa aktarmasıyla alınır — 17 Ekim |
+| S22 N3 otomatik şifreli yedek | Her vardiya sonu yazılır; dosyalar **haftalık** (Pazartesi–Pazar; bir dosya = o haftanın 7 günü, aynı haftanın dosyası her vardiyada yenilenir), `İndirilenler/WEEM/yedek/`. İçerik: haftanın gün kayıtları + `restaurants.json` + `kuryelog` ayarları + `courier.db` satırları (müşteri telefonları dahil; şifreli dosyada) — **kullanıcının ev konumu girmez** (`home.*`). Anahtar: kullanıcı parolası (PBKDF2 + AES-GCM; yeni telefonda da açılır, unutulursa açılmaz), telefonda Keystore ile saklanır ki her vardiyada sorulmasın. Kayıtlar'da haftalık yedek listesi: "Dışa aktar/paylaş", dışa aktarıldıktan sonra "Uygulamadan sil" = o haftanın gün kayıtlarını telefondan siler (onaylı; vardiya açıkken bugün silinmez; yedek dosyası kalır). Geri yükleme: dosya + parola → içe aktarma kuralları (birleştirir, üzerine yazmaz) — 18 Ekim |
 
 ## 9. İlerleme
 
