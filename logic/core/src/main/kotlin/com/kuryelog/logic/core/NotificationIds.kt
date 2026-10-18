@@ -18,6 +18,8 @@ object NotificationIds {
     const val POCKET_CASH = 4901
     /** `:scooter` scooter bağlandı (kanal `scooter_link`, 15 sn). */
     const val SCOOTER_LINK = 4902
+    /** `:app` gün sonu raporu (A4.2; kanal `day_report`, vardiya bitince bir kez, kullanıcı kapatana dek kalır). */
+    const val DAY_REPORT = 4903
     /** `:core` evden çıkış görüldü ama vardiya kendiliğinden başlayamadı (kanal `auto_start`, 15 dk). */
     const val HOME_AUTO_START = 5101
     /** `:scooter` scooter bağlantısı reddedildi (kanal `auto_start`, 15 dk). */
@@ -49,7 +51,7 @@ object NotificationIds {
     /** Tablonun bütün girdileri (ad → aralık); test ayrıklığı buradan denetler. */
     val TABLE: Map<String, IntRange> = linkedMapOf(
         "SHIFT_FGS" to SHIFT_FGS..SHIFT_FGS, "SCOOTER_FGS" to SCOOTER_FGS..SCOOTER_FGS, "PAIRING" to PAIRING..PAIRING,
-        "DELIVERY_NOTE" to DELIVERY_NOTE..DELIVERY_NOTE, "POCKET_CASH" to POCKET_CASH..POCKET_CASH, "SCOOTER_LINK" to SCOOTER_LINK..SCOOTER_LINK,
+        "DELIVERY_NOTE" to DELIVERY_NOTE..DELIVERY_NOTE, "POCKET_CASH" to POCKET_CASH..POCKET_CASH, "SCOOTER_LINK" to SCOOTER_LINK..SCOOTER_LINK, "DAY_REPORT" to DAY_REPORT..DAY_REPORT,
         "HOME_AUTO_START" to HOME_AUTO_START..HOME_AUTO_START, "SCOOTER_AUTO_START" to SCOOTER_AUTO_START..SCOOTER_AUTO_START,
         "SHIFT_INTERRUPTED" to SHIFT_INTERRUPTED..SHIFT_INTERRUPTED, "SCREEN_READING_OFF" to SCREEN_READING_OFF..SCREEN_READING_OFF,
         "REMINDER" to REMINDER, "TASK_NEARBY" to TASK_NEARBY..TASK_NEARBY, "WEATHER" to WEATHER..WEATHER,

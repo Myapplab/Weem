@@ -23,6 +23,15 @@
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
+    <!-- İzlenen uygulama seçimi (Siparişler ayarları) ve Wolt/Bolt kurye uygulamalarının otomatik bulunması: Android 11+ paket görünürlüğü
+         için yalnız başlatılabilir uygulamalar sorgulanır (Rawstats ile aynı; QUERY_ALL_PACKAGES yok). -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
     <!-- allowBackup=false bulut/adb yedeğini kapatır; Android 12'den itibaren kurallar siparişleri, müşteri numaralarını,
          scooter kayıtlarını ve eşleşme deposunu cihazdan cihaza aktarımın da dışında tutar (Rawstats ile aynı).
          Android 12 öncesinde allowBackup=false ikisini de kapsar; fullBackupContent gerekmez (lint DataExtractionRules). -->

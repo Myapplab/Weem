@@ -137,6 +137,11 @@ private fun MoreScreen(
 ) {
     var records by rememberSaveable { mutableStateOf(false) }
     var home by rememberSaveable { mutableStateOf(false) }
+    var ordersSettings by rememberSaveable { mutableStateOf(false) }
+    if (ordersSettings) {
+        OrdersSettingsScreen(lang, onBack = { ordersSettings = false })
+        return
+    }
     if (records) {
         RecordsScreen(lang, onBack = { records = false })
         return
@@ -150,6 +155,9 @@ private fun MoreScreen(
 
         Section(Str.HOME_TITLE.get(lang)) {
             TextButton(onClick = { home = true }) { Text(Str.HOME_OPEN.get(lang)) }
+        }
+        Section(Str.OSET_TITLE.get(lang)) {
+            TextButton(onClick = { ordersSettings = true }) { Text(Str.OSET_OPEN.get(lang)) }
         }
         Section(Str.RECORDS_TITLE.get(lang)) {
             TextButton(onClick = { records = true }) { Text(Str.RECORDS_OPEN.get(lang)) }

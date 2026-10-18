@@ -19,7 +19,10 @@ import com.kuryelog.logic.core.Clock
 import com.kuryelog.logic.core.KuryelogPrefs
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.core.LogStore
+import com.kuryelog.logic.economics.DaySummaries
 import com.kuryelog.logic.economics.EconomicsObserver
+import com.kuryelog.logic.economics.EnergySegments
+import com.kuryelog.logic.economics.NetSettings
 import com.kuryelog.logic.economics.OfferScore
 import com.kuryelog.logic.economics.OfferScoreBook
 import com.kuryelog.logic.orders.CourierRecords
@@ -88,6 +91,14 @@ class OrdersTabTest {
         db.saveTrip(RecordJson.trip(trip("a", t0, "Test Döner", 3.0)))
         db.saveTrip(RecordJson.trip(trip("b", t0 - 24 * 60 * min, "Test Kafe", 4.5)))
         return OrdersAccess.withOfferScores(LogOrdersSource(log, db, KuryelogPrefs.Memory(), clock), book)
+    }
+
+    /** A4.2: ayar ve enerji dosyasıyla bağlı kaynak (rapor kartı). */
+    private fun reportSource(prefs: KuryelogPrefs.Values): OrdersSource {
+        val db = CourierRecords.Memory()
+        db.saveTrip(RecordJson.trip(trip("a", t0, "Test Döner", 3.0)))
+        db.saveTrip(RecordJson.trip(trip("b", t0 - 24 * 60 * min, "Test Kafe", 4.5)))
+        return OrdersAccess.withDaySummaries(OrdersAccess.withOfferScores(LogOrdersSource(log, db, KuryelogPrefs.Memory(), clock), book), DaySummaries(log, prefs))
     }
 
     private fun show() = compose.setContent { WeemTheme(dark = false) { OrdersTab(Lang.TR, { source() }, { book }) } }
@@ -171,5 +182,25 @@ class OrdersTabTest {
         reveal("08:59  Test Döner").performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Teklif puanı: Uygulama 7 · Sen 8 (fark -1)").assertExists()
+    }
+
+    @Test fun reportCardShowsNetAfterEnergyCostAndTheGoal() {
+        // Bugün boşta 1000 Wh ölçülmüş; 0.10 ₼/kWh, %100 verim → 0.10 ₼ maliyet; brüt 3.00 komisyonsuz → net 2.90; hedef 10 ₼.
+        log.append(EnergySegments.FILE, """{"kind":"energy_segment","segment":"idle","spellId":"s1","energy":{"wh":1000.0}}""", log.day(t0))
+        val prefs = KuryelogPrefs.Memory().also { it.put(mapOf(NetSettings.KWH_PRICE to 0.1f, NetSettings.CHARGE_EFFICIENCY to 100f, NetSettings.DAILY_GOAL to 10f)) }
+        compose.setContent { WeemTheme(dark = false) { OrdersTab(Lang.TR, { reportSource(prefs) }, { book }) } }
+        compose.onNodeWithText("Net kazanç (enerji maliyeti düşülmüş)").assertIsDisplayed()
+        compose.onAllNodesWithText("2.90 ₼").onFirst().assertIsDisplayed()
+        reveal("Günün özeti (şimdiye dek)")
+        reveal("Günlük hedef 10.00₼ · net 2.90₼ (%29) · hedefe kalan 7.10₼")
+        reveal("Filo komisyonu girilmemiş: komisyon 0 sayıldı, net = brüt + bahşiş (Daha fazla → Siparişler ayarları).")
+    }
+
+    @Test fun reportSaysWhenEnergyWasNotMeasuredAndShowsNoGoalByDefault() {
+        compose.setContent { WeemTheme(dark = false) { OrdersTab(Lang.TR, { reportSource(KuryelogPrefs.Memory()) }, { book }) } }
+        reveal("Günün özeti (şimdiye dek)")
+        reveal("Enerji ölçülmedi (scooter bağlı değildi ya da okunamadı): enerji maliyeti hesaba katılmadı.")
+        compose.onNodeWithText("Net kazanç").assertIsDisplayed()
+        compose.onAllNodesWithText("Günlük hedef", substring = true).assertCountEquals(0)
     }
 }

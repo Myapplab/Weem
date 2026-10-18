@@ -43,6 +43,8 @@ class WeemApplication : Application() {
         }
         // Scooter bağlantısı (SCOOTER.md 5.3): vardiya canlı bağlantıyı açar/kapatır, M23, D8 odometre; siparişlerden sonra (ORDERS.md 4.2).
         Store.guarded(this, "start") { ShiftHub.listeners.add("scooter", ScooterShiftLink.hooks(this)) }
+        // A4.2 gün sonu raporu: siparişler ve scooter kapandıktan sonra (kapanan sipariş ve son enerji hesapta).
+        Store.guarded(this, "start") { ShiftHub.listeners.add("day_report", DayReportHook(this)) }
         // E7 ekran okuma uyarısı (CAPTURE.md 5.2): sonuncu (RS: `GpsService.startShift` sonunda).
         ShiftHub.listeners.add("screen_reading", ScreenReadingWarning(this))
     }

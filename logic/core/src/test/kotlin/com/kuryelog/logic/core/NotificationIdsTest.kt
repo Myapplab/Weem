@@ -11,7 +11,7 @@ class NotificationIdsTest {
             val (a, ra) = entries[i]; val (b, rb) = entries[j]
             assertTrue("$a $ra ∩ $b $rb", ra.last < rb.first || rb.last < ra.first)
         }
-        assertEquals(16, entries.size)
+        assertEquals(17, entries.size)
     }
 
     @Test fun theTwoOldCollisionsAreGone() {

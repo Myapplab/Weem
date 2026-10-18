@@ -10,6 +10,7 @@ import com.kuryelog.logic.core.Clock
 import com.kuryelog.logic.core.KuryelogPrefs
 import com.kuryelog.logic.core.LogStore
 import com.kuryelog.logic.core.ScooterBridge
+import com.kuryelog.logic.economics.DaySummaries
 import com.kuryelog.logic.economics.EconomicsObserver
 import com.kuryelog.logic.economics.OfferScoreBook
 import com.kuryelog.logic.orders.TripRecord
@@ -40,6 +41,9 @@ object Economics {
     fun scores(ctx: Context): OfferScoreBook = book ?: synchronized(this) {
         book ?: OfferScoreBook(observer(ctx), Store.log(ctx)::day, Shift.AndroidClock::wallMs).also { book = it }
     }
+
+    /** N4/N8 (A4.2): gün sonu raporu; ayarlar `kuryelog`'tan, enerji gün dosyalarından, her çağrıda taze okunur. */
+    fun daySummaries(ctx: Context): DaySummaries = DaySummaries(Store.log(ctx), Store.values(ctx))
 
     /** Sipariş kartının "Teklif puanı" satırı (`OrdersSource.offerScoreLine`); teklifsiz siparişte null. */
     fun cardLine(ctx: Context, trip: TripRecord, tl: (String, String) -> String): String? = scores(ctx).cardLine(trip, tl)

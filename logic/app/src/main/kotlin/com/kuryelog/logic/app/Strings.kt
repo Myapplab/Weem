@@ -116,6 +116,37 @@ enum class Text(override val tr: String, override val az: String) : Bilingual {
         "Ev ayarlıysa: evden kuş uçuşu %d m uzaklaşıp GPS hızı en az %d km/s olunca (art arda iki ölçüm, doğruluk ≤%d m) vardiya kendiliğinden başlar; eve (%d m) dönüp %d saniye yerinde kalınca biter (açık sipariş varken bitmez). Elle başlat/bitir her zaman çalışır. Ev konumu yalnız bu telefonun ayarlarında saklanır; kayıtlara ve dışa aktarmaya yazılmaz.",
         "Ev təyin olunubsa: evdən düz xətt %d m uzaqlaşıb GPS sürəti ən azı %d km/s olanda (ardıcıl iki ölçmə, dəqiqlik ≤%d m) növbə özü başlayır; evə (%d m) qayıdıb %d saniyə yerində qalanda bitir (açıq sifariş varkən bitmir). Əl ilə başlat/bitir həmişə işləyir. Ev məkanı yalnız bu telefonun ayarlarında saxlanılır; qeydlərə və ixraca yazılmır.",
     ),
+
+    // A4.2 Siparişler ayarları (S20 (b); RS "Özel ayarlar") ve net kazanç / günlük hedef (N4, N8).
+    OSET_TITLE("Siparişler ayarları", "Sifariş ayarları"),
+    OSET_OPEN("Komisyon, ekran, net kazanç ve günlük hedef", "Komissiya, ekran, xalis qazanc və gündəlik hədəf"),
+    OSET_COMMISSION("Filo komisyonları", "Filo komissiyaları"),
+    OSET_COMMISSION_NOTE("Teklif fiyatı brüt sayılır; net = brüt − komisyon + bahşiş. Komisyon girilmezse 0 sayılır.", "Təklif qiyməti ümumi sayılır; xalis = ümumi − komissiya + çaypulu. Komissiya daxil edilməsə 0 sayılır."),
+    OSET_COMMISSION_ASK("%s komisyonu (yüzde, 0–99,99)", "%s komissiyası (faiz, 0–99,99)"),
+    OSET_NO_PLATFORM("İzlenen Wolt ya da Bolt uygulaması yok", "İzlənən Wolt və ya Bolt tətbiqi yoxdur"),
+    OSET_SCREEN("Ekran ve kartlar", "Ekran və kartlar"),
+    OSET_OVERLAY("Ekran üstü panel görünür", "Ekran üstündəki panel görünür"),
+    OSET_OCR("Görünür ekran OCR yedeği", "Görünən ekran üçün OCR ehtiyatı"),
+    OSET_CARD("Müşteri kartı (ekranın üstünde)", "Müştəri kartı (ekranın yuxarısında)"),
+    OSET_BUBBLE("Restoran balonu genişliği", "Restoran balonunun eni"),
+    OSET_BUBBLE_ASK("Restoran balonu (ekran genişliğinin yüzdesi)", "Restoran balonu (ekran eninin faizi)"),
+    OSET_CARD_SIZE("Müşteri kartı boyutu", "Müştəri kartının ölçüsü"),
+    OSET_CARD_SIZE_ASK("Müşteri kartı boyutu (eski kartın yüzdesi)", "Müştəri kartının ölçüsü (köhnə kartın faizi)"),
+    OSET_APPS("İzlenen uygulamalar", "İzlənən tətbiqlər"),
+    OSET_APPS_NONE("Seçili uygulama yok", "Seçilmiş tətbiq yoxdur"),
+    OSET_APPS_PICK("Uygulamaları seç", "Tətbiqləri seç"),
+    OSET_NET("Net kazanç ve günlük hedef", "Xalis qazanc və gündəlik hədəf"),
+    OSET_NET_NOTE(
+        "Net = brüt + bahşiş − filo komisyonu − enerji maliyeti. Enerji maliyeti = ölçülen Wh × kWh fiyatı ÷ şarj verimi. kWh fiyatı girilmezse ya da enerji ölçülmediyse maliyet hesaba katılmaz ve raporda yazılır.",
+        "Xalis = ümumi + çaypulu − filo komissiyası − enerji xərci. Enerji xərci = ölçülən Wh × kWh qiyməti ÷ şarj səmərəsi. kWh qiyməti daxil edilməsə və ya enerji ölçülməsə xərc hesaba alınmır və hesabatda yazılır.",
+    ),
+    OSET_KWH("kWh fiyatı (₼)", "kWh qiyməti (₼)"),
+    OSET_EFFICIENCY("Şarj verimi (yüzde)", "Şarj səmərəsi (faiz)"),
+    OSET_GOAL("Günlük net hedef (₼)", "Gündəlik xalis hədəf (₼)"),
+    OSET_UNSET("girilmedi", "daxil edilməyib"),
+    OSET_DEFAULT("%s (varsayılan)", "%s (susmaya görə)"),
+    OSET_EMPTY_CLEARS("Boş bırakıp kaydedersen değer silinir.", "Boş buraxıb yadda saxlasan dəyər silinir."),
+    OSET_INVALID("Geçersiz değer: %s ile %s arasında bir sayı yaz.", "Yanlış dəyər: %s ilə %s arasında bir rəqəm yaz."),
 }
 
 val Tab.label: Text

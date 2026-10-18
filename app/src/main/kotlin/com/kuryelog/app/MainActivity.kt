@@ -27,6 +27,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         // RS `MainActivity`: eski otomatik oturumlar güncellemeden sonra sürmez (CORE.md 1.1).
         safely("start") { Store.ensureManualMode(this); Shift.deviceId(this) }
+        // Wolt/Bolt kurye uygulamaları izlenenlere kendiliğinden eklenir (elle seçilmediyse; RS `autoDetectTargets`).
+        safely("targets") { TargetPicker.autoDetect(this) }
         openFrom(intent)
         val prefs = ShellPrefs(this)
         setContent {
