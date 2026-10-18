@@ -32,7 +32,7 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 | 11 | Y11 ve YolGo gün motoru | A6.8 | ajan T1 | yazılıyor (ajan T1 başladı) (17:51 UTC) <!-- st:11 --> |
 | 12 | Y17, Y18 | A6.9 | ajan T1 | bekliyor <!-- st:12 --> |
 | 13 | Y19, Y20 | A6.9 | ajan T2 | yazılıyor (ajan T2 başladı) (17:51 UTC) <!-- st:13 --> |
-| 14 | veri sözleşmesi | tümü | koordinatör | bekliyor <!-- st:14 --> |
+| 14 | veri sözleşmesi | tümü | koordinatör | yazılıyor (kısmen: 14.1–14.11 taslak; Bölüm 11–13 satırları ajanlar bitince) (18:01 UTC) <!-- st:14 --> |
 | 15 | WEEM yerleşimi | tümü | koordinatör | bekliyor <!-- st:15 --> |
 | 16 | test eşlemesi A6.2a/A6.2b | A6.2a, A6.2b | koordinatör | bekliyor <!-- st:16 --> |
 | 17 | açık noktalar ve sorular | tümü | koordinatör | bekliyor <!-- st:17 --> |
@@ -1823,7 +1823,203 @@ _Bekliyor (ajan T, ikinci dalga)._
 <!-- BEGIN sec:14 -->
 ## 14. Veri sözleşmesi
 
-_Yazılıyor (koordinatör)._
+`:map`'in kalıcı adları ve biçimleri tek yerde. Üst sözleşme `VERI_SOZLESMESI.md` (5.4 YolGo tercihleri, 7.3 YolGo dosyaları, 8 bildirimler; bir adı değiştirmek kullanıcı kararı); bu bölüm WEEM tarafındaki yeri, tipi ve okuma kuralını verir, ayrıntı ilgili bölümün "Veri" alt bölümündedir. **S1:** YolGo'nun tercihleri ve dosyaları WEEM'e kendiliğinden geçmez (WEEM başka paketin verisini okuyamaz, eski YolGo'ya dışa aktarma eki yok); her şey boş başlar, yeniden girilir ya da yeniden öğrenilir (Y12 S3). Bu yüzden YolGo'nun **göç kuralları ve göç işaretleri WEEM'de yazılmaz** (14.2, 14.3); okuma kuralları (bozuk değer → varsayılan) aynen kalır, çünkü WEEM'in kendi yazdığı veri de bozulabilir. Tek istisna aday: YolGo sürüş günlüğü dışa aktarması `duzyol-journal-v1` (`VERI_SOZLESMESI` 7.3 "içe aktar") — Bölüm 12 ve 14.9.
+
+### 14.1 Depolama yerleri ve tip eşlemesi
+
+| Yer | WEEM | Ne |
+|---|---|---|
+| Tercih dosyası **`map`** | `SharedPreferences("map", MODE_PRIVATE)`; saf arayüz `logic/map` `MapPrefs`, Android `:map` `MapPrefsStore` (Bölüm 4.7) | `settings.v1` (14.2) ve küçük durumlar (14.3); YolGo adları **`flutter.` öneki olmadan**, aynı ad ve biçim |
+| Tercih dosyası `kuryelog` | `:core` (`VERI_SOZLESMESI` 5.1) | YolGo'dan oraya geçenler: `lang` (`Lang.PREF_KEY`), `theme` (`Shell.PREF_KEY`), ev `home.lat`/`home.lon` (`KuryelogPrefs`) |
+| `files/mapdata/` | Y7 (Bölüm 2.12) | graf, DEM, POI, parça önbelleği (YolGo `files/` = support dizini; yol aynı) |
+| `files/map/` | WEEM `:map` (yeni alt klasör) | büyüyen JSON blobları (Y12 `roads/`, `manual-marks.json`), hava önbelleği; Bölüm 11–13'ün dosyaları 14.4 |
+| APK asset'leri | `:map` modülü `assets/map/`, `assets/baku/` | gömülü harita, bölge fotoğrafları (Bölüm 2.12, 5.5) |
+
+Tip eşlemesi (`map` dosyası; YolGo Dart `SharedPreferences` → Android):
+
+| YolGo tipi | WEEM yazımı | Okuma |
+|---|---|---|
+| `String` | `putString` | aynı |
+| `bool` | `putBoolean` | aynı |
+| `int` (64 bit) | `putLong` | aynı (ör. `clipboard.lastHash` 0…2³²−1, ms damgaları) |
+| `double` | `putString(Double.toString(v))` (Flutter da Android'de double'ı önekli String saklar; `putFloat` 32 bit olduğu için kullanılmaz) | `toDoubleOrNull()`; sonlu değilse yok sayılır |
+| `List<String>` | `putString(JSONArray(liste).toString())` — sıra ve tekrar korunur (`putStringSet` sırayı ve tekrarı kaybeder) | dizi değilse ya da öğe dizge değilse anahtar yok sayılır (YolGo'da okunamayan liste = yok) |
+
+Yazım: bir eylemin bütün anahtarları tek `edit()…apply()`'da (Bölüm 4.2: sokak kararlarının beş anahtarı birlikte). Okuma hatası hiçbir zaman çökme değildir; anahtar yok sayılır (YolGo davranışı) ve `FailureSink`'e tek satır düşer (`:core` `guarded`). `map` dosyası ve `files/map*` S22 haftalık şifreli yedeğe bugün girmez (yalnız `kuryelog` ayarları; SORU-Q5 Y12 için soruyor, 17'de toplu); `allowBackup="false"` + `dataExtractionRules` (`VERI_SOZLESMESI` 1) Android yedeğine de sokmaz.
+
+### 14.2 `MapSettings` — `settings.v1` alan tablosu
+
+YolGo: `FlutterSharedPreferences` → `flutter.settings.v1` (JSON nesne, `settings.dart:17-361`). WEEM: `map` dosyasında **`settings.v1`** (String JSON), `logic/map` `settings.MapSettings` (değişmez veri sınıfı) + `MapSettingsCodec` (aynı alan adları); Android `:map` `MapSettingsStore` (`StateFlow<MapSettings>`, `update { }`).
+
+**Okuma kuralı** (`fromJson`, :276-320; `SettingsController.build`, :339-348): dizge yok → bütün varsayılanlar; JSON değil ya da nesne değil → bütün varsayılanlar; alan yok ya da `null` → o alanın varsayılanı; **alan var ama tipi yanlış** (ör. sayı yerine dizge) → Dart `as` dökümü istisna atar → **bütün ayarlar varsayılana döner** (alan bazında değil). Bilinmeyen anahtarlar (ör. eski `voice`) yok sayılır. Sayılar `num` → `double` (tam sayı da kabul). WEEM `MapSettingsCodec.decode` aynı sonucu verir (`settings.MapSettingsTest`; Bölüm 10.12 `v140_features` "ayar" testleri). **Yazma kuralı** (`update`, :350-353): her değişiklikte bütün nesne yeniden yazılır.
+
+| Alan | Tip · varsayılan | Okuma / sınır | Arayüz (YolGo) | Kullanan | WEEM |
+|---|---|---|---|---|---|
+| `vehicleId` | String · `g3` | bilinmeyen kimlik → `g3` profili (`vehicleById`; `g3` 598 Wh, `g3x` 1066 Wh) | yok (1.7.0'da kalktı) | Y3, Y9 (3.2, 10.3) | `MapSettings` (ekran yok) |
+| `flatWhPerM` | double · 0.0135 | — | yok | Y3, Y9 | `MapSettings` |
+| `climbWhPerM` | double · 0.38 | — | yok | Y3, Y9 | `MapSettings` |
+| `climbSafety` | double · 1.0 | — | yok | Y3 (`speedOption`'da; `EnergyOdometer`'da yok, 10.14) | `MapSettings` |
+| `flatKmh` | double · 28.5 | — | yok | Y3, Y9 | `MapSettings` |
+| `climbKmh` | double · 18.5 | — | yok | Y3, Y9 | `MapSettings` |
+| `walkKmh` | double · 4.5 | — | yok | Y3 | `MapSettings` |
+| `maxGradePct` | double · 18 | `gradeLimitFor`: batarya < `lowBatteryPct` → `lowBatteryGradePct`, değilse bu; /100 | yok | Y3, Y4 | `MapSettings.gradeLimitFor` |
+| `lowBatteryGradePct` | double · 10 | aynı | yok | Y3, Y4 (7.8) | `MapSettings` |
+| `lowBatteryPct` | double · 50 | aynı; batarya kutusu turuncu eşiği (10.5) | yok | Y4, Y9 | `MapSettings` |
+| `homeReturnPct` | double · 30 | "Batarya düşük — eve dön?" eşiği (7.8) | yok | Y4 | `MapSettings` |
+| `mainRoadPenalty` | double · 1.15 | — | yok | Y3 | `MapSettings` |
+| `walkRadius` | double · 150 | — | yok | Y3 | `MapSettings` |
+| `turnPenaltyS` | double · 12 | — | yok | Y3 | `MapSettings` |
+| `qualityTolerancePct` | double · 10 | okuma kıstırmaz; `qualityWeight = /100` | kaydırıcı 0–30, 30 adım (`surface_screen.dart:74`, Y13 ekranında) | Y3, Y12 | `MapSettings`; kaydırıcının WEEM yeri Bölüm 9 |
+| `bikewayCostPct` | double · 85 | okurken 50–100'e kıstırılır (:315); `bikewayFactor = clamp(50,100)/100` | kaydırıcı 50–100, 10 adım (`bikeway_layer.dart:128`) | Y3, Y15 | `MapSettings` |
+| `showBikewayLayer` | bool · true | — | anahtar (`bikeway_layer.dart:120`) | Y15 | `MapSettings` |
+| `speedChoices` | double[3] · `[20, 25, 29]` | dizi değil, uzunluk ≠ 3 ya da öğe 5–45 dışı/sayı değil → varsayılan (`_speeds`, :329-333) | `SpeedSheet` ±1, 5–45 (`widgets.dart:252`) | Y9 (10.2) | `MapSettings` |
+| `lightMaxM` | double · 5 | YolGo göçü: `lightMaxMv3 != true` ve kayıtlı 25 → 5 (`_lightMaxM`, :326-327) — **WEEM'de yok** (S1) | sayı satırı 3–40 m, adım 1 (`settings_screen.dart:291`) | Y11 (Bölüm 11) | `MapSettings` |
+| `volumeKeys` | bool · true | — | anahtar (`settings_screen.dart:305`) | Y12 (9.5) | `MapSettings` |
+| `showQualityLayer` | bool · false | — | anahtar (Y13 ekranı) | Y13 (sonra) | `MapSettings` (1.0'da etkisiz, Bölüm 9) |
+| `wwMaxProblemPct` | double · 50 | — | adımlayıcı 20–90, adım 5 (`roads_screen.dart:290`) | Y3, Y12 | `MapSettings` |
+| `wwAskAlways` | bool · false | — | anahtar (`roads_screen.dart:301`) | Y12 | `MapSettings` |
+| `logging` | bool · true | — | anahtar (`ride_logs_screen.dart:137`) | Y18 (Bölüm 12) | `MapSettings` (anlamı Bölüm 12) |
+| `region` | String · `central` | `wide` dışındaki her değer merkez kutu (`regionBox`) | kurulum ve Harita verisi seçicisi (`setup_screen.dart:76`, `settings_screen.dart:469`) | Y7 (2.9) | `MapSettings` |
+| `mapStyle` | String · `minimal` | YolGo göçü: `mapDesignV1 != true` ve (`null` ya da `osm`) → `minimal` (:317-318) — **WEEM'de yok** (S1) | altlık seçici (`settings_screen.dart:68`) | Y1, Y2 (6.4) | `MapSettings`; değerler SORU-N5 |
+| `googleKey`, `orsKey`, `cartoKey` | String · `""` | — | "API ve bağlantılar" anahtar penceresi (`api_settings.dart:85-102`) | Y6, Y1 (8.9, 6.13) | `MapSettings` aynı adlar; **sır** (14.10); `cartoKey` yalnız CARTO kalırsa (SORU-N5) |
+| `home` | `{lat, lon}` ya da `null` | `GeoPoint.fromJson`: nesne değil ya da sayı değil → `null` | Rawstats'tan önbellek (`rawstats_home.dart:90`), `clearHome` | G1, G2, Y4 | **`MapSettings`'e girmez:** `:core` ev (`kuryelog` `home.lat`/`home.lon`, CORE.md) |
+| `theme` | String · `dark` (`dark` \| `dark-ui` \| `light` \| `auto`) | — | "Görünüm" (`settings_screen.dart:162`) | Y1 | **girmez:** `:app` `theme` (`kuryelog`, A1.3; Bölüm 6.2) |
+| `lang` | String · `""` (`tr` \| `az` \| `""` telefon) | — | kurulum, "Dil" | G3 | **girmez:** `:app`/`:core` `lang` (`kuryelog`) |
+| `googleMapCompatibility` | bool · false | — | geliştirici anahtarı (`api_settings.dart:79`) | Flutter platform görünümü | **girmez** (6.13) |
+| `autoStartDay`, `autoEndDay`, `followCourierStages` | bool · true | okurken ve her yazımda **zorla `true`** (:312-314, 351) | yok (1.10.0) | G1 | **girmez:** tek vardiya kuralı `:core` (CORE.md, S2) |
+| `lightMaxMv2`, `lightMaxMv3`, `mapDesignV1` | bool · her yazımda `true` | göç işaretleri | — | — | **girmez** (S1) |
+
+Türetilenler (`MapSettings` yöntemleri, saf): `vehicle` (profil), `regionBox` (`Baku.wideBox` / `Baku.centralBox`, Bölüm 2.2), `gradeLimitFor(batteryPct)`, `paramsFor(batteryPct)` → `RideParams` (`qualityWeight = qualityTolerancePct/100`, `bikewayFactor = clamp(bikewayCostPct, 50, 100)/100`; Bölüm 3.2). `qualityTolerancePct`, `wwMaxProblemPct`, `turnPenaltyS`, `bikewayCostPct` değişince açık rota yeniden hesaplanır (`replan('prefs')`, Bölüm 7.5); öteki alanlar sonraki hesapta etkili olur.
+
+### 14.3 `map` tercih dosyasının öteki anahtarları
+
+| Anahtar (YolGo adı) | Tip · biçim | Bölüm | WEEM |
+|---|---|---|---|
+| `map.bundled.<region>`, `map.bundledAt` | String sürüm | 2.9, 2.12 | aynı |
+| `streets.approved`, `streets.blocked`, `streets.steep` | List<String> way id | 4.2 | aynı |
+| `streets.names`, `streets.hours.v1` | List<String> `"<id>\|<ad>"`, `"<id>\|<dk>\|<dk>"` | 4.2, 4.3 | aynı |
+| `streets.blocked.legacy.v1`, `streets.blocked.migrated.v2` | göç yedeği ve işareti | 4.2 | **yazılmaz** (S1) |
+| `streets.bikeway.v1` | List<String> `"id\|ad"` | 5.1, 5.5 | aynı |
+| `places.local.v1` | List<String> JSON | 5.3, 5.5 | aynı |
+| `passive.pausedAt.v2` | int ms | 6.2, 6.13 | aynı |
+| `clipboard.lastHash` | int (FNV-1a 32) | 8.3, 8.10 | aynı (`Long`) |
+| `search.recents.v2` | String JSON dizi (≤ 12) | 8.8, 8.10 | aynı |
+| `battery.setPct`, `battery.consumed`, `battery.setAt` | double, double Wh, int ms | 10.3 | aynı |
+| `weather.enabled.v1` (true), `weather.strip.v1` (true), `weather.key.v1` (""), `weather.permission.asked.v1` | bool, bool, String (**sır**), bool | 10.7 | aynı |
+| `lights.v1` | List<String> `"lat,lon,yes,no,waitS"` | 11 | Bölüm 11 |
+| `sidewalk.zones.v1` | String JSON dizi (`GeoPoint`) | 11 | Bölüm 11 |
+| `shift.v1`, `shift.last` | String JSON (`ShiftState`, `v: 2`; son gün) | 11, 12 | Bölüm 11–12 |
+| `courier.follow.v1` | String JSON (aşama izleyici) | 11 | Bölüm 11 |
+| `shift.deleted.days.v2` | List<String> | 12 | Bölüm 12 |
+| `ride.active.v1` | etkin sürüş kaydı | 12 | Bölüm 12 |
+| `daily.tasks.v1`, `daily.tasks.closed.v1` | String JSON dizi, String JSON harita | 13 | Bölüm 13 |
+| `reminders.v1`, `reminders.last.v1` | String JSON, List<String> `"<kind>:<ms>"` | 13 | Bölüm 13 |
+| `day.home.v1` | ev kuralı durumu | G1 | **`map`'e girmez:** `:core` ev kuralı (`HomeShift`, CORE.md) |
+| `rawstats.shiftEnd.handled.v1`, `rawstats.shiftStart.handled.v1` | int ms | G1 | **girmez:** `ShiftFollower` durumu (CORE.md; Bölüm 11) |
+| `rawstats.home.lastSuccessAt.v1` | int ms | G2 | **girmez** (S7: Rawstats ev okuması yok) |
+| `surface.paused.day`, `surface.raw.debug` | Y13 | — | sonra |
+
+YolGo'nun **yerel (Kotlin) tercih dosyaları**: `duzyol_weather` (Y10; WEEM'de `map` + `files/map/weather.json`, Bölüm 10.11), `yolgo_runtime_v2` (`TelemetryService`: `day`, `eligible` …; Bölüm 12 — `VERI_SOZLESMESI` 5.4'te eksikti, 14.11), `offer_dataset_v1` (`region`, `active`; Bölüm 13), `road_calibration_overlay_v1` (Y14, sonra). WEEM'de ayrı yerel dosya açılmaz; hepsi `map`'e ya da `files/map/`'e (ilgili bölümün kararı).
+
+### 14.4 Dosyalar ve asset'ler
+
+| YolGo yolu | Biçim | Bölüm | WEEM |
+|---|---|---|---|
+| `files/mapdata/graph_<region>.bin` | KNG1 v2 ikili (**değişmez**, 2.5) | 2.5, 2.12 | aynı yol ve biçim |
+| `files/mapdata/dem/N40E049.hgt`, `N40E050.hgt` | SRTM HGT | 2.7 | aynı |
+| `files/mapdata/pois_<region>.json` | sıkı POI JSON | 2.10, 5.3 | aynı |
+| `files/mapdata/parts_graph_<region>/*.json.gz` | Overpass parça önbelleği (2 gün) | 2.9 | aynı |
+| APK `assets/map/manifest.json`, `graph_wide.bin.gz`, `N40E049.hgt.gz`, `N40E050.hgt.gz`, `pois_wide.json.gz`, `pois_central.json.gz` | gömülü harita (CI) | 2.11 | `:map` `assets/map/`, aynı adlar |
+| APK `assets/baku/*.jpg`, `credits.json` | bölge fotoğrafları (CI Wikimedia) | 5.4 | `:map` `assets/baku/`, aynı adlar |
+| `files/surface-v2/manual-marks.json` (Y13 deposu) | elle kötü noktalar | 9.10 | `files/map/manual-marks.json` (aynı biçim; SORU-Q1) |
+| tercihlerde `roads.*` (8 anahtar) | JSON blob | 9.10 | `files/map/roads/<anahtar>.json` (birebir JSON; S3 sıfırdan) |
+| `duzyol_weather` → `report` | Open-Meteo yanıtı + meta | 10.7 | `files/map/weather.json` (öneri, 10.11) |
+| `app_flutter/logs/YYYY-MM-DD.jsonl`, `…_ride_<ms>.jsonl`, `…[_HHMM].gun.json`, `…_route_<ms>.json` | sürüş günlüğü, sürüş, gün raporu, rota kaydı | 12 | Bölüm 12 |
+| `files/telemetry-v2.jsonl` (≤ 3000 satır) | yerel telemetri günlüğü | 12 | Bölüm 12 |
+| `app_flutter/TeklifVeriSeti/<gün>/…` | teklif veri seti | 13 | Bölüm 13 |
+| `files/surface-raw-v2/…`, `files/road-calibration-v1/<id>.json` | Y13/Y14 | — | sonra |
+
+Bütün WEEM dosya yazımları `.tmp` + `rename` (YolGo Y12/Y13 depolarının ilkesi); okunamayan dosya silinmez, `<ad>.damaged-<ms>` olarak saklanır (Bölüm 9.10 kuralı bütün `files/map/` dosyalarına).
+
+### 14.5 Sürüş günlüğü olay adları (dizin)
+
+Biçim ve dosya Bölüm 12'de; olay adları ve alanları **aynen** korunur (eski kayıtlarla aynı okunur). Koordinatlar yalnız belirtilen yerlerde, belirtilen hane sayısıyla; ev koordinatı hiçbir olaya yazılmaz.
+
+| Olay | Alanlar | Bölüm |
+|---|---|---|
+| `route`, `reroute` | `mode, m, walk, s, wh, up, stops, to` | 7.4 |
+| `routing_failure` | `reason, originInMap, targets[{inside, nearestM}]` | 7.4 |
+| `route_clear`, `route_end`, `mode {m}`, `arrive {la, lo}` (4 hane) | | 7.8, 7.14 |
+| `wrongway {way, main}` | | 7.7, 9.6 |
+| `intent {scheme, host}`, `external {src, kind}`, `resolved {src, by, conf, dm?}` | | 8.2, 8.7 |
+| `approve`, `block`, `steep` `{way}`, `undo {way}`, `bad_road_clear {way}` | | 4.4 |
+| `ww_pass {way, m, inc, reported?}`, `ww_answer {way, problem, approved?}`, `ww_report {way}`, `ghost {way, all?}`, `ww_segment {way, allow}`, `bad_spot {way}`, `bad_spot_clear {way, n}` | | 9.10 |
+| `battery_set` | — | 10.3: **üretilmez** (ölü yol) |
+| `shift_stop`, `light_answer {la, lo (5 hane), light, dur, jm?, long?}`, `stop_surface_override` ve gün olayları | | Bölüm 11 |
+| `task_route_opened`, `reminder {k, preview?}` | | Bölüm 13 |
+
+### 14.6 Bildirimler, kanallar, arka plan işleri, servisler
+
+Tek tablo `:core` `NotificationIds` (`CORE.md` 3.3); kanal kimlikleri eski adlarıyla (kullanıcının kanal ayarı kanala bağlı).
+
+| No | Ad (`NotificationIds`) | Kanal | Bölüm | Not |
+|---|---|---|---|---|
+| 7100–7102 | `REMINDER` (`reminder(kind)`: `WATER`, `CHECK`, `FOOD`) | `hatirlatici` | 13 | vardiya sonu iptal |
+| 7201 | `TASK_NEARBY` | `hatirlatici` | 13 | vardiya sonu iptal |
+| 7301 | `WEATHER` | `duzyol_weather` | 10.8 | günde bir; vardiya sonu iptal |
+| 7401 | `DATASET_FGS` | `yolgo_offer_dataset` | 13 | ön plan servisi |
+| 7402 | `NAV_ONLY_FGS` (**öneri**, SORU-N4) | `navigation` (yeni) | 7.12, 7.17 | vardiya bitince yalnız-nav ≤ 90 dk |
+| 7400 | — | `yolgo_recording` | 12 | **kullanılmaz:** YolGo gün kaydı servisi vardiya servisine (1, `shift`) birleşti (`VERI_SOZLESMESI` 8.2) |
+| 7435 | `CALIBRATION_FGS` | `yolgo_calibration` | — | Y14, sonra |
+
+Arka plan: WorkManager `duzyol_weather_v1` (periyodik 2 sa, ağ gerekli; 10.8). Ön plan servisleri: gün açıkken konum `:core` vardiya servisinde (1); `:map`'in kendi servisi yok (yalnız-nav için SORU-N4; veri seti Bölüm 13). Etkinlik tanıma `MotionReceiver` (Bölüm 11).
+
+### 14.7 Ağ uç noktaları
+
+`:map` ağı yalnız `HttpPort` üstünden (Bölüm 2.14, 8.12; testte sahte); ekran okuma kodu ağ kullanmaz (AGENTS.md). Bütün isteklerde `User-Agent: WEEM/<versionName> (personal courier navigation)` (YolGo `YolGo/1.11.0 (…)`; F-N3); karo isteklerinde paket kimliği `com.kuryelog.app`.
+
+| Hizmet | Uç nokta | Bölüm |
+|---|---|---|
+| Overpass (4 ayna, sırayla) | `overpass-api.de`, `overpass.private.coffee`, `maps.mail.ru/osm/tools/overpass`, `overpass.kumi.systems` → `/api/interpreter` (POST `data=`) | 2.8 |
+| Hazır harita verisi | `github.com/mehemmedsh/kurye_nav_data/releases/latest/download` + `manifest.json` | 2.9 (koşul: 2.15 sorusu) |
+| Yükseklik (SRTM) | `s3.amazonaws.com/elevation-tiles-prod/skadi/…`, `elevation-tiles-prod.s3.amazonaws.com/skadi/…` (`.hgt.gz`) | 2.7 |
+| Geofabrik (yalnız CI) | `download.geofabrik.de/asia/azerbaijan-latest.osm.pbf` | 2.11 |
+| Wikimedia Commons (yalnız CI) | `commons.wikimedia.org/w/api.php` | 5.4 |
+| Karolar | OSM `tile.openstreetmap.org/{z}/{x}/{y}.png`; Esri `server.arcgisonline.com/ArcGIS/rest/services/…`; CARTO `{s}.basemaps.cartocdn.com` | 6.4 (WEEM stilleri S4, SORU-N5) |
+| Google Maps SDK | `com.google.android.geo.API_KEY` (CI gizli değişkeni) | 6.10 |
+| Google Geocoding / Places (New) | `maps.googleapis.com`, `places.googleapis.com` (kullanıcı `googleKey`) | 8.6, 8.8 |
+| OpenRouteService | `api.openrouteservice.org` `geocode/search`, `geocode/autocomplete` (`orsKey`) | 8.6, 8.8 |
+| Nominatim | `nominatim.openstreetmap.org/search` | 8.6 |
+| Kısa bağlantılar | `maps.app.goo.gl`, `goo.gl`, `g.co` … (yönlendirme izlenir; `consent.` ara sayfası) | 8.6 |
+| Open-Meteo | `api.open-meteo.com/v1/forecast`, anahtarla `customer-api.open-meteo.com` | 10.7 |
+| Google Maps'te rota | `https://www.google.com/maps/dir/` (`openGoogleRoute`) | **kalkar** (S9; 8.13, 13) |
+
+### 14.8 Manifest: intent'ler, alıcılar, izinler; kalkan sağlayıcılar
+
+- **Intent filtreleri** (Y5): YolGo `MainActivity`'nin 10 VIEW filtresi + SEND `text/plain` + PROCESS_TEXT `text/plain` aynen `:app` `MainActivity`'ye (Bölüm 8.2, `VERI_SOZLESMESI` 2).
+- **Kalkar (S7):** sağlayıcılar `az.duzyol.app.nav` (`nav/v1/current` → `NavPort.route`, 7.9) ve `az.duzyol.app.weather` (`weather/current` → `WeatherPort`, 10.10); `SHARE_HOME` (`az.duzyol.app.action.SHARE_HOME`, `com.kuryelog.app.action.SHARE_HOME`), `PICK_HOME` (`com.myapplab.yolgo.PICK_HOME`) ve ev seçici aktiviteleri (6.11); Rawstats sağlayıcısının YolGo okuyucuları (`offers/v2/current`, `scooter/v1/live`, `shift/v1/state`, `logs/v3/day/…`) → iç akışlar (`OrderEvents`, `ScooterBridge.live`, `ShiftPort`, Bölüm 13'te veri seti).
+- **Kalır:** `MotionReceiver` (Activity Recognition; `:map`, Bölüm 11), WorkManager hava işi.
+- **İzinler** (`VERI_SOZLESMESI` 3; `:map`'in kullandıkları): konum (fine/coarse; arka plan `:core` vardiya servisinde), `INTERNET`, `POST_NOTIFICATIONS`, `ACTIVITY_RECOGNITION`, `FOREGROUND_SERVICE_LOCATION` (vardiya ve SORU-N4), veri seti servisi gerekirse `FOREGROUND_SERVICE_SPECIAL_USE` (Bölüm 13), `SYSTEM_ALERT_WINDOW` yok (`:map` yüzen pencere açmaz).
+
+### 14.9 Eski YolGo verisi (S1) ve 2 telefon
+
+- **Yeniden girilir:** `settings.v1`'in kullanıcı alanları (14.2), sokak kararları ve saatler, bisiklet yolları, POI düzeltmeleri, ışık işaretleri, kaldırım bölgeleri, görevler, hatırlatıcılar, API anahtarları, son aramalar (`VERI_SOZLESMESI` 5.4).
+- **Yeniden öğrenilir / üretilir:** Y12 yol bilgisi (S3), harita verisi (Y7), batarya tahmini durumu, ışık veritabanının öğrenilmiş kısmı.
+- **Taşınmaz (anlık):** gün durumu (`shift.*`, `day.home.v1`, `courier.follow.v1`, `rawstats.*`, `ride.active.v1`, `passive.pausedAt.v2`), önbellekler.
+- **İçe aktarma adayı:** sürüş günlüğü `duzyol-journal-v1` (`VERI_SOZLESMESI` 7.3) — kararı ve biçimi Bölüm 12.
+- **2 telefon (plan 4.4):** `:map` verisi telefon başınadır (harita verisi, `map` dosyası, `files/map/`); `:link`'ten yalnız tanımlı mesajlar gider (`RouteStatus` R→P, `BatterySummary`, …; Bölüm 7.16, 10.4). Rota kaydı ve Y12 öğrenmesi konumun olduğu telefonda (Receiver) yazılır; Provider'ın ekranları gerekeni mesajdan gösterir (SORU-Q7 ve 17).
+
+### 14.10 Gizlilik ve sırlar
+
+- **Sırlar:** `googleKey`, `orsKey`, `cartoKey`, `weather.key.v1` ve APK Maps anahtarı hiçbir kayda, olaya, dışa aktarmaya, yedeğe, çökme kaydına ve belgeye yazılmaz; günlükte yalnız var/yok (YolGo CI'daki gibi en çok son 4 karakter). `map` dosyası yedeğe girerse (17) bu dört alan çıkarılır.
+- **Koordinat:** ev koordinatı `:core`'da kalır; `:map` olaylarına, gün raporuna, sürüş kaydına yazılmaz (YolGo `home_day.dart:8-10` ilkesi). Olaylardaki koordinatlar hane sınırlı (`arrive` 4, `light_answer` 5). Hava özeti konum taşımaz (10.10).
+- **Müşteri verisi:** `:map` müşteri adı/telefonu tutmaz; navigasyon hedefi adres metni ve koordinatı (S5) yalnız rota için; dışa aktarmada `Redactor` kuralları (`VERI_SOZLESMESI` 9).
+
+### 14.11 `VERI_SOZLESMESI.md`'ye işlenecek düzeltmeler
+
+- 5.4 "YG native" satırına `yolgo_runtime_v2` (`TelemetryService` durumu) eklenir.
+- 5.4 notu: YolGo göç işaretleri (`lightMaxMv2`, `lightMaxMv3`, `mapDesignV1`, `streets.blocked.legacy.v1`, `streets.blocked.migrated.v2`) WEEM'de yazılmaz (S1).
+- `map` tercih dosyası ve `files/map/` WEEM'in yeni yerleri olarak 5 ve 7'ye (`yeni`) eklenir; tip eşlemesi 14.1.
 <!-- END sec:14 -->
 
 <!-- BEGIN sec:15 -->
