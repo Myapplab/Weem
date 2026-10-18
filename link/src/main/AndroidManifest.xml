@@ -1,2 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest />
+<!-- :link (LINK.md 1): hotspot yerel ağında TCP + UDP işareti, yedek klasik Bluetooth RFCOMM. targetSdk 36: yerel ağ INTERNET ile örtük;
+     37'ye geçince ACCESS_LOCAL_NETWORK (Android 17) gerekir. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+</manifest>

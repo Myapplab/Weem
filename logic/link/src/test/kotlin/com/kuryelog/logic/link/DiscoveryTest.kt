@@ -45,6 +45,17 @@ class DiscoveryTest {
     }
 
     @Test
+    fun sameSubnet() {
+        assertTrue(LanTargets.sameSubnet("192.168.43.1", "192.168.43.77", 24))
+        assertFalse(LanTargets.sameSubnet("192.168.43.1", "192.168.44.1", 24))
+        assertTrue(LanTargets.sameSubnet("10.0.0.9", "10.0.0.14", 28))
+        assertFalse(LanTargets.sameSubnet("10.0.0.9", "10.0.0.17", 28))
+        assertTrue(LanTargets.sameSubnet("1.2.3.4", "9.9.9.9", 0))
+        assertFalse(LanTargets.sameSubnet("x", "10.0.0.1", 24))
+        assertFalse(LanTargets.sameSubnet("10.0.0.1", "10.0.0.1", 40))
+    }
+
+    @Test
     fun interfaceFilter() {
         val ifs = listOf(
             NetIf("wlan0", "192.168.43.77", 24),

@@ -62,6 +62,15 @@ object LanTargets {
     fun beaconTargets(ifs: List<NetIf>): List<String> =
         ifs.filter(::usable).mapNotNull { broadcast(it.address, it.prefix) }.distinct().sorted()
 
+    /** İki IPv4 adresi aynı alt ağda mı (Android: istemci soketi Wi-Fi ağına bağlanacak mı). */
+    fun sameSubnet(a: String, b: String, prefix: Int): Boolean {
+        val x = parse(a) ?: return false
+        val y = parse(b) ?: return false
+        if (prefix !in 0..32) return false
+        val mask = if (prefix == 0) 0 else (-1 shl (32 - prefix))
+        return (x and mask) == (y and mask)
+    }
+
     fun isPrivate(ip: Int): Boolean {
         val a = (ip ushr 24) and 0xff
         val b = (ip ushr 16) and 0xff
