@@ -61,4 +61,6 @@ object OfferScorePage {
     fun ratingItems(tl: (String, String) -> String): List<String> =
         (1..10).map { v -> when (v) { 1 -> tl("1 · çok kötü", "1 · çox pis"); 10 -> tl("10 · çok iyi", "10 · çox yaxşı"); else -> v.toString() } }
     fun ratingFailed(tl: (String, String) -> String) = tl("Puan kaydedilemedi", "Bal qeyd olunmadı")
+    /** Eşleme açıklamasını açan düğmenin adı (RS `MainActivity.info`). */
+    fun infoToggle(tl: (String, String) -> String) = tl("Açıklamayı göster", "İzahı göstər")
 }
