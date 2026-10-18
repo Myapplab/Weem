@@ -31,7 +31,7 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 | 10 | Y9, N5, Y10 | A6.7 | ajan T | bitti (17:29 UTC) <!-- st:10 --> |
 | 11 | Y11 ve YolGo gün motoru | A6.8 | ajan T1 | yazılıyor (kısmen: 11.1–11.8 yazıldı, son alt bölüm gözden geçirilmeli; usage bitti, durduruldu) (18:09 UTC) <!-- st:11 --> |
 | 12 | Y17, Y18 | A6.9 | ajan T1 | bekliyor <!-- st:12 --> |
-| 13 | Y19, Y20 | A6.9 | ajan T2 | yazılıyor (kısmen: 13.1–13.5 yazıldı; sırada 13.6 gün toplama ve LogFeedV3) (18:08 UTC) <!-- st:13 --> |
+| 13 | Y19, Y20 | A6.9 | ajan T2 | yazılıyor (kısmen: 13.1–13.5 yazıldı, son alt bölüm gözden geçirilmeli; usage bitti, durduruldu) (18:09 UTC) <!-- st:13 --> |
 | 14 | veri sözleşmesi | tümü | koordinatör | yazılıyor (kısmen: 14.1–14.11 taslak; Bölüm 11–13 satırları ajanlar bitince) (18:01 UTC) <!-- st:14 --> |
 | 15 | WEEM yerleşimi | tümü | koordinatör | yazılıyor (kısmen: 15.1–15.5 Bölüm 2–10'dan; 11–13 ajanlar bitince) (18:08 UTC) <!-- st:15 --> |
 | 16 | test eşlemesi A6.2a/A6.2b | A6.2a, A6.2b | koordinatör | yazılıyor (kısmen: 16.1–16.4 Bölüm 2–10 dosyaları; 11–13 ve toplamlar ajanlar bitince) (18:05 UTC) <!-- st:16 --> |
