@@ -23,6 +23,7 @@ import android.os.Looper
 import android.os.PowerManager
 import android.os.SystemClock
 import android.widget.Toast
+import com.kuryelog.app.core.Store
 import com.kuryelog.logic.core.NotificationIds
 import com.kuryelog.logic.scooter.NinebotDashboard
 import com.kuryelog.logic.scooter.NinebotEventQueue
@@ -31,6 +32,7 @@ import com.kuryelog.logic.scooter.NinebotLogPolicy
 import com.kuryelog.logic.scooter.NinebotMetrics
 import com.kuryelog.logic.scooter.NinebotMode
 import com.kuryelog.logic.scooter.PackPresence
+import com.kuryelog.logic.scooter.ScooterUiText
 import com.kuryelog.logic.scooter.Timing
 import com.kuryelog.logic.scooter.LogExport
 import org.json.JSONObject
@@ -94,17 +96,20 @@ class ScooterService : Service() {
             if (Scooter.active && !Scooter.recording && !Scooter.maintenance) worker.post { upgrade() } else if (!Scooter.active) stopSelf()
             return START_NOT_STICKY
         }
-        if (Scooter.active) return START_NOT_STICKY
         val live = intent != null && intent.getBooleanExtra("live_only", false)
-        if (Scooter.maintenance && !live) { stopSelf(); return START_NOT_STICKY }
-        if (intent == null || !permissions(this, live)) { stopSelf(); return START_NOT_STICKY }
+        // Every start below came from startForegroundService: it must reach startForeground even when refused, or Android closes
+        // the whole app (CORE.md 4.1, CrashGuardTest). Callers already check these, so the refusals are only a safety net.
+        if (Scooter.active) { refuseStart(running = true); return START_NOT_STICKY }
+        if (Scooter.maintenance && !live) { refuseStart(running = false); return START_NOT_STICKY }
+        if (intent == null || !permissions(this, live)) { refuseStart(running = false); return START_NOT_STICKY }
         val nm = getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(NotificationChannel(CHANNEL, "Scooter kaydı", NotificationManager.IMPORTANCE_LOW))
+        val lang = Store.lang(this)
+        nm.createNotificationChannel(NotificationChannel(CHANNEL, ScooterUiText.CHANNEL.get(lang), NotificationManager.IMPORTANCE_LOW))
         // Live-panel-only mode uses no location, so it runs as a connected-device service only.
+        fgsType = if (live) ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
+        else ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
         startForeground(
-            NotificationIds.SCOOTER_FGS, notification(if (live) "Canlı panel bağlanıyor • kayıt yok" else "GPS ve Bluetooth kaydı başlatılıyor", live),
-            if (live) ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
-            else ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE,
+            NotificationIds.SCOOTER_FGS, notification((if (live) ScooterUiText.N_CONNECTING_LIVE else ScooterUiText.N_STARTING).get(lang), live), fgsType,
         )
         // Both flags before the worker runs, so the toolbar never shows a new recording as a live panel.
         Scooter.active = true
@@ -118,6 +123,32 @@ class ScooterService : Service() {
         val sweepTo = intent.getIntExtra("sweep_to", 0xc0)
         worker.post { begin(device, name, pair, sweep, sweepBoard, sweepFrom, sweepTo, live) }
         return START_NOT_STICKY
+    }
+
+    private var fgsType = ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
+
+    /**
+     * A refused foreground start still calls startForeground: a running link re-posts its own notification with its type; a refused
+     * fresh start shows the channel's notification for a moment and removes it. A failure here is only logged (no permission at all).
+     */
+    private fun refuseStart(running: Boolean) {
+        val lang = Store.lang(this)
+        try {
+            getSystemService(NotificationManager::class.java)
+                .createNotificationChannel(NotificationChannel(CHANNEL, ScooterUiText.CHANNEL.get(lang), NotificationManager.IMPORTANCE_LOW))
+            startForeground(
+                NotificationIds.SCOOTER_FGS, notification(ScooterUiText.N_CONNECTING_LIVE.get(lang), !Scooter.recording),
+                if (running) fgsType else ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE,
+            )
+        } catch (e: RuntimeException) {
+            Store.failure(this, "scooter_refused_start", e)
+        }
+        // The next tick re-posts the live text over this placeholder.
+        lastNotice = null
+        if (!running) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+        }
     }
 
     @SuppressLint("MissingPermission")
@@ -446,7 +477,7 @@ class ScooterService : Service() {
         val b = StringBuilder()
         if (d != null) b.append(NinebotDashboard.speed(d.speedKmh)).append(" km/h • ").append(NinebotDashboard.watts(d.powerW)).append(" W")
         if (t.wh != null) b.append(String.format(Locale.US, " • %.1f Wh", t.wh))
-        if (t.avgMovingKmh != null) b.append(String.format(Locale.US, " • ort. %.1f km/h", t.avgMovingKmh))
+        if (t.avgMovingKmh != null) b.append(String.format(Locale.US, " • %s %.1f km/h", ScooterUiText.AVG_SHORT.get(Store.lang(this)), t.avgMovingKmh))
         if (d != null && d.batteryPct != null) b.append(" • %").append(NinebotDashboard.whole(d.batteryPct))
         return b.toString()
     }
@@ -475,12 +506,13 @@ class ScooterService : Service() {
             stopIntent = PendingIntent.getService(this, 1, Intent(this, ScooterService::class.java).setAction(STOP), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
             recordIntent = PendingIntent.getService(this, 3, Intent(this, ScooterService::class.java).setAction(RECORD), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         }
-        val title = if (!live) "Sürüş Paneli • kayıt sürüyor" else if (Scooter.hostLogging) "Sürüş Paneli • canlı • WEEM vardiyası kaydediyor" else "Sürüş Paneli • canlı panel (kayıt yok)"
+        val lang = Store.lang(this)
+        val title = (if (!live) ScooterUiText.N_RECORDING else if (Scooter.hostLogging) ScooterUiText.N_HOST else ScooterUiText.N_LIVE).get(lang)
         val b = Notification.Builder(this, CHANNEL).setSmallIcon(android.R.drawable.stat_sys_data_bluetooth).setContentTitle(title).setContentText(text)
             .setStyle(Notification.BigTextStyle().bigText(text)).setContentIntent(openIntent).setOngoing(true).setOnlyAlertOnce(true).setShowWhen(false)
             .setCategory(Notification.CATEGORY_NAVIGATION)
-        if (live) b.addAction(Notification.Action.Builder(null, "Kayda geç", recordIntent).build())
-        return b.addAction(Notification.Action.Builder(null, "Durdur", stopIntent).build()).build()
+        if (live) b.addAction(Notification.Action.Builder(null, ScooterUiText.N_RECORD.get(lang), recordIntent).build())
+        return b.addAction(Notification.Action.Builder(null, ScooterUiText.N_STOP.get(lang), stopIntent).build()).build()
     }
 
     // ---- Kare yayını ve ikinci batarya duyurusu ----
@@ -492,7 +524,8 @@ class ScooterService : Service() {
             return
         }
         val change = synchronized(extPresence) { extPresence.observe(frame.extBatteryPct != null, SystemClock.elapsedRealtime()) } ?: return
-        val text = if (PackPresence.CONNECTED == change) "İkinci batarya bağlı • %" + Math.round(frame.extBatteryPct!!) else "İkinci batarya 60 sn'dir okunmuyor"
+        val lang = Store.lang(this)
+        val text = if (PackPresence.CONNECTED == change) ScooterUiText.PACK_ON.get(lang).format(Math.round(frame.extBatteryPct!!).toString()) else ScooterUiText.PACK_OFF.get(lang)
         main.post { try { Toast.makeText(applicationContext, text, Toast.LENGTH_LONG).show() } catch (ignored: RuntimeException) { } }
     }
 

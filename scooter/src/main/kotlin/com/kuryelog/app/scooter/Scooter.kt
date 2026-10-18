@@ -2,11 +2,21 @@ package com.kuryelog.app.scooter
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
+import com.kuryelog.app.core.Downloads
+import com.kuryelog.app.core.Store
+import com.kuryelog.logic.core.BackupExport
 import com.kuryelog.logic.core.EnergyStep
 import com.kuryelog.logic.core.ScooterBridge
 import com.kuryelog.logic.core.ScooterLive
+import com.kuryelog.logic.core.Lang
+import com.kuryelog.logic.scooter.LogExport
 import com.kuryelog.logic.scooter.NinebotDashboard
+import com.kuryelog.logic.scooter.ScooterPanel
+import com.kuryelog.logic.scooter.ScooterUiText
 import com.kuryelog.logic.scooter.ScooterBridgeImpl
 import com.kuryelog.logic.scooter.ScooterEnergy
 import com.kuryelog.logic.scooter.ScooterLinkRules
@@ -143,5 +153,94 @@ object Scooter {
 
     fun stop(ctx: Context) {
         if (active) ctx.startService(Intent(ctx, ScooterService::class.java).setAction(ScooterService.STOP))
+    }
+
+    // ---- Scooter sekmesi (A5.4; NB `DashboardActivity`, `MainActivity`) ----
+
+    /** Yüzen panelden WEEM'i açan niyetin ek alanı: [OPEN_PANEL] canlı panel (uzun basma), [OPEN_SETTINGS] Scooter ayarları (çift dokunma). */
+    const val OPEN_EXTRA = "com.kuryelog.app.scooter.OPEN"
+    const val OPEN_PANEL = "panel"
+    const val OPEN_SETTINGS = "settings"
+
+    /** Bir ZIP yazılıyor: kayıt başlatma ve ikinci dışa aktarma beklemede. */
+    @Volatile var exporting = false
+        private set
+
+    private val main = Handler(Looper.getMainLooper())
+
+    /** Sekmenin saniyelik durumu ([ScooterPanel.status], [ScooterPanel.dock]). */
+    fun state(ctx: Context): ScooterPanel.State {
+        val f = frame
+        return ScooterPanel.State(active, recording, hostLogging, maintenance, warning, active && f != null, f?.extBatteryPct, externalBattery(ctx))
+    }
+
+    /** Tarama listesinden seçim (NB `pick`): `device`, `device_name` (etiket, veri) ve `ble_name` (yayın adı). */
+    fun select(ctx: Context, f: ScooterPanel.ScanList.Found) {
+        LoggerPreferences.get(ctx).edit().putString("device", f.address).putString("device_name", ScooterPanel.ScanList.storedLabel(f))
+            .putString("ble_name", f.name ?: "").apply()
+    }
+
+    fun deviceName(ctx: Context): String = LoggerPreferences.get(ctx).getString("device_name", "") ?: ""
+
+    fun device(ctx: Context): String = LoggerPreferences.get(ctx).getString("device", "") ?: ""
+
+    /** Kayıt ya da eşleştirme ile başlat (NB `startRecording`); canlı panel için [startLive]. Çağıran izinlere sahip. */
+    fun startRecording(ctx: Context, pair: Boolean): Boolean {
+        if (active || exporting || maintenance || !ScooterService.permissions(ctx, false)) return false
+        ctx.startForegroundService(ScooterService.startIntent(ctx, pair, live = false))
+        return true
+    }
+
+    /** "Açılışta canlı paneli bağla" (NB `autoLive`): seçili scooter, izin ve açık Bluetooth varsa kayıtsız bağlantı. */
+    fun autoLive(ctx: Context) {
+        if (active || !LoggerPreferences.get(ctx).getBoolean("auto_live", false) || !BleScan.bluetoothOn(ctx)) return
+        startLive(ctx)
+    }
+
+    /**
+     * Kayıt ZIP'i (S3; SCOOTER.md 7.4): `NinebotLogger-<ms>.zip`, İndirilenler/WEEM'e yazılır ve paylaşma seçicisi açılır (A4.3 yedekleriyle
+     * aynı yol). Kendi iş parçacığında; [done] ana iş parçacığında sonuç metniyle çağrılır. Kayıt ya da temizlik sürerken çalışmaz.
+     */
+    fun export(ctx: Context, choice: ScooterPanel.ExportChoice, lang: Lang, done: (String) -> Unit) {
+        val app = ctx.applicationContext
+        if (recording || maintenance || exporting) { done(ScooterUiText.EXPORT_BUSY.get(lang)); return }
+        exporting = true
+        Thread({
+            val now = System.currentTimeMillis()
+            val name = LogExport.fileName(now)
+            var uri: Uri? = null
+            val msg = try {
+                uri = Downloads.save(app, BackupExport.FOLDER, name) { out -> LogStore(app).use { it.export(out, choice.options(), now) } }
+                choice.done().get(lang) + "\n" + ScooterUiText.EXPORT_WHERE.get(lang).format(name)
+            } catch (e: Throwable) {
+                runCatching { Store.failure(app, "scooter_export", e) }
+                ScooterUiText.EXPORT_FAILED.get(lang).format(e.javaClass.simpleName)
+            }
+            main.post {
+                exporting = false
+                val u = uri
+                if (u != null) Store.guarded(app, "scooter_export") {
+                    val send = Intent(Intent.ACTION_SEND).setType("application/zip").putExtra(Intent.EXTRA_STREAM, u).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    app.startActivity(Intent.createChooser(send, ScooterUiText.EXPORT_SHARE.get(lang)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                }
+                done(msg)
+            }
+        }, "scooter-export").start()
+    }
+
+    /** "30 günden eski kayıtları temizle" (NB `cleanOldRecords`): tamamlanmış eski oturumlar; anahtarlar ve son 30 gün kalır. */
+    fun cleanOld(ctx: Context, lang: Lang, done: (String) -> Unit) {
+        val app = ctx.applicationContext
+        if (recording || maintenance) { done(ScooterUiText.EXPORT_BUSY.get(lang)); return }
+        maintenance = true
+        Thread({
+            val result = try {
+                LogStore(app).use { ScooterUiText.CLEANED.get(lang).format(it.deleteCompletedBefore(System.currentTimeMillis() - ScooterPanel.CLEAN_MS).toString()) }
+            } catch (e: RuntimeException) {
+                ScooterUiText.CLEAN_FAILED.get(lang).format(e.javaClass.simpleName)
+            }
+            maintenance = false
+            main.post { done(result) }
+        }, "logger-cleanup").start()
     }
 }

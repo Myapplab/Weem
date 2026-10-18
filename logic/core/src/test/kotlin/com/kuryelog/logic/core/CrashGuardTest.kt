@@ -80,10 +80,16 @@ class CrashGuardTest {
                 // Scooter bağlantı servisi (A5.3, `ScooterService`) vardiya servisi değil; kendi ön plan başlatışı SCOOTER.md'de.
                 if (call.contains("ScooterService.")) return@forEach
                 calls++
-                assertTrue("${f.name}: $call", call.contains("ACTION_START") || call.contains("Home.startIntent("))
+                assertTrue("${f.name}: $call", call.contains("ACTION_START") || call.contains("Home.startIntent(") || call.contains("ScooterService.startIntent("))
             }
         }
         assertTrue(calls >= 4)
+        // Scooter service (A5.3/A5.4): every refusal of a foreground start still reaches startForeground (was a bare stopSelf).
+        val scooter = RepoSource.text("scooter/src/main/kotlin/com/kuryelog/app/scooter/ScooterService.kt")
+        val start = RepoSource.body(scooter, "override fun onStartCommand(", "private var fgsType")
+        assertFalse(Regex("""\{\s*stopSelf\(\)""").containsMatchIn(start))
+        assertEquals(3, Regex("""refuseStart\(running = """).findAll(start).count())
+        assertTrue(RepoSource.body(scooter, "private fun refuseStart(", "private fun begin(").contains("startForeground("))
         assertTrue(RepoSource.text(core + "Home.kt").contains("Intent(ctx, ShiftService::class.java).setAction(ShiftMachine.ACTION_HOME_START)"))
     }
 }

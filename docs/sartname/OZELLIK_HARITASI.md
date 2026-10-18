@@ -55,8 +55,8 @@ Durum: A0.1, 17 Ekim 2026; Aşama 3 satırlarının (R1–R3, R5–R13, R15, R16
 | S4 | Yolculuk sayacı | `:scooter` `logic/` · 5 (A5.3) | 41 |
 | S5 | Harici batarya | `:scooter` · 5 (A5.3) — enerji ölçümü açık sorun | 64 |
 | S6 | Yeniden bağlanma | `:scooter` · 5 (A5.2) | 14 |
-| S7 | Yüzen panel | `:scooter` + `:app` · 5 (A5.4) | 23 |
-| S8 | Tanı araçları | `:scooter` · 5 (A5.4) | 36 |
+| S7 | Yüzen panel | `:scooter` + `:app` · 5 (A5.4, bitti; cihazda doğrulanmadı) | 23 |
+| S8 | Tanı araçları | `:scooter` · 5 (A5.4, bitti; cihazda doğrulanmadı) | 36 |
 | G1 | Tek vardiya / gün | `:core` `logic/` · 2 (A2.4) + 7 | 139 |
 | G2 | Ev konumu | `:core` + `:map` · 2 (A2.4) + 7 | 51 |
 | G3 | Dil | `:app` · 1 (A1.3) | 5 |

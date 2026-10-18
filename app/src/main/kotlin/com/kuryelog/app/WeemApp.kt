@@ -1,5 +1,6 @@
 package com.kuryelog.app
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +20,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,9 +63,18 @@ fun WeemApp(
     val holder = rememberSaveableStateHolder()
     val ctx = LocalContext.current
     var crash by remember { mutableStateOf(Store.guarded(ctx, "crash_card") { CrashLog.unseen(ctx) }) }
+    val dark = theme.isDark(isSystemInDarkTheme())
+    // A5.4: yüzen panelden açma isteği Scooter sekmesine götürür; PiP penceresinde yalnız küçük ızgara; tam ekranda alt menü yok.
+    val openScooter = ScooterNav.open
+    LaunchedEffect(openScooter) { if (openScooter != null) selectedKey = Tab.SCOOTER.key }
+    var scooterImmersive by remember { mutableStateOf(false) }
+    if (ScooterNav.pip) {
+        GuardedPage("scooter_pip", lang, build = {}) { ScooterPip(lang, dark) }
+        return
+    }
     Scaffold(
         bottomBar = {
-            NavigationBar {
+            if (!(selected == Tab.SCOOTER && scooterImmersive)) NavigationBar {
                 for (tab in Tab.entries) {
                     NavigationBarItem(
                         selected = tab == selected,
@@ -85,6 +96,8 @@ fun WeemApp(
                         Tab.MORE -> MoreScreen(lang, langSetting, theme, versionName, onLangSetting, onTheme)
                         // G1: vardiya düğmesi açılış sekmesinde (harita A6'da gelir).
                         Tab.MAP -> Column { ShiftCard(lang); PlaceholderScreen(selected, lang) }
+                        // A5.4: Scooter sekmesi (canlı panel, tarama, eşleştirme, ayarlar, tanı, ZIP).
+                        Tab.SCOOTER -> ScooterTab(lang, dark, scooterImmersive) { scooterImmersive = it }
                         else -> PlaceholderScreen(selected, lang)
                     }
                 }
