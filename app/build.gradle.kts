@@ -78,6 +78,8 @@ dependencies {
     implementation("com.kuryelog.logic:orders")
     // Vardiya kartının scooter satırı ve düğme metinleri (A5.3): logic/scooter ScooterText.
     implementation("com.kuryelog.logic:scooter")
+    // Siparişler → "Teklif puanı" (E4, A4.1): logic/economics OfferScorePage, OfferScoreBook.
+    implementation("com.kuryelog.logic:economics")
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
