@@ -429,9 +429,11 @@ fun ScooterPip(lang: Lang, dark: Boolean) {
     LaunchedEffect(Unit) { while (true) { delay(ScooterPanel.HEARTBEAT_MS); tick++ } }
     var dashboard by remember { mutableStateOf<DashboardView?>(null) }
     DisposableEffect(Unit) {
+        // PiP penceresi duraklatılmış ama görünür: hızlı tempo sürer (NB onStart–onStop).
         val listener: (NinebotDashboard.Snapshot?) -> Unit = { f -> dashboard?.show(f) }
         Scooter.frameListeners.add(listener)
-        onDispose { Scooter.frameListeners.remove(listener) }
+        Scooter.Viewers.dashboard = true
+        onDispose { Scooter.frameListeners.remove(listener); Scooter.Viewers.dashboard = false }
     }
     AndroidView(
         factory = { c -> DashboardView(c).also { v -> dashboard = v; v.compact(true); v.isClickable = false; v.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO } },

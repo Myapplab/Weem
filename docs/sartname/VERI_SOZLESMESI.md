@@ -194,7 +194,7 @@ Diğer: dışa aktarma ZIP'i `YYYY-MM-DD/<dosya>` + kökte `restaurants.json` (`
 
 ### 7.2 Sürüş Paneli
 
-Dışa aktarma ZIP'i `NinebotLogger-<ms>.zip`: `manifest.json` (`schema` 1, `app` "Sürüş Paneli", `version`, `decoder_available`, `device_verified`, `utc_export_ms`, `wire_transcript_sensitive`, `full_diagnostics`, `location_included`, `latest_session_only`, `note`) + `sessions.jsonl` + `events.jsonl` (filtreli ZIP'te izin listesi, `device` null; NB `LogStore.java:45-75`, `LogExport.java:7-34`, `DashboardActivity.java:194`). `sessions.state` değerleri ve `events.kind` listesi: `SCOOTER.md` 11.2. WEEM: aynı biçim.
+Dışa aktarma ZIP'i `NinebotLogger-<ms>.zip`: `manifest.json` (`schema` 1, `app` "Sürüş Paneli", `version`, `decoder_available`, `device_verified`, `utc_export_ms`, `wire_transcript_sensitive`, `full_diagnostics`, `location_included`, `latest_session_only`, `note`) + `sessions.jsonl` + `events.jsonl` (filtreli ZIP'te izin listesi, `device` null; NB `LogStore.java:45-75`, `LogExport.java:7-34`, `DashboardActivity.java:194`). `sessions.state` değerleri ve `events.kind` listesi: `SCOOTER.md` 11.2. WEEM: aynı biçim. WEEM'de dosya İndirilenler/WEEM'e yazılır ve paylaşılır (A5.4, `SCOOTER.md` F-S9).
 
 ### 7.3 YolGo (Android yolları: `app_flutter/` = documents, `files/` = support) — WEEM: **içe aktar** ya da yeniden üret
 
