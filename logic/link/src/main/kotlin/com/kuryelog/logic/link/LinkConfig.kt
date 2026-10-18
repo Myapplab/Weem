@@ -16,6 +16,8 @@ data class LinkConfig(
     /** İşaretle öğrenilen adres bu süre yeni işaret gelmezse unutulur. */
     val beaconForgetMs: Long = 15_000,
     val helloTimeoutMs: Long = 5_000,
+    /** El sıkışmanın tamamı (iki `HELLO` + Noise + onay; LINK.md 3.4). */
+    val handshakeTimeoutMs: Long = 10_000,
     val tcpConnectTimeoutMs: Long = 3_000,
     val btConnectTimeoutMs: Long = 8_000,
     val wifiPingMs: Long = 5_000,
@@ -30,7 +32,8 @@ data class LinkConfig(
     val btGraceMs: Long = 10_000,
     /** Wi-Fi kanalı canlıyken Bluetooth kanalının kapanmadan önce bekleme süresi. */
     val btDrainMs: Long = 3_000,
-    val wifiMaxPayload: Int = 1 shl 20,
+    /** Şifreli `DATA` dahil çerçeve yükü sınırı: Wi-Fi'da Noise ileti sınırı (LINK.md 3.5), Bluetooth'ta 4 KiB. */
+    val wifiMaxPayload: Int = WIFI_MAX_PAYLOAD,
     val btMaxPayload: Int = 4 * 1024,
     val backoff: Backoff.Plan = Backoff.Plan(),
 ) {
@@ -39,6 +42,9 @@ data class LinkConfig(
     fun connectTimeoutMs(t: Transport) = if (t == Transport.WIFI) tcpConnectTimeoutMs else btConnectTimeoutMs
     fun maxPayload(t: Transport) = if (t == Transport.WIFI) wifiMaxPayload else btMaxPayload
 
+    /** Şifreleme etiketinden sonra kalan düz metin sınırı. */
+    fun maxPlaintext(t: Transport) = maxPayload(t) - Noise.TAG
+
     companion object {
         const val TCP_PORT = 47310
         const val BEACON_PORT = 47311
@@ -46,6 +52,7 @@ data class LinkConfig(
         const val BT_SERVICE_UUID = "55a2849b-5970-4a15-a703-6e6dfd08f28f"
         const val BT_SERVICE_NAME = "WEEM link"
         const val CONNECT_GUARD_MS = 2_000L
+        const val WIFI_MAX_PAYLOAD = Noise.MAX_MESSAGE
     }
 }
 

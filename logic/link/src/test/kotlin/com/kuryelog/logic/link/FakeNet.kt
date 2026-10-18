@@ -140,6 +140,9 @@ class FakeNet(val cfg: LinkConfig = LinkConfig()) {
             if (mute) return
             stack.handle(e, now, wall)
             apply(stack.drain())
+            // Dinleyiciler (burada kayıt listeleri) döndü: teslim zorunlular onaylanır (LINK.md 3.8).
+            stack.delivered(now, wall)
+            apply(stack.drain())
         }
 
         fun enable(trust: Trust? = this.trust, btPeer: String? = null, listenOnly: Boolean = false) =

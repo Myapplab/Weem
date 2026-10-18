@@ -71,6 +71,10 @@ class MessengerTest {
         onData(e.encode(), t, now, wall)
         pump(now, wall)
         out += drain()
+        // Uygulama iletiyi işledi (LinkStack'te dinleyicilerden sonra): görülenler yazılır, onay gider.
+        delivered(now, wall)
+        pump(now, wall)
+        out += drain()
     }
 
     private fun data() = sent.filter { !it.second.type.startsWith("link.") }
@@ -203,6 +207,29 @@ class MessengerTest {
         assertEquals(2, acksSent().size)
         assertTrue(acksSent().all { ackIds(it.second) == listOf(id) })
         assertEquals(1, m.stats.duplicates)
+    }
+
+    @Test
+    fun reliableIsAckedOnlyAfterTheAppHandledIt() {
+        val m = messenger()
+        m.status(channel = 1)
+        val e = Envelope(EnvelopeKind.RELIABLE, "TripStages", UUID.randomUUID(), 1, wall, 60_000, ByteArray(1))
+        m.onData(e.encode(), Transport.WIFI, now, wall)
+        m.pump(now, wall)
+        out += m.drain()
+        assertEquals(1, messages().size)
+        // Henüz işlenmedi: onay yok, görülenlere yazılmadı; bu arada gelen tekrar yine verilmez.
+        assertTrue(acksSent().isEmpty())
+        assertNull(store.seen())
+        m.onData(e.encode(), Transport.BT, now, wall)
+        m.pump(now, wall)
+        out += m.drain()
+        assertEquals(1, messages().size)
+        assertTrue(acksSent().isEmpty())
+        m.delivered(now, wall)
+        m.pump(now, wall)
+        assertEquals(listOf(e.id), ackIds(acksSent().single().second))
+        assertEquals(24, store.seen()!!.size)
     }
 
     @Test

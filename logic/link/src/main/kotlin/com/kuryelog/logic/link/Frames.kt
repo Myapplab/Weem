@@ -29,16 +29,16 @@ class PeerId private constructor(val text: String) : Comparable<PeerId> {
 }
 
 enum class FrameType(val code: Int) {
-    HELLO(1), DATA(2), PING(3), PONG(4), BYE(5);
+    HELLO(1), DATA(2), PING(3), PONG(4), BYE(5), NOISE(6);
 
     companion object {
         fun of(code: Int): FrameType? = entries.firstOrNull { it.code == code }
     }
 }
 
-/** `BYE` nedeni (LINK.md 1.4). */
+/** `BYE` nedeni (LINK.md 1.4, 3.4: 8 eşleştirme modu uyuşmuyor, 9 kimlik doğrulanamadı). */
 enum class ByeReason(val code: Int) {
-    DUPLICATE(1), MOVED_TO_WIFI(2), SHUTDOWN(3), PROTOCOL(4), WRONG_PEER(5), VERSION(6), TIMEOUT(7);
+    DUPLICATE(1), MOVED_TO_WIFI(2), SHUTDOWN(3), PROTOCOL(4), WRONG_PEER(5), VERSION(6), TIMEOUT(7), PAIRING(8), AUTH(9);
 
     companion object {
         fun of(code: Int): ByeReason? = entries.firstOrNull { it.code == code }
@@ -51,13 +51,15 @@ class Frame(val type: FrameType, val payload: ByteArray) {
 
 /**
  * Çerçeve (LINK.md 1.4): `[uzunluk u32 BE = 1 + yük][tür u8][yük]`.
- * `HELLO` yükü: `WEEM` · bağlantı sürümü · kimlik 16 bayt. `PING`/`PONG`: 8 bayt. `BYE`: 1 bayt neden.
+ * `HELLO` yükü (v2, LINK.md 3.4): `WEEM` · bağlantı sürümü · kimlik 16 bayt · bayrak (bit 0 = eşleştirme). `PING`/`PONG`: 8 bayt.
+ * `BYE`: 1 bayt neden. `NOISE`: el sıkışma iletisi. Açık kanalda `DATA` şifreli (3.5).
  */
 object Frames {
     const val HEADER = 5
-    const val LINK_VERSION = 1
+    const val LINK_VERSION = 2
     val MAGIC = byteArrayOf('W'.code.toByte(), 'E'.code.toByte(), 'E'.code.toByte(), 'M'.code.toByte())
-    private const val HELLO_SIZE = 4 + 1 + 16
+    private const val HELLO_SIZE = 4 + 1 + 16 + 1
+    private const val FLAG_PAIRING = 1
 
     fun encode(type: FrameType, payload: ByteArray = ByteArray(0)): ByteArray {
         val out = ByteBuffer.allocate(HEADER + payload.size)
@@ -65,20 +67,30 @@ object Frames {
         return out.array()
     }
 
-    fun hello(self: PeerId, version: Int = LINK_VERSION): ByteArray =
-        encode(FrameType.HELLO, ByteBuffer.allocate(HELLO_SIZE).put(MAGIC).put(version.toByte()).put(self.bytes()).array())
+    /** `HELLO` yükü; el sıkışmanın prologue'una da girer. */
+    fun helloPayload(self: PeerId, pairing: Boolean): ByteArray =
+        ByteBuffer.allocate(HELLO_SIZE).put(MAGIC).put(LINK_VERSION.toByte()).put(self.bytes())
+            .put((if (pairing) FLAG_PAIRING else 0).toByte()).array()
+
+    fun hello(self: PeerId, pairing: Boolean): ByteArray = encode(FrameType.HELLO, helloPayload(self, pairing))
 
     fun ping(monoMs: Long): ByteArray = encode(FrameType.PING, ByteBuffer.allocate(8).putLong(monoMs).array())
     fun pong(echo: ByteArray): ByteArray = encode(FrameType.PONG, echo)
     fun bye(reason: ByeReason): ByteArray = encode(FrameType.BYE, byteArrayOf(reason.code.toByte()))
 
-    class Hello(val version: Int, val peer: PeerId)
+    /** [peer] yalnız bu bağlantı sürümünde okunur; başka sürümde `null` (çağıran `BYE(6)` der). */
+    class Hello(val version: Int, val peer: PeerId?, val pairing: Boolean)
 
-    /** Sihirli baytlar ya da boy tutmazsa `null` (protokol hatası). Sürüm denetimi çağıranda. */
+    /** Sihirli baytlar, boy ya da bilinmeyen bayrak tutmazsa `null` (protokol hatası). Sürüm denetimi çağıranda. */
     fun parseHello(p: ByteArray): Hello? {
-        if (p.size != HELLO_SIZE) return null
+        if (p.size < 5) return null
         for (i in MAGIC.indices) if (p[i] != MAGIC[i]) return null
-        return Hello(p[4].toInt() and 0xff, PeerId.fromBytes(p, 5))
+        val version = p[4].toInt() and 0xff
+        if (version != LINK_VERSION) return Hello(version, null, false)
+        if (p.size != HELLO_SIZE) return null
+        val flags = p[21].toInt() and 0xff
+        if (flags and FLAG_PAIRING.inv() != 0) return null
+        return Hello(version, PeerId.fromBytes(p, 5), flags and FLAG_PAIRING != 0)
     }
 
     /** `PING`/`PONG` yükündeki monoton ms; boy tutmazsa `null`. */

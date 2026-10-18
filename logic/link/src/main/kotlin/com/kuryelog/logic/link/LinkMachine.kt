@@ -1,6 +1,9 @@
 package com.kuryelog.logic.link
 
-/** Bağlantı durumu (LINK.md 1.7); A8.3 gösterir. */
+import java.security.SecureRandom
+import java.util.UUID
+
+/** Bağlantı durumu (LINK.md 1.7, 3.4); A8.3 gösterir. */
 data class LinkStatus(
     val state: State,
     val transport: Transport? = null,
@@ -13,6 +16,10 @@ data class LinkStatus(
     val btOn: Boolean = false,
     /** Eşleşmiş telefon (ya da öğrenilen eş) var mı; yoksa Bluetooth yedeği kurulamaz. */
     val btPhones: Boolean = false,
+    /** Etkin kanalın numarası (LINKED'de); değişince son durumlar yeniden gider (3.7). */
+    val channel: Int? = null,
+    /** Son ret nedeni (aranırken); bağlanınca silinir. */
+    val issue: LinkIssue? = null,
 ) {
     enum class State { OFF, SEARCHING, LINKED }
 
@@ -21,15 +28,18 @@ data class LinkStatus(
     }
 }
 
-/** [LinkMachine.send] sonucu. `SENT` = sokete verildi; teslim garantisi yok (A8.2 `ack`). */
+/** Bağlanamama nedeni (LINK.md 3.4, 3.10): protokol sürümü, kimlik doğrulama (anahtar/jeton), eşleştirme modu. */
+enum class LinkIssue { VERSION, AUTH, PAIRING }
+
+/** [LinkMachine.send] sonucu. `SENT` = şifrelenip sokete verildi; teslim garantisi yok (onay `Messenger`'da). */
 enum class SendResult { SENT, NO_LINK, TOO_BIG_FOR_BT, TOO_BIG }
 
 /** Android katmanından makineye. Kanal numarası: giden kanalı makine verir (> 0), gelen kanalı katman verir (< 0). */
 sealed interface LinkEvent {
-    /** 2 telefon modu açık. [expectedPeer] verilmezse ilk el sıkışan eş kabul edilir (kimlik doğrulama A8.2'de). */
+    /** 2 telefon modu açık: bu telefonun kimliği ve kime açılacağı ([Trust]; LINK.md 3.3). */
     class Enable(
-        val self: PeerId,
-        val expectedPeer: PeerId? = null,
+        val identity: LocalIdentity,
+        val trust: Trust,
         val btPeerAddress: String? = null,
         val listenOnly: Boolean = false,
     ) : LinkEvent
@@ -62,7 +72,7 @@ sealed interface LinkEvent {
     object Tick : LinkEvent
 }
 
-/** Makineden Android katmanına. Sırayla uygulanır: aynı kanala `Write` sonra `Close` gelirse önce yazılır, sonra kapanır. */
+/** Makineden (ve `LinkStack`'ten) Android katmanına. Sırayla uygulanır: aynı kanala `Write` sonra `Close` gelirse önce yazılır. */
 sealed interface LinkCommand {
     data class Listen(val transport: Transport, val on: Boolean) : LinkCommand
 
@@ -79,34 +89,66 @@ sealed interface LinkCommand {
         override fun toString() = "SendBeacon($port)"
     }
 
-    /** Gelen `DATA` yükü (A8.2 zarfı). */
+    /** Çözülmüş gelen `DATA` yükü (zarf; `LinkStack` `Messenger`'a verir). */
     class Deliver(val payload: ByteArray, val transport: Transport) : LinkCommand {
         override fun toString() = "Deliver(${payload.size} B, $transport)"
     }
 
     data class Status(val status: LinkStatus) : LinkCommand
 
-    /** Yeni eş el sıkıştı (beklenen eş verilmemişken); saklamak üst katmanın işi. */
-    data class PeerSeen(val peer: PeerId) : LinkCommand
+    /** Eşleştirme tamamlandı (LINK.md 3.3): kayıt saklanmalı; makine artık bu eşe güvenir. */
+    data class Paired(val peer: PeerRecord) : LinkCommand
 
-    /** Bluetooth eşinin adresi öğrenildi; saklanırsa sonraki seferde yalnız o aranır. */
+    /** Eşin doğrulanmış bilgisi (sürümler, cihaz adı; 3.10). */
+    data class Peer(val info: PeerInfo) : LinkCommand
+
+    /** Eşleştirme penceresi bitti, eşleşme olmadı. */
+    object PairingExpired : LinkCommand
+
+    /** Bluetooth eşinin adresi öğrenildi (doğrulanmış kanaldan); saklanırsa sonraki seferde yalnız o aranır. */
     data class BtPeerLearned(val address: String) : LinkCommand
 
     /** Bir sonraki `Tick` zamanı (monoton ms); `null` = zamanlayıcı yok. */
     data class Wake(val atMs: Long?) : LinkCommand
+
+    // --- Messenger (LINK.md 3.6–3.11) ---
+
+    /** Uygulamaya gelen ileti. */
+    class Message(val message: Incoming) : LinkCommand {
+        override fun toString() = "Message(${message.type}, ${message.kind})"
+    }
+
+    /** Teslim zorunlu ileti eşte işlendi. */
+    data class Acked(val type: String, val id: UUID) : LinkCommand
+
+    /** Teslim zorunlu ileti TTL'de (ya da kuyruk sınırında) gönderilmeden düştü. */
+    data class Expired(val type: String, val id: UUID) : LinkCommand
+
+    /** Saat farkı tahmini (eşin saati − benimki) ve belirsizliği (3.9). */
+    data class Clock(val offsetMs: Long, val uncertaintyMs: Long) : LinkCommand
+
+    /** Eş eşleşmeyi kaldırdı (3.11): kayıt silinmeli; makine durdu. */
+    object Unpaired : LinkCommand
 }
 
 /**
- * 2 telefon taşıması (LINK.md 1): keşif, el sıkışma, tek kanal, canlılık, yeniden bağlanma, Wi-Fi ↔ Bluetooth geçişi.
+ * 2 telefon taşıması (LINK.md 1, 3.4–3.5): keşif, el sıkışma (Noise), tek kanal, canlılık, yeniden bağlanma, Wi-Fi ↔ Bluetooth geçişi,
+ * şifreli `DATA`.
  *
  * Saf ve tek iş parçacıklı: [handle]/[send] durumu değiştirir, komutları biriktirir; çağıran [drain] ile alır ve uygular.
  * Zaman her çağrıda verilir (monoton ms). Soket, Bluetooth ve zamanlayıcı Android katmanında (`:link` `LinkRuntime`).
  */
-class LinkMachine(private val cfg: LinkConfig = LinkConfig(), random: () -> Double = Math::random) {
+class LinkMachine(
+    private val cfg: LinkConfig = LinkConfig(),
+    random: () -> Double = Math::random,
+    private val secureRandom: SecureRandom = SecureRandom(),
+    private val dh: NoiseDh = P256,
+) {
     private enum class St { CONNECTING, HANDSHAKE, OPEN }
 
     private class Ch(val id: Int, val transport: Transport, val outbound: Boolean, val remote: String, val key: String, maxPayload: Int) {
         var state = St.CONNECTING
+        /** `HELLO`'daki kimlik; açılınca doğrulanmış. */
         var peer: PeerId? = null
         var startedMs = 0L
         var openedMs = 0L
@@ -116,6 +158,11 @@ class LinkMachine(private val cfg: LinkConfig = LinkConfig(), random: () -> Doub
         var probeDeadlineMs: Long? = null
         var drainAtMs: Long? = null
         val decoder = FrameDecoder(maxPayload)
+        var myHello: ByteArray? = null
+        var pairing = false
+        var hs: SecureHandshake? = null
+        var session: NoiseSession? = null
+        var peerKey: ByteArray? = null
     }
 
     private class Seen(val peer: PeerId, val port: Int, val atMs: Long)
@@ -126,12 +173,14 @@ class LinkMachine(private val cfg: LinkConfig = LinkConfig(), random: () -> Doub
     private var nextId = 1
 
     private var enabled = false
-    private var self: PeerId? = null
-    private var expected: PeerId? = null
-    private var current: PeerId? = null
+    private var identity: LocalIdentity? = null
+    private var trust: Trust? = null
+    private var pairingExpiredSent = false
     private var listenOnly = false
     private var btLearned: String? = null
     private var beaconBytes = ByteArray(0)
+    private var issue: LinkIssue? = null
+    private var lastInfo: PeerInfo? = null
 
     private var lan = false
     private var gateway: String? = null
@@ -161,6 +210,9 @@ class LinkMachine(private val cfg: LinkConfig = LinkConfig(), random: () -> Doub
 
     val status: LinkStatus get() = computeStatus()
 
+    /** Alınmamış komut var mı (`LinkStack` döngüsü). */
+    internal val pending: Boolean get() = out.isNotEmpty()
+
     fun handle(e: LinkEvent, nowMs: Long) {
         when (e) {
             is LinkEvent.Enable -> enable(e, nowMs)
@@ -178,32 +230,50 @@ class LinkMachine(private val cfg: LinkConfig = LinkConfig(), random: () -> Doub
         step(nowMs)
     }
 
-    /** Opak yükü etkin kanaldan gönderir (LINK.md 1.3: Bluetooth'ta ≤ 4 KiB). */
+    /** Düz metni etkin kanaldan şifreli gönderir; sınır şifreli boy üstünden (LINK.md 3.5: Bluetooth'ta ≤ 4 KiB). */
     fun send(payload: ByteArray, nowMs: Long): SendResult {
         if (!enabled) return SendResult.NO_LINK
         val a = active() ?: return SendResult.NO_LINK
-        if (payload.size > cfg.wifiMaxPayload) return SendResult.TOO_BIG
-        if (a.transport == Transport.BT && payload.size > cfg.btMaxPayload) return SendResult.TOO_BIG_FOR_BT
-        write(a, Frames.encode(FrameType.DATA, payload), nowMs)
+        val sealed = payload.size + Noise.TAG
+        if (sealed > cfg.wifiMaxPayload) return SendResult.TOO_BIG
+        if (a.transport == Transport.BT && sealed > cfg.btMaxPayload) return SendResult.TOO_BIG_FOR_BT
+        val ct = try {
+            a.session!!.send.encrypt(Noise.EMPTY, payload)
+        } catch (x: NoiseException) {
+            close(a, ByeReason.PROTOCOL, nowMs)
+            step(nowMs)
+            return SendResult.NO_LINK
+        }
+        write(a, Frames.encode(FrameType.DATA, ct), nowMs)
         return SendResult.SENT
     }
 
     // --- olaylar ---
 
     private fun enable(e: LinkEvent.Enable, now: Long) {
-        if (enabled && self != e.self) disable()
+        val old = identity
+        if (enabled && old != null && (old.id != e.identity.id || !old.keys.public.contentEquals(e.identity.keys.public))) disable()
         val first = !enabled
         enabled = true
-        self = e.self
+        identity = e.identity
         listenOnly = e.listenOnly
         if (e.btPeerAddress?.uppercase() != btLearned) btLearned = e.btPeerAddress?.uppercase()
         btTargets = BtTargets.choose(bonded, btLearned)
-        beaconBytes = Beacon.encode(e.self, cfg.tcpPort)
-        if (expected != e.expectedPeer) {
-            expected = e.expectedPeer
-            if (expected != null && current != expected) current = null
-            channels.values.filter { it.peer != null && expected != null && it.peer != expected }
-                .forEach { close(it, ByeReason.WRONG_PEER, now) }
+        beaconBytes = Beacon.encode(e.identity.id, cfg.tcpPort)
+        val before = trust
+        if (before == null || !sameTrust(before, e.trust)) {
+            trust = e.trust
+            pairingExpiredSent = false
+            if (before != null) {
+                // Yeni güven: el sıkışmadakiler yeniden başlar; açıklar uymuyorsa kapanır (eşleştirmeye geçişte eski eşe `BYE(8)`).
+                backoff.resetAll()
+                seen.clear()
+                val reason = if (e.trust is Trust.Paired) ByeReason.WRONG_PEER else ByeReason.PAIRING
+                for (ch in channels.values.toList()) {
+                    if (ch.state == St.CONNECTING || (ch.state == St.OPEN && fits(ch))) continue
+                    close(ch, reason, now)
+                }
+            }
         }
         if (first) {
             backoff.resetAll()
@@ -212,6 +282,7 @@ class LinkMachine(private val cfg: LinkConfig = LinkConfig(), random: () -> Doub
             tcpWasOpen = false
             linkedSinceMs = null
             lastBeaconMs = null
+            issue = null
         }
     }
 
@@ -223,9 +294,10 @@ class LinkMachine(private val cfg: LinkConfig = LinkConfig(), random: () -> Doub
         channels.clear()
         seen.clear()
         enabled = false
-        current = null
+        trust = null
         linkedSinceMs = null
         lastBeaconMs = null
+        issue = null
     }
 
     private fun onLan(e: LinkEvent.Lan, now: Long) {
@@ -259,10 +331,7 @@ class LinkMachine(private val cfg: LinkConfig = LinkConfig(), random: () -> Doub
             if (ch == null) out += LinkCommand.Close(id)
             return
         }
-        ch.state = St.HANDSHAKE
-        ch.startedMs = now
-        ch.lastRxMs = now
-        write(ch, Frames.hello(self!!), now)
+        begin(ch, now)
     }
 
     private fun onAccepted(e: LinkEvent.Accepted, now: Long) {
@@ -272,11 +341,19 @@ class LinkMachine(private val cfg: LinkConfig = LinkConfig(), random: () -> Doub
             return
         }
         val ch = Ch(e.channel, e.transport, outbound = false, remote = e.remote, key = "in:${e.transport}:${e.remote}", cfg.maxPayload(e.transport))
+        channels[ch.id] = ch
+        begin(ch, now)
+    }
+
+    /** Bağlantı kuruldu: `HELLO` (bayrak = eşleştirme penceresi açık mı). */
+    private fun begin(ch: Ch, now: Long) {
         ch.state = St.HANDSHAKE
         ch.startedMs = now
         ch.lastRxMs = now
-        channels[ch.id] = ch
-        write(ch, Frames.hello(self!!), now)
+        ch.pairing = pairingOpen(now)
+        val p = Frames.helloPayload(identity!!.id, ch.pairing)
+        ch.myHello = p
+        write(ch, Frames.encode(FrameType.HELLO, p), now)
     }
 
     private fun onClosed(id: Int, now: Long) {
@@ -300,43 +377,125 @@ class LinkMachine(private val cfg: LinkConfig = LinkConfig(), random: () -> Doub
     }
 
     private fun onFrame(ch: Ch, f: Frame, now: Long) {
-        if (f.type == FrameType.BYE) {
-            val reason = Frames.byeReason(f.payload)
-            out += LinkCommand.Close(ch.id)
-            channels.remove(ch.id)
-            settle(ch, endOf(reason, ch), now)
-            return
-        }
-        if (ch.state == St.HANDSHAKE) {
-            if (f.type != FrameType.HELLO) return close(ch, ByeReason.PROTOCOL, now)
-            return onHello(ch, f, now)
-        }
         when (f.type) {
-            FrameType.HELLO -> close(ch, ByeReason.PROTOCOL, now)
-            FrameType.DATA -> out += LinkCommand.Deliver(f.payload, ch.transport)
+            FrameType.BYE -> {
+                val reason = Frames.byeReason(f.payload)
+                note(reason)
+                out += LinkCommand.Close(ch.id)
+                channels.remove(ch.id)
+                settle(ch, endOf(reason, ch), now)
+            }
             FrameType.PING -> write(ch, Frames.pong(f.payload), now)
             FrameType.PONG -> Frames.stamp(f.payload)?.let { if (it in 0..now) ch.rttMs = now - it }
-            FrameType.BYE -> Unit
+            FrameType.HELLO -> if (ch.state == St.HANDSHAKE && ch.peer == null) onHello(ch, f, now) else close(ch, ByeReason.PROTOCOL, now)
+            FrameType.NOISE -> if (ch.state == St.HANDSHAKE) onNoise(ch, f, now) else close(ch, ByeReason.PROTOCOL, now)
+            FrameType.DATA -> if (ch.state == St.OPEN) onData(ch, f, now) else onConfirm(ch, f, now)
         }
     }
 
     private fun onHello(ch: Ch, f: Frame, now: Long) {
         val h = Frames.parseHello(f.payload) ?: return close(ch, ByeReason.PROTOCOL, now)
-        if (h.version != Frames.LINK_VERSION) return close(ch, ByeReason.VERSION, now)
-        val exp = expected
-        val cur = current
-        val wrong = h.peer == self ||
-            (exp != null && h.peer != exp) ||
-            (exp == null && cur != null && h.peer != cur && channels.values.any { it.state == St.OPEN })
-        if (wrong) return close(ch, ByeReason.WRONG_PEER, now)
-        ch.peer = h.peer
+        if (h.version != Frames.LINK_VERSION) {
+            issue = LinkIssue.VERSION
+            return close(ch, ByeReason.VERSION, now)
+        }
+        val peer = h.peer!!
+        val me = identity!!
+        val t = trust!!
+        if (peer == me.id) return close(ch, ByeReason.WRONG_PEER, now)
+        t.expected?.let { if (peer != it) return close(ch, ByeReason.WRONG_PEER, now) }
+        val want = pairingOpen(now)
+        if ((t !is Trust.Paired && !want) || h.pairing != want || ch.pairing != want) {
+            issue = LinkIssue.PAIRING
+            return close(ch, ByeReason.PAIRING, now)
+        }
+        ch.peer = peer
+        val mine = ch.myHello!!
+        val prologue = if (ch.outbound) SecureHandshake.prologue(mine, f.payload) else SecureHandshake.prologue(f.payload, mine)
+        val hs = SecureHandshake(me, t, want, ch.outbound, peer, prologue, dh, secureRandom)
+        ch.hs = hs
+        try {
+            hs.first()?.let { write(ch, Frames.encode(FrameType.NOISE, it), now) }
+        } catch (x: SecureHandshake.Failure) {
+            fail(ch, x, now)
+        }
+    }
+
+    private fun onNoise(ch: Ch, f: Frame, now: Long) {
+        val hs = ch.hs ?: return close(ch, ByeReason.PROTOCOL, now)
+        val o = try {
+            hs.onNoise(f.payload)
+        } catch (x: SecureHandshake.Failure) {
+            return fail(ch, x, now)
+        }
+        o.noise?.let { write(ch, Frames.encode(FrameType.NOISE, it), now) }
+        o.data?.let { write(ch, Frames.encode(FrameType.DATA, it), now) }
+        if (hs.open) open(ch, now)
+    }
+
+    /** Başlatanın ilk `DATA`'sı yanıtlayanın anahtar onayıdır (LINK.md 3.4). */
+    private fun onConfirm(ch: Ch, f: Frame, now: Long) {
+        val hs = ch.hs
+        if (ch.state != St.HANDSHAKE || hs == null || !hs.initiator) return close(ch, ByeReason.PROTOCOL, now)
+        try {
+            hs.onConfirm(f.payload)
+        } catch (x: SecureHandshake.Failure) {
+            return fail(ch, x, now)
+        }
+        open(ch, now)
+    }
+
+    private fun onData(ch: Ch, f: Frame, now: Long) {
+        val plain = try {
+            ch.session!!.receive.decrypt(Noise.EMPTY, f.payload)
+        } catch (x: NoiseException) {
+            issue = LinkIssue.AUTH
+            return close(ch, ByeReason.AUTH, now)
+        }
+        out += LinkCommand.Deliver(plain, ch.transport)
+    }
+
+    private fun fail(ch: Ch, x: SecureHandshake.Failure, now: Long) {
+        if (x.reason == ByeReason.AUTH) issue = LinkIssue.AUTH
+        close(ch, x.reason, now)
+    }
+
+    /** El sıkışma doğrulandı: sürüm, eşleştirme, tek kanal kuralı. */
+    private fun open(ch: Ch, now: Long) {
+        val hs = ch.hs!!
+        val info = hs.peerInfo!!
+        ch.session = hs.session
+        ch.peerKey = hs.peerKey
+        ch.hs = null
+        if (info != lastInfo) {
+            lastInfo = info
+            out += LinkCommand.Peer(info)
+        }
+        if (info.protoMajor != identity!!.info.protoMajor) {
+            issue = LinkIssue.VERSION
+            return close(ch, ByeReason.VERSION, now)
+        }
+        if (ch.pairing) {
+            val t = trust!!
+            if (t is Trust.Paired) {
+                // Aynı eşle ikinci eşleştirme kanalı (çapraz bağlantı): kayıt aynıysa olağan kanal.
+                if (t.peer.id != ch.peer || !t.peer.keyEquals(ch.peerKey)) return close(ch, ByeReason.WRONG_PEER, now)
+            } else if (!pairingOpen(now)) {
+                issue = LinkIssue.PAIRING
+                return close(ch, ByeReason.PAIRING, now)
+            } else {
+                val record = PeerRecord(ch.peer!!, ch.peerKey!!, info.deviceName, 0)
+                trust = Trust.Paired(record)
+                out += LinkCommand.Paired(record)
+                for (o in channels.values.toList()) {
+                    if (o !== ch && o.state != St.CONNECTING && o.peer != record.id) close(o, ByeReason.PAIRING, now)
+                }
+            }
+        }
         ch.state = St.OPEN
         ch.openedMs = now
         ch.lastRxMs = now
-        if (current != h.peer) {
-            current = h.peer
-            out += LinkCommand.PeerSeen(h.peer)
-        }
+        issue = null
         if (ch.transport == Transport.BT) {
             val addr = ch.remote.uppercase()
             if (addr != btLearned) {
@@ -350,9 +509,9 @@ class LinkMachine(private val cfg: LinkConfig = LinkConfig(), random: () -> Doub
         resolveDuplicates(ch, now)
     }
 
-    /** LINK.md 1.5: aynı taşımada aynı eşle iki kanal → açanın kimliği küçük olan kalır. */
+    /** LINK.md 1.5: aynı taşımada aynı eşle iki açık kanal → açanın kimliği küçük olan kalır. */
     private fun resolveDuplicates(ch: Ch, now: Long) {
-        val me = self!!
+        val me = identity!!.id
         for (other in channels.values.toList()) {
             if (other === ch || other.state != St.OPEN || other.transport != ch.transport || other.peer != ch.peer) continue
             val ic = if (ch.outbound) me else ch.peer!!
@@ -370,10 +529,39 @@ class LinkMachine(private val cfg: LinkConfig = LinkConfig(), random: () -> Doub
     private fun onBeacon(e: LinkEvent.BeaconIn, now: Long) {
         if (!enabled) return
         val b = Beacon.decode(e.data, e.length) ?: return
-        if (b.peer == self) return
-        if (expected != null && b.peer != expected) return
-        if (expected == null && current != null && b.peer != current && active() != null) return
+        if (b.peer == identity?.id) return
+        trust?.expected?.let { if (b.peer != it) return }
         seen[e.from] = Seen(b.peer, b.tcpPort, now)
+    }
+
+    // --- güven ---
+
+    private fun pairingOpen(now: Long): Boolean = when (val t = trust) {
+        is Trust.Issuer -> now < t.untilMs
+        is Trust.Scanner -> now < t.untilMs
+        is Trust.Paired, null -> false
+    }
+
+    private fun sameTrust(a: Trust, b: Trust): Boolean = when {
+        a is Trust.Paired && b is Trust.Paired -> a.peer.id == b.peer.id && a.peer.keyEquals(b.peer.publicKey)
+        a is Trust.Issuer && b is Trust.Issuer -> a.untilMs == b.untilMs && a.sameToken(b)
+        a is Trust.Scanner && b is Trust.Scanner -> a.untilMs == b.untilMs && a.qr.sameAs(b.qr)
+        else -> false
+    }
+
+    /** Açık kanal yeni güvene uyuyor mu (yalnız eşleşmiş eşin kayıtlı anahtarıyla). */
+    private fun fits(ch: Ch): Boolean {
+        val t = trust as? Trust.Paired ?: return false
+        return ch.peer == t.peer.id && t.peer.keyEquals(ch.peerKey)
+    }
+
+    private fun note(reason: ByeReason?) {
+        when (reason) {
+            ByeReason.VERSION -> issue = LinkIssue.VERSION
+            ByeReason.AUTH -> issue = LinkIssue.AUTH
+            ByeReason.PAIRING -> issue = LinkIssue.PAIRING
+            else -> Unit
+        }
     }
 
     // --- adım ---
@@ -386,6 +574,7 @@ class LinkMachine(private val cfg: LinkConfig = LinkConfig(), random: () -> Doub
             emitWake(null)
             return
         }
+        checkPairingWindow(now)
         seen.entries.removeAll { now - it.value.atMs > cfg.beaconForgetMs }
         for (ch in channels.values.toList()) timers(ch, now)
         bookkeep(now)
@@ -408,12 +597,29 @@ class LinkMachine(private val cfg: LinkConfig = LinkConfig(), random: () -> Doub
         emitWake(nextWake(now))
     }
 
+    /** Eşleştirme penceresi bitti: bir kez bildir, süren eşleştirme el sıkışmalarını bırak. */
+    private fun checkPairingWindow(now: Long) {
+        val t = trust
+        val until = when (t) {
+            is Trust.Issuer -> t.untilMs
+            is Trust.Scanner -> t.untilMs
+            else -> return
+        }
+        if (pairingExpiredSent || now < until) return
+        pairingExpiredSent = true
+        out += LinkCommand.PairingExpired
+        for (ch in channels.values.toList()) if (ch.state == St.HANDSHAKE && ch.pairing) close(ch, ByeReason.PAIRING, now)
+    }
+
     private fun timers(ch: Ch, now: Long) {
         when (ch.state) {
             St.CONNECTING -> if (now - ch.startedMs >= cfg.connectTimeoutMs(ch.transport) + LinkConfig.CONNECT_GUARD_MS) {
                 close(ch, null, now)
             }
-            St.HANDSHAKE -> if (now - ch.startedMs >= cfg.helloTimeoutMs) close(ch, ByeReason.TIMEOUT, now)
+            St.HANDSHAKE -> {
+                val limit = if (ch.peer == null) cfg.helloTimeoutMs else cfg.handshakeTimeoutMs
+                if (now - ch.startedMs >= limit) close(ch, ByeReason.TIMEOUT, now)
+            }
             St.OPEN -> {
                 val probe = ch.probeDeadlineMs
                 when {
@@ -540,9 +746,9 @@ class LinkMachine(private val cfg: LinkConfig = LinkConfig(), random: () -> Doub
         val a = active()
         val phones = btTargets.isNotEmpty()
         return if (a != null) {
-            LinkStatus(LinkStatus.State.LINKED, a.transport, a.peer, linkedSinceMs ?: a.openedMs, a.rttMs, lan, btOn, phones)
+            LinkStatus(LinkStatus.State.LINKED, a.transport, a.peer, linkedSinceMs ?: a.openedMs, a.rttMs, lan, btOn, phones, channel = a.id)
         } else {
-            LinkStatus(LinkStatus.State.SEARCHING, null, null, searchSinceMs, null, lan, btOn, phones)
+            LinkStatus(LinkStatus.State.SEARCHING, null, null, searchSinceMs, null, lan, btOn, phones, issue = issue)
         }
     }
 
@@ -575,10 +781,15 @@ class LinkMachine(private val cfg: LinkConfig = LinkConfig(), random: () -> Doub
                 btTargets.mapNotNullTo(t) { backoff.nextAtMs("bt:$it") }
             }
         }
+        when (val tr = trust) {
+            is Trust.Issuer -> if (!pairingExpiredSent) t += tr.untilMs
+            is Trust.Scanner -> if (!pairingExpiredSent) t += tr.untilMs
+            else -> Unit
+        }
         for (ch in channels.values) {
             when (ch.state) {
                 St.CONNECTING -> t += ch.startedMs + cfg.connectTimeoutMs(ch.transport) + LinkConfig.CONNECT_GUARD_MS
-                St.HANDSHAKE -> t += ch.startedMs + cfg.helloTimeoutMs
+                St.HANDSHAKE -> t += ch.startedMs + if (ch.peer == null) cfg.helloTimeoutMs else cfg.handshakeTimeoutMs
                 St.OPEN -> {
                     t += ch.lastTxMs + cfg.pingMs(ch.transport)
                     t += ch.lastRxMs + cfg.deadMs(ch.transport)

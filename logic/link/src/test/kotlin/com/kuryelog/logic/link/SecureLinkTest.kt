@@ -62,10 +62,11 @@ class SecureLinkTest {
 
     @Test
     fun issuerConnectsAndPairsOverWifi() {
-        // A (veren) Wi-Fi istemcisi: bağlantıyı A açar, Noise'da başlatan A.
+        // A (veren) Wi-Fi istemcisi: B önce dinler, bağlantıyı A açar; Noise'da başlatan A.
         net.hotspot(owner = b, client = a)
-        val qr = a.issue()
-        b.scan(qr)
+        val token = ByteArray(32).also(net.random::nextBytes)
+        b.scan(PairingQr(a.id, a.keys.public, token, a.info.deviceName))
+        a.issue(token = token)
         net.run(2_000)
         assertPairedTogether()
         linkedTogether(Transport.WIFI)
