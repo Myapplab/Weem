@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.SystemClock
+import com.kuryelog.logic.core.FailureSink
 import com.kuryelog.logic.link.BondedDevice
 import com.kuryelog.logic.link.LinkCommand
 import com.kuryelog.logic.link.LinkConfig
@@ -36,6 +37,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -50,7 +52,12 @@ import java.util.concurrent.atomic.AtomicInteger
  * Cihazda doğrulanmadı (A8.1); Bluetooth'un scooter BLE'sine etkisi LINK.md Bölüm 2 planıyla ölçülür.
  */
 @SuppressLint("MissingPermission") // Bluetooth çağrıları btPermitted() denetiminden sonra; reddedilirse yedek kapalı sayılır.
-class LinkRuntime(context: Context, private val listener: Listener = object : Listener {}) {
+class LinkRuntime(
+    context: Context,
+    private val listener: Listener = object : Listener {},
+    /** Beklenmeyen hata (uygulama çökmesin; A8.3 çökme kaydına bağlar). */
+    private val failures: FailureSink = FailureSink { _, _ -> },
+) {
     interface Listener {
         fun onStatus(status: LinkStatus) {}
         fun onData(payload: ByteArray, transport: Transport) {}
@@ -93,13 +100,17 @@ class LinkRuntime(context: Context, private val listener: Listener = object : Li
         synchronized(lock) {
             if (!running) {
                 running = true
-                net.start { io.execute { refresh() } }
-                poll = timer.scheduleWithFixedDelay({ refresh() }, POLL_MS, POLL_MS, TimeUnit.MILLISECONDS)
+                net.start { bg { refresh() } }
+                poll = try {
+                    timer.scheduleWithFixedDelay({ refresh() }, POLL_MS, POLL_MS, TimeUnit.MILLISECONDS)
+                } catch (e: RejectedExecutionException) {
+                    null
+                }
             }
         }
         // Soket açma işi `io`'da (dispatch → listen); burada yalnız makine güncellenir.
         feed(LinkEvent.Enable(self, expectedPeer, btPeerAddress, listenOnly))
-        io.execute { refresh() }
+        bg { refresh() }
     }
 
     fun stop() {
@@ -128,10 +139,15 @@ class LinkRuntime(context: Context, private val listener: Listener = object : Li
     /** Opak yük (A8.2 zarfı) etkin kanaldan gider; Bluetooth'ta ≤ 4 KiB. */
     fun send(payload: ByteArray): SendResult {
         val result: SendResult
-        val callbacks: List<() -> Unit>
+        var callbacks: List<() -> Unit> = emptyList()
         synchronized(lock) {
-            result = machine.send(payload, now())
-            callbacks = dispatch(machine.drain())
+            result = try {
+                machine.send(payload, now()).also { callbacks = dispatch(machine.drain()) }
+            } catch (t: RuntimeException) {
+                failures.failure("link", t)
+                callbacks = emptyList()
+                SendResult.NO_LINK
+            }
         }
         callbacks.forEach { runCatching { it() } }
         return result
@@ -140,12 +156,31 @@ class LinkRuntime(context: Context, private val listener: Listener = object : Li
     // --- makine ---
 
     private fun feed(e: LinkEvent) {
-        val callbacks: List<() -> Unit>
+        var callbacks: List<() -> Unit> = emptyList()
         synchronized(lock) {
-            machine.handle(e, now())
-            callbacks = dispatch(machine.drain())
+            try {
+                machine.handle(e, now())
+                callbacks = dispatch(machine.drain())
+            } catch (t: RuntimeException) {
+                failures.failure("link", t)
+            }
         }
         callbacks.forEach { runCatching { it() } }
+    }
+
+    /** Arka plan işi; [shutdown]'dan sonra gelen iş sessizce düşer (iş parçacığında yakalanmayan hata uygulamayı çökertir). */
+    private fun bg(block: () -> Unit) {
+        try {
+            io.execute(Runnable { block() })
+        } catch (e: RejectedExecutionException) {
+            // Kapatıldı.
+        }
+    }
+
+    private fun later(delayMs: Long, block: () -> Unit): ScheduledFuture<*>? = try {
+        timer.schedule(Runnable { block() }, delayMs, TimeUnit.MILLISECONDS)
+    } catch (e: RejectedExecutionException) {
+        null
     }
 
     /** Kilit altında; soket işi iş parçacıklarına gider, makineye geri bildirim her zaman `io` üstünden (yeniden giriş yok). */
@@ -157,7 +192,7 @@ class LinkRuntime(context: Context, private val listener: Listener = object : Li
                     val t = c.transport
                     wanted[t] = c.on
                     if (c.on) {
-                        io.execute { synchronized(lock) { if (running && wanted[t] == true) listen(t, true) } }
+                        bg { synchronized(lock) { if (running && wanted[t] == true) listen(t, true) } }
                     } else {
                         listen(t, false)
                     }
@@ -168,7 +203,7 @@ class LinkRuntime(context: Context, private val listener: Listener = object : Li
                 is LinkCommand.SendBeacon -> {
                     val bytes = c.bytes
                     val port = c.port
-                    io.execute { net.broadcast(bytes, port) }
+                    bg { net.broadcast(bytes, port) }
                 }
                 is LinkCommand.Deliver -> {
                     val payload = c.payload
@@ -199,14 +234,21 @@ class LinkRuntime(context: Context, private val listener: Listener = object : Li
         wake = null
         if (atMs == null || !running) return
         val delay = (atMs - now()).coerceAtLeast(0)
-        wake = timer.schedule(Runnable { feed(LinkEvent.Tick) }, delay, TimeUnit.MILLISECONDS)
+        wake = later(delay) { feed(LinkEvent.Tick) }
     }
 
     /** Ağ ve Bluetooth özetini okur; değiştiyse makineye verir (5 sn'de bir ve Wi-Fi değişince). */
     private fun refresh() {
         if (!running) return
-        val lan = net.lan()
-        val bt = btSnapshot()
+        val lan: LinkEvent.Lan
+        val bt: LinkEvent.Bt
+        try {
+            lan = net.lan()
+            bt = btSnapshot()
+        } catch (t: RuntimeException) {
+            failures.failure("link", t)
+            return
+        }
         val events = ArrayList<LinkEvent>(2)
         synchronized(refreshLock) {
             if (lan != lastLan) {
@@ -232,11 +274,7 @@ class LinkRuntime(context: Context, private val listener: Listener = object : Li
     }
 
     private fun retryListen(t: Transport) {
-        timer.schedule(
-            Runnable { synchronized(lock) { if (running && wanted[t] == true) listen(t, true) } },
-            RETRY_LISTEN_MS,
-            TimeUnit.MILLISECONDS,
-        )
+        later(RETRY_LISTEN_MS) { synchronized(lock) { if (running && wanted[t] == true) listen(t, true) } }
     }
 
     private fun startTcp() {
@@ -253,7 +291,7 @@ class LinkRuntime(context: Context, private val listener: Listener = object : Li
                 retryListen(Transport.WIFI)
             } else {
                 tcpServer = server
-                io.execute { acceptTcp(server) }
+                bg { acceptTcp(server) }
             }
         }
         if (beaconSocket == null) {
@@ -267,7 +305,7 @@ class LinkRuntime(context: Context, private val listener: Listener = object : Li
                 null
             }
             beaconSocket = udp
-            if (udp != null) io.execute { receiveBeacons(udp) }
+            if (udp != null) bg { receiveBeacons(udp) }
         }
     }
 
@@ -337,7 +375,7 @@ class LinkRuntime(context: Context, private val listener: Listener = object : Li
             return
         }
         btServer = server
-        io.execute { acceptBt(server) }
+        bg { acceptBt(server) }
     }
 
     private fun stopBt() {
@@ -379,7 +417,7 @@ class LinkRuntime(context: Context, private val listener: Listener = object : Li
         val s = Socket()
         val pipe = Pipe(id, s)
         channels[id] = pipe
-        io.execute {
+        bg {
             try {
                 net.bindIfWifi(s, c.host)
                 s.tcpNoDelay = true
@@ -395,18 +433,18 @@ class LinkRuntime(context: Context, private val listener: Listener = object : Li
         val id = c.channel
         val adapter = btAdapter()
         if (adapter == null || !btPermitted()) {
-            io.execute { feed(LinkEvent.Failed(id, "bt_unavailable")) }
+            bg { feed(LinkEvent.Failed(id, "bt_unavailable")) }
             return
         }
         val socket = try {
             adapter.getRemoteDevice(c.host).createRfcommSocketToServiceRecord(service)
         } catch (e: Exception) {
-            io.execute { feed(LinkEvent.Failed(id, e.javaClass.simpleName)) }
+            bg { feed(LinkEvent.Failed(id, e.javaClass.simpleName)) }
             return
         }
         val pipe = Pipe(id, socket)
         channels[id] = pipe
-        io.execute {
+        bg {
             try {
                 socket.connect()
                 opened(pipe, socket.inputStream, socket.outputStream)
@@ -465,12 +503,12 @@ class LinkRuntime(context: Context, private val listener: Listener = object : Li
 
         fun attach(i: InputStream, o: OutputStream) {
             input = i
-            io.execute { writeLoop(o) }
+            bg { writeLoop(o) }
         }
 
         fun startReading() {
             val i = input ?: return
-            io.execute { readLoop(i) }
+            bg { readLoop(i) }
         }
 
         fun write(bytes: ByteArray) {

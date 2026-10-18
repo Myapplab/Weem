@@ -55,7 +55,7 @@ Ayrıntılı alan listeleri ve satır başvuruları: `docs/sartname/bulgular/` (
 | `BLUETOOTH_SCAN`, `BLUETOOTH_CONNECT` (+ `BLUETOOTH`/`_ADMIN` maxSdk 30), feature `bluetooth_le` required=false | — | var | — | var |
 | `SYSTEM_ALERT_WINDOW` | — | var (yüzen panel) | var | var |
 | `ACTIVITY_RECOGNITION` | — | — | var | var |
-| 2 telefon / uzaktan | — | — | — | `yeni`: `NEARBY_WIFI_DEVICES`, `BLUETOOTH_ADVERTISE`, `CAMERA` (QR), `FOREGROUND_SERVICE_MEDIA_PROJECTION` (A8/A9'da kesinleşir) |
+| 2 telefon / uzaktan | — | — | — | A8.1: `ACCESS_NETWORK_STATE` (`yeni`; taşıma `INTERNET` + `BLUETOOTH_CONNECT` ile; klasik Bluetooth olduğundan `BLUETOOTH_ADVERTISE` ve `NEARBY_WIFI_DEVICES` gerekmez, S23). targetSdk 37'de `ACCESS_LOCAL_NETWORK` (Android 17). A8.2/A9'da: `CAMERA` (QR), `FOREGROUND_SERVICE_MEDIA_PROJECTION` |
 
 ## 4. Sağlayıcılar, intent'ler, URI'ler (iki uygulama sözleşmesi)
 
@@ -73,6 +73,7 @@ Bugünkü mesajlar (alan alan: `bulgular/X_protocol.md` P1–P11; WEEM'deki kar�
 | Ev paylaşımı | action `com.kuryelog.app.action.SHARE_HOME` (YG istek kodu 703; extra `lat`,`lon`) | RS → YG | kalkar (S7; tek ev, `:core`) |
 | Ev seçme | action `com.myapplab.yolgo.PICK_HOME` | RS → YG | kalkar (S7; WEEM içi harita) |
 | Değişiklik bildirimi | `contentResolver.notifyChange` (`FeedChanges`: içerik anahtarı, ≥200 ms, kalp atışı) | RS → YG | iç olay akışı; `:link` kuyruğunda aynı kural |
+| 2 telefon taşıması (`yeni`, A8.1) | TCP 47310, UDP işareti 47311, RFCOMM UUID `55a2849b-5970-4a15-a703-6e6dfd08f28f`, çerçeve ve işaret `WEEM` + sürüm 1 (`LINK.md` 1.2–1.4) | P ↔ R | iki telefonda aynı olmalı; değişirse eski sürümle bağlanmaz (sürüm artırılır) |
 
 ## 5. SharedPreferences
 
