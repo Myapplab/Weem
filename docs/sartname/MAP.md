@@ -18,16 +18,16 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 
 | Bölüm | Konu | Görev | Yazan | Durum |
 |---|---|---|---|---|
-| 0 | özet, WEEM kuralları, görev dizini | tümü | koordinatör | yazılıyor (ajanlardan sonra) (12:17 UTC) <!-- st:0 --> |
+| 0 | özet, WEEM kuralları, görev dizini | tümü | koordinatör | yazılıyor (ajanlardan sonra) (17:18 UTC) <!-- st:0 --> |
 | 1 | kaynak haritası | tümü | koordinatör | bitti (12:23 UTC) <!-- st:1 --> |
-| 2 | Y7 harita verisi | A6.3 | ajan R | bitti (12:38 UTC) <!-- st:2 --> |
-| 3 | Y3 rota motoru | A6.4 | ajan R | bitti (12:37 UTC) <!-- st:3 --> |
-| 4 | Y8 sokak kararları | A6.4 | ajan R | bitti (12:40 UTC) <!-- st:4 --> |
-| 5 | Y15, Y16, Y21 | A6.8 | ajan R | bekliyor <!-- st:5 --> |
-| 6 | Y1, Y2 harita ekranı | A6.5 | ajan N | bekliyor <!-- st:6 --> |
+| 2 | Y7 harita verisi | A6.3 | ajan R | bitti (17:15 UTC) <!-- st:2 --> |
+| 3 | Y3 rota motoru | A6.4 | ajan R | bitti (17:15 UTC) <!-- st:3 --> |
+| 4 | Y8 sokak kararları | A6.4 | ajan R | bitti (17:15 UTC) <!-- st:4 --> |
+| 5 | Y15, Y16, Y21 | A6.8 | ajan R | bitti (17:15 UTC) <!-- st:5 --> |
+| 6 | Y1, Y2 harita ekranı | A6.5 | ajan N | bitti (17:25 UTC) <!-- st:6 --> |
 | 7 | Y4 navigasyon | A6.6 | ajan N | bitti (12:40 UTC) <!-- st:7 --> |
 | 8 | Y5, Y6 bağlantılar ve adres | A6.6 | ajan N | bitti (12:34 UTC) <!-- st:8 --> |
-| 9 | Y12 yol kalitesi öğrenme | A6.11 | ajan Q | kısmen: 9.1–9.8 yazıldı; sırada 9.9–9.13 (rota bağı, veri, testler, yerleşim, sorular) (12:39 UTC) <!-- st:9 --> |
+| 9 | Y12 yol kalitesi öğrenme | A6.11 | ajan Q | bitti (17:16 UTC) <!-- st:9 --> |
 | 10 | Y9, N5, Y10 | A6.7 | ajan T | bekliyor <!-- st:10 --> |
 | 11 | Y11 ve YolGo gün motoru | A6.8 | ajan T | bekliyor <!-- st:11 --> |
 | 12 | Y17, Y18 | A6.9 | ajan T | bekliyor <!-- st:12 --> |
@@ -99,7 +99,7 @@ Testlerin bölüm ve görev eşlemesi: her bölümün "Testler" alt bölümü; t
 | `tool/build_map.dart` · `ci/osm_extract.py` · `ci/build.sh` | 1–120 · 1–71 · 202–231 | CI gömülü harita |
 | `assets/map/manifest.json` | — | repoda yalnız yer tutucu `{"version":"","regions":{}}` (28 bayt); graf/DEM/POI CI'da üretilir |
 
-Bulgu `Y_routing.md` §Y7 satır satır doğrulandı. Düzeltmeler: başlığın 7. alanı yaya bölgesi **nokta** sayısıdır (`zoneLat.length`), 6. alan `zoneStart.length`; 8 bayt hizası okurken de yazarken de uygulanır; `overpassProblem` 64 baytlık baş + 1.500 baytlık kuyruğa bakar; POI türlerinde `t` (market) de var (Bölüm 5.3); `regionBox` hiçbir yerde kullanılmıyor (ölü); `build_map` merkez grafiği üretmez, yalnız `graph_wide.bin.gz`.
+Bulgu `Y_routing.md` §Y7 satır satır doğrulandı; içerik doğru. Bulgu düzeltmesi: satır numaraları eski (doğrusu yukarıdaki tablo; ör. `buildRoadGraph` 85–274, ikili dosya 442–576, `_installBundled` 116–157, `_buildEntry` 296–366, `_loadPrebuilt` 392–426, `downloadPois` 430–468, `features = 3` graph_builder.dart:272, `ci/build.sh` 202–231); graf düğümü "≥ 2 yolda" değil "≥ 2 kez kullanılan" düğüm (aynı yolda iki kez geçen, ör. kapalı yolun başı/sonu, de sayılır) ya da yol ucu; `contains` sınırı geometri kutusu değil ızgara kapsamıdır (kuzey/doğu kenarında 100 m paya ek en çok bir hücre ≈ 55 m). Ekler: `overpassProblem` 64 baytlık baş + 1.500 baytlık kuyruğa bakar; `regionBox` ve `isInAbsheron` lib'de kullanılmıyor (ölü); POI türlerinde `t` (market) var, `pois.dart:11` yorumunda yok (Bölüm 5.3); hazır veri sunucusu manifesti bu ortamdan 404.
 
 ### 2.2 Coğrafya yardımcıları (`geo.dart`; WEEM `logic/map` `geo`)
 
@@ -249,9 +249,9 @@ Sabitler: `maxSpacing = 25 m` (sıklaştırma), `minGradeRun = 20 m` (eğim payd
 |---|---:|---|---|---|---|
 | YT `overpass_test` | 3 | "düzgün cevap kabul edilir" (`{"version":0.6,"elements":[]}` → null); "sondaki runtime error notu yakalanır" (remark değeri döner); "JSON olmayan ve boş cevap reddedilir" (`'JSON değil'`, `'boş cevap'`) | `logic/map` `graph.OverpassProblemTest` | A6.2a → A6.3 | — |
 | YT `map_data_update_test` | 2 | "güncelleme hatası eldeki haritayı korur" (`updateFailed` fazı `error`, graf aynı nesne, `ready == false`); "atomik yazma eski dosyayı … korur" (`.tmp` kalmaz; hedef klasör yoksa hata, eski dosya aynı) | `graph.MapDataStateTest` (saf durum) + `:map` `AtomicFileTest` (JVM dosya, Android'siz) | A6.2a → A6.3 | atomik yazma `logic/`'te `java.io.File` ile saf yazılabilir |
-| YT `router_test` "graf kurulur ve dosyaya yazılıp okunabilir" | 1 (38'in) | M iç nokta kavşak değil → N = 4, E = 4; serialize→deserialize sonrası `edgeCount`, `climbF`, `names` aynı | `graph.RoadGraphFileTest` | A6.2a → A6.3 | kalan 37 router testi Bölüm 3.12 |
+| YT `router_test` "graf kurulur ve dosyaya yazılıp okunabilir" | 1 (38'in) | M iç nokta kavşak değil → N = 4, E = 4; serialize→deserialize sonrası `edgeCount`, `climbF`, `names` aynı | `graph.RoadGraphFileTest` | A6.2a → A6.3 | kalan 37 router testi Bölüm 3.14 |
 | YT `bikeway_e13_test` "E13 etiketler" (3) + "E13 harita dosyası" (2) | 5 (18'in) | bayrak tablosu; Overpass sorgusu `cycleway` içerir + `out body`; eski başlık (`features` = 0, ofset 36) okunur ve uyarır; sürüm 1 (ofset 4) → `FormatException` | `graph.BikewayTagsTest`, `graph.RoadGraphFileTest` | A6.2a → A6.3 | dosyanın tamamı Bölüm 5.1'de eşlenir |
-| YT `park_paths_test` 1–2 | 2 (4'ün) | park bayrağı (park/garden/recreation, `bicycle=no` hariç, parktaki residential almaz), `hasParkData` | `graph.ParkPathsTest` | A6.2a → A6.3 | 3–4 Bölüm 3.12 |
+| YT `park_paths_test` 1–2 | 2 (4'ün) | park bayrağı (park/garden/recreation, `bicycle=no` hariç, parktaki residential almaz), `hasParkData` | `graph.ParkPathsTest` | A6.2a → A6.3 | 3–4 Bölüm 3.14 |
 | **Yeni (karakterizasyon)** | — | (a) KNG1 altın baytları: küçük sentetik OSM'den (router_test `_graph(hill: 10)`) üretilen dosyanın başlığı, hizaları, `u8/u16` alanları ve ad bölümü bayt bayt; little-endian; (b) `buildRoadGraph` sayıları: sıklaştırma (60 m parça → `ceil(60/25) = 3` adım, 2 ara nokta), 3'lü ortalama, `minGradeRun`, ad önceliği; (c) `HgtTile.sample` boşluk ortalaması ve kenar; (d) `BBox.split` 91/28 karo; (e) `nearestEdge` `heading` süzgeci ve `contains` payı | `graph.*Test` | A6.2a (yeni yazılır) → A6.3 | Dart tarafında ilgili sayılar YolGo üstünde bir kez çalıştırılıp sabitlenir; transandantal fonksiyonlarda (sin/cos/asin) ulp farkı için `closeTo` toleransı |
 
 ### 2.14 WEEM yerleşimi
@@ -290,7 +290,7 @@ Sabitler: `maxSpacing = 25 m` (sıklaştırma), `minGradeRun = 20 m` (eğim payd
 | `lib/core/settings.dart` | 133–153 | `gradeLimitFor`, `paramsFor` |
 | başvuru | — | `lib/routing/quality.dart` (Y12, Bölüm 9), `lib/surface/bad_spots.dart` (kötü nokta aralıkları), `lib/routing/route_hours.dart` (Bölüm 4), `lib/nav/nav_controller.dart:473–507, 976–985` (isteği kuran ve hatayı çeviren; ajan N, Bölüm 7), `lib/economics/dataset_runtime.dart:50–75` (Y19 rota çağrısı; ajan T) |
 
-Bulgu `Y_routing.md` §Y3 kaynakta doğrulandı. Düzeltmeler: satır aralıkları yukarıdaki gibi (`CostModel` 26–342, `_eval` 242–341); kara liste denetimi `_eval`'de **en sonda** (sonuç aynı: kenar kapalı); `walkable` (yürüme) ve `allowed` (sürüş) ayrı kurallardır (3.5); `softBlock` parametresi tanımlı ama **hiç kullanılmıyor** (ölü); `wrongWayKmh` (18) ve `parkPenaltyS` (15) ayardan değil `RideParams` varsayılanından gelir.
+Bulgu `Y_routing.md` §Y3 kaynakta doğrulandı; kurallar ve sabitler doğru. Bulgu düzeltmesi: satır numaraları eski (doğrusu yukarıdaki tablo; ör. `CostModel` 26–342, `_eval` 242–341, sezgisel 653–658, `pushCostFactor` 457, `heuristicScale` 86–92). Ekler: kara liste denetimi `_eval`'de **en sonda** (sonuç aynı: kenar kapalı); `walkable` (yürüme) ve `allowed` (sürüş) ayrı kurallardır (3.5); `softBlock` parametresi tanımlı ama **hiç kullanılmıyor** (ölü); `wrongWayKmh` (18) ve `parkPenaltyS` (15) ayardan değil `RideParams` varsayılanından gelir.
 
 ### 3.2 Fizik ve parametreler (`RideParams`, physics.dart:29–126)
 
@@ -534,7 +534,7 @@ Bulgu: Y8 için ham bulgu yoktu (yalnız `Y_routing.md` §Y3'te girdi adları); 
 
 | Yer (ekran sahibi) | Eylem | Etki | Metin TR / AZ |
 |---|---|---|---|
-| Sürüş, ses tuşları (Bölüm 9.4; yakalama ajan Q) | Ses+ tek (450 ms içinde ikincisi gelmezse) | eşleşen sokak `approve`; açık ters yön önerisi varsa (ana cadde değil) önerilen sokak | "Onaylandı: $ad (iki yön)" / "Təsdiqləndi: $ad (iki tərəfli)"; yeşil, 6 sn, "Geri al" / "Geri qaytar" (öncesindeki üç liste + saat geri yüklenir) |
+| Sürüş, ses tuşları (Bölüm 9.5 ve 7.13) | Ses+ tek (450 ms içinde ikincisi gelmezse) | eşleşen sokak `approve`; açık ters yön önerisi varsa (ana cadde değil) önerilen sokak | "Onaylandı: $ad (iki yön)" / "Təsdiqləndi: $ad (iki tərəfli)"; yeşil, 6 sn, "Geri al" / "Geri qaytar" (öncesindeki üç liste + saat geri yüklenir) |
 | 〃 | Ses+ ana caddede | yok | "Ana caddede ters yön onayı kapalı" / "Əsas küçədə əks istiqamət təsdiqi olmur" (kırmızı, titreşim) |
 | 〃 | Ses− iki kez (450 ms içinde) | `markSteep` | "Aşırı eğimli: $ad — yokuş yukarı kullanılmaz" / "Çox dik: $ad — yoxuşa çıxılmayacaq"; mor, 6 sn, geri al |
 | 〃 | Ses− tek | sokak kararı **değil**: ±25 m kötü nokta (Bölüm 9) | — |
@@ -583,13 +583,323 @@ Her kalıcı değişiklikten sonra rota açıksa `replan(reason: 'prefs')` (Böl
 <!-- BEGIN sec:5 -->
 ## 5. Y15 Bisiklet yolu katmanı, Y16 Restoran noktaları, Y21 Bölge bilgisi (A6.8)
 
-_Yazılıyor (ajan R)._
+Kaynak: Y15 `lib/routing/bikeways.dart` 1–67, `lib/ui/bikeway_layer.dart` 1–148, `lib/data/graph_builder.dart:37–45`, `lib/routing/router.dart:86–92, 332`, `lib/core/settings.dart:53–54, 140–152, 312`; Y16 `lib/data/pois.dart` 1–136, `lib/data/poi_corrections.dart` 1–76, `lib/ui/poi_editor.dart` 1–45, başvuru `lib/ui/map_view.dart:897–1100` (`displayPoisProvider`, `PoiLayer`; ekran ajan N), `lib/ui/nav_screen.dart:160–352` (uzun basış menüsü), `lib/nav/nav_controller.dart:421–431`, `lib/tracking/shift_controller.dart:599, 618`; Y21 `lib/ui/region_info.dart` 1–134, `assets/baku/` + `credits.json`, `ci/fetch_photos.py`. Ham bulgu yoktu (Y15/Y16 `Y_routing.md`'de "sırada" kalmıştı); kaynaktan çıkarıldı.
+
+### 5.1 Y15 — Bisiklet yolları
+
+**Etiketler** (`isBikewayTags`, E13, kullanıcı listesi 14 Ekim): `highway=cycleway`; `cycleway` ∈ {lane, track}; `cycleway=share_busway`; `cycleway:left|right|both` ∈ {lane, track}; `bicycle=designated`. Sayılmaz (test listesi): `cycleway=shared_lane|opposite`, `cycleway:right=no`, `cycleway:both=separate`, `cycleway:left=share_busway`, `bicycle=yes|permissive`; ayrıca `cycleway=right` (değer kümede yok). Bayrak `WayFlag.bikeway` (1024) graf kurulurken yazılır; dosya başlığı `GraphFeature.bikeways` (Bölüm 2.5). Yön kuralları ayrı ve değişmez (`onewayFwd`, `contraflow`); `bicycle=designated` aynı zamanda `bikeOk` (yaya yolu sürülebilir).
+
+**Elle işaret** (`BikewayMarks`): OSM'de eksik bisiklet yolu kullanıcı tarafından **bütün OSM yolu** için işaretlenir; yalnız bu telefonda, kalıcı; rotada ve haritada OSM bayrağı gibi davranır.
+- Tercih `streets.bikeway.v1` StringList, öğe `"<wayId>|<ad>"` (ad boş olabilir: `"402|"`). Okuma: `|` yoksa bütün dizge id; id ayrıştırılamazsa atlanır; ad yalnız `|` son karakter değilse. Yazma küme sırasıyla `"$w|${ad ?? ''}"`.
+- `mark(way, ad)` (ad boşsa ad yazılmaz), `unmark(way)`, `isMarked`.
+
+**Rota etkisi** (Bölüm 3.4 adım 9): yalnız izinli yönde ve ters yön **değilken** `cost ×= bikewayFactor`; süre ve enerji değişmez; ters yönü açmaz (onaylı ara sokakta ters yön serbest ama indirimsiz; ana caddede onay ters yönü açmaz). `bikewayFactor = bikewayCostPct.clamp(50, 100)/100` (varsayılan 85 → ×0.85; `fromJson` da 50–100'e kıstırır: 20 → 0.5, 140 → 1.0). Grafta bayrak ya da elle işaret varsa A* sezgisi `min(1, bikewayFactor)` ile küçülür (rota en iyi kalır).
+
+**Harita katmanı** (`bikewayLines`): `showBikewayLayer` (varsayılan açık) ve graf varken her bisiklet yolu kenarı (OSM bayrağı ya da elle işaretli way) bir çizgi: kalınlık 4, renk `AppColors.bikeway` (koyu tema `#3DDCE8`, açık `#00838F`) %85 opak; OSM düz, elle işaretli kesikli `[10, 6]`. Tema değişince yeniden. İki harita yüzeyi de çizer (`map_view.dart:455, 486, 532`): OSM/sade yüzeyde POI katmanının üstünde, sokak kaplamasının (`streetOverlayProvider`: onaylı/kapalı/eğimli sokak renkleri) ve rotaların altında; Google yüzeyinde çizgilerin ilki (en altta; işaretler çizgilerin üstünde). Ekran Bölüm 6.
+
+**Uzun basış menüsü satırı** (`bikewayMenuAction`): way elle işaretliyse "Bisiklet yolu işaretini kaldır" / "Velosiped yolu qeydini sil" (`unmark`); değilse kenar OSM bisiklet yoluysa satır **pasif** (`alreadyOsm`), alt yazı "$ad · OSM'de zaten bisiklet yolu" / "$ad · OSM-də artıq velosiped yoludur"; değilse "Bisiklet yolu olarak işaretle" / "Velosiped yolu kimi qeyd et", alt yazı "$ad · bütün sokak; rotada tercih edilir" / "$ad · bütün küçə; marşrutda üstünlük verilir". Basınca `toggleBikewayWithUndo`: işaretler/kaldırır, toast "Bisiklet yolu işaretlendi: $ad" / "Velosiped yolu qeyd olundu: $ad" ya da "Bisiklet yolu işareti kaldırıldı: $ad" / "Velosiped yolu qeydi silindi: $ad" (ad boşsa "isimsiz yol" / "adsız yol"), renk bisiklet, 7 sn, "Geri al" / "Geri qaytar" son işlemi tersine çevirir. Açık rota kendiliğinden yeniden hesaplanır: elle işaret kümesi ya da ayarlardan `qualityTolerancePct`, `wwMaxProblemPct`, `turnPenaltyS`, `bikewayCostPct` biri değişince `replan(reason: 'prefs')` (`nav_controller.dart:243–251`; Bölüm 7.5).
+
+**Yollarım → Bisiklet sekmesi** (`BikewayTab`; Yollarım'ın dördüncü sekmesi "Bisiklet" / "Velosiped", `roads_screen.dart:41–48`; Yollarım ekranı Bölüm 9.8): başlık "Bisiklet yolları" / "Velosiped yolları"; not "Bakü'de OSM bisiklet yolu kaydı az; eksikleri elle işaretleyebilirsin." / "Bakıda OSM-də velosiped yolu qeydləri azdır; çatışmayanları əl ilə qeyd edə bilərsən."; yardım "Haritada sokağa uzun bas → \"Bisiklet yolu olarak işaretle\". İşaret yalnız bu telefonda kalır, OSM bisiklet yolu gibi kullanılır." / "Xəritədə küçəyə uzun bas → \"Velosiped yolu kimi qeyd et\". Qeyd yalnız bu telefonda qalır, OSM velosiped yolu kimi istifadə olunur."; graf bisiklet bilgisi taşıyorsa istatistik "OSM: N sokak · <fmtKm>" / "OSM: N küçə · …" (OSM bayraklı way sayısı ve kenar uzunlukları toplamı; `fmtKm` < 1.000 m → "N m", değilse "X.X km"); eski haritada turuncu uyarı "Kayıtlı harita bisiklet yolu bilgisi içermiyor (eski harita). Ayarlar → İlave ayarlar → Harita verisi → İndir / güncelle." / "Yaddaşdakı xəritədə velosiped yolu məlumatı yoxdur (köhnə xəritə). Tənzimləmələr → Əlavə tənzimləmələr → Xəritə məlumatları → Yüklə / yenilə."; anahtar "Haritada bisiklet yolları" / "Xəritədə velosiped yolları" (alt "Düz çizgi: OSM · kesikli: elle işaretli" / "Düz xətt: OSM · qırıq xətt: əl ilə qeyd olunan"); "Bisiklet yolu tercihi" / "Velosiped yoluna üstünlük" (alt "Rota maliyeti bu çarpanla (×1.00: tercih yok). Süre, tek yön ve ters yön kuralları değişmez." / "Marşrut xərci bu əmsalla (×1.00: üstünlük yoxdur). Vaxt, birtərəfli hərəkət və əks istiqamət qaydaları dəyişmir.", sağda `×0.85` biçimi 2 ondalık); kaydırıcı 50–100, 10 bölme (adım 5); "Elle işaretlenen bisiklet yolları" / "Əl ilə qeyd olunan velosiped yolları" listesi (boşsa "Henüz yok" / "Hələ yoxdur"; satır ad ya da "isimsiz yol", alt "OSM #<id>", çöp kutusu ipucu "İşareti kaldır" / "Qeydi sil" → `unmark`, geri al yok).
+
+### 5.2 Y15 testleri (`bikeway_e13_test`, 18; döngüler tek sayılır)
+
+| Grup | Sayı | Neyi doğrular | WEEM hedefi | Görev |
+|---|---:|---|---|---|
+| E13 etiketler | 3 | 12 etiket bileşimi (döngüyle) bayrak yazar; 8 bileşim yazmaz; `footway+bicycle=designated+oneway=yes` → `bikeOk|onewayFwd|bikeway`; Overpass sorgusu `cycleway` içerir + `out body`, ham JSON etiketi grafa ulaşır | `graph.BikewayTagsTest` | A6.2a → A6.3 |
+| E13 harita dosyası | 2 | yeni graf bisiklet bilgisini taşır, kaydet/oku aynı, uyarı yok; başlık ofset 36 = 0 → okunur, `hasBikewayData` false, uyarı TR "İndir / güncelle" ve AZ "Yüklə / yenilə" içerir; sürüm (ofset 4) 1 → `FormatException` | `graph.RoadGraphFileTest` | A6.2a → A6.3 |
+| E13 rota | 6 | `cycleway:right=lane` kenarı maliyet ×0.85, süre/Wh aynı; `cycleway=right` bisiklet değil; çarpan 1.0 etkisiz, 0.6 ×0.6; elle işaret (`{500}`) ×0.85, başka way etkisiz; bisiklet şeridi ve elle işaret ters yönü açmaz, onaylı ters yön indirimsiz, ana caddede onay açmaz; 40 m uzun bisiklet yolu ×0.85'te seçilir (480), ×0.95 ve ×1.00'da seçilmez (440), elle işaretle seçilir; motor elle işareti taşır; `heuristicScale` 1.0 / 0.85 / elle 0.85 / çarpan 1.0 iken 1.0 | `route.BikewayCostTest`, `route.RouteEngineTest` | A6.2a → A6.4 |
+| E13 ayarlar, elle işaret | 2 | varsayılan 85 ve katman açık; eski ayar dosyası (`qualityTolerancePct 12`, `turnPenaltyS 8`) okunur ve yeni alanlar varsayılan; gidiş-dönüş 70/false; 20 → 0.5, 140 → 1.0; `withMaxGrade` çarpanı korur; işaret kalıcı (`"401|Test küçəsi"`, `"402|"`), yeniden açılışta okunur, kaldırma yazılır, `streets.approved` değişmez | `settings.MapSettingsTest`, `route.BikewayMarksTest` | A6.2a → A6.8 |
+| uygulamada (yeniden rota) | 2 | işaret açık rotayı değiştirir ve geri alınca eski rota (440 → 480 → 440); ağırlık 100 yapılınca rota yeniden (480 → 440) | saf `nav` denetleyici testi (Bölüm 7.15) | A6.2a → A6.6 |
+| uygulamada (menü, katman) | 2 | menü eylemi `mark`/`alreadyOsm`/`unmark`, toast metinleri ("Bisiklet yolu işaretlendi: Batı küçəsi", "… işareti kaldırıldı: …") ve "Geri al"; katman: OSM çizgi sayısı = kenar sayısı, renk %85, elle işaret kesikli, katman kapatılınca boş | saf `route.BikewayMenuTest`, `ui.BikewayLayerRulesTest` | A6.2a → A6.8 |
+| uygulamada (ekran) | 1 | Bisiklet sekmesi: not, anahtar, `×0.85`, "OSM: 3 ", liste, çöp kutusu, anahtar kapatma, AZ not | `:app` Robolectric `BikewayTabTest` | A6.2b → A6.8 |
+
+Fixture'lar aynen: `_single(tags)` (way 500, 400 m kuzey), `_parallel(east)` (batı 440 m ways 301–303, doğu 480 m ways 401–403).
+
+### 5.3 Y16 — Restoran ve yer noktaları
+
+**Türler** (`poiKind`; tek harf): `r` restaurant, `f` fast_food, `c` cafe (amenity); `m` `shop=mall` (AVM); `t` `shop` ∈ {convenience, supermarket, bakery, butcher} (market; doc yorumunda yok — bulgu düzeltmesi); `s` `station=subway` (metro); `l` trafik ışığı (`highway=traffic_signals` ya da `crossing=traffic_signals` ya da `highway=crossing`+`crossing:signals=yes`). Sıra: amenity önce.
+- `poisFromOverpass`: etiketsiz öğe atlanır; koordinat `lat/lon` ya da `center`; ad `l` için boş, diğerleri `name:az` → `name` → `brand` → `name:en` içinden kırpılıp boşluğu teke indirilmiş ilk dolu değer; `osmRef` = `"<type>/<id>"` (id yoksa boş). Dosya biçimi ve indirme Bölüm 2.10.
+- `PoiSet`: enleme göre sıralı (Dart sıralaması kararlı değil; WEEM eşit enlemde girdi sırasını korur — fark yalnız eşitlik durumunda). `within(s, w, n, e)`: ikili arama + boylam süzgeci. `nearest(tür, lat, lon, maxM = 40)`: `d = maxM/111320` derece; kutu enlem `±d`, boylam `±1.4·d`; haversine ≤ en iyi (eşitlikte **sonraki** kazanır, `<=`).
+- **Düzeltmeler** (`places.local.v1`, StringList; her öğe JSON `{lat, lon, kind, name, osmRef, originalRef, originalLat, originalLon, originalKind}`; okurken `lat`/`lon` sonlu ve aralıkta olmalı, bozuk öğe atlanır): ekleme ya da ad/tür düzeltme; silme yok. `replaces(p)`: `originalRef` doluysa `p.osmRef == originalRef`; değilse orijinal konum ve tür varken aynı tür ve ≤ 1 m. Düzeltilmiş küme = harita POI'lerinden düzeltmenin yerini aldıkları çıkarılır + bütün düzeltmeler. `save(poi, original)`: aynı orijinale ait eski düzeltme (aynı nesne, aynı `osmRef`, ya da aynı tür+ad ve ≤ 1 m) değiştirilir, orijinal bilgileri ilk düzeltmeden korunur; liste sonuna eklenir.
+- **Düzeltme penceresi** (`poi_editor.dart`): başlık "İşletme ekle" / "Obyekt əlavə et" ya da "İşletme adını düzelt" / "Obyektin adını düzəlt"; ad alanı (en çok 100, kelime başı büyük, "Ad"); tür seçici "Restoran", "Fast food", "Kafe", "Mağaza" (t), "AVM" / "Ticarət mərkəzi" (m) — başka tür (s, l) gelirse `r`; not "Bu düzeltme YolGo’da saklanır; harita güncellense de korunur." / "Bu düzəliş YolGo-da qalır; xəritə yenilənsə də itmir." (kesme işareti U+2019; WEEM: "WEEM’de" / "WEEM-də"); "Vazgeç" / "Ləğv et"; "Kaydet" / "Yadda saxla" (ad boşsa pasif). Yeni işletme basılan noktaya, düzeltme orijinalin konumuna yazılır.
+- **Kullanım yerleri:**
+  - Harita gösterimi (`displayPoisProvider` + `PoiLayer`; ekran Bölüm 6): düzeltilmiş küme + ışık işaretleri (Y11 `lightSpots`: "yok" işaretinin 25 m içindeki OSM ışığı gizlenir, "var" işareti 25 m içinde OSM ışığı yoksa eklenir). Yakınlık eşikleri (kod; dosyadaki yorum eski — bulgu düzeltmesi): katman z < 12 yok; metro z ≥ 13 (ad z ≥ 16), AVM z ≥ 15 (ad z ≥ 17), ışık z ≥ 16.5 (küçük nokta), restoran/fast food/kafe/market z ≥ 16.5 (34 px hücrede tek simge; ad z ≥ 17.6); öncelik ışık → metro → AVM → diğer; en çok 180 simge, 55 ad (çakışan ad atlanır). Simgeler: metro `#E30613` daire, beyaz "M" (30 px); AVM `#7B4DFF` yuvarlak köşeli kutu, `local_mall` (32 px); ışık `#222222` daire, `#FFB13D` `traffic` simgesi (16 px); yemek noktası `AppColors.food` daire (30 px; f `fastfood`, c `local_cafe`, t `storefront`, diğer `restaurant`).
+  - Uzun basış menüsü (Bölüm 6/7): 30 m içinde `r, f, c, t, m` türleri sırayla, her bulunanda yarıçap o uzaklığa iner → en yakın işletme; r/f/c ise "Restorana git: <ad>" / "Restorana get: <ad>" (hedef restoran), değilse "Bu noktayı restoran olarak seç" / "Bu nöqtəni restoran kimi seç"; "Buraya işletme ekle" / "Bura obyekt əlavə et" ya da "İşletme adını düzelt" + ad; 25 m içindeki ışık "Bu noktada ışık yok" konumu için (Bölüm 11).
+  - Vardiya hedefinin restoran sayılması (YolGo gün motoru, Bölüm 11; `nav_controller.dart:419–441`): vardiya açıkken ve hedef ev değilken, restoran bilgisi (çağrıdan ya da duraktan) yoksa ve kapı notu (`unitNote`) yoksa hedefe 8 m içinde `r/f/c` varsa restoran; sonuç `setDestination(…, restaurant)` ve durak o siparişe bağlanır.
+  - Çevrimdışı arama dizini (Y6, Bölüm 8.8; `place_search.dart:63, 92`): düzeltilmiş POI adları; düzeltme değişince dizin sıfırlanır.
+  - Işık ve AVM duruşu (Y11, Bölüm 11): **düzeltilmemiş** harita POI'leri — `nearest('l', 55 m)`, `nearest('m', mallRadiusM = 80 m)` (`shift_controller.dart:599, 618`; `stop_semantics.dart:5`).
+
+### 5.4 Y21 — Bölge bilgisi
+
+- Giriş: ayarlardaki Harita verisi bölümünde ve kurulum ekranında bölge seçicinin yanındaki ⓘ ("Bölgeler neyi kapsıyor?" / "Ərazilər nəyi əhatə edir?").
+- Alt sayfa: başlık "Harita bölgeleri" / "Xəritə əraziləri"; 280 px yükseklikte OSM raster haritası (`https://tile.openstreetmap.org/{z}/{x}/{y}.png`, retina, döndürme kapalı, `wideBox` sınırlarına 12 px payla sığdırılır); iki dikdörtgen: Böyük Bakı turuncu (%10 dolgu, 3 px kenar), Mərkəzi Bakı mavi (%18 dolgu). Açıklamalar:
+  - "Merkez Bakü · ~17 × 12 km" / "Mərkəzi Bakı · …" (boyut `~W × H km`: güney kenarı boyunca doğu-batı ve batı kenarı boyunca kuzey-güney haversine km, yuvarlanır) + "Badamdar, Bayıl, Sabail, İçerişehir, Yasamal, Nesimi, Narimanov / Gençlik, Hatai (Ağ şehir), Montin, 8-ci km'nin batısı. Kuryelerin çoğu siparişi bu alanda. Gömülü yol haritası her iki seçimde de geniş alanı kapsar." / "Badamdar, Bayıl, Səbail, İçərişəhər, Yasamal, Nəsimi, Nərimanov / Gənclik, Xətai (Ağ şəhər), Montin, 8-ci km-in qərbi. Sifarişlərin çoxu bu ərazidədir. Tətbiqin yol xəritəsi hər iki seçimdə də geniş ərazini əhatə edir."
+  - "Geniş Bakü · ~57 × 41 km" / "Böyük Bakı · …" + "Merkez + Binagadi, Hırdalan, Masazır, Novhanı, Maştağa, Ahmedli, Hazi Aslanov, Bakıhanov, Garaçuhur, Sulutepe, Bibiheybet. Uzak siparişlere gidiyorsan bunu seç." / "Mərkəz + Binəqədi, Xırdalan, Masazır, Novxanı, Maştağa, Əhmədli, Həzi Aslanov, Bakıxanov, Qaraçuxur, Sulutəpə, Bibiheybət. Uzaq sifarişlərə gedirsənsə bunu seç."
+  - Düğmeler "Merkez" / "Mərkəz" ve "Geniş" / "Böyük": tarayıcıda `https://www.openstreetmap.org/?minlon=<w>&minlat=<s>&maxlon=<e>&maxlat=<n>&box=yes`.
+  - Alt not "Her iki seçimde de geniş yol ağı kullanılır. Turuncu sınırın dışındaki hedefler için ek harita verisi gerekir." / "Hər iki seçimdə geniş yol şəbəkəsi işləyir. Narıncı sərhəddən kənardakı ünvanlar üçün əlavə xəritə lazımdır."
+- Çerçeveler kod içi `Baku.centralBox` / `Baku.wideBox` (Bölüm 2.2).
+- `assets/baku/` (`baku1.jpg`–`baku3.jpg`, `credits.json`): bölge ekranında **kullanılmaz**; hava ayrıntısının arka planıdır (Bölüm 10). CI'da `ci/fetch_photos.py` Wikimedia Commons'tan iner (yalnız JPEG, genişlik ≥ 1.600 ve yataydan büyük, lisans CC/PD), `credits.json` = `[{file, title, artist, license, url}]`. Mevcut üç fotoğraf: "Flame towers from Baku boulevard" (Xoncha, **CC BY-SA 4.0**), "Baku Boulevard pier" (Radosław Botev, **CC BY 3.0 pl**), "Heydar Aliyev International Conference Center Baku Azerbaijan" (Fanti Salms, **CC BY-SA 4.0**). Lisans gereği yazar + lisans + kaynak bağlantısı uygulamada gösterilmeli (YolGo: hava ayrıntısındaki ⓘ). WEEM: dosyalar ve `credits.json` aynen `:map` (ya da `:app`) asset'i; atıf gösterimi korunur.
+- Testi yok → **WEEM karakterizasyon testi** (A6.2b): Robolectric/Compose `RegionInfoSheetTest` — iki dildeki başlık ve açıklamalar birebir, km etiketleri (`~W × H km` hesabı saf `geo.BBox` yardımcısında birim test: merkez `~17 × 12 km` (16.952 × 12.231), geniş `~57 × 41 km` (56.836 × 41.142); R = 6 371 000 m haversine ile hesaplandı), OSM bağlantı biçimi.
+
+### 5.5 Veri
+
+| YolGo | Biçim | WEEM |
+|---|---|---|
+| `streets.bikeway.v1` | StringList `"id\|ad"` | `map` tercih dosyasında aynı ad/biçim (S1: boş başlar) |
+| `settings.v1.bikewayCostPct` (85, 50–100), `showBikewayLayer` (true) | JSON alanı | `MapSettings` (Bölüm 14) |
+| `places.local.v1` | StringList JSON | `map` tercih dosyasında aynı ad/biçim |
+| `files/mapdata/pois_<region>.json` | Bölüm 2.10 | aynı |
+| `assets/baku/*.jpg`, `credits.json` | asset | aynı adlar |
+| OSM karo sunucusu (bölge haritası) | `tile.openstreetmap.org`, `userAgentPackageName` = paket kimliği (`az.duzyol.app`) | aynı sunucu, kimlik `com.kuryelog.app` (OSM karo kullanım kuralı; Y2 MapLibre raster stiliyle ortak, Bölüm 6) |
+
+### 5.6 Testler (Y16, Y21)
+
+| Dosya | Sayı | Neyi doğrular | WEEM hedefi | Görev | Not |
+|---|---:|---|---|---|---|
+| YT `pois_test` | 4 | Overpass → 2 nokta (hastane yok), way merkezi, ad `name:az` önce ("Dönər"); görünür alan süzgeci (`['B']`) ve kodlama gidiş-dönüş (ilk `A`, sıralı); boş `name:az` → `brand` ("Araz"), bakkal `t`, sinyalli geçit `l`, `osmRef` "node/10" korunur; eski 4 alanlı satır okunur, `osmRef` boş | `graph.PoiSetTest` | A6.2a → A6.8 | — |
+| **Yeni** | — | `PoiCorrectionsTest` (replaces kuralları, kaydet-değiştir, bozuk öğe, sıra); `PoiLayerRulesTest` (yakınlık eşikleri, öncelik, 34 px hücre, 180/55 sınırı — saf kural fonksiyonu); `RegionInfoSheetTest` (5.4) | `graph.*`, `ui.*`, `:app` Robolectric | A6.2b → A6.8 | eski testi yok (karakterizasyon) |
+
+### 5.7 WEEM yerleşimi
+
+- `logic/map` `graph`: `Poi`, `PoiSet`, `poiKind`, `poisFromOverpass`, `PoiCorrections` (model + `replaces` + kodek), `BikewayTags` (graf kurmada). `route`: `BikewayMarks` (model + kodek), maliyet kuralı `CostModel`'de. `ui`: `BikewayLayerRules` (hangi kenar, düz/kesikli), `PoiLayerRules` (eşikler, öncelik, seyreltme), `BikewayMenuAction`. `geo`: `BBox.sizeKmLabel` (bölge ekranı).
+- Android `:map`: katman çizimi iki yüzeyde (Google Maps polyline/marker; MapLibre katmanları — Bölüm 6); `MapPrefsStore` (`streets.bikeway.v1`, `places.local.v1`).
+- `:app` ekranları: Yollarım → Bisiklet sekmesi (Bölüm 9.7 sekme düzeni), POI düzeltme penceresi, bölge alt sayfası (Harita ayarları ve kurulum).
+- 2 telefon: harita olan telefonda; veri telefon başına (mesaj yok).
+
+### 5.8 Farklar ve açık noktalar
+
+- `displayPoisProvider` yorumundaki eşikler (metro z ≥ 12, AVM z ≥ 13, restoran z ≥ 15, ışık z ≥ 16) koddakiyle uyuşmuyor; WEEM kodu esas alır (5.3).
+- Y11 ışık/AVM kararı düzeltilmemiş POI'leri kullanır, harita ve menü düzeltilmişleri (YolGo davranışı; korunur).
+- POI düzeltmesi silinemez (YolGo davranışı; korunur).
+- Dart `List.sort` kararsız; eşit enlem ya da eşit öncelikte sıra farkı yalnız görsel/eşitlik durumunda.
+- POI penceresindeki not uygulama adını içerir ("YolGo") → WEEM'de "WEEM" (metin değişikliği yalnız ad).
+- **Belge tutarsızlığı (koordinatöre):** `OZELLIK_HARITASI.md` Y15 ve Y16 "Veri" satırları `streets.bikeway.v1` ve `places.local.v1` için "(içe aktar)" diyor; S1 ve `VERI_SOZLESMESI.md:142, 144` "yeniden girilir". Bu bölüm S1'e uyar (aktarım yok, boş başlar); haritanın düzeltilmesi gerekir. Ayrıca Y16'ya bağımlı olanlar Y6'nın yanında Y11 (ışık/AVM) ve YolGo gün motorudur (5.3).
 <!-- END sec:5 -->
 
 <!-- BEGIN sec:6 -->
 ## 6. Y1 Harita ekranı ve Y2 İkinci harita görünümü (A6.5)
 
-_Yazılıyor (ajan N)._
+### 6.1 Kaynak ve kapsam
+
+- YG `lib/main.dart` (178) ve `lib/core/day_scope.dart:8-9` (ana kabuk, pasif oturum); `lib/ui/nav_screen.dart:40-153` (yerleşim), `:155-366` (uzun basış menüsü); `map_hud_layout.dart` (29); `map_hud.dart` (arama çubuğu Bölüm 8.8, `RouteFab` Bölüm 7.11); `map_view.dart` (1178: yüzey seçimi, altlıklar, işaret akışı, katmanlar, işaretler); `google_map_surface.dart` (302); `puck_style.dart` (38); `locate_button.dart` (66); `lib/core/theme.dart` (190), `app_info.dart` (19), `lib/ui/brand.dart` (78); `setup_screen.dart` (211); `settings_screen.dart:26-92, 138-196, 418-527` (yapı); `maps_help.dart` (45); `home_picker.dart` (107) + `android_overlay/HomePickActivity.kt` (56), `HomePickContract.java`; `MainActivity.kt:99-104, 198-222, 236-258, 282-286, 299-338` (ekran açık, dosya kaydetme, `openUrl`, Play Services, yaşam döngüsü); `ci/build.sh:87-104` (Maps anahtarı); `pubspec.yaml:19-23, 44, 56-68`; `assets/fonts/` (Inter, 6 dosya, 2,0 MB); `assets/brand/` (hiçbir yerde kullanılmıyor).
+- Başkalarının bölümü: takip, yaklaşma yakınlaştırması, varış odağı, rota çizimi, rota paneli ve sol göstergeler Bölüm 7; harita verisi fazları ve ekran metinleri Bölüm 2.9; sokak kararı/hayalet/ww çizgilerinin ölçüleri 9.8.7; POI verisi ve düzenleyicisi Bölüm 5 (Y16); ışık işaretleri Bölüm 11 (Y11); hava yuvarlağı Bölüm 10; hatırlatıcı ve görev kartları Bölüm 13; gün kartının içeriği (aşama satırları, İstatistik) Bölüm 11/12.
+- Bulgu: Y1/Y2 için ham bulgu yoktu (`OZELLIK_HARITASI` Y1/Y2 satırları; Y2'nin testi yok → karakterizasyon testi). G2 haritadan seçme `bulgular/Y_tracking.md` §G2 satır satır doğrulandı (düzeltme 6.16).
+
+### 6.2 Ana kabuk (`main.dart`)
+
+- **Açılış:** yalnız dikey (`portraitUp`, :40); tercihler önyüklenir; ayrı Dart girişi `pickHomeMain` ev seçici içindir (6.11).
+- **Hep yaşayanlar** (:112-128): yüzey servisi, konum, sensörler, sürüş günlüğü, veri seti, batarya, pano, yerel köprü, Rawstats evi, yalnız-nav, nav yayını; gün, yol öğrenme ve hatırlatıcı dinlenir.
+- **Dil ve tema** (:138-158): `I18n.resolve(settings.lang)`; tema `light` → gündüz paleti, `auto` → telefonun gece/gündüz modu, diğer her değer (`dark` varsayılan, eski `dark-ui`) → gece paleti. Durum çubuğu saydam, simgeler zemine zıt; gezinme çubuğu zemin rengi. Tema geçişi animasyonsuz. Yerel `tr`/`az`.
+- **İlk ekran** (:171-175): graf hazırsa harita ekranı; faz `checking`/`unpacking` ise açılış ekranı; aksi kurulum ekranı (6.9; fazlar Bölüm 2.9).
+- **Ekranı açık tutma** (`_updateAwake`, :82-86): koşul `gün açık || rota var`; wakelock + yerel `setScreenAwake` (`FLAG_KEEP_SCREEN_ON`, `MainActivity.kt:99-104`; her `onResume`'da yeniden uygulanır, :324-330). Yeniden değerlendirme: açılışta, öne dönüşte, gün açılıp kapanınca ve `hasRoute || durak var` değişince. Ses tuşları da ancak ekran açıkken yakalanır (Bölüm 9).
+- **Pasif oturum** (`day_scope.dart:8-9`; `main.dart:63-74, 93-108`): uygulama arka plana geçerken gün kapalıysa `passive.pausedAt.v2 = şimdi` (ms) yazılır ve wakelock kapanır. Açılışta ve öne dönüşte `!gün açık && pausedAt != null && şimdi − pausedAt ≥ 5 dk` ise rota silinir (`clearRoute`); anahtar her seferinde silinir. Öne dönüşte ayrıca yüzey servisi yeniden denenir (Y13, sonra).
+- **WEEM:** tek Activity (`:app` `MainActivity`), Harita sekmesi `MapTab` (açılış sekmesi). Dil ve tema `:app`'in (`lang`, `theme`; `logic/app` `ThemeMode` SYSTEM/LIGHT/DARK): YolGo'nun varsayılanı `dark`, WEEM'in SYSTEM (A1.3) — fark bilerek. Pasif oturum saf `logic/map` `nav.PassiveSession` (5 dk), anahtar `passive.pausedAt.v2` (`map` dosyası); öne/arkaya geçiş `MainActivity` `onStart`/`onStop`. Ekran açık: `:app` Activity bayrağı modüllerin isteklerinin VEYA'sı — `:map` (gün açık ya da rota var) ve `:scooter` (S2 `keep_screen_on`, bugün `ScooterTab` görünümünde).
+
+### 6.3 Harita ekranı yerleşimi (`nav_screen.dart`, `map_hud_layout.dart`)
+
+Üç kip (`nav_screen.dart:57-153`):
+1. **Varış odağı** (klavye kapalı ve odak açık; Bölüm 7.10): üstte bildirim şeridi + hatırlatıcı kartı; altta ters yön kartı + `ArrivalAddressCard`; arama, ayar, göstergeler, gün kartı, konum ve rota düğmesi yok.
+2. **Yalnız harita** (haritaya tek dokunuş açar/kapatır, `_toggleMapOnly`): sağ üstte "Panelleri göster" / "Panelləri göstər" (`show-panels`, `fullscreen_exit`), altta konum düğmesi.
+3. **Normal:** üstte [arama çubuğu (Bölüm 8.8) | ayar düğmesi (`open-settings`, `settings_rounded`, ipucu "Ayarlar" / "Tənzimləmələr") → Ayarlar sayfası], 16 px, hava yuvarlağı (ayar açıksa; Bölüm 10), 6 px, sol göstergeler (`ModePager`; klavye açıkken yok; Bölüm 7.11), 6 px, bildirim şeridi, hatırlatıcı kartı (Bölüm 13). Ana ekranda menü (`main-menu`) ve kayıt noktası yok. Altta gün kartı katlıysa (`shiftBarCollapsed`): puan sorusu kartı, ters yön kartı (Bölüm 9), sonra satır [solda gün kartı simgeleri | sağda konum düğmesi, 10 px, rota düğmesi]; açıksa sağa hizalı sütun: konum düğmesi, 10 px, puan sorusu, ters yön kartı, rota düğmesi, 8 px, gün kartı. En üstte görev uyarısı katmanı (Bölüm 13).
+
+`MapHudLayout` (:4-27): harita tam ekran; üst panel `SafeArea` (alt hariç), kenar 8/6/8/0 px, yüksekliği en çok `kullanılabilir × (klavye açık ? 0,95 : 0,64)` (kullanılabilir = ekran − klavye − sistem boşlukları), taşarsa kaydırılır; alt panel yalnız klavye kapalıyken, sol/sağ/alt 8 px, en çok ekranın %58'i, alttan dolarak kaydırılır; uyarı katmanı en üstte. **Kural:** paneller yalnız çizdikleri denetimlere sahiptir, boş alan haritanındır (kaydırma ve iki parmak yakınlaştırma geçer; `HitTestBehavior.deferToChild`); uyarı engeli (`ModalBarrier`) varken harita girdi almaz.
+
+**WEEM:** Compose'da `Modifier.verticalScroll` ve `pointerInput` boş alanda da sürüklemeyi yutar. HUD kapsayıcıları içeriği kadar yer kaplar (`wrapContentHeight` + `heightIn(max = …)`), kaydırma yalnız içerik sınırı aşınca; haritanın üstünde tam ekran saydam katman olmaz. `map_hud_gesture_test` bu kuralı sınar (6.14).
+
+### 6.4 Harita yüzeyleri
+
+**Ortak** (`map_view.dart:161-500`):
+- **Seçim:** `mapStyle == "google"` ve derleme Google'a açıksa (`GOOGLE_MAPS_ENABLED`, 6.10) Google yüzeyi; aksi flutter_map (anahtarsız derlemede `google` → `minimal`). Yüzey değişince kamera "hazır değil" sayılır.
+- **Başlangıç:** merkez = işaret ?? son konum ?? Bakü (40.4093, 49.8671); yakınlık 16,2 (`standardZoom`). Hazır olunca son konum varsa işaret oraya; Google'da rota varsa rota sığdırılır, yoksa konuma dönülür; flutter_map'te her zaman konuma dönülür.
+- **Sınırlar:** flutter_map yakınlık 11–19, döndürme jesti kapalı (harita yalnız kamera yönüyle döner); Google 11–20, eğme, pusula, yakınlık düğmeleri, araç çubuğu ve "konumum" düğmesi kapalı, iç boşluk 16/120/16/240 px (HUD payı).
+- **Kamera hareketi kısıtı** (`_move`, :193-209): flutter_map en sık 80 ms'de bir; Google en sık 160 ms'de bir ve önceki hareket bitmeden yenisi yok (animasyonsuz `moveCamera`). Takip, yaklaşma, odak ve yön kuralları Bölüm 7.10.
+- **Konum işaretinin akışı** (`_onFix`, :306-370): doğruluk >65 m ya da geçersiz → yok sayılır. Hareket = hız ≥1,5 m/s ve yön 0–360°; dönüş = önceki yönle fark ≥25°. İşaret yön filtresi (`HeadingFilter`) yalnız hareketli, doğruluk ≤25 m ve yön doğruluğu ≤45° iken beslenir (ağırlık dönüşte 0,85, aksi 0,4), aksi sıfırlanır. Kayma süresi `clamp(0,85 × iki fix arası, 250, 1000)` ms, doğrusal ara değer. Graf varken, hareketli ve doğruluk ≤25 m ise **yola oturtma**: en yakın kenar (dönüşte 10 m ve yön toleransı 25°, aksi 15 m / 40°; "yol yok" kenarları hariç); nokta kenara taşınır; kenar yönü (iki yönden GPS'e yakın olanı) GPS yönüne <30° ise yön o olur. **İleri tahmin:** `min(hız × (dönüşte 0,3 : 0,7) sn, 15 m)` yön boyunca. >120 m sıçramada (ilk fix, tünel çıkışı) kaymadan geçilir; ilk fix'te kamera yönü bu yön olur.
+
+**Google yüzeyi** (`google_map_surface.dart`):
+- Yalnız görüntü katmanı: bütün çizgiler YolGo'nun; Map ID, Routes, Navigation ve Places SDK kullanılmaz (:54-55).
+- **Stil:** renk şeması sabit açık (çalışırken değiştirmek 1.4.0'da bazı telefonlarda boş bej harita veriyordu, :253-256); koyu harita JSON stille (`googleMapStyle`, :23-49; 16 kural, zemin `#1d2330`, yazı `#8a96a8`/`#141922`, yollar `#2f3a4c`/`#3a465a`/`#4a566c`, su `#0e1626` …; aynen alınır); koyu = gece paleti ve tema `dark-ui` değil (`googleDarkMap`, :52); yakınlık <17'de `poi.business` ve `transit` gizli (YolGo kendi yerlerini çizer). Tema ya da uyumluluk değişince yüzey yeniden kurulur.
+- **Çizgiler:** flutter_map çizgileri aynı genişlik ve renkle, sıra = `zIndex`; düz olmayan her desen 8 px çizgi / 6 px boşluk olur (6.16).
+- **İşaretler:** yerler (kamera merkezinin 900 m içi, en yakından en çok 100; yakınlık eşiği ışık 16,5, metro 13, AVM 15, diğerleri 16,5; ışık dışındakilere ≥17,6'da ilk 35'e ad etiketi; ikonlar 3× ölçekli bit eşlemi, önbellek >250'de boşalır; zoom ≥0,4 değişince ya da merkez >100 m kayınca yenilenir), duraklar (mor iğne, bilgi "1", "2"…), varılan hedef (yeşil iğne), konum (düz, yönle döner, z 100; yön yoksa nokta, ok koşulu varsa ok, aksi koni + nokta; 6.5), doğruluk dairesi (8 < doğruluk < 80 m; dolgu `#1F4285F4`, kenar `#334285F4` 1 px). Konum çizimi en sık 120 ms'de bir. Parmak 8 px'ten fazla kayarsa "elle hareket" (Bölüm 7.10).
+- `googleMapCompatibility` (API ekranında "Google Maps uyumluluk modu" / "Google Maps uyğunluq rejimi", varsayılan kapalı): Flutter platform görünümü kipi (`useAndroidViewSurface`, :99-100).
+
+**flutter_map yüzeyi = Y2** (`_baseLayers`, `map_view.dart:625-690`; Esri kökü `https://server.arcgisonline.com/ArcGIS/rest/services/…/MapServer/tile/{z}/{y}/{x}`; User-Agent paket adı):
+
+| Seçim (ayar metni TR / AZ) | Açık | Koyu (gece paleti, `dark-ui` hariç) | maxNative | Atıf (sol alt, 9 pt) |
+|---|---|---|---|---|
+| CARTO anahtarı dolu (her seçimi ezer) | `https://{a,b,c,d}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png?key=<anahtar>` | aynı yol `dark_all` | — | "© OpenStreetMap · © CARTO" |
+| `minimal` "Sade · YolGo" / "Sadə · YolGo" (**varsayılan**) | `Canvas/World_Light_Gray_Base` + sade sokak katmanı | `Canvas/World_Dark_Gray_Base` + sokak katmanı | 16 | "© Esri · © OpenStreetMap" |
+| `osm` "OpenStreetMap" | `https://tile.openstreetmap.org/{z}/{x}/{y}.png` | Esri Dark Gray | 19 | "© OpenStreetMap" |
+| `esri` "Esri · detaylı" / "Esri · ətraflı" | `World_Street_Map` | Esri Dark Gray | 19 | "© Esri · © OpenStreetMap" |
+| `sat` "Uydu" / "Peyk" | `World_Imagery` + `Reference/World_Transportation` + `Reference/World_Boundaries_and_Places` | aynı, fotoğraf %40 karartılır | 19 | "© Esri · © OpenStreetMap" |
+| `google` "Google Maps" (anahtarsız derlemede seçilemez) | Google yüzeyi | JSON koyu stil | — | Google'ın kendi logosu |
+
+- **Sade sokak katmanı** (`_StreetDetailLayer`, :930-970): yalnız `minimal` ve CARTO anahtarı yokken; yakınlık ≥16,5'te görünen alandaki graf kenarları (en çok 1 800; "yol yok" hariç): ana yol 4 px, yaya sınıfı 1,1 px, diğer 2,4 px; renk koyu temada ana `#455267` / diğer `#303E50`, açıkta `#D1D9E2` / `#E2E7ED`. Yakınlık ≥17,3'te sokak adları: OSM yolu başına bir, en çok 35, kenarın orta noktasında, 150×35 px kutular çakışmaz, 10,5 pt.
+- **WEEM (S4):** ikinci görünüm MapLibre Native, iki stil: **(1) OSM raster** (`tile.openstreetmap.org`; atıf "© OpenStreetMap contributors", dokununca `https://www.openstreetmap.org/copyright`), **(2) vektör** (anahtarsız kaynak, SORU-N5). OSM karo kullanım politikası: tanıtıcı User-Agent (`WEEM/<sürüm> (personal courier navigation)`), HTTP önbellek başlıklarına uyma, toplu indirme ve önceden doldurma yok, görünür atıf; ihlalde sunucu engelleyebilir. Tek kullanıcılı kurye kullanımı bu sınırda; MapLibre'nin disk önbelleği açık kalır, çevrimdışı paket indirilmez. Vektör kaynak önerileri: (a) kendi Bakü PMTiles dosyası (OSM verisinden, uygulamayla ya da harita verisi gibi elle indirilir; çevrimdışı, sunucusuz; boyut ve MapLibre sürümünün `pmtiles://` desteği A6.5'te doğrulanır), (b) OpenFreeMap (anahtarsız ve kayıtsız barındırılan vektör karoları ve stilleri; dış sunucu). APK boyutu: MapLibre'nin yerel kütüphaneleri ABI başına ölçülür, sonuç bu bölüme yazılır (A6.5, plan S4).
+
+### 6.5 Konum işareti ve konum düğmesi
+
+**İşaret** (`puck_style.dart`, `map_view.dart:830-898`; iki yüzey aynı ölçüler):
+- Ölçüler: beyaz halka r 10, mavi nokta r 7,5 (`#1A73E8`), gölge r 11 (`#40000000`, bulanıklık 4), yön konisi r 28 ve ±30° (radyal geçiş `#4285F4` %55 → %0), çizim kutusu 60×60, ok boyu 22 (Ekim planı madde 5: Google Maps gibi küçük; 1.x'teki büyütme geri alındı).
+- Ok yalnız **rota açık ve işaret yönü belli** iken (`puckShowsArrow(route, course) = route && course != null`); dururken ya da rota yokken nokta (+ yön biliniyorsa koni). Ok yolu: uç `(c.x, c.y − s/2)`, sağ `(c.x + 0,4s, c.y + s/2)`, çentik `(c.x, c.y + 0,22s)`, sol `(c.x − 0,4s, c.y + s/2)`; çizim: 1 px aşağı kaymış gölge (`#40000000`, bulanıklık 3), 3 px beyaz kenar (yuvarlak köşe), mavi dolgu; yöne göre döndürülür.
+- Yön kaynağı: ok için yalnız GPS yönü (filtreli, 6.4); koni için GPS yönü ?? pusula (Bölüm 7.6), ikisi de yoksa yalnız nokta (iki yüzeyde aynı). Google'da koni bit eşlemi `#AA4285F4` → `#004285F4` (flutter_map'te %55; küçük fark, 6.16).
+- Doğruluk dairesi: 8 < doğruluk < 80 m iken, metre yarıçaplı (renkler 6.4).
+
+**Konum düğmesi** (`locate_button.dart`; `map_view.dart:211-264`):
+- Kamera kipi `cameraModeOf(follow, headingUp)`: takip yoksa `free`, takipte yön-yukarıysa `followHeading`, kuzey-yukarıysa `followNorth`; başlangıç `followHeading`.
+- Düğme (`smart-locate`, 64×64, daire, panel zemini, çerçeve; simge 30, mavi): `free` → `location_searching_rounded`, ipucu "Konumuma dön" / "Mövqeyimə qayıt"; `followNorth` → `my_location_rounded`, "Gidiş yönüne çevir" / "Hərəkət istiqamətinə çevir"; `followHeading` → `navigation_rounded`, "Kuzey yukarı" / "Şimal yuxarı". Simge anahtarı `locate-<kip>`.
+- Basınca (`smartLocate`): takipte ama elle yakınlaştırılmışsa yalnız standart yakınlığa döner (`recenter`); aksi `locateActionFor`: `free` → konuma dön (yön tercihi korunur), `followNorth` → yön-yukarı, `followHeading` → kuzey-yukarı (kuzeye geçerken kamera hemen 0°'ye döner); yön değişiminde de takip ve otomatik yakınlık yeniden açılır.
+- `recenter(resetZoom = true)`: bekleyen geri-takip iptal, takip açık, `resetZoom` ise otomatik yakınlık açık; işaret yoksa son konum, o da yoksa konum servisi başlatılır; kamera hazırsa `resetZoom ? otomatikYakınlık : şimdiki` ve yön-yukarıysa kamera yönüyle.
+
+### 6.6 Haritadaki katmanlar ve işaretler
+
+Çizim sırası (flutter_map, `map_view.dart:502-619`; Google'da aynı içerik çizgi ve işaret olarak):
+1. Altlık (6.4) ve sade sokak katmanı.
+2. **Yer katmanı** (`PoiLayer`, :972-1031). Kaynak `displayPoisProvider` (:902-918): düzeltilmiş POI kümesi (Bölüm 5) + yerel ışık işaretleri (Y11, Bölüm 11): "ışık yok" işaretinin 25 m içindeki OSM ışıkları gizlenir; 25 m içinde ışık olmayan "ışık var" işareti eklenir. Yakınlık <12'de hiçbir şey; görünen alanda öncelik ışık < metro (`s`) < AVM (`m`) < diğerleri; en çok 180 işaret, 55 ad.
+
+| Tür | Görünür yakınlık | İşaret | Ad etiketi |
+|---|---|---|---|
+| metro `s` | ≥13 | 30×30 kırmızı `#E30613` daire, beyaz 2,5 kenar, "M" (w900, 15) | ≥16 |
+| AVM `m` | ≥15 | 32×32 mor `#7B4DFF` yuvarlak kare (r 9), beyaz 2 kenar, `local_mall` | ≥17 |
+| ışık `l` | ≥16,5 | 16×16 `#222222` (r 4), beyaz 1 kenar, sarı `#FFB13D` ışık simgesi | yok |
+| restoran `r`, fast food `f`, kafe `c`, dükkân `t` | ≥16,5; ekranın 34 px ızgarasında hücre başına bir | 30×30 yemek rengi daire, beyaz 1,5 kenar; simge `f` fastfood, `c` local_cafe, `t` storefront, aksi restaurant | ≥17,6 |
+
+   Ad: 11 pt w700, iki katlı gölge, 145×35 px kutular çakışmaz, işaretin üstünde.
+3. Bisiklet yolları (Y15, Bölüm 5); sokak katmanı (`streetOverlayProvider`, :82-144: ww kesimi, hayalet, onaylı, kara liste, eğimli; ölçüler 9.8.7; Y13 yüzey çizgileri `showQualityLayer` — WEEM 1.0'da yok).
+4. Öteki modun planı (soluk gri 4 px `#66A0A8B8`) ve etkin rota (Bölüm 7.11).
+5. İşaretler (harita yönüyle döner): bekleme sürerken ışık (`lightAt`, Y11; 24×24, `#1B1B1B` zemin, turuncu `#FF9F1C` 3 px halka, ışık simgesi 14, 900 ms'de 0,85↔1,15 nabız); varılan hedef (`reached-pin`, 34×34, siyah zemin, yeşil 3 px halka + 12 bulanık parıltı, bayrak 18); duraklar (34×34; numara 1, 2…; ilk durak tam mor, diğerleri %60; 15 pt w800); ilk durakta yeni rota halkası (`Ripple`, 180×180, 1 600 ms, üç halka 0,18 arayla, 3 px mor, saydamlık `(1 − k) × 0,9`, yarıçap 12 → kutunun yarısı).
+6. Doğruluk dairesi ve konum işareti (6.5); atıf yazısı (6.4).
+
+### 6.7 Uzun basış menüsü (`nav_screen.dart:155-366`)
+
+Basılan nokta için: 40 m içindeki en yakın kenar (yol adı; adsızsa "isimsiz yol" / "adsız yol"), 30 m içindeki en yakın yer (türler `r`, `f`, `c`, `t`, `m`), 25 m içindeki en yakın ışık. Alttan açılan, kaydırılabilir sayfa; satıra dokununca sayfa kapanır ve eylem çalışır. Satırlar sırayla:
+
+| # | Koşul | Metin TR / AZ (alt yazı) | Eylem → veri bölümü |
+|---|---|---|---|
+| 1 | her zaman | "Buraya git" / "Bura get" | `goTo(nokta)`, kaynak `map` → 7.3 |
+| 2 | her zaman | "Durak olarak ekle (çifte sipariş)" / "Ünvan kimi əlavə et (ikiqat sifariş)" | `addStop` → 7.3 |
+| 3 | yakın yer `r`/`f`/`c` | "Restorana git: <ad>" / "Restorana get: <ad>" | `goTo(yer, label = ad, restaurant = true)` |
+| 3' | aksi | "Bu noktayı restoran olarak seç" / "Bu nöqtəni restoran kimi seç" | `goTo(nokta, restaurant = true)` |
+| 4 | her zaman | "Bu konuma günlük iş ekle" / "Bu ünvana gündəlik iş əlavə et" | görev düzenleyici → 13 |
+| 5 | her zaman | "Burada kaldırımda bekliyorum" / "Burada səkidə gözləyirəm" ("Yakındaki ışıkla karıştırma" / "Yaxındakı işıqforla qarışdırma") | kaldırım işareti → 11 |
+| 6 | her zaman | "Kaldırım işaretini kaldır" / "Səki işarəsini sil" | kaldırım işaretini sil → 11 |
+| 7 | yol var | "Yüzey türü / geçilebilirlik" / "Səth növü / keçid" (yol adı) | yüzey işareti (Y13) — **WEEM 1.0'da satır yok** |
+| 8 | yol, ana cadde değil | "Saatli çift yön izni" / "Saatla iki istiqamət icazəsi" (yol adı) | saat izni sayfası → 4.5 |
+| 9 | ana cadde ve tek yön | izinliyse "Bu kesimde ters yön iznini kaldır" / "Bu hissədə əks istiqamət icazəsini sil", değilse "Bu kesimde ters yöne izin ver" / "Bu hissədə əks istiqamətə icazə ver" ("<ad> · yalnız bu kavşak arası, ana cadde" / "<ad> · yalnız bu kəsişmələr arası, əsas küçə") | ww kesimi + bildirim → 9.8.6 |
+| 10 | yol | "Elle yüzey puanı · <ad>" / "Əl ilə səth balı · <ad>"; sağda 👍 "Kaliteli yol" / "Keyfiyyətli yol", 👎 "Kalitesiz yol" / "Keyfiyyətsiz yol" | puan penceresi, `rate` → 9.4.1, 9.4.2 |
+| 11 | yol | cadde kötü kesim oranı ("Ölçülmüş kötü kesimler + kötü noktalar (±25 m)" / "Ölçülmüş pis hissələr + pis nöqtələr (±25 m)") | yalnız bilgi → 9.7 |
+| 12 | yol | kapalıysa "Yol kapatmayı kaldır" / "Yolun bağlanmasını ləğv et", değilse "Bu yolu tamamen kapat" / "Bu yolu tam bağla" ("<ad> · Ses− artık yalnız ±25 m işaretler" / "<ad> · Səs− indi yalnız ±25 m qeyd edir") | `streets.blocked`; rota varsa `replan(prefs)` → 4.4 |
+| 13 | yol | "Bisiklet yolu olarak işaretle" / "Velosiped yolu kimi qeyd et" ya da "Bisiklet yolu işaretini kaldır" / "Velosiped yolu qeydini sil"; OSM'de zaten bisiklet yoluysa pasif ("<ad> · OSM'de zaten bisiklet yolu" / "<ad> · OSM-də artıq velosiped yoludur"), aksi "<ad> · bütün sokak; rotada tercih edilir" / "<ad> · bütün küçə; marşrutda üstünlük verilir" | geri alınabilir işaret → 5 (Y15) |
+| 14 | yol | "Burada yol yok" / "Burada yol yoxdur" ("<ad> · bu parça rotaya hiç girmez" / "<ad> · bu hissə marşruta heç vaxt düşməyəcək") | hayalet kenar → 9.8.5 |
+| 15 | yol | "Bu sokağın tamamı yok" / "Bu küçə ümumiyyətlə yoxdur" (yol adı) | hayalet yol → 9.8.5 |
+| 16 | her zaman | "Burada trafik ışığı var" / "Burada işıqfor var" | ışık var → 11 |
+| 17 | her zaman | "Bu noktada ışık yok" / "Bu nöqtədə işıqfor yoxdur" | 25 m içindeki ışığın (yoksa noktanın) "yok" işareti → 11 |
+| 18 | her zaman | yer yoksa "Buraya işletme ekle" / "Bura obyekt əlavə et", varsa "İşletme adını düzelt" / "Obyektin adını düzəlt" (yer adı) | POI düzenleyici → 5 (Y16) |
+
+Satır 7–15 yalnız yol bulunduğunda (40 m). **WEEM:** koşullar ve sıra saf `ui.LongPressMenu` (girdi: nokta, kenar bilgisi, yakın yer, yakın ışık, ww izni, kapalı mı, bisiklet durumu → satır listesi); `MapTab` yalnız çizer.
+
+### 6.8 Tema ve marka
+
+- **Paletler** (`theme.dart:30-68`; gece / gündüz): zemin `#0A101B` / `#F3F5F8`, panel `#F20F1725` / `#F2FFFFFF`, yüzey `#101827` / `#FFFFFF`, yüksek yüzey `#1B2638` / `#E6EAF0`, çizgi `#2B384C` / `#CBD2DB`, mavi (düz/iniş) `#8BB5FF` / `#1765D1`, turuncu (hafif yokuş) `#FF9F1C` / `#D45D00`, kırmızı (dik) `#FF2D55` / `#D7002E`, yeşil (onaylı/iyi) `#8ACDB8` / `#137D65`, pembe (duraklar) `#B68CFF` / `#C0008A`, eğimli sokak `#B26BFF` / `#7B2FD0`, yemek `#FF8A3D` / `#E2580B`, yürüme `#E8F7FF` / `#16222E`, yazı `#E8F7FF` / `#0B1218`, soluk yazı `#A5B0C1` / `#55616D`, gölge `#99000000` / `#33000000`; bisiklet yolu `#3DDCE8` / `#00838F`.
+- **Eğim rengi** (`forGrade`): eğim > %8 kırmızı, > %3 turuncu, aksi mavi (iniş dahil).
+- **Material teması** (:109-189): Material 3, yazı tipi Inter; birincil mavi, ikincil yeşil, hata kırmızı; giriş alanı dolgulu (r 18), iletişim kutusu r 24, alt sayfa r 28 + tutamak, dolu düğme en az 48×52 (r 18), çerçeveli 48×48; uygulama çubuğu başlığı 22 pt w700; sayılarda sabit genişlikli rakam (`tabularFigures`).
+- **Marka** (`brand.dart`): `BrandMark` (108'lik ızgara; lacivert geçişli zemin `#1C3157` → `#0B1428`, r 26; yeşil yol `#8ACDB8` 10 px; mavi iğne `#8BB5FF`) ve `BrandTitle` ("YolGo" + "kurye navigasyonu" / "kuryer naviqasiyası"). `assets/brand/yolgo-logo.png|svg` hiçbir yerde kullanılmıyor.
+- **WEEM:** HUD panelleri ve metinler `:app` paletindedir (`logic/app` `Palette`, `PaletteContrastTest` 4,5:1; A1.3). Harita çizim renkleri (rota eğimi, duraklar, eğimli/onaylı/kara liste, yemek, yürüme, bisiklet yolu) saf `ui.MapPalette` (gece/gündüz, yukarıdaki değerler) + `forGrade`. Inter taşınmaz (sistem yazı tipi, `:app`); sayılar `fontFeatureSettings = "tnum"`. YolGo markası ve logosu taşınmaz (WEEM adı ve simgesi `:app`).
+
+### 6.9 İlk kurulum, açılış ve ayarlar yapısı
+
+- **Kurulum ekranı** (`setup_screen.dart:15-131`; graf yokken; zemin `#0A0E17`): marka + dil seçici TR/AZ (`lang`'a yazar); "Scooter için yokuş, batarya ve yol kalitesi bilinçli navigasyon" / "Skuter üçün yoxuşu, batareyanı və yolun keyfiyyətini nəzərə alan naviqasiya"; adım 1 "Konum izni" / "Məkan icazəsi" — "Navigasyon, sürüş kaydı ve batarya tahmini için. "Uygulama kullanılırken" yeterli." / "Naviqasiya, sürüş qeydi və batareya hesabı üçün. "Tətbiqdən istifadə edərkən" kifayətdir.", "İzin ver" / "İcazə ver" (konum servisini başlatır, izin ister); adım 2 "Bakü yol haritası" / "Bakı yol xəritəsi" (metin ve bölge seçici "Merkez Bakü" / "Mərkəzi Bakı", "Geniş Bakü" / "Böyük Bakı", ⓘ "Bölgeler neyi kapsıyor?"; Bölüm 2.9); indirme sürerken 10 px ilerleme, yüzde, aşama ve "Ekranı açık tut. Uygulamayı kapatma." / "Ekranı açıq saxla. Tətbiqi bağlama."; aksi "İndir ve başla" / "Yüklə və başla"; hata kırmızı; altta "Harita © OpenStreetMap katkıcıları · Yükseklik: SRTM" / "Xəritə © OpenStreetMap iştirakçıları · Hündürlük: SRTM".
+- **Açılış ekranı** (:134-157): marka; gömülü harita açılırken "Bakü haritası hazırlanıyor…" / "Bakı xəritəsi hazırlanır…".
+- **WEEM:** ayrı kurulum ekranı yok: dil ve izinler `:app` ilk açılışında (G5); graf yokken Harita sekmesi vardiya kartının altında kurulum kartını gösterir (adım 2 ve ilerleme; harita yüzeyi yok, YolGo'daki gibi), açılırken aynı kartta "Bakü haritası hazırlanıyor…".
+- **Ayarlar** (`settings_screen.dart`): her satır aynı yuvarlak kart (r 20); uzun açıklamalar ⓘ simgesinde (`info-toggle`, ipucu "Bilgi" / "Məlumat"), dokununca 220 ms'de aşağı açılır; açılır gruplar oturum boyunca açık kalır (tercih değildir).
+
+| YolGo yeri (sıra) | İçerik | Sahibi | WEEM |
+|---|---|---|---|
+| Ayarlar → "Yol Kalitesi Kalibrasyonu" | kalibrasyon ekranı | Y14 (sonra) | yok |
+| Ayarlar → "Teklif veri seti" | veri seti ekranı | Bölüm 13 (Y19) | Harita ayarları |
+| Ayarlar → "Yollarım" | Yolları görüntüle, Sürüş kayıtları, Sokak bilgileri (fiziksel ölçüm; Yollarım: kalite · ters yön · yol yok; onaylı/kapalı/eğimli listeleri; ışık mesafesi `lightMaxM`; ses tuşları `volumeKeys`) | Bölüm 9, 12, 4, 11 (fiziksel ölçüm Y13, sonra) | Harita ayarları → "Yollarım" |
+| Ayarlar → "Hatırlatıcılar", "Günlük işler" | | Bölüm 13 (Y20) | Harita ayarları |
+| Ayarlar → "Harita görünümü" / "Xəritənin görünüşü" | altlık seçici (6.4), ⓘ "Sade görünümde ayrıntılar yaklaşınca belirir. Google Maps bağlantı kontrolü İlave ayarlar → Geliştirici ayarları → API ve bağlantılar'da; rota ve sokak kararlarını yine YolGo hesaplar." / "Sadə görünüşdə detallar yaxınlaşanda görünür. Google Maps bağlantısı Əlavə tənzimləmələr → Tərtibatçı tənzimləmələri → API və bağlantılar-dadır; marşrutu və küçə qaydalarını yenə YolGo hesablayır." | **Bölüm 6** | Harita ayarları (seçenekler SORU-N5) |
+| Ayarlar → İlave ayarlar → "Rawstats bilgileri" | Rawstats canlı değerleri; Ev konumu + Yenile | S2 (`:scooter`), G2 (`:core`) | kalkar (S7): scooter canlı değerleri Scooter sekmesinde, ev Daha fazla → Ev konumu |
+| İlave ayarlar → "Hava durumu" | | Bölüm 10 | Harita ayarları |
+| İlave ayarlar → Geliştirici ayarları → "Navigasyon bağlantıları" / "Naviqasiya keçidləri" ("Waze, Yandex ve konum bağlantılarını YolGo ile aç" / "Waze, Yandex və məkan keçidlərini YolGo ilə aç") | iletişim kutusu "YolGo ile aç" / "YolGo ilə aç": "Android seçim ekranında YolGo → Her zaman seç. Web bağlantıları için aşağıdaki varsayılan ayarları aç. Wolt doğrudan Waze uygulamasını çağırıyorsa bu seçim Android tarafından YolGo’a aktarılamaz; konumu Paylaş → YolGo ile gönder." / "Android seçim pəncərəsində YolGo → Həmişə seç. Veb keçidləri üçün aşağıdakı standart parametrləri aç. Wolt birbaşa Waze tətbiqini açırsa, Android bu keçidi YolGo-a ötürmür. Məkanı Paylaş → YolGo ilə göndər."; "Kapat" / "Bağla", "Android ayarlarını aç" / "Android parametrlərini aç" (`openLinkSettings`, 8.2) | Bölüm 8 | Harita ayarları; "YolGo" → "WEEM" |
+| Geliştirici → "Harita verisi" | | Bölüm 2.9 | Harita ayarları |
+| Geliştirici → "API ve bağlantılar" ("Maps · CARTO · Places · ORS · Open-Meteo") | | Bölüm 8.9 | Harita ayarları |
+| Ayarlar sonu: "Görünüm" (Otomatik / Açık / Koyu; eski `dark-ui` Koyu görünür ve korunur), "Dil" ("Türkçe" / "Azərbaycanca" / "Otomatik"), "YolGo 1.11.0 · az.duzyol.app" | | `:app` (G3, A1.3) | Daha fazla (tek tema/dil) |
+
+- **WEEM:** Daha fazla → "Harita ayarları" (`:app` `MapSettingsScreen`; emsal `ScooterSettingsScreen`); sıra YolGo'daki gibi, kalkan satırlar çıkar. Harita üstündeki ayar düğmesi (6.3) bu sayfayı açan kısayol olarak kalır.
+
+### 6.10 Google Maps anahtarı ve yardım
+
+- **Derleme** (`ci/build.sh:87-104`): CI gizli değişkeni `GOOGLE_MAPS_API_KEY` yalnız ortamdan okunur; biçim `AIza[0-9A-Za-z_-]{35}` değilse derleme "Google Maps anahtarı biçimi geçersiz" ile durur; günlüğe yalnız son 4 karakter yazılır; `res/values/google_maps.xml` → `google_maps_key` (`translatable="false"`) ve `GOOGLE_MAPS_ENABLED=true`. Değişken yoksa kaynakta boş `google_maps_key` kalır, Google seçeneği kapalıdır. Manifest `com.google.android.geo.API_KEY = @string/google_maps_key`. Değer hiçbir belgeye, günlüğe ya da dışa aktarmaya yazılmaz.
+- **Durum** (`mapsStatus`, `MainActivity.kt:114-126`): anahtar `AIza` ile başlıyor mu, son 4 karakter, paket, imza SHA-1 (iki noktalı büyük onaltılık), Play Services kodu (`isGooglePlayServicesAvailable`; okunamazsa −1).
+- **Yardım sayfası** (`maps_help.dart`): başlık "Google Maps"; "APK harita anahtarı" / "APK xəritə açarı": anahtarsız derleme ya da anahtar yok → "Anahtar eklenmemiş" / "Açar əlavə edilməyib", durum gelmeden "Kontrol ediliyor…" / "Yoxlanılır…", aksi `••••<son 4>`; "Google Play Services": 0 "Hazır" / "Hazırdır", −1 "Kontrol edilemedi" / "Yoxlama tamamlanmadı", diğer "Güncelleme veya etkinleştirme gerekiyor (kod N)" / "Yeniləmək və ya aktivləşdirmək lazımdır (kod N)"; açıklama "Google Cloud’da bu anahtarın projesinde Maps SDK for Android ve faturalandırma açık olmalı. Anahtar kısıtlaması Android uygulamaları olmalı; paket ve SHA-1 aşağıdaki değerlerle eşleşmeli." / "Google Cloud-da bu açarın layihəsində Maps SDK for Android və ödəniş hesabı aktiv olmalıdır. Açar Android tətbiqləri üçün olmalı, paket və SHA-1 aşağıdakı məlumatlarla uyğun gəlməlidir."; seçilebilir `Paket: <paket>` / `SHA-1: <sha1>`; "SHA-1 kopyala" / "SHA-1-i kopyala"; "Anahtar ayarlarını aç" / "Açar parametrlərini aç" (`https://console.cloud.google.com/apis/credentials`); "Maps SDK ayarlarını aç" / "Maps SDK parametrlərini aç" (`https://console.cloud.google.com/apis/library/maps-android-backend.googleapis.com`); "Tamam" / "Oldu". Bağlantılar `openUrl` ile (`ACTION_VIEW` + yeni görev; açılamazsa false).
+- **WEEM:** Gradle aynı gizli değişkeni okur (CI; yerelde `local.properties`), aynı biçim denetimi ve son-4 günlüğü, `resValue("string", "google_maps_key", …)` + `BuildConfig.MAPS_ENABLED`; imza SHA-1 `GET_SIGNING_CERTIFICATES` ile. API ekranının denetimleri Bölüm 8.9.
+
+### 6.11 Haritadan ev seçme (`home_picker.dart`, `HomePickActivity.kt`)
+
+- **YolGo:** `HomePickActivity` (dışa açık, eylem `com.myapplab.yolgo.PICK_HOME`) önce `RESULT_CANCELED` koyar; çağıran `com.kuryelog.app` ve eylem eşleşmiyorsa kapanır; aksi dışa kapalı `HomePickMapActivity`'yi (ayrı Dart girişi `pickHomeMain`, kanal `kurye_nav/home_pick`: `load`, `attribution`, `save`, `cancel`) açar. Girdi `lat/lon` yalnız `Double`, sonlu ve aralıkta (`HomePickContract`). YolGo ayarına yazmaz, YolGo evini okumaz; dil ve tema `settings.v1`'den salt okunur.
+- **Ekran:** başlık "Ev konumunu seç" / "Ev məkanını seç"; geri oku ve sistem geri tuşu = iptal; OSM karoları (`tile.openstreetmap.org`), yakınlık 17, döndürme kapalı; koyu temada karolar renk matrisiyle ters çevrilir; seçili nokta = kamera merkezi (kaydırınca değişir); uzun basış kamerayı basılan noktaya taşır; nokta çevresinde 50 m daire (birincil renk %15 dolgu, 2 px kenar); ortada sabit iğne (`location_pin` 40, 20 px yukarı); sağ altta "© OpenStreetMap contributors" (11 pt; dokununca `https://www.openstreetmap.org/copyright`). Altta "Haritayı kaydır veya uzun bas" / "Xəritəni sürüşdür və ya uzun bas", koordinat `%.6f, %.6f` ya da "—", "İptal" / "İmtina" ve "Kaydet" / "Saxla" (nokta yokken ya da kapanırken pasif). Açılış: girdi varsa o; yoksa izin `denied` ise istenir, yüksek doğrulukla en çok 8 sn konum; hata → "Konum alınamadı · Tekrar dene" / "Məkan alınmadı · Yenidən yoxla" (dokununca yeniden), İptal yine çalışır.
+- **WEEM:** `:map` `HomePickScreen` (Compose; MapLibre OSM raster stili; aynı kurallar ve metinler); Daha fazla → Ev konumu → haritadan seç (`:app`, CORE.md 2) girdiyi (taslak ya da kayıtlı ev, yoksa yok) verir; dönüş `HomePickResult.parse(ok, lat, lon)` → `HomeDraft(lat, lon, accuracy = null)` (A2.2). Dışa açık Activity, `PICK_HOME`, `SHARE_HOME` yok (S7). Koyu temada ters çevirme MapLibre raster boyasıyla (`raster-brightness-min = 1`, `raster-brightness-max = 0`; görsel eşdeğerlik A6.5'te gözle denetlenir).
+
+### 6.12 Gün kartı (`ShiftBar`) ve WEEM vardiya kartı sınırı
+
+- **YolGo** (`shift_widgets.dart:22-174`; içerik satırları Bölüm 11/12): katlı hâl sol kenarda tek sırada üç simge — "Eve dön" / "Evə qayıt" (`shift-home`, `home_rounded`), "İstatistik" / "Statistika" (`shift-stats`, `bar_chart_rounded`), "Günü bitir" / "Günü tamamla" (`shift-end`, `stop_circle_outlined`); simge 27, dokunma yüksekliği ≥48 px; sağda tutamak. Soldan sağa ≥24 px (ya da hız >250) kaydırma veya tutamak kartı açar; açık kart yalnız bilgi + aynı üç düğme; sağdan sola kaydırma, kart dışına dokunma ya da 20 sn (`collapseAfter`) katlar. Gün/sipariş no/aşama/sıradaki sipariş/teslim sayısı/ışık beklemesi ya da rota/hesap/bekleyen hedef değişince kendiliğinden açılır. Gün kapalıyken Eve dön ve Günü bitir pasif, İstatistik açık; kart satırı "Gün kapalı · evden çıkınca otomatik başlar" / "Gün bağlıdır · evdən çıxanda avtomatik başlayır". "Günü Başlat", sipariş ve aşama düğmeleri yok (aşamalar Rawstats'tan). Onaylar: "Eve dön" — "Evine rota çizilsin mi? Aktif gün devam eder." / "Evə marşrut çəkilsin? Aktiv gün davam edir." (ev yoksa "Ev konumu Rawstats'ta ayarlanır." / "Ev ünvanı Rawstats-da təyin olunur.", onay düğmesi yok), "Vazgeç" / "Ləğv et", "Eve dön" / "Evə qayıt" (`confirm-home`) → `goHome` (7.3); "Günü bitir?" / "Günü tamamlamaq istəyirsən?" — "Kayıt durur ve günün istatistiği açılır." / "Günün qeydi tamamlanır və statistika açılır.", "Bitir" / "Tamamla". Aşama satırları: `toRestaurant` "Restorana gidiyorsun" / "Restorana gedirsən", `atRestaurant` "Restorana vardın" / "Restorana çatdın", `readyForCustomer` "Sipariş alındı" / "Sifariş götürüldü", `toCustomer` "Müşteriye gidiyorsun" / "Müştəriyə gedirsən", `atCustomer` "Müşteriye vardın" / "Müştəriyə çatdın".
+- **WEEM sınırı (öneri, SORU-N7):** Harita sekmesindeki tek vardiya kartı `:app` `ShiftCard`'dır (A2.4; `ShiftPort.state`, başlat/bitir, ekran okuma uyarısı, scooter satırları). YolGo gün kartı ayrı kart olarak gelmez: "Günü bitir" = `ShiftCard`'ın bitir düğmesi (vardiya = gün, G1); "Eve dön" ve "İstatistik" `:map`'in `ShiftCard`'a eklediği eylemlerdir (`MapShiftActions`; ev yoksa metin "Ev konumu ayarlanmamış — Daha fazla → Ev konumu", 7.17); aşama satırı `OrderEvents.stages`'ten (`:orders` metinleriyle); katlanma kuralı (20 sn, kaydırma, değişiklikte açılma, konum/rota düğmelerinin yanına inmesi) Harita sekmesinin alt panelinde `ShiftCard`'ın katlı hâli olarak.
+
+### 6.13 Veri
+
+| Ad | Tür, varsayılan | YG | WEEM |
+|---|---|---|---|
+| `settings.v1` → `mapStyle` | String, `minimal`; `minimal` \| `osm` \| `esri` \| `sat` \| `google` | `settings.dart:45, 317-318` | `MapSettings.mapStyle`; değerler ve varsayılan SORU-N5 |
+| `settings.v1` → `cartoKey` | String, `""` | `settings.dart:36` | yalnız CARTO kalırsa (SORU-N5); değer belgeye yazılmaz |
+| `settings.v1` → `googleMapCompatibility` | bool, false | `settings.dart:46` | girmez (Flutter platform görünümü kipi) |
+| `settings.v1` → `mapDesignV1` | bool, her yazımda true (eski `osm` varsayılanını `minimal`'e çeviren göç işareti) | `settings.dart:273, 317` | girmez (S1: veri aktarılmaz) |
+| `settings.v1` → `theme`, `lang` | `dark` (`dark` \| `dark-ui` \| `light` \| `auto`), `""` | `settings.dart:37, 81` | `:app` `theme`, `lang` (`kuryelog`); `MapSettings`'te yok |
+| `settings.v1` → `showQualityLayer` | bool, false | `settings.dart:41` | Bölüm 9 (Y13 çizimi; 1.0'da gizli) |
+| `passive.pausedAt.v2` | Int ms | `main.dart:69, 105` | `map` dosyası, aynı ad (`Long`) |
+| Kanal `kurye_nav/native`: `setScreenAwake`, `mapsStatus`, `openUrl`, `startCompass`/`stopCompass`, `saveFile` | Flutter köprüsü | `MainActivity.kt` | çevrilmez (doğrudan Kotlin) |
+| `saveFile` | `ACTION_CREATE_DOCUMENT` (istek 702), kaynak `filesDir`/`cacheDir`/`app_flutter` altında olmalı; MIME `.jsonl` → `text/plain`, aksi `application/json`; varsayılan ad `DuzYol.json`; hatalar "Dosya kaydedilemiyor", "Belge seçicisi açılamadı", "Dosya kaydedilemedi" (yalnız TR); tek çağıran sürüş kayıtları (Y18) | `MainActivity.kt:198-222, 299-316`; `clipboard_sniffer.dart:198-200` | `:app` kayıt dışa aktarma (Bölüm 12; iki dilli metinler) |
+| Kanal `kurye_nav/home_pick`, eylem `com.myapplab.yolgo.PICK_HOME`, `HomePickActivity`, `HomePickMapActivity` | | manifest :121-128 | kalkar (S7); 6.11 |
+| Maps anahtarı | `@string/google_maps_key` ← CI `GOOGLE_MAPS_API_KEY`; manifest `com.google.android.geo.API_KEY` | 6.10 | aynı düzen (Gradle) |
+| Karo uç noktaları | OSM, Esri (6 hizmet), CARTO (Voyager, Dark Matter) | 6.4 | 6.4 WEEM (S4) |
+
+### 6.14 Testler
+
+| Dosya | Sayı | Test adları → neyi doğrular | WEEM hedefi | Görev | Not |
+|---|---:|---|---|---|---|
+| YT `hud_layout_test` | 2 (1. tanım 320/390 px × açık/koyu: 4 çalışma) | harita kontrolleri taşmaz; gün kartı simgelerle başlar, kaydırınca açılır, "Restorana vardın", `add-second-order`/`order-next` yok, üç düğme ≥48 px; hava yuvarlağı kapalıyken yalnız "23°" ve `compactSize`, dokununca "Şimdi" + dört saat + yenile; dışarı dokunuş kartı katlar; aşama ilerleyince "Müşteriye gidiyorsun" | `:app` Robolectric `MapTabLayoutTest` | A6.2b → A6.5 | 2. test (hava saat ayrıntısı, %40 klavyeli sayfa) Bölüm 10; Inter yerine sistem yazı tipi; altın görüntüler (`HUD_CAPTURE`) çevrilmez |
+| YT `locate_button_test` | 3 | kip eşlemesi (4 durum); düğme eylemi ve elle kaydırma → bas → bas → bas dizisi (`followHeading` → `followNorth` → `followHeading`); simgeler kipe göre, dokunuş geri çağrısı, 64×64 | `ui.LocateButtonTest` (2) + `:app` Robolectric `SmartLocateButtonTest` (1) | A6.2b → A6.5 | |
+| YT `map_hud_gesture_test` | 2 (1. tanım 320/390 × klavye: 4 çalışma) | ortadaki boş alanda yatay/dikey sürükleme ve sağa hizalı düğmenin solundaki saydam alan haritaya gider; denetime dokunuş haritaya gitmez; klavye açıkken alt panel yok; iki parmak ölçek >1,2; uzun üst panel kaydırılır ve harita girdi almaz; görev engeli varken harita girdi almaz | `:app` Robolectric `MapHudLayoutTest` | A6.2b → A6.5 | Compose kuralı 6.3; harita yerine sayaçlı `pointerInput` kutusu |
+| YT `puck_arrow_test` | 3 (3. tanım 3 durumla) | ok yalnız rota + yön varken; ok boyu 20–24 ve ≤ kutu; ok yolu yüksekliği = boy, ucu yukarıda, genişlik < boy; `puck-arrow` / `puck-dot` anahtarları | `ui.PuckStyleTest` (2) + `:map` Robolectric `LocationPuckTest` (1) | A6.2b → A6.5 | ok noktaları saf `PuckStyle.arrowPoints` |
+| YT `yolgo_sade_2_test` | 10 (çalışmada 16) | widget (5 tanım, 11 çalışma): katlı kartta yalnız üç düğme (ipuçları, tek sıra, sol kenar <20 px), ışık/oynat simgesi ve 24 kaldırılmış metin yok; gün kapalıyken Eve dön ve Günü bitir pasif, İstatistik açık, "otomatik" satırı; açık kart dört aşama metni, `order-next`/`start-order`/`add-second-order` yok; rota varken "#1" ve menü yok; yeni siparişte açılır, 21 sn sonra katlı. Motor (4): restoran adresi paylaşmak sipariş açmaz; hedef yazılır, aşama geri sarılmaz, müşteri bacağı kendiliğinden başlamaz; hedefte 200 sn duruş soru üretmez; eski kayıt alanları okunur, yazılmaz. Ayar (1): eski `followCourierStages: false` true okunur | widget → `:app` Robolectric `MapShiftActionsTest`; motor → `day.ShiftEngineStagesTest` (Bölüm 11) | A6.2b → A6.5 / A6.8 | "Günü Başlat yok" iddiası uyarlanır (WEEM `ShiftCard`'ta başlat düğmesi var, G1); ayar testi çevrilmez (ayar yok, S1) |
+| YT `home_picker_test` | 5 (5. tanım Geri/İmtina ile 2; çalışmada 6) | girdi merkez, sabit iğne, 50 m daire, Kaydet sürüklenen noktayı `Double` olarak döner, tercih yazılmaz, ev okunmaz; girdi yoksa GPS; uzun basış noktayı seçer ve merkez olur; konum hatasında Kaydet pasif, İptal çalışır; AZ + koyu: "Ev məkanını seç", koyu tema, Geri ve "İmtina" iptal döner | `:map` Robolectric `HomePickScreenTest` | A6.2b → A6.5 | MapLibre yerine sahte yüzey; "ev okunmaz" → "yalnız sonuç döner, ev kaydına yazmaz"; sonuç doğrulaması A2.2 `HomePickResultTest` |
+| RT `RawPaletteContrastTest` | 2 | tema karşıtlığı | karşılandı: A1.3 `logic/app` `PaletteContrastTest` (3) | — | harita çizim renkleri metin değil; ayrı karşıtlık testi yok |
+| RT `HomePickContractTest` | 6 | haritadan ev seçme sonucu | karşılandı: A2.2 `logic/core` `HomePickResultTest` (6) | — | |
+| RT `YolGoNavE8Test` | 13 | YolGo nav hedefi ve kalan yol tüketimi | karşılandı: A3.1 `:orders` (10 uyarlandı `RouteStatus`/`NavPort`, 2 A2.5 `MessagesTest`, 1 çevrilmez; `TEST_ENVANTERI`) | — | üretici taraf Bölüm 7.9 |
+| Yeni (Y2 karakterizasyonu; eski test yok) | — | altlık seçimi ve anahtarsız `google` düşüşü, atıf metinleri, POI yakınlık eşikleri ve sınırları, sokak ayrıntı kuralları, `forGrade` eşikleri (%3/%8), işaret akışı sabitleri (6.4), uzun basış satır koşulları (6.7), pasif oturum 5 dk | `ui.MapStylesTest`, `ui.MapPaletteTest`, `ui.PuckMotionTest`, `ui.LongPressMenuTest`, `nav.PassiveSessionTest` | A6.2b → A6.5 | değerler bu bölümden |
+
+Bu bölümün dosyaları: **25 test**; çevrilen 24 (1'i Bölüm 10'da, 4'ü Bölüm 11'de), çevrilmez 1. `offer_navigation_removed_test`'in ilk iki testi (`MapTabTest`) Bölüm 7.15'te.
+
+### 6.15 WEEM yerleşimi
+
+- **`logic/map` paketi `ui`** (saf): `HudLayout` (0,64/0,95/0,58 oranları, kenarlar), `CameraMode` + `LocateAction`, `PuckStyle` (ölçüler, `showsArrow`, ok noktaları), `PuckMotion` (6.4 işaret akışı: kayma süresi, yola oturtma eşikleri, ileri tahmin, sıçrama), `MapStyles` (altlık seçimi, atıf, Google koyu JSON stili, POI ve sokak ayrıntı kuralları), `MapPalette` (+ `forGrade`), `LongPressMenu`. Paket `nav`: `PassiveSession`.
+- **Android `:map`** (`com.kuryelog.app.map`): `MapSurface` arayüzü (kamera, çizgiler, işaretler, konum işareti, uzun basış, dokunma, elle hareket bildirimi); `GoogleMapSurface` (Maps SDK `MapView`, Compose `AndroidView`; maps-compose eklenmez), `MapLibreSurface` (MapLibre Native `MapView`; iki stil, 6.4); iki yüzey aynı çizgi desenlerini kullanır; `HomePickScreen`; `MapsKeyStatus` (`mapsStatus` karşılığı); ekran açık isteği (`:app` birleştirir).
+- **`:app`:** `MapTab` (HUD, üç kip, uzun basış sayfası, kurulum kartı, `ShiftCard` + `MapShiftActions`), `MapSettingsScreen` (6.9), `MapApiSettingsScreen` (8.9), `MapsHelpSheet` (6.10), Daha fazla → Ev konumu → haritadan seç.
+- **`:core` bağları:** `ShiftPort.state` (ekran açık, pasif oturum, gün kartı eylemleri), ev (`HomeDraft`, `HomePickResult`; CORE.md 2).
+- **2 telefon:** Harita sekmesi iki telefonda da çizilir; navigasyonun asıl kaynağı Receiver'dır (Bölüm 7.16); Provider'daki harita görünümünün içeriği A8'de (LINK.md) kesinleşir.
+- **S kararları:** S1 (göç işaretleri yok), S4 (MapLibre, iki stil), S7 (Rawstats bağı, `PICK_HOME`/`SHARE_HOME`, "Rawstats bilgileri" kalkar), S9 (Google Maps'te rota açma yok, Bölüm 8.13).
+
+### 6.16 Farklar ve açık noktalar
+
+- **Bulgu düzeltmesi** (`Y_tracking.md` §G2, ev seçici): doğru; eksikler eklendi — konum izni `denied` ise istenir; koyu temada karolar renk matrisiyle ters çevrilir; sistem geri tuşu iptal sayılır; atıfa dokununca OSM telif sayfası açılır.
+- **Kod yorumu ↔ kod:** POI yakınlık eşikleri yorumda "metro 12, AVM 13, restoran 15, ışık 16", kodda 13 / 15 / 16,5 / 16,5 → kod esas (6.6).
+- **WEEM'de baştan doğru:** (1) koyu temada `osm` ve `esri` Esri koyu altlığına döner ama atıf "© OpenStreetMap" kalır → atıf gerçek kaynağı söyler; (2) Google yüzeyinde her desen 8/6 kesikli (noktalı eğimli çizgi, 4/6 hayalet farklı görünür) → iki yüzey aynı desen (Google `PatternItem` Dot/Dash/Gap, MapLibre `line-dasharray`); (3) koni saydamlığı Google'da %67, flutter_map'te %55 → tek değer %55; (4) ekran açık tutma dinleyicisi "durak var"da tetiklenir ama koşul yalnız `hasRoute` → WEEM koşulu `gün açık || durak var` (hesap sürerken de kararmaz); (5) ekran açık için wakelock + pencere bayrağı ikilisi → tek Activity bayrağı.
+- **Çevrilmez:** `BrandMark`/`BrandTitle`, `assets/brand/` (ölü), Inter yazı tipi dosyaları, `googleMapCompatibility`, `mapDesignV1` göçü, kurulum ekranının dil ve izin adımları (G5'e geçer).
+- **Geçiş (A10, kullanıcı işi):** Google Cloud'daki anahtar kısıtına `com.kuryelog.app` ve `com.kuryelog.app.dev` ile WEEM imzasının SHA-1'i eklenmeli; yoksa Google harita gri kalır ve Places `appBlocked` döner (Bölüm 8.8). Yardım sayfası paket ve SHA-1'i gösterir.
+- **SORU-N5 (koordinatöre; S4'ün kapsamı):** YolGo'da beş altlık (Sade/OSM/Esri/Uydu/Google) + CARTO anahtarı var; S4 MapLibre için iki stil diyor. (i) Seçenekler: (a) Google (anahtar varsa) + MapLibre "OSM" (raster) + MapLibre "Vektör" (anahtarsız; "Sade"nin yerine, varsayılan); Esri, Uydu ve CARTO kalkar — **önerilen**; (b) (a) + Esri ve Uydu MapLibre raster kaynağı olarak kalır (Esri kullanım koşulları A6.5'te doğrulanır); (c) YolGo'nun beşi + CARTO aynen. (ii) Vektör kaynağı: (a) kendi Bakü PMTiles dosyası (çevrimdışı) — **önerilen**, boyut A6.5 ölçümüyle kabul edilemezse (b) OpenFreeMap. `mapStyle` değerleri (a)'da `google` \| `osm` \| `vector`.
+- **SORU-N6 (koordinatöre; `:app`):** YolGo yalnız dikey çalışır (gidon montajı); WEEM manifestinde yön kilidi yok. (a) Activity dikey kilitli — **önerilen**; (b) serbest, Harita sekmesi yatayda da düzgün çizilir (ek HUD düzeni ve test).
+- **SORU-N7 (koordinatöre; G1 ekranı):** YolGo gün kartı ile WEEM `ShiftCard`. (a) Tek kart: `ShiftCard` + `:map` eylemleri (Eve dön, İstatistik) + aşama satırı + YolGo'nun katlanma kuralı — **önerilen** (6.12); (b) iki kart: `ShiftCard` üstte, YolGo gün kartı Harita sekmesinin altında aynen.
+- **Risk:** MapLibre yerel kütüphanelerinin APK boyutu (A6.5 ölçümü); yüzey değişiminde eski harita görünümünün kapatılması (bellek); Compose HUD'unun dokunma kuralı (6.3) her ekran boyunda (`MapHudLayoutTest` 320/390 dp).
 <!-- END sec:6 -->
 
 <!-- BEGIN sec:7 -->
@@ -1030,7 +1340,7 @@ Y12 = sürüşten ve sürücünün elle girdiklerinden sokak bilgisi biriktirip 
 | `lib/tracking/day_deletion.dart` | 15–70 | gün silmede yol katkıları | Bölüm 12 (ajan T) + 9.3.5 |
 | `lib/ui/road_score.dart` | 1–150 | `RoadScoreDisplay`, kalibrasyon istemleri | **Y14, Y12 değil** (sonra) |
 
-Bulgu doğrulaması: `Y_contract.md` `roads.*` satırı (`road_controller.dart:53-58, 94-98`) doğru (`roads.days.v2`, `roads.days.damaged.v2` dizge olarak 91–99). `Y_routing.md` §Y3 "`learned` (Y12)" → **(bulgu düzeltmesi:** `learned` yalnız **elle puanları** taşır; `learnedForRouting()` `ratings`'ten `(q 0, c 0, r)` üretir, otomatik `WayStats` bilerek atlanır — `road_knowledge.dart:159-168`, yorum "traffic stops/vibration … must not affect surface routing costs"). "Y12/Y13 sonra olduğundan WEEM 1.0'da learned/surface/marks/wwRatio boş gelebilir" → **(bulgu düzeltmesi:** S3 ile Y12 1.0'da; `learned`, `wwRatio`, `wwAvoid`, `ghost`, `wrongWayEdges` dolu gelir; `surface`/`surfaceQuality` boş (Y13/Y14); `marks` yalnız elle kötü nokta, SORU-Q1). `OZELLIK_HARITASI` Y12 eski kodundaki `lib/ui/road_score.dart` → **(düzeltme:** Y14 kalibrasyon UI'ı). Y12 test sayısı 9.11'de bölündü.
+Bulgu doğrulaması: `Y_contract.md:71` `roads.*` satırı (`road_controller.dart:53-58, 94-98`) doğru (`roads.days.v2`, `roads.days.damaged.v2` dizge olarak 91–99); `:83` "roads.* için dışa aktarma yolu bulunmadı" doğru (YolGo'da `roads.*` dışa aktarımı yok; S3 ile önemsiz). `Y_routing.md:35` "learned (Y12)" → **(bulgu düzeltmesi:** `learned` yalnız **elle puanları** taşır; `learnedForRouting()` `ratings`'ten `(q 0, c 0, r)` üretir, otomatik `WayStats` bilerek atlanır — `road_knowledge.dart:159-168`, yorum "traffic stops/vibration … must not affect surface routing costs"). `Y_routing.md:36` "Y12 (learned, wwRatio/wwAvoid — "sonra"), Y13/Y14 (surface, marks — "sonra") … Y18? (ghost …)" → **(bulgu düzeltmesi:** S3 ile Y12 1.0'da (A6.11): `learned`, `wwRatio`, `wwAvoid`, `ghost`, `wrongWayEdges` dolu gelir; `ghost` ve `wrongWayEdges` Y12'nin (`roads.ghost.v1`, `roads.wwseg.v1`), Y18'in değil; `marks` yalnız Y13 değil, Ses− kötü noktası da (SORU-Q1); `surface`/`surfaceQuality` boş (Y13/Y14)). `OZELLIK_HARITASI:161` Y12 eski kodundaki `road_score.dart` → **(düzeltme:** Y14 kalibrasyon UI'ı, Y12 değil). `TEST_ENVANTERI:227-238, 294` Y12 = 55 test doğru; bölüşüm 9.11 (SORU-Q2).
 
 ### 9.2 Kavramlar ve veri modeli
 
@@ -1192,7 +1502,7 @@ Eşleştirici özeti (ayrıntı Bölüm 7): doğruluk > 35 m fix'te güncellenme
 ### 9.7 Cadde oranı ve kötü noktalar
 
 - **Kötü nokta** (`bad_spots.dart`): `isBadSpot` = silinmemiş, `source == "user"`, `access != closed`, etiket ∈ {rough, pothole, raisedAsphalt, dirt, gravel, obstacle}; etki ±25 m (`badSpotRadiusM`); aynı way'de 30 m içindeki etkin işaretler ≥ 2 **farklı Bakü gününden** ise doğrulanmış (`badSpotConfirmM`); kenar başına kesir aralığı `SpotSpan(edge, f0, f1, confirmed)` (`nearestEdge(maxDist 25, aynı way)`; `r = 25/kenarUzunluğu`). Rota etkisi (Bölüm 3): kesim maliyeti +3× (doğrulanmış +6×), "kötü yollardan kaçın" denemesinde doğrulanmış kesim yasak.
-- **Cadde kötü kesim oranı** (`street_ratio.dart`): kötü uzunluk = Y13 ölçülmüş kesimler (puan < 50, güven ≥ 0,35) ∪ kötü noktaların aralıkları, kenar başına aralık birleşimi; toplam = way'in tekil kenarlarının uzunluğu. Metin: kötü < 1 m → "Kötü kesim yok · <uzunluk>" / "Pis hissə yoxdur · <uzunluk>", aksi "%<p> kötü · <m> m / <uzunluk>" / "%<p> pis · <m> m / <uzunluk>" (uzunluk < 1000 m "N m", aksi Dart `toStringAsFixed(1)` "2.0 km" — noktalı). Uzun basış menüsünde, alt yazı "Ölçülmüş kötü kesimler + kötü noktalar (±25 m)" / "Ölçülmüş pis hissələr + pis nöqtələr (±25 m)" (`nav_screen.dart:271-277`). Test: `router_test` "cadde oranı" (Bölüm 3). WEEM 1.0: yalnız kötü noktalarla (Y13 özeti yok), metin aynen.
+- **Cadde kötü kesim oranı** (`street_ratio.dart`): kötü uzunluk = Y13 ölçülmüş kesimler (puan < 50, güven ≥ 0,35) ∪ kötü noktaların aralıkları, kenar başına aralık birleşimi; toplam = way'in tekil kenarlarının uzunluğu. Metin: kötü < 1 m → "Kötü kesim yok · <uzunluk>" / "Pis hissə yoxdur · <uzunluk>", aksi "%<p> kötü · <m> m / <uzunluk>" / "%<p> pis · <m> m / <uzunluk>" (uzunluk < 1000 m "N m", aksi Dart `toStringAsFixed(1)` "2.0 km" — noktalı). Uzun basış menüsünde, alt yazı "Ölçülmüş kötü kesimler + kötü noktalar (±25 m)" / "Ölçülmüş pis hissələr + pis nöqtələr (±25 m)" (`nav_screen.dart:271-277`). Test: `router_test` "cadde oranı" (Bölüm 3.14 → `roads.StreetRatioTest`, 9.11). WEEM 1.0: yalnız kötü noktalarla (Y13 özeti yok), metin aynen.
 - **E11 sokak puanı** (`street_scores.dart`, "Yol puanları"): Y13 parça özetleri + Y14 kalibrasyon referanslarından 1–10 → **Y12 değil, sonra** (9.11, SORU-Q2). Y12'den tek kullandığı `RoadKnowledge.names`.
 
 ### 9.8 Ekranlar
@@ -1243,6 +1553,112 @@ Harita uzun basış, yalnız ana cadde **ve** tek yön bayraklı kenarda: "Bu ke
 Hayalet kenar gri kesikli (5 px, desen 4/6), ww kesimi yeşil kesikli (4 px, 10/5); onaylı yeşil / kara liste kırmızı / eğimli (Y8). Kalite renk katmanı Y13'tür (9.8.2). Hayalet ve ww kesimi kümeleri graf ya da `ghostRev` değişince yeniden hesaplanır (önbellek).
 
 **WEEM:** ekranlar `:app` (`RoadsScreen.kt` 4 sekme; Bisiklet sekmesi Y15 içeriği), kartlar Harita sekmesinin alt paneline (`WrongWayCard`, `QualityPromptCard`), uzun basış satırları Bölüm 6'nın menüsüne, Ayarlar → Harita ayarları "Yollarım" grubu (ses tuşu anahtarı dahil). Metinler TR/AZ aynen (farklar 9.13).
+
+### 9.9 Rota maliyetine bağ
+
+Planlayıcı girdileri her planda yeniden üretilir (`nav_controller.dart:480-506` → `PlanRequest`). Maliyet formülü Bölüm 3.3–3.5'te; burada yalnız Y12'nin ürettiği girdiler:
+
+| Girdi | Y12 üretimi | Boş veride | Etkisi (Bölüm 3) |
+|---|---|---|---|
+| `learned` | `learnedForRouting()`: **yalnız elle puanlar** `(q 0, c 0, r)` | `{}` → kalite = `priorQuality` | way kalitesi `blendQuality` = `r/100` → kalite çarpanı (3.4 madde 9); `badWay` = `r ≤ 25` → ×4, `avoidBad` denemesinde (yürüyüş dahil) yasak (3.4, 3.5) |
+| `params.qualityWeight` | `qualityTolerancePct / 100` (`settings.dart:150`) | 0,10 | kalite çarpanı (3.2, 3.4 madde 9) |
+| `wwRatio` | `wrongWayRatios()`: yumuşatılmış, yalnız geçişi olan sokak | `{}` → 0 | ters yön çarpanı ve `twoWay` (3.4 madde 4, 7, 9); `wrongWayRisk` (3.9) |
+| `wwAvoid` | `wrongWayAvoid(wwMaxProblemPct / 100)`: geçiş ≥ 3 ve ham oran ≥ eşik | `{}` | o sokakta ters yön yasak (3.4 madde 4) |
+| `ghost` | `ghostEdges(g)` (önbellek: graf ya da `ghostRev` değişince, `nav_controller.dart:761-779`) | `{}` | kenar yasak, yürüyüşte de (3.4 madde 1, 3.5); eşleştirici de oturtmaz (9.3.1) |
+| `wrongWayEdges` | `wwSegEdges(g)` (aynı önbellek) | `{}` | ana caddede ters yön izni; `twoWay` sayılmaz (3.4 madde 4) |
+| `marks` | Ses− kötü noktaları (9.7, SORU-Q1) | `[]` | ±25 m kesim cezası, doğrulanmışı `avoidBad` denemesinde yasak (3.5) |
+| `surface`, `surfaceQuality` | Y13 / Y14 | `[]`, `{}` | 1.0'da yok |
+
+- **Sıfırdan öğrenmede bile** (S3) kalite terimi nötr değildir: her kenarın kalitesi OSM etiketlerinden `priorQuality` (`quality.dart:23-39`, değerler 3.3) ve 0,10 ağırlıkla maliyete girer (ör. trunk ×1,04, residential ×1,018). YolGo'da da otomatik öğrenme rotaya girmediği için ilk gün WEEM rotaları bu bakımdan YolGo'yla aynıdır; fark yalnız YolGo'da birikmiş elle puan, ww sayacı, hayalet, ww kesimi, kötü nokta (ve Y8 onay/kara liste) verisinden doğar — A6.10'da açıklanacak fark budur.
+- **Ekran fonksiyonları** (rotaya girmez): `learnedScore` (44-50) = `m ≤ 0` → 1; `q = 1 − 0,11 × durma/km`; `vib > 2,5` → `q −= clamp((vib − 2,5) × 0,1, 0, 0,3)`; sonuç `clamp(0,05, 1)` (km başına 2 durma ≈ %78, 4 ≈ %56, 6 ≈ %34). `learnedConfidence` = `clamp(m/800, 0, 1)`. `blendQuality(prior, l)`: `l == null` → prior; `r > 0` → `clamp(r/100, 0, 1)`; aksi `clamp(prior + (q − prior) × clamp(c, 0, 1), 0, 1)`. `qualityOf(way, g?)`: prior = graf varsa `priorQuality` (way dizini `wayIndexOf`), yoksa 0,8; istatistik varsa `(score, confidence, r)`, yoksa yalnız `r` (`road_knowledge.dart:171-184`).
+- **Oranlar** (65-71): `wrongWayRatio(p, x)` = `p ≤ 0 ? 0 : clamp(x/p, 0, 1)` (ekran ve `wwAvoid`); `wrongWaySmoothed(p, x)` = `clamp((x + 0,1)/(p + 1), 0, 1)` (rota). `streetScoreQuality(s)` = `clamp((s − 1)/9, 0, 1)` (E11, sonra). `QualityBand`: good 0,75, fair 0,5 (renk sınıfı, `qualityColor`).
+- **Not (madde 10b):** "iki yönlü" kuralı `wwRatio == 0` ister; yumuşatma yüzünden **bir geçiş kaydı olan her sokakta oran > 0** olur (1 temiz geçiş → 0,05). "Hayır" cevabı geçişi zaten saydığından sorulan sokak iki yönlü sayılmaz; kural yalnız hiç geçişi kaydedilmemiş onaylı sokakta (ör. Ses+ ile onaylanıp henüz ters sürülmemiş, ya da "Hayır" ile yeni onaylanan komşu parça ilk geçişine kadar) işler. `ww_green_two_way_test` yalnız `CostModel`'i sınar (Bölüm 4.6); Bölüm 3.4 madde 4'teki "sorun yok yeşil sokak iki yönlü" ifadesi niyettir, uygulamadaki etkisi bu kadardır. SORU-Q6.
+
+### 9.10 Veri
+
+**YolGo** (`FlutterSharedPreferences`, `flutter.` önekli; S3: **aktarılmaz**):
+
+| Anahtar | Biçim |
+|---|---|
+| `roads.ways.v1` | `{"<wayId>": [m, s, stops, vibSum, vibN, passes, lastAt]}` — `m`, `s` tam sayıya yuvarlak, `stops` ve `vibSum` 1 ondalık, diğerleri tam; < 7 eleman → boş istatistik |
+| `roads.ww.v1` | `{"<wayId>": [passes, problems (1 ondalık), lastAt]}`; < 3 eleman → boş |
+| `roads.ghost.v1` | `[{"w": wayId, "la": lat (6 ondalık), "lo": lon (6), "n": ad, "t": ms, "all": true?}]` — `all` yalnız `true` ise yazılır; `w`/`la`/`lo` sayı değilse öğe atlanır; `t` yoksa 0, `n` yoksa "" |
+| `roads.wwseg.v1` | aynı `GhostMark` dizisi (`all` yok) |
+| `roads.rate.v1` | `{"<wayId>": yüzde}`; okurken `migrate` (1→90, −1→25), sayı değilse 0 |
+| `roads.names.v1` | `{"<wayId>": "ad"}` (dizge değilse "") |
+| `roads.days.v2` | `{"v": 2, "baseWays": {"<id>": [7 sayı]}, "baseWw": {"<id>": [3 sayı]}, "days": {"<yolgo-ms>": {"ways": {…}, "ww": {…}}}}` |
+| `roads.days.damaged.v2` | okunamayan `roads.days.v2`'nin ham kopyası |
+
+Kod çözme (`road_knowledge.dart:222-250`): anahtar `int.tryParse` (değilse atlanır); JSON hatası → **sessizce boş** (sonraki kayıt üstüne yazar, 9.13).
+
+**Elle kötü noktalar** (YolGo'da Y13 deposu `files/surface-v2/manual-marks.json`): `[{"id": "spot-<ms>", "way": id, "lat", "lon", "at": ms, "label": "rough", "access": "unknown", "source": "user", "removed": false}]` (`surface_models.dart:19-37`); silme = `removed: true` (geri alınabilir); yazım `.tmp` + rename; okunamazsa depo `StateError` (`surface_store.dart:284-287, 369-379`). Gün silme elle işaretleri silmez.
+
+**Olaylar** (sürüş kaydı, Bölüm 12): `ww_pass {way, m, inc, reported?}`, `ww_answer {way, problem, approved?}`, `ww_report {way}`, `undo {way}`, `ghost {way, all?}`, `ww_segment {way, allow}`, `approve` / `steep {way}`, `bad_spot {way}`, `bad_spot_clear {way, n}`, `bad_road_clear {way}`, `wrongway {way, main}`. Koordinat yazılmaz.
+
+**Ayarlar** (`settings.v1` → WEEM `settings.MapSettings`, alan tablosu Bölüm 14):
+
+| Alan | Varsayılan | Sınır / UI |
+|---|---|---|
+| `volumeKeys` | `true` | anahtar (9.5) |
+| `qualityTolerancePct` | 10 | kaydırıcı 0–30 (okuma kıstırmaz, UI kıstırır) → `qualityWeight` = /100 |
+| `showQualityLayer` | `false` | yalnız Y13 katmanı (1.0'da etkisiz) |
+| `wwMaxProblemPct` | 50 | adımlayıcı 20–90, adım 5 |
+| `wwAskAlways` | `false` | anahtar |
+
+**WEEM yeri (öneri):** `files/map/roads/<anahtar>.json` — her YolGo anahtarı ayrı dosya, içerik **birebir aynı JSON** (`roads.ways.v1.json`, `roads.ww.v1.json`, `roads.ghost.v1.json`, `roads.wwseg.v1.json`, `roads.rate.v1.json`, `roads.names.v1.json`, `roads.days.v2.json`, `roads.days.damaged.v2.json`); yazım `.tmp` + rename, aynı 30 sn kısıtı ve "aynıysa yazma". Gerekçe: sürüşte 30 sn'de bir yazılan, sokak sayısıyla büyüyen bloblar (Bakü'de binlerce way → yüzlerce KB) `map` tercih dosyasında her yazımda bütün XML'i yeniden yazdırır; `kuryelog` dosyasına hiç girmez. Kötü noktalar `files/map/manual-marks.json` (aynı biçim; Y13 gelince o depo bu dosyayı devralır). Okunamayan dosya sessizce boşaltılmaz: `<ad>.damaged-<ms>` olarak saklanır, boş başlanır (YolGo'nun `roads.days.damaged.v2` ilkesi bütün dosyalara). Haftalık şifreli yedek (S22) bunları içermez (SORU-Q5).
+
+### 9.11 Testler
+
+Sayım `grep -cE '^\s*(test|testWidgets)\('` (döngü üretimi ayrıca belirtildi); gövdeler okundu.
+
+| Dosya | Sayı | Test adları → neyi doğrular | WEEM hedefi | Görev | Not |
+|---|---|---|---|---|---|
+| `quality_test` | 9 | (1) ön tahmin: residential > primary, unpaved < 0,4, rough ≤ 0,5 · (2) `learnedScore`: 0 durma 1, 2/km ≈ 0,78 (±0,01), 5 < 2, vib 5 düşürür, güven 80 m < 800 m, 5000 m = 1 · (3) `blendQuality`: null → 0,82, (0,1; 0,1) ≈ 0,748, tam güven 0,1, 👍 0,9, 👎 0,25, r 40 → 0,4, migrate · (4) eşit iki yol: kalitesi yüksek seçilir · (5) tolerans 0,10 kısa yol / 0,30 kaliteli / 0 kalite etkisiz (r 30 vs 👍, doğu %16 uzun) · (6) hayalet her koşulda (`routeLeg` ve `computePlans` 800 m) · (7) ww: onaylı 400 m ters, oran 0,02 → risk 0,02, 0,6 → dolambaç, `wwAvoid` → dolambaç · (8) parçalar sıralı, Σ = `rideM` · (9) ham/yumuşatılmış oran 0; 0,25; 0,55; < 0,02 | `route.QualityTest` | A6.2a → **A6.4** (hepsi; `Quality.kt` ve `CostModel` girdileri A6.4'te) | sentetik graf `OsmRaw` + `buildRoadGraph(raw, düz yükseklik)` (Bölüm 2 test yardımcısı); A6.11 bozmadan korur |
+| `road_learner_test` | 9 | metre ≈ 161 / süre ≈ 29 / ad, way değişince geçiş · tam durma 1 + yavaşlama 0,5 = 1,5 · 200 sn bekleme ve `excludeStops` sayılmaz · ≤ 2 sn durma 0,5 · titreşim yalnız sürerken (5, 9 değil) · onaylı ters yön: 1 geçiş, olay ≥ 1, > 25 m, sorun 0 · ters yönde durup devam tek geçiş · onaysız ve ~11 m sayılmaz; "sorun yaşadım" → sorun 1, oran 1 · JSON gidiş-dönüş, `learnedForRouting` r 35, `wrongWayAvoid(0,3)` = {9}, 0,5 → boş | `roads.RoadLearnerTest` | A6.2a → A6.11 | 1 Hz sahte sürücü (`_Ride`), kuzeye düz yol |
+| `road_save_test` | 1 | arka plana geçişteki zorla kayıt katman sayacını artırmaz; `rate(42, 25)` artırır ve `roads.rate.v1`'e yazar | `roads.RoadBookTest` | A6.2a → A6.11 | yaşam döngüsü yerine `onPause()`; bellek içi dosya deposu; sayaç = katman yenileme sayacı |
+| `day_contributions_test` | 3 | (1) seçili gün yalnız kendi otomatik farkını siler; taban/elle/diğer gün kalır; yeniden yüklemede aynı; aynı tarihli yeni gün de silinir · (2) elle sıfırlama yeniden yüklemede kalır · (3) `SurfacePassTracker` (Y13) | `roads.DayContributionsTest` (1–2) | A6.2a → A6.11 (2); **sonra Y13** (1) | kova `yolgo-<ms>`; `bakuDay` → `LogTime.day(ms, ZoneOffset +4)` test saati |
+| `ww_clean_run_test` | 5 | onaysız→onaylı parça: sürüş [101, 100], `wwCleanApprovals` {100, 101} · soru sonrası aynı sürüşte girilen kısa aynı adlı parça eklenir · ana cadde ve kısa başka adlı onaylanmaz, uzun adsız onaylanır ({100, 302}) · araya > 10 sn normal sürüş girerse önceki sokak katılmaz · ters yönde ışıkta durmak sürüşü bölmez | `roads.WwCleanRunTest` | A6.2a → A6.11 | 1 Hz güneye sürücü |
+| `ww_no_problem_green_test` | 5 (6 çalışma; son test TR/AZ döngüsü) | saha: olaylı geçiş, Ses− (hayır) → {100, 101} onaylı ve `streets.approved`'da, yeşil kenar sayısı, toast "Onaylandı: Test küçəsi (iki yön)", sorun 0; 101 devamı yeniden sorulmaz; yeniden açılışta aynı · `wwAskAlways`: olaysız geçişte de sorulur, devamı sorulmaz · "Evet" (Ses+): sorun 1, onay eklenmez, toast "Onaylandı" değil · "Geri al": yalnız yeni onay kalkar · kart TR/AZ: "Hayır"/"Xeyr" dokunuşu → onay + toast metni | `roads.WwAnswerFlowTest` (sahte eşleştirme + sahte `StreetPrefs` + toast havuzu, `VolumeDispatch` üstünden) + `:app` Robolectric `WrongWayCardTest` (TR/AZ) | A6.2a → A6.11 | yeşil çizgi sayısı yerine onaylı kenar kümesi (Bölüm 6 katman fonksiyonu); GPS → eşleştirici yolu Bölüm 7 sahte konumuyla |
+| `router_test` ↳ cadde oranı (Bölüm 3.14) | 1 | `streetRatio`: boş → 400 m / 0; tek nokta yalnız kendi 50 m'si (%13, metinde "%13"); ölçülmüş kötü 50 m + 200/210 m'deki iki nokta (birleşir) ≈ 110 m; güveni 0,2 ölçüm sayılmaz | `roads.StreetRatioTest` | A6.2a → A6.11 | 1.0'da nokta kısmı; ölçülmüş kesim kısmı `SurfaceSummary` ister → Y13'le |
+| `street_scores_test` | 12 | E11: ağırlıklı ortanca, yarıda ortalama, sınır sırası, "ölçüm az" (3 parça / 200 m), puansız parça, aynı ad tek sokak, **(7) adsız yol adı TR/AZ (`RoadKnowledge.nameOf`)**, sıra, etiket ekleri, rota kalitesi (v−1)/9, isolate, kalibrasyon puanlayıcı | `roads.RoadNamesTest` (yalnız 7) | A6.2a → A6.11 (1); **sonra Y13/Y14** (11) | 11'i `SurfaceSummary` + `RoadCalibrationRecord` ister (SORU-Q2) |
+| `road_score_ui_test` | 11 | E10/E11 UI: ayrıntıda eski "Rota/harita puanı", sınır etiketleri, parça sırası, Kalite sekmesi sokak listesi, "E10 için yeniden kalibre et", doğrulanmış darbe, ters/eşit referans, eksik seviye istemi, hız bandı uyarıları | — | **sonra Y13/Y14** (11) | hepsi kalibrasyon ve yüzey deposu ister (SORU-Q2) |
+
+Toplam: Y12'ye yazılı 55 testten **32 tanım (33 çalışma) A6.2a'da çevrilir** — quality 9 (A6.4'te yeşil), road_learner 9, road_save 1, day_contributions 2, ww_clean_run 5, ww_no_problem_green 5 (6), street_scores 1 — ve **23'ü sonra (Y13/Y14)**: street_scores 11, road_score_ui 11, day_contributions 1 (SORU-Q2 onaylanırsa `TEST_ENVANTERI` ve `OZELLIK_HARITASI` bu bölüme göre düzeltilir). Y12 girdilerini sınayan öteki testler (A6.4'te yeşil, A6.11 bozmadan korur): Bölüm 3.14 `router_test` "öğrenilmiş kötü yol" (`route.PlannerTest`) ve "kötü nokta" (`route.BadSpotCostTest`), Bölüm 4.6 `ww_green_two_way_test` (4).
+
+**WEEM ekleri (eski testte yok):** `VolumeDispatchTest` (450 ms çift basış, öncelik sırası, uzun basış iptali, soru/kart açıkken yönlendirme, ana cadde reddi), `QualityPromptTest` (başlangıç 80 ve yuvarlama, ±10 sınırları 10/100, 6 sn otomatik kayıt, vazgeç), `RoadFilesTest` (atomik yazım, "aynıysa yazma", 30 sn kısıtı, okunamayan dosyanın `damaged` kopyası), `MarkStoreTest` (kötü nokta ekle/sil/geri al, 2 Bakü günü doğrulama, gün silmede kalır).
+
+### 9.12 WEEM yerleşimi
+
+- **`logic/map`** (saf):
+  - `route/Quality.kt`: `quality.dart` birebir (`LearnedQuality`, `QualityRating`, `priorQuality`, `learnedScore`, `learnedConfidence`, `blendQuality`, `streetScoreQuality`, `wrongWayRatio`, `wrongWaySmoothed`, `QualityBand`) — `CostModel` (A6.4) ve `roads` kullanır; paket döngüsü olmasın diye `roads`'ta değil.
+  - `surface/` (Y13'ün 1.0 alt kümesi, SORU-Q1): `SurfaceMark`, `SurfaceLabel`, `Passability`, `isBadSpot`, `badSpotSpans`, `SpotSpan`, sabitler 25 m / 30 m — router (A6.4) ve Ses− (A6.11) kullanır; Y13 sonra bu pakete eklenir.
+  - `roads/`: `WayStats`, `WwStats`, `GhostMark`, `RoadKnowledge`, `LearnFix`, `WwRun(Way)`, `WwPass`, `wwCleanApprovals`, `RoadLearner` (birebir); `RoadDayContributions`; `StreetRatio` (`streetRatio`, `streetRatioText`); `QualityPrompt` (durum + 6 sn, saat enjekte); `VolumeDispatch` (9.5.2 tablosu: girdi tuş olayı + durum → eylem); `RoadBook` = `RoadController`'ın Riverpod'suz çekirdeği (vardiya kapsamı, `onFix`, soru ve zaman aşımı tik ile, cevap, "Sorun yaşadım", elle eylemler, kayıt politikası, gün silme, rota girdileri `forPlan(g)`); bağımlılıkları port: `RoadFiles` (oku/yaz), `StreetPrefs` (Y8, `route`), `Clock`, `RideLog` olay havuzu, `Toasts` (metin TR/AZ, renk, "Geri al" eylemi, süre — veri olarak), `Haptics`.
+- **`:map`** (Android, `com.kuryelog.app.map`): `RoadFilesAndroid` (`files/map/roads/`, `files/map/manual-marks.json`), `VolumeKeys` (9.5.3), `RoadsRuntime` (`ShiftPort.state` → `RoadBook.scope`; konum + eşleştirici (Bölüm 7) → `onFix`; `OrderEvents.stages` → `excludeStops` için aşama; 5 sn tik; `onPause` → zorla kayıt), plan isteğine girdiler (Bölüm 7 nav).
+- **`:app`:** `RoadsScreen.kt` (4 sekme), `WrongWayCard`, `QualityPromptCard` (Harita sekmesi alt paneli), uzun basış menüsünün Y12 satırları (Bölüm 6), Harita ayarları "Yollarım" grubu ve ses tuşu anahtarı; `MainActivity.dispatchKeyEvent` → `VolumeKeys`.
+- **`:core` portları:** `ShiftPort` (öğrenme kapsamı, kova anahtarı `yolgo-<startedAtMs>`), `OrderEvents.stages` (yer/durak yakını), `Clock` (`LogTime.day` ile gün), gün silme kancası (Bölüm 12/15). Bildirim kullanılmaz (bütün geri bildirim uygulama içi toast + titreşim).
+- **2 telefon (plan 4.5):** "2 telefon modu" Kapalı → tek telefonda Y12 tam. Receiver (scooter telefonu; harita ve navigasyon) → Y12 öğrenme, sorular, kartlar ve ses tuşu yakalama **yalnız burada**. **WEEM (öneri):** Provider rolünde Y12 kapalı (öğrenme, soru, kart, ses tuşu yakalama yok); Yollarım ve uzun basış menüsünün Y12 satırları için SORU-Q7. `:link` mesajlarında Y12 verisi yok: Receiver'a ulaşılamayıp yedek rota Provider'da açılırsa planlayıcı Y12 girdileri boş hesaplar (rota Receiver'ınkinden ayrılabilir; A8.3'te kesinleşir). `ShiftPort`/`OrderEvents` Receiver'da uzak olsa da (A8.3) arayüz aynı; Y12 farkı görmez.
+- **Görevler:** A6.4 → `Quality.kt`, `surface/` alt kümesi, `CostModel`'in Y12 girdileri, `quality_test`; A6.5 → katman çizimi ve uzun basış menüsü iskeleti; A6.11 → `roads/` tamamı, `RoadBook`, ses tuşu, ekranlar/kartlar, kalan Y12 testleri, rota girdilerinin bağlanması.
+
+### 9.13 Farklar, açık noktalar ve sorular
+
+**Y13/Y14 sınırı (1.0'da kesilen kod yolları; boşken nötr):** `SensorHub.vibRms` hep 0 → `vibSum/vibN` birikmez, `vib` null, ekranda "sarsıntı ?" (WEEM titreşim sensörü eklemez); `surface`/`surfaceQuality` boş → `segmentCost` yüzey terimi ve `allowedAt` ölçülmüş kesim dışlaması işlemez; `closed` işaretli `SurfaceMark` yalnız Y13 yüzey menüsünden doğar → 1.0'da yok; `streetRouteQualityInBackground` boş liste → `{}`; `street_scores`, `road_score.dart`, `SurfaceQualityTab`'ın Y13/Y14 parçaları, `StreetPiecesScreen`, "Ölçüm ve kalibrasyon", "Haritada yüzey renkleri" katmanı → sonra.
+
+**Eski hatalar / tutarsızlıklar (WEEM kararı):**
+- JSON okuma hatası veriyi sessizce boşaltır ve sonraki kayıt üstüne yazar (`road_knowledge.dart:222-249`) → WEEM: `damaged` kopyası her `roads` dosyası için (9.10).
+- `resetAllQuality` ve `_setStreet(block)` ölü → taşınmaz.
+- `statsRev` (katman sayacı) yalnız testte okunur; harita katmanı artık elle puana bağlı değil (`road_controller.dart:398-404` yorumu eski) → WEEM'de yalnız `road_save_test` uyarlaması için sayaç.
+- `QualityPrompt.open` grafsız `qualityOf` (prior 0,8) → başlangıç değeri aynen (davranış).
+- Gün kimliği/tarih: gün silme ve kötü nokta doğrulaması Bakü günü (UTC+4), hayalet listesindeki tarih telefon yerel → WEEM tek `Clock.zone` (`CORE.md`).
+- Sürüş kaydı olayları adlarıyla korunur (Bölüm 12 biçimi).
+
+**SORU (koordinatöre):**
+- **SORU-Q1 — Ses− kötü noktası Y13 deposuna yazar.** Y13 1.0'da yok; Ses− tek basış (±25 m kötü nokta), Ses− uzun (sil), Kalite sekmesindeki "Elle işaretlenen yüzeyler" ve router'ın kötü nokta cezası bu depoya bağlı. (a) **1.0'da elle kötü nokta alt kümesi** (öneri): `surface/` tipleri + `files/map/manual-marks.json`, 25 m / 30 m / 2 Bakü günü kuralı, rota cezası, uzun basışla silme, Kalite sekmesinde liste (düzenleyici yok); Y13 gelince aynı dosya/tip genişler. `router_test`'in kötü nokta testleri de bunu ister. (b) Ses− tek basış 1.0'da etkisiz — S3 ("Ses+/Ses− dahil") ve S9'a aykırı. Önerilen: (a).
+- **SORU-Q2 — Y12'ye yazılmış 23 test aslında Y13/Y14.** `street_scores_test` (11/12), `road_score_ui_test` (11/11) ve `day_contributions_test` 3. test (`SurfacePassTracker`) E10/E11 "Yol puanları" ve yüzey/kalibrasyon tiplerini ister. (a) "sonra (Y13/Y14)"e taşı (öneri; A6.2a Y12 payı 32 tanım); (b) `Street`/`StreetScore` saf mantığını veri kaynağı olmadan 1.0'da yaz (kullanılmayan kod). Önerilen: (a).
+- **SORU-Q3 — metinler.** (a) aynen; (b) öneri: Kalite sekmesindeki "Eski trafik kayıtları" / "Köhnə trafik qeydləri" (alt "Korundu · yüzey metriğine dönüştürülmedi") WEEM'de sıfırdan biriken veri için yanıltıcı → "Trafik kayıtları" / "Trafik qeydləri", alt "Rotayı etkilemez" / "Marşruta təsir etmir"; ses tuşu anahtarının TR metnine AZ'deki gibi "Ses+ ×2 kalite" eklenir. Önerilen: (b).
+- **SORU-Q4 — ses tuşu yakalama kapsamı.** YolGo tek amaçlı uygulamaydı, önde olduğu her an yakalardı; WEEM'de başka sekmeler var. (a) yalnız Harita sekmesi ve alt ekranları önde iken (öneri; Siparişler/Scooter/Uzaktan/Daha fazla'da tuşlar normal ses); (b) WEEM önde olduğu her an (YolGo gibi). Önerilen: (a).
+- **SORU-Q5 — Y12 verisi yedekte.** S22 haftalık şifreli yedeği `kuryelog` ayarları, gün kayıtları, `restaurants.json`, `courier.db` içerir; `files/map/roads/*` ve `manual-marks.json` girmez → telefon değişince Y12 sıfırdan başlar. (a) S22 aynen (öneri; karar değişmez); (b) `:map`'in elle/öğrenilmiş verisi (Y12 ve Y8 `streets.*`, Y11 ışıklar, Y15 elle bisiklet yolları — öteki bölümlerle birlikte) yedeğe eklensin. Önerilen: (a), istenirse (b) A6.11 sonrasında ayrı iş.
+- **SORU-Q6 — madde 10b "iki yönlü" kuralı yumuşatılmış oranla neredeyse hiç işlemiyor** (9.9 not). (a) aynen (öneri: davranış aynı, A6.10 karşılaştırması temiz); (b) niyete göre: ham `problems == 0` olan onaylı ara sokak iki yönlü (ceza/hız tavanı yok) — rota YolGo'dan ayrılır. Önerilen: (a).
+- **SORU-Q7 — Provider'da Yollarım.** Plan "sekmeler iki telefonda aynı, veri asıl kaynağından" der; Y12 verisi Receiver'da ve `:link`'te yok. (a) Provider'da Yollarım'ın Kalite/Ters yön/Yol yok sekmeleri ve uzun basış Y12 satırları gizli, yerine "Yol bilgileri Receiver telefonunda" notu (öneri; 1.0 basit, A8.3'e iş eklemez; AZ metni A6.11'de); (b) Receiver'ın Y12 verisi `:link` üstünden gösterilir, elle eylemler Receiver'a gönderilir (A8.3'e yeni mesaj). Önerilen: (a).
 <!-- END sec:9 -->
 
 <!-- BEGIN sec:10 -->
