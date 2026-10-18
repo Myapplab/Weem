@@ -1,6 +1,8 @@
 # Değişiklik günlüğü
 
 ## Unreleased
+- Kayıtlar → Yedek (cihazda denenmedi): tüm kayıtları, bir günü ya da bir dosyayı ZIP olarak paylaş (İndirilenler/WEEM; Rawstats yedeğiyle aynı biçim, geri yüklenebilir); "Analiz için paylaş (anonim)" (müşteri adı, telefonu, adresi, notu gizlenir, konum ~100 m'ye yuvarlanır); vardiya bitince günlük anonim paket (İndirilenler/WEEM/gunluk, ayardan kapatılır).
+- Şifreli yedek (cihazda denenmedi): parola belirlenince her vardiya sonu o haftanın kayıtları, ayarlar (ev konumu hariç) ve sipariş veritabanı şifreli dosyaya yazılır (İndirilenler/WEEM/yedek, haftada bir dosya); dışa aktar, dışa aktarılan haftayı uygulamadan sil, parolayla geri yükle.
 - Scooter (cihazda denenmedi): vardiya başlayınca eşleşmiş scooter'a otomatik bağlanır (canlı bağlantı, ayarla kapatılır), bitince kapatır; vardiya kartında scooter durumu, "Scooter'a şimdi bağlan" ve Bluetooth izni düğmeleri; 1 Hz scooter satırları gün klasörüne (`economics-scooter.jsonl`), her siparişe scooter enerjisi (Wh) ve teklif anında scooter pili; "Scooter verileri alınıyor/alınamıyor" bildirimi; vardiya km'sine scooter odometresi. Sürüş kaydı (`ninebot-logger.db`) ve dışa aktarma ZIP'i altyapısı hazır; Scooter sekmesi ve yüzen panel sonraki adımda.
 - Proje başladı: plan, iş listesi ve kurallar. Henüz uygulama sürümü yok.
 - `.dev` APK artık açılıyor: alt menü kabuğu (5 sekme, yer tutucu), gece/gündüz teması, Türkçe/Azerice dil seçimi (Daha fazla sekmesinde).

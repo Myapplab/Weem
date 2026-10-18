@@ -125,6 +125,10 @@ Kaynak: RS `Store.kt:46-47` ve anahtarları yazan dosyalar (`rg` ile A2.1'de tar
 | Android Keystore takma adı | **`NinebotLogger.Pairing.v1`** (AndroidKeyStore; anahtar uygulama kimliğine ve imzaya bağlı) | NB `KeyVault.java:13-15` |
 | Değerler (adres = BLE MAC) | `<adres>` etkin, `<adres>.confirmed` (Bool), `<adres>.pending` aday, `<adres>.previous`, `<adres>.previous.confirmed`; değer `Base64.NO_WRAP(IV12 ‖ AES-GCM(anahtar16)+etiket16)`, AAD = adres UTF-8 (A5.1, `SCOOTER.md` 4.1) | NB `KeyVault.java:15-26` |
 
+### 5.3b WEEM şifreli yedek — dosya **`weem-backup`** + Keystore `WEEM.Backup.v1` — WEEM: **yeni** (A4.3, N3, S22)
+
+Parola AndroidKeyStore AES/GCM anahtarıyla şifreli (`password` = Base64 IV `:` Base64 şifreli metin); `exported.<Pazartesi>` (Long) = o haftanın yedeği dışa aktarıldı. `kuryelog` dışında: hiçbir yedeğe girmez. Tercih `dailyPack` (Bool, true) `kuryelog`'da (5.1).
+
 ### 5.4 YolGo — `FlutterSharedPreferences` (her anahtar `flutter.` önekli) — WEEM: **aktarılmaz** (S1: eski YolGo'ya dışa aktarma eki yok; WEEM başka paketin verisini okuyamaz)
 
 Anahtarların anlamı WEEM `:map` ayarları için başvurudur; değerler WEEM'de yeniden girilir ya da yeniden öğrenilir.
@@ -180,6 +184,8 @@ Tek kaynak `BackupFiles.logNames` (RS `BackupFiles.kt:8-28`; listede olmayan dos
 
 Diğer: dışa aktarma ZIP'i `YYYY-MM-DD/<dosya>` + kökte `restaurants.json` (`BackupFiles.checkedPath`); `files/crashes.jsonl` (`CrashLog.kt:19`); gün sırları `noBackupFilesDir/economics-day-secrets-v3/<gün>` (32 bayt; ZIP/yedeğe girmez); anonim dışa aktarma işareti `ANALIZ_ANONIM.json` (`AnalysisExport.kt:273`). Analiz araçları (`tools/analysis/kl_export.py`, `anonymize.py`) bu adları bekler.
 
+**A4.3 (18 Ekim):** dışa aktarma ve paylaşım WEEM adlarıyla (RS `Rawstats`): tam yedek `İndirilenler/WEEM/WEEM_<gün|all>_<dosya|logs>_<HHmmssSSS>.zip`, anonim `WEEM_analiz_anonim_<gün>_<HHmmssSSS>.zip`, günlük paket `İndirilenler/WEEM/gunluk/WEEM_gunluk_<gün>.zip`; ZIP içi biçim Rawstats ile aynı (`BackupExportTest`, `AnalysisToolsTest`). N3 şifreli yedek `İndirilenler/WEEM/yedek/WEEM_yedek_<Pazartesi>_<Pazar>.weem`: `WEEMBAK1` + PBKDF2 tur (4 bayt) + tuz 16 + IV 12 + AES-256-GCM (başlık AAD) şifreli ZIP: gün dosyaları, `restaurants.json`, `kuryelog.json` (ev konumu `home.*`, anlık vardiya anahtarları ve `weem.deviceId` hariç), `courier/trips.jsonl`, `courier/offers.jsonl`, `WEEM_YEDEK.json` (`weem-encrypted-backup/1`); `logic/core` `EncryptedBackup`.
+
 **A3.1 notları (17 Ekim; ayrıntı `CAPTURE.md` 6, `ORDERS.md` 9, 12, 14):** adlar ve şemalar aynı; aşağıdakiler değer/yazım ayrıntılarıdır.
 - `events.jsonl` `click.text` WEEM'de `NoteFields.redact`'ten geçer (telefon → `[tel]`); Rawstats redact etmeden yazıyordu (müşteri kartında dokunulan telefon JSONL'e girebiliyordu, bu §9 kuralının deliği). Alan adı değişmez; gölge modda fark yalnız telefon içeren tıklama satırlarında çıkar ("beklenen fark", `CAPTURE.md` 6.3).
 - `economics-boosts.jsonl` (ve teklife yazılan `weather_*` alanları) null değerleri `JSONObject.NULL` ile yazar: anahtar vardır, değer `null`. Öteki dosyalarda `put(k, null)` anahtarı siler (null alan yazılmaz). WEEM ikisini de aynen korur; JSON karşılaştırması ayrıştırılmış değerle yapılır (`ORDERS.md` 9.1).
@@ -225,6 +231,6 @@ Tek tablo `:core` `NotificationIds` (tam tablo `CORE.md` 3.3): her bildirim sabi
 
 ## 9. Gizlilik sınırı (WEEM'de korunur)
 
-- Müşteri **telefonu** yalnız `courier.db` (`withPhone=true`), bellek, rozet/balon ve bildirim 12'de; JSONL ve yedekte yok (`PhoneK25Test`).
+- Müşteri **telefonu** yalnız `courier.db` (`withPhone=true`), bellek, rozet/balon ve bildirim 12'de; JSONL ve ZIP yedekte yok (`PhoneK25Test`). İstisna (S22, 18 Ekim): N3 parolalı şifreli yedekte `courier.db` satırlarıyla birlikte durur.
 - Müşteri **adı** `courier.db`, `orders.jsonl` (`record`) ve `latest` gözleminde düz; dışa aktarmada `AnalysisExport`/`Redactor` gizler.
 - 2 telefon modunda Receiver'a gitmeyecekler: müşteri adı, telefonu, notlar, bildirim 12 içeriği. Gidebilecekler: aşama, saat, bölge (`Z1..Z4`), restoran adı/koordinatı, müşteri koordinatı ve adres metni (`dropoffAddress`; S5, 17 Ekim), rota hedefi (plan Bölüm 4.4).

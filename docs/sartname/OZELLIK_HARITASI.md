@@ -494,7 +494,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 ### N3 Otomatik şifreli yedek
 - **Eski kod:** yeni; temeli R17 (`BackupFiles`, ZIP)
 - **Testler:** **yok**
-- **Veri:** şifreli ZIP (biçim A4.3'te)
+- **Veri:** haftalık `.weem` (S22; biçim `VERI_SOZLESMESI.md` 7.1 A4.3 notu), tercih dosyası `weem-backup` + Keystore `WEEM.Backup.v1`
 - **Bağımlı:** R17, N1 (öteki telefona)
 - **WEEM:** `:core` · 4 (A4.3)
 - **Ayrıntı:** `bulgular/R_economics.md` §R17
