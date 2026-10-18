@@ -23,7 +23,7 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 | 2 | Y7 harita verisi | A6.3 | ajan R | bitti (12:38 UTC) <!-- st:2 --> |
 | 3 | Y3 rota motoru | A6.4 | ajan R | bitti (12:37 UTC) <!-- st:3 --> |
 | 4 | Y8 sokak kararları | A6.4 | ajan R | bitti (12:40 UTC) <!-- st:4 --> |
-| 5 | Y15, Y16, Y21 | A6.8 | ajan R | bekliyor <!-- st:5 --> |
+| 5 | Y15, Y16, Y21 | A6.8 | ajan R | kısmen: 5.1–5.8 taslak yazıldı; sırada kaynak doğrulaması (17:10 UTC) <!-- st:5 --> |
 | 6 | Y1, Y2 harita ekranı | A6.5 | ajan N | bekliyor <!-- st:6 --> |
 | 7 | Y4 navigasyon | A6.6 | ajan N | bitti (12:40 UTC) <!-- st:7 --> |
 | 8 | Y5, Y6 bağlantılar ve adres | A6.6 | ajan N | bitti (12:34 UTC) <!-- st:8 --> |
@@ -583,7 +583,94 @@ Her kalıcı değişiklikten sonra rota açıksa `replan(reason: 'prefs')` (Böl
 <!-- BEGIN sec:5 -->
 ## 5. Y15 Bisiklet yolu katmanı, Y16 Restoran noktaları, Y21 Bölge bilgisi (A6.8)
 
-_Yazılıyor (ajan R)._
+Kaynak: Y15 `lib/routing/bikeways.dart` 1–67, `lib/ui/bikeway_layer.dart` 1–148, `lib/data/graph_builder.dart:37–45`, `lib/routing/router.dart:86–92, 332`, `lib/core/settings.dart:53–54, 140–152, 312`; Y16 `lib/data/pois.dart` 1–136, `lib/data/poi_corrections.dart` 1–76, `lib/ui/poi_editor.dart` 1–45, başvuru `lib/ui/map_view.dart:897–1100` (`displayPoisProvider`, `PoiLayer`; ekran ajan N), `lib/ui/nav_screen.dart:160–352` (uzun basış menüsü), `lib/nav/nav_controller.dart:421–431`, `lib/tracking/shift_controller.dart:599, 618`; Y21 `lib/ui/region_info.dart` 1–134, `assets/baku/` + `credits.json`, `ci/fetch_photos.py`. Ham bulgu yoktu (Y15/Y16 `Y_routing.md`'de "sırada" kalmıştı); kaynaktan çıkarıldı.
+
+### 5.1 Y15 — Bisiklet yolları
+
+**Etiketler** (`isBikewayTags`, E13, kullanıcı listesi 14 Ekim): `highway=cycleway`; `cycleway` ∈ {lane, track}; `cycleway=share_busway`; `cycleway:left|right|both` ∈ {lane, track}; `bicycle=designated`. Sayılmaz: `cycleway=shared_lane|opposite|right` (yan belirtmeden `right` değer değildir), `cycleway:right=no`, `cycleway:both=separate`, `cycleway:left=share_busway`, `bicycle=yes|permissive`. Bayrak `WayFlag.bikeway` (1024) graf kurulurken yazılır; dosya başlığı `GraphFeature.bikeways` (Bölüm 2.5). Yön kuralları ayrı ve değişmez (`onewayFwd`, `contraflow`); `bicycle=designated` aynı zamanda `bikeOk` (yaya yolu sürülebilir).
+
+**Elle işaret** (`BikewayMarks`): OSM'de eksik bisiklet yolu kullanıcı tarafından **bütün OSM yolu** için işaretlenir; yalnız bu telefonda, kalıcı; rotada ve haritada OSM bayrağı gibi davranır.
+- Tercih `streets.bikeway.v1` StringList, öğe `"<wayId>|<ad>"` (ad boş olabilir: `"402|"`). Okuma: `|` yoksa bütün dizge id; id ayrıştırılamazsa atlanır; ad yalnız `|` son karakter değilse. Yazma küme sırasıyla `"$w|${ad ?? ''}"`.
+- `mark(way, ad)` (ad boşsa ad yazılmaz), `unmark(way)`, `isMarked`.
+
+**Rota etkisi** (Bölüm 3.4 adım 9): yalnız izinli yönde ve ters yön **değilken** `cost ×= bikewayFactor`; süre ve enerji değişmez; ters yönü açmaz (onaylı ara sokakta ters yön serbest ama indirimsiz; ana caddede onay ters yönü açmaz). `bikewayFactor = bikewayCostPct.clamp(50, 100)/100` (varsayılan 85 → ×0.85; `fromJson` da 50–100'e kıstırır: 20 → 0.5, 140 → 1.0). Grafta bayrak ya da elle işaret varsa A* sezgisi `min(1, bikewayFactor)` ile küçülür (rota en iyi kalır).
+
+**Harita katmanı** (`bikewayLines`): `showBikewayLayer` (varsayılan açık) ve graf varken her bisiklet yolu kenarı (OSM bayrağı ya da elle işaretli way) bir çizgi: kalınlık 4, renk `AppColors.bikeway` (koyu tema `#3DDCE8`, açık `#00838F`) %85 opak; OSM düz, elle işaretli kesikli `[10, 6]`. Tema değişince yeniden. İki harita yüzeyi de çizer (sıra: POI'lerin üstü, sokak kaplamasının altı; Bölüm 6).
+
+**Uzun basış menüsü satırı** (`bikewayMenuAction`): way elle işaretliyse "Bisiklet yolu işaretini kaldır" / "Velosiped yolu qeydini sil" (`unmark`); değilse kenar OSM bisiklet yoluysa satır **pasif** (`alreadyOsm`), alt yazı "$ad · OSM'de zaten bisiklet yolu" / "$ad · OSM-də artıq velosiped yoludur"; değilse "Bisiklet yolu olarak işaretle" / "Velosiped yolu kimi qeyd et", alt yazı "$ad · bütün sokak; rotada tercih edilir" / "$ad · bütün küçə; marşrutda üstünlük verilir". Basınca `toggleBikewayWithUndo`: işaretler/kaldırır, toast "Bisiklet yolu işaretlendi: $ad" / "Velosiped yolu qeyd olundu: $ad" ya da "Bisiklet yolu işareti kaldırıldı: $ad" / "Velosiped yolu qeydi silindi: $ad" (ad boşsa "isimsiz yol" / "adsız yol"), renk bisiklet, 7 sn, "Geri al" / "Geri qaytar" son işlemi tersine çevirir. Açık rota işaretle kendiliğinden yeniden hesaplanır (Bölüm 7).
+
+**Yollarım → Bisiklet sekmesi** (`BikewayTab`; ekran Yollarım'da, Bölüm 9.7): başlık "Bisiklet yolları" / "Velosiped yolları"; not "Bakü'de OSM bisiklet yolu kaydı az; eksikleri elle işaretleyebilirsin." / "Bakıda OSM-də velosiped yolu qeydləri azdır; çatışmayanları əl ilə qeyd edə bilərsən."; yardım "Haritada sokağa uzun bas → \"Bisiklet yolu olarak işaretle\". İşaret yalnız bu telefonda kalır, OSM bisiklet yolu gibi kullanılır." / "Xəritədə küçəyə uzun bas → \"Velosiped yolu kimi qeyd et\". Qeyd yalnız bu telefonda qalır, OSM velosiped yolu kimi istifadə olunur."; graf bisiklet bilgisi taşıyorsa istatistik "OSM: N sokak · <fmtKm>" / "OSM: N küçə · …" (OSM bayraklı way sayısı ve kenar uzunlukları toplamı; `fmtKm` < 1.000 m → "N m", değilse "X.X km"); eski haritada turuncu uyarı "Kayıtlı harita bisiklet yolu bilgisi içermiyor (eski harita). Ayarlar → İlave ayarlar → Harita verisi → İndir / güncelle." / "Yaddaşdakı xəritədə velosiped yolu məlumatı yoxdur (köhnə xəritə). Tənzimləmələr → Əlavə tənzimləmələr → Xəritə məlumatları → Yüklə / yenilə."; anahtar "Haritada bisiklet yolları" / "Xəritədə velosiped yolları" (alt "Düz çizgi: OSM · kesikli: elle işaretli" / "Düz xətt: OSM · qırıq xətt: əl ilə qeyd olunan"); "Bisiklet yolu tercihi" / "Velosiped yoluna üstünlük" (alt "Rota maliyeti bu çarpanla (×1.00: tercih yok). Süre, tek yön ve ters yön kuralları değişmez." / "Marşrut xərci bu əmsalla (×1.00: üstünlük yoxdur). Vaxt, birtərəfli hərəkət və əks istiqamət qaydaları dəyişmir.", sağda `×0.85` biçimi 2 ondalık); kaydırıcı 50–100, 10 bölme (adım 5); "Elle işaretlenen bisiklet yolları" / "Əl ilə qeyd olunan velosiped yolları" listesi (boşsa "Henüz yok" / "Hələ yoxdur"; satır ad ya da "isimsiz yol", alt "OSM #<id>", çöp kutusu ipucu "İşareti kaldır" / "Qeydi sil" → `unmark`, geri al yok).
+
+### 5.2 Y15 testleri (`bikeway_e13_test`, 18; döngüler tek sayılır)
+
+| Grup | Sayı | Neyi doğrular | WEEM hedefi | Görev |
+|---|---:|---|---|---|
+| E13 etiketler | 3 | 11 etiket bileşimi bayrak yazar; 8 bileşim yazmaz; `footway+bicycle=designated+oneway=yes` → `bikeOk|onewayFwd|bikeway`; Overpass sorgusu `cycleway` içerir + `out body`, ham JSON etiketi grafa ulaşır | `graph.BikewayTagsTest` | A6.2a → A6.3 |
+| E13 harita dosyası | 2 | yeni graf bisiklet bilgisini taşır, kaydet/oku aynı, uyarı yok; başlık ofset 36 = 0 → okunur, `hasBikewayData` false, uyarı TR "İndir / güncelle" ve AZ "Yüklə / yenilə" içerir; sürüm (ofset 4) 1 → `FormatException` | `graph.RoadGraphFileTest` | A6.2a → A6.3 |
+| E13 rota | 6 | `cycleway:right=lane` kenarı maliyet ×0.85, süre/Wh aynı; `cycleway=right` bisiklet değil; çarpan 1.0 etkisiz, 0.6 ×0.6; elle işaret (`{500}`) ×0.85, başka way etkisiz; bisiklet şeridi ve elle işaret ters yönü açmaz, onaylı ters yön indirimsiz, ana caddede onay açmaz; 40 m uzun bisiklet yolu ×0.85'te seçilir (480), ×0.95 ve ×1.00'da seçilmez (440), elle işaretle seçilir; motor elle işareti taşır; `heuristicScale` 1.0 / 0.85 / elle 0.85 / çarpan 1.0 iken 1.0 | `route.BikewayCostTest`, `route.RouteEngineTest` | A6.2a → A6.4 |
+| E13 ayarlar, elle işaret | 2 | varsayılan 85 ve katman açık; eski ayar dosyası (`qualityTolerancePct 12`, `turnPenaltyS 8`) okunur ve yeni alanlar varsayılan; gidiş-dönüş 70/false; 20 → 0.5, 140 → 1.0; `withMaxGrade` çarpanı korur; işaret kalıcı (`"401|Test küçəsi"`, `"402|"`), yeniden açılışta okunur, kaldırma yazılır, `streets.approved` değişmez | `settings.MapSettingsTest`, `route.BikewayMarksTest` | A6.2a → A6.8 |
+| uygulamada | 5 | işaret açık rotayı değiştirir ve geri alınca eski rota (440 → 480 → 440); ağırlık 100 yapılınca rota yeniden (480 → 440); menü eylemi `mark`/`alreadyOsm`/`unmark`, toast metinleri ve "Geri al"; katman: OSM çizgi sayısı = kenar sayısı, renk, elle işaret kesikli, katman kapatılınca boş; Bisiklet sekmesi (not, anahtar, `×0.85`, "OSM: 3 ", liste, çöp kutusu, anahtar kapatma, AZ not) | `:app`/`:map` Robolectric (`BikewayTabTest`, `BikewayLayerTest`) + saf `route.BikewayMenuTest` | A6.2b → A6.8 |
+
+Fixture'lar aynen: `_single(tags)` (way 500, 400 m kuzey), `_parallel(east)` (batı 440 m ways 301–303, doğu 480 m ways 401–403).
+
+### 5.3 Y16 — Restoran ve yer noktaları
+
+**Türler** (`poiKind`; tek harf): `r` restaurant, `f` fast_food, `c` cafe (amenity); `m` `shop=mall` (AVM); `t` `shop` ∈ {convenience, supermarket, bakery, butcher} (market; doc yorumunda yok — bulgu düzeltmesi); `s` `station=subway` (metro); `l` trafik ışığı (`highway=traffic_signals` ya da `crossing=traffic_signals` ya da `highway=crossing`+`crossing:signals=yes`). Sıra: amenity önce.
+- `poisFromOverpass`: etiketsiz öğe atlanır; koordinat `lat/lon` ya da `center`; ad `l` için boş, diğerleri `name:az` → `name` → `brand` → `name:en` içinden kırpılıp boşluğu teke indirilmiş ilk dolu değer; `osmRef` = `"<type>/<id>"` (id yoksa boş). Dosya biçimi ve indirme Bölüm 2.10.
+- `PoiSet`: enleme göre sıralı (Dart sıralaması kararlı değil; WEEM eşit enlemde girdi sırasını korur — fark yalnız eşitlik durumunda). `within(s, w, n, e)`: ikili arama + boylam süzgeci. `nearest(tür, lat, lon, maxM = 40)`: `d = maxM/111320` derece; kutu enlem `±d`, boylam `±1.4·d`; haversine ≤ en iyi (eşitlikte **sonraki** kazanır, `<=`).
+- **Düzeltmeler** (`places.local.v1`, StringList; her öğe JSON `{lat, lon, kind, name, osmRef, originalRef, originalLat, originalLon, originalKind}`; okurken `lat`/`lon` sonlu ve aralıkta olmalı, bozuk öğe atlanır): ekleme ya da ad/tür düzeltme; silme yok. `replaces(p)`: `originalRef` doluysa `p.osmRef == originalRef`; değilse orijinal konum ve tür varken aynı tür ve ≤ 1 m. Düzeltilmiş küme = harita POI'lerinden düzeltmenin yerini aldıkları çıkarılır + bütün düzeltmeler. `save(poi, original)`: aynı orijinale ait eski düzeltme (aynı nesne, aynı `osmRef`, ya da aynı tür+ad ve ≤ 1 m) değiştirilir, orijinal bilgileri ilk düzeltmeden korunur; liste sonuna eklenir.
+- **Düzeltme penceresi** (`poi_editor.dart`): başlık "İşletme ekle" / "Obyekt əlavə et" ya da "İşletme adını düzelt" / "Obyektin adını düzəlt"; ad alanı (en çok 100, kelime başı büyük, "Ad"); tür seçici "Restoran", "Fast food", "Kafe", "Mağaza" (t), "AVM" / "Ticarət mərkəzi" (m) — başka tür (s, l) gelirse `r`; not "Bu düzeltme YolGo'da saklanır; harita güncellense de korunur." / "Bu düzəliş YolGo-da qalır; xəritə yenilənsə də itmir." (WEEM: "WEEM'de" / "WEEM-də"); "Vazgeç" / "Ləğv et"; "Kaydet" / "Yadda saxla" (ad boşsa pasif). Yeni işletme basılan noktaya, düzeltme orijinalin konumuna yazılır.
+- **Kullanım yerleri:**
+  - Harita gösterimi (`displayPoisProvider` + `PoiLayer`; ekran Bölüm 6): düzeltilmiş küme + ışık işaretleri (Y11 `lightSpots`: "yok" işaretinin 25 m içindeki OSM ışığı gizlenir, "var" işareti 25 m içinde OSM ışığı yoksa eklenir). Yakınlık eşikleri (kod; dosyadaki yorum eski — bulgu düzeltmesi): katman z < 12 yok; metro z ≥ 13 (ad z ≥ 16), AVM z ≥ 15 (ad z ≥ 17), ışık z ≥ 16.5 (küçük nokta), restoran/fast food/kafe/market z ≥ 16.5 (34 px hücrede tek simge; ad z ≥ 17.6); öncelik ışık → metro → AVM → diğer; en çok 180 simge, 55 ad (çakışan ad atlanır). Simgeler: metro kırmızı daire "M", AVM mor kutu, yemek noktası yemek renginde daire (f fastfood, c cafe, t storefront, diğer restaurant).
+  - Uzun basış menüsü (Bölüm 6/7): 30 m içinde `r, f, c, t, m` türleri sırayla, her bulunanda yarıçap o uzaklığa iner → en yakın işletme; r/f/c ise "Restorana git: <ad>" / "Restorana get: <ad>" (hedef restoran), değilse "Bu noktayı restoran olarak seç" / "Bu nöqtəni restoran kimi seç"; "Buraya işletme ekle" / "Bura obyekt əlavə et" ya da "İşletme adını düzelt" + ad; 25 m içindeki ışık "Bu noktada ışık yok" konumu için (Bölüm 11).
+  - Restoran hedefi sayma (Y6, Bölüm 8): çözüm restoran bilgisi vermediyse ve kapı notu yoksa hedefe 8 m içinde `r/f/c` varsa restoran.
+  - Çevrimdışı arama dizini (Y6, Bölüm 8): düzeltilmiş POI adları; düzeltme değişince dizin sıfırlanır.
+  - Işık ve AVM duruşu (Y11, Bölüm 11): **düzeltilmemiş** harita POI'leri — `nearest('l', 55 m)`, `nearest('m', 80 m)`.
+
+### 5.4 Y21 — Bölge bilgisi
+
+- Giriş: ayarlardaki Harita verisi bölümünde ve kurulum ekranında bölge seçicinin yanındaki ⓘ ("Bölgeler neyi kapsıyor?" / "Ərazilər nəyi əhatə edir?").
+- Alt sayfa: başlık "Harita bölgeleri" / "Xəritə əraziləri"; 280 px yükseklikte OSM raster haritası (`https://tile.openstreetmap.org/{z}/{x}/{y}.png`, retina, döndürme kapalı, `wideBox` sınırlarına 12 px payla sığdırılır); iki dikdörtgen: Böyük Bakı turuncu (%10 dolgu, 3 px kenar), Mərkəzi Bakı mavi (%18 dolgu). Açıklamalar:
+  - "Merkez Bakü · ~W × H km" / "Mərkəzi Bakı · …" (boyut: güney kenarı boyunca doğu-batı ve batı kenarı boyunca kuzey-güney haversine km, yuvarlanır) + "Badamdar, Bayıl, Sabail, İçerişehir, Yasamal, Nesimi, Narimanov / Gençlik, Hatai (Ağ şehir), Montin, 8-ci km'nin batısı. Kuryelerin çoğu siparişi bu alanda. Gömülü yol haritası her iki seçimde de geniş alanı kapsar." / "Badamdar, Bayıl, Səbail, İçərişəhər, Yasamal, Nəsimi, Nərimanov / Gənclik, Xətai (Ağ şəhər), Montin, 8-ci km-in qərbi. Sifarişlərin çoxu bu ərazidədir. Tətbiqin yol xəritəsi hər iki seçimdə də geniş ərazini əhatə edir."
+  - "Geniş Bakü · …" / "Böyük Bakı · …" + "Merkez + Binagadi, Hırdalan, Masazır, Novhanı, Maştağa, Ahmedli, Hazi Aslanov, Bakıhanov, Garaçuhur, Sulutepe, Bibiheybet. Uzak siparişlere gidiyorsan bunu seç." / "Mərkəz + Binəqədi, Xırdalan, Masazır, Novxanı, Maştağa, Əhmədli, Həzi Aslanov, Bakıxanov, Qaraçuxur, Sulutəpə, Bibiheybət. Uzaq sifarişlərə gedirsənsə bunu seç."
+  - Düğmeler "Merkez" / "Mərkəz" ve "Geniş" / "Böyük": tarayıcıda `https://www.openstreetmap.org/?minlon=<w>&minlat=<s>&maxlon=<e>&maxlat=<n>&box=yes`.
+  - Alt not "Her iki seçimde de geniş yol ağı kullanılır. Turuncu sınırın dışındaki hedefler için ek harita verisi gerekir." / "Hər iki seçimdə geniş yol şəbəkəsi işləyir. Narıncı sərhəddən kənardakı ünvanlar üçün əlavə xəritə lazımdır."
+- Çerçeveler kod içi `Baku.centralBox` / `Baku.wideBox` (Bölüm 2.2).
+- `assets/baku/` (`baku1.jpg`–`baku3.jpg`, `credits.json`): bölge ekranında **kullanılmaz**; hava ayrıntısının arka planıdır (Bölüm 10). CI'da `ci/fetch_photos.py` Wikimedia Commons'tan iner (yalnız JPEG, genişlik ≥ 1.600 ve yataydan büyük, lisans CC/PD), `credits.json` = `[{file, title, artist, license, url}]`. Mevcut üç fotoğraf: "Flame towers from Baku boulevard" (Xoncha, **CC BY-SA 4.0**), "Baku Boulevard pier" (Radosław Botev, **CC BY 3.0 pl**), "Heydar Aliyev International Conference Center Baku Azerbaijan" (Fanti Salms, **CC BY-SA 4.0**). Lisans gereği yazar + lisans + kaynak bağlantısı uygulamada gösterilmeli (YolGo: hava ayrıntısındaki ⓘ). WEEM: dosyalar ve `credits.json` aynen `:map` (ya da `:app`) asset'i; atıf gösterimi korunur.
+- Testi yok → **WEEM karakterizasyon testi** (A6.2b): Robolectric/Compose `RegionInfoSheetTest` — iki dildeki başlık ve açıklamalar birebir, km etiketleri (`~W × H km` hesabı saf `geo.BBox` yardımcısında birim test: merkez ve geniş kutu için yuvarlanmış değerler YolGo'da bir kez hesaplanıp sabitlenir), OSM bağlantı biçimi.
+
+### 5.5 Veri
+
+| YolGo | Biçim | WEEM |
+|---|---|---|
+| `streets.bikeway.v1` | StringList `"id\|ad"` | `map` tercih dosyasında aynı ad/biçim (S1: boş başlar) |
+| `settings.v1.bikewayCostPct` (85, 50–100), `showBikewayLayer` (true) | JSON alanı | `MapSettings` (Bölüm 14) |
+| `places.local.v1` | StringList JSON | `map` tercih dosyasında aynı ad/biçim |
+| `files/mapdata/pois_<region>.json` | Bölüm 2.10 | aynı |
+| `assets/baku/*.jpg`, `credits.json` | asset | aynı adlar |
+| OSM karo sunucusu (bölge haritası) | `tile.openstreetmap.org` | aynı (Y2 MapLibre raster stiliyle ortak; Bölüm 6) |
+
+### 5.6 Testler (Y16, Y21)
+
+| Dosya | Sayı | Neyi doğrular | WEEM hedefi | Görev | Not |
+|---|---:|---|---|---|---|
+| YT `pois_test` | 4 | Overpass → 2 nokta (hastane yok), way merkezi, ad `name:az` önce ("Dönər"); görünür alan süzgeci (`['B']`) ve kodlama gidiş-dönüş (ilk `A`, sıralı); boş `name:az` → `brand` ("Araz"), bakkal `t`, sinyalli geçit `l`, `osmRef` "node/10" korunur; eski 4 alanlı satır okunur, `osmRef` boş | `graph.PoiSetTest` | A6.2a → A6.8 | — |
+| **Yeni** | — | `PoiCorrectionsTest` (replaces kuralları, kaydet-değiştir, bozuk öğe, sıra); `PoiLayerRulesTest` (yakınlık eşikleri, öncelik, 34 px hücre, 180/55 sınırı — saf kural fonksiyonu); `RegionInfoSheetTest` (5.4) | `graph.*`, `ui.*`, `:app` Robolectric | A6.2b → A6.8 | eski testi yok (karakterizasyon) |
+
+### 5.7 WEEM yerleşimi
+
+- `logic/map` `graph`: `Poi`, `PoiSet`, `poiKind`, `poisFromOverpass`, `PoiCorrections` (model + `replaces` + kodek), `BikewayTags` (graf kurmada). `route`: `BikewayMarks` (model + kodek), maliyet kuralı `CostModel`'de. `ui`: `BikewayLayerRules` (hangi kenar, düz/kesikli), `PoiLayerRules` (eşikler, öncelik, seyreltme), `BikewayMenuAction`. `geo`: `BBox.sizeKmLabel` (bölge ekranı).
+- Android `:map`: katman çizimi iki yüzeyde (Google Maps polyline/marker; MapLibre katmanları — Bölüm 6); `MapPrefsStore` (`streets.bikeway.v1`, `places.local.v1`).
+- `:app` ekranları: Yollarım → Bisiklet sekmesi (Bölüm 9.7 sekme düzeni), POI düzeltme penceresi, bölge alt sayfası (Harita ayarları ve kurulum).
+- 2 telefon: harita olan telefonda; veri telefon başına (mesaj yok).
+
+### 5.8 Farklar ve açık noktalar
+
+- `displayPoisProvider` yorumundaki eşikler (metro z ≥ 12, AVM z ≥ 13, restoran z ≥ 15, ışık z ≥ 16) koddakiyle uyuşmuyor; WEEM kodu esas alır (5.3).
+- Y11 ışık/AVM kararı düzeltilmemiş POI'leri kullanır, harita ve menü düzeltilmişleri (YolGo davranışı; korunur).
+- POI düzeltmesi silinemez (YolGo davranışı; korunur).
+- Dart `List.sort` kararsız; eşit enlem ya da eşit öncelikte sıra farkı yalnız görsel/eşitlik durumunda.
+- POI penceresindeki not uygulama adını içerir ("YolGo") → WEEM'de "WEEM" (metin değişikliği yalnız ad).
 <!-- END sec:5 -->
 
 <!-- BEGIN sec:6 -->
