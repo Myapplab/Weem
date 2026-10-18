@@ -32,6 +32,11 @@ object Store {
         }.also { log = it }
     }
     fun logsRoot(ctx: Context): File = log(ctx).logsRoot.apply { mkdirs() }
+    /**
+     * Gün kayıtlarını yazanla aynı kilit (RS `Store` nesnesinin kilidi: orada `Store.append` `@Synchronized`'dı; WEEM'de kilit [LogStore]
+     * örneğinde). Dışa aktarma kopyası, günlük paket, arşiv/silme bunun altında: yarım satır kopyalanmaz, silinen dosyaya yazılmaz.
+     */
+    inline fun <T> locked(ctx: Context, block: () -> T): T = synchronized(log(ctx)) { block() }
 
     fun append(ctx: Context, name: String, line: String, day: String? = null): Boolean = log(ctx).append(name, line, day)
     fun event(ctx: Context, type: String, extra: JSONObject? = null): Boolean = log(ctx).event(type, extra)

@@ -24,10 +24,11 @@ class WeemApplication : Application() {
         // (bağlanmamış hâlde ekran okuma satır yazar, sipariş işi yapmaz).
         Store.guarded(this, "start") { Orders.bind(this) }
         LogImport.afterImport = Orders::reloadImportedStats
-        // Vardiya dinleyicileri, Rawstats `GpsService` sırasıyla (ORDERS.md 4.2): cep nakdi + CASH PENDING → (core.dailyPack, A4.3) →
+        // Vardiya dinleyicileri, Rawstats `GpsService` sırasıyla (ORDERS.md 4.2): cep nakdi + CASH PENDING → günlük paket (R17) →
         // siparişler → (scooter, A5). `onEnd`'de CASH PENDING sonu günlük paketten, o da siparişlerin kapanmasından önce yazılır.
         Store.guarded(this, "start") {
             ShiftHub.listeners.add("cash_pending", Orders.cashPendingHooks(this))
+            ShiftHub.listeners.add("daily_pack", DailyPackHook(this))
             ShiftHub.listeners.add("orders", Orders.shiftHooks(this))
         }
         // E7 ekran okuma uyarısı (CAPTURE.md 5.2): sonuncu (RS: `GpsService.startShift` sonunda).

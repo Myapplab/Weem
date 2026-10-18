@@ -16,6 +16,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -32,14 +33,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kuryelog.app.core.LogImport
 import com.kuryelog.app.core.Store
+import com.kuryelog.logic.core.DailyPack
 import com.kuryelog.logic.core.DailyRecords
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.orders.OrdersScreen
 import com.kuryelog.logic.orders.OrdersSource
 import com.kuryelog.logic.app.Text as Str
 /**
- * Daha fazla → Kayıtlar (CORE.md 5.3, ORDERS.md 10.3): eski Rawstats ZIP yedeğini içe aktarma (A2.6) ve gün sayfaları (A3.8): her gün
- * için o günün siparişleri, kayıt dosyaları, arşivle/arşivden çıkar, sil. Üstteki düğme arşivle etkin günler arasında geçer.
+ * Daha fazla → Kayıtlar (CORE.md 5.3, ORDERS.md 10.3): eski Rawstats ZIP yedeğini içe aktarma (A2.6), yedek ve dışa aktarma (A4.3: günlük paket,
+ * tüm kayıtları paylaş, anonim analiz) ve gün sayfaları (A3.8): her gün için o günün siparişleri, kayıt dosyaları, paylaş, arşivle/arşivden çıkar,
+ * sil. Üstteki düğme arşivle etkin günler arasında geçer.
  */
 @Composable
 fun RecordsScreen(lang: Lang, onBack: () -> Unit, source: (android.content.Context) -> OrdersSource = OrdersAccess::source) {
@@ -80,6 +83,7 @@ fun RecordsScreen(lang: Lang, onBack: () -> Unit, source: (android.content.Conte
             },
             modifier = Modifier.padding(top = 16.dp),
         ) { Text(Str.RECORDS_IMPORT.get(lang)) }
+        BackupTools(lang)
         status?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp)) }
 
         GuardedPage("records", lang, key = version, build = { source(ctx).let { it to OrdersScreen(it, lang).warm() } }) { (src, screen) ->
@@ -97,13 +101,36 @@ fun RecordsScreen(lang: Lang, onBack: () -> Unit, source: (android.content.Conte
     trip?.let { id -> TripDetailDialog(ctx, lang, id, source) { trip = null } }
 }
 
+/**
+ * Yedek bölümü (R17, R18; RS `renderRecordTools` `:1243-1258`, aynı sıra): günlük paket anahtarı + açıklama, "Tüm kayıtları paylaş (.zip)"
+ * (tam yedek), "Analiz için paylaş (anonim)" + açıklama. İçe aktarma düğmesi bunun üstünde (A2.6).
+ */
+@Composable
+private fun BackupTools(lang: Lang) {
+    val ctx = LocalContext.current
+    var daily by remember { mutableStateOf(DailyPack.enabled(Store.values(ctx))) }
+    Text(Str.RECORDS_BACKUP.get(lang), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(Str.RECORDS_DAILY_PACK.get(lang), Modifier.weight(1f))
+        Switch(checked = daily, onCheckedChange = { on -> ctx.safely { Store.prefs(ctx).edit().putBoolean(DailyPack.PREF, on).apply(); daily = on } })
+    }
+    Text(Str.RECORDS_DAILY_PACK_INFO.get(lang), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    OutlinedButton(onClick = { ctx.safely("export") { RecordExport.exportLogs(ctx, lang) } }, Modifier.fillMaxWidth().padding(top = 8.dp)) {
+        Text(Str.RECORDS_EXPORT_ALL.get(lang))
+    }
+    OutlinedButton(onClick = { ctx.safely("analysis") { RecordExport.exportAnalysis(ctx, lang) } }, Modifier.fillMaxWidth().padding(top = 8.dp)) {
+        Text(Str.RECORDS_EXPORT_ANON.get(lang))
+    }
+    Text(Str.RECORDS_EXPORT_ANON_INFO.get(lang), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+}
+
 @Composable
 private fun TripDetailDialog(ctx: android.content.Context, lang: Lang, id: String, source: (android.content.Context) -> OrdersSource, onClose: () -> Unit) {
     val screen = remember(id) { OrdersScreen(source(ctx), lang) }
     TripDialog(screen, id, onClose)
 }
 
-/** Bir günün kayıt kartı (Rawstats `renderDailyRecords`): dosya sayısı ve boyut, kayıt dosyaları, arşiv, sil. Paylaşma ZIP'i A4.3'te. */
+/** Bir günün kayıt kartı (Rawstats `renderDailyRecords`): dosya sayısı ve boyut, kayıt dosyaları, paylaş (günün ZIP'i, A4.3), arşiv, sil. */
 @Composable
 private fun RecordCard(screen: OrdersScreen, today: String, date: String, lang: Lang, canDelete: Boolean, onChanged: () -> Unit) {
     val ctx = LocalContext.current
@@ -116,7 +143,7 @@ private fun RecordCard(screen: OrdersScreen, today: String, date: String, lang: 
 
     /** Arşivle/çıkar ([archive] true/false) ya da sil (null); bugünün kaydı vardiya açıkken değişmez. */
     fun change(name: String?, archive: Boolean?) = ctx.safely {
-        synchronized(Store) {
+        Store.locked(ctx) {
             check(!Store.importing) { Str.RECORDS_PREPARING.get(lang) }
             check(date != today || !Store.shiftOn(ctx)) { labels.recordStop }
             if (archive == null) records.delete(date, name) else records.archive(date, name, archive)
@@ -137,6 +164,9 @@ private fun RecordCard(screen: OrdersScreen, today: String, date: String, lang: 
                 )
                 if (day.archived) Text(labels.archived, style = MaterialTheme.typography.labelMedium)
                 OutlinedButton(onClick = { files = true }, Modifier.fillMaxWidth().padding(top = 8.dp)) { Text(labels.recordFiles) }
+                OutlinedButton(onClick = { ctx.safely("export") { RecordExport.exportLogs(ctx, lang, date) } }, Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                    Text(Str.RECORDS_SHARE.get(lang))
+                }
                 OutlinedButton(onClick = { change(null, !day.archived) }, Modifier.fillMaxWidth().padding(top = 8.dp)) { Text(if (day.archived) labels.unarchive else labels.archive) }
                 OutlinedButton(onClick = { confirm = "" }, enabled = canDelete, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) { Text(labels.delete, color = MaterialTheme.colorScheme.error) }
             }
@@ -159,6 +189,8 @@ private fun RecordCard(screen: OrdersScreen, today: String, date: String, lang: 
             onDismissRequest = { file = null }, title = { Text(name) },
             text = {
                 Column {
+                    // RS dosya menüsü: paylaş, arşivle/çıkar, sil.
+                    TextButton(onClick = { ctx.safely("export") { RecordExport.exportLogs(ctx, lang, date, name) }; file = null }) { Text(Str.RECORDS_SHARE.get(lang)) }
                     TextButton(onClick = { change(name, !archived); file = null }) { Text(if (archived) labels.unarchive else labels.archive) }
                     TextButton(onClick = { confirm = name; file = null }, enabled = canDelete) { Text(labels.delete) }
                 }
