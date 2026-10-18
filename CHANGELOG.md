@@ -1,6 +1,7 @@
 # Değişiklik günlüğü
 
 ## Unreleased
+- Scooter (cihazda denenmedi): vardiya başlayınca eşleşmiş scooter'a otomatik bağlanır (canlı bağlantı, ayarla kapatılır), bitince kapatır; vardiya kartında scooter durumu, "Scooter'a şimdi bağlan" ve Bluetooth izni düğmeleri; 1 Hz scooter satırları gün klasörüne (`economics-scooter.jsonl`), her siparişe scooter enerjisi (Wh) ve teklif anında scooter pili; "Scooter verileri alınıyor/alınamıyor" bildirimi; vardiya km'sine scooter odometresi. Sürüş kaydı (`ninebot-logger.db`) ve dışa aktarma ZIP'i altyapısı hazır; Scooter sekmesi ve yüzen panel sonraki adımda.
 - Proje başladı: plan, iş listesi ve kurallar. Henüz uygulama sürümü yok.
 - `.dev` APK artık açılıyor: alt menü kabuğu (5 sekme, yer tutucu), gece/gündüz teması, Türkçe/Azerice dil seçimi (Daha fazla sekmesinde).
 - Vardiya: Harita sekmesinde Vardiyayı BAŞLAT/BİTİR (GPS kaydı, `gps.csv`, km); evden çıkınca kendiliğinden başlar, eve dönüp 30 sn durunca biter (Rawstats kuralı).

@@ -76,6 +76,8 @@ dependencies {
     implementation("com.kuryelog.logic:app")
     // Siparişler sekmesinin içeriği (A3.8): logic/orders OrdersScreen.
     implementation("com.kuryelog.logic:orders")
+    // Vardiya kartının scooter satırı ve düğme metinleri (A5.3): logic/scooter ScooterText.
+    implementation("com.kuryelog.logic:scooter")
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)

@@ -14,6 +14,7 @@ class PortsTest {
         assertNull(ScooterBridge.NONE.energy(1L, 2L))
         assertNull(ScooterBridge.NONE.batteryPct())
         assertNull(ScooterBridge.NONE.live.value)
+        assertEquals(0, ScooterBridge.NONE.steps.replayCache.size) // adım üretmez (SCOOTER.md 12.2)
         assertNull(NavPort.NONE.route.value)
         assertNull(WeatherPort.NONE.current())
     }

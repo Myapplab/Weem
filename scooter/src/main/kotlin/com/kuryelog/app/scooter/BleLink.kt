@@ -24,6 +24,8 @@ import com.kuryelog.logic.scooter.NinebotMode
 import com.kuryelog.logic.scooter.NinebotSession
 import com.kuryelog.logic.scooter.PairWindow
 import com.kuryelog.logic.scooter.PairingVault
+import com.kuryelog.logic.scooter.ScooterEnergy
+import com.kuryelog.logic.scooter.ScooterTelemetry
 import com.kuryelog.logic.scooter.SessionKey
 import com.kuryelog.logic.scooter.Timing
 import org.json.JSONArray
@@ -39,8 +41,8 @@ import java.util.UUID
  * İş parçacığı: bütün çağrılar ve GATT geri çağrıları [handler]'ın (servisin "scooter-link" `HandlerThread`'i) üstünde; eski
  * bağlantının geri çağrısı atılır; çalışırken hata → `failed` (yeniden bağlan). Sahibi (A5.3 servisi) `start`/`close`/
  * `updatePriority`'yi `guarded` içinde çağırır: scooter hatası vardiyayı ve sipariş kaydını durdurmaz.
- * A5.3/A5.4'e kalan: kayıt satırı (`telemetry`), 1 Hz enerji örneği (`sample`), ayar metni (`measurements`); hepsi [latestValues]'tan.
- * Cihazda ve scooter'da doğrulanmadı.
+ * Kayıt satırı ([telemetry]), 1 Hz enerji örneği ([sample]) ve ayar metni ([measurements]) [latestValues]'tan (A5.3; kuralları saf
+ * `ScooterTelemetry`). Cihazda ve scooter'da doğrulanmadı.
  */
 @SuppressLint("MissingPermission")
 class BleLink(private val context: Context, private val handler: Handler, private val sink: Sink, private val viewers: Viewers = Viewers.NONE) {
@@ -144,6 +146,16 @@ class BleLink(private val context: Context, private val handler: Handler, privat
             sink.event("ble_priority", json("error", e.javaClass.simpleName))
         }
     }
+
+    /** `sample` olayının `scooter_telemetry` alanı; değer yoksa null. */
+    fun telemetry(): JSONObject? = ScooterTelemetry.telemetry(latestValues, SystemClock.elapsedRealtime())
+
+    /** Bir 1 Hz enerji örneği (ilk bilinen harici paket kartı harici pakettir); değer yoksa null. */
+    fun sample(): ScooterEnergy.Sample? =
+        ScooterTelemetry.sample(latestValues, System.currentTimeMillis(), SystemClock.elapsedRealtime(), LoggerPreferences.get(context).getString("external_bms_boards", ""))
+
+    /** Ayar ekranındaki ölçüm metni. */
+    fun measurements(): String = ScooterTelemetry.measurements(latestValues, SystemClock.elapsedRealtime())
 
     fun start(address: String, name: String?, pair: Boolean, mode: NinebotMode, sweep: NinebotMetrics.Sweep?) {
         this.address = address

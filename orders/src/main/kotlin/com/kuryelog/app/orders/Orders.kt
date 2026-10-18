@@ -14,10 +14,16 @@ import com.kuryelog.logic.core.Clock
 import com.kuryelog.logic.core.KuryelogPrefs
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.core.LogStore
+import com.kuryelog.logic.core.ScooterBridge
 import com.kuryelog.logic.core.ShiftMachine
 import com.kuryelog.logic.orders.CourierRecords
 import com.kuryelog.logic.orders.OrderFlow
 import com.kuryelog.logic.orders.TripRecord
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.util.Locale
 import java.util.concurrent.Executors
@@ -42,6 +48,26 @@ object Orders {
     /** Akışın `courier.db` bağlantısı: Siparişler sekmesinin okuyucuları (A3.8) aynı bağlantıyı kullanır. */
     fun records(ctx: Context): CourierRecords { flow(ctx); return env!!.db }
 
+    /** Scooter dikişi (SCOOTER.md 12.2): `:app` bağlayana dek `NONE` (teklif anı pili ve sipariş enerjisi yok). `:orders` `:scooter`'ı tanımaz. */
+    @Volatile var scooter: ScooterBridge = ScooterBridge.NONE
+        private set
+    private var stepJob: Job? = null
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    /**
+     * `:app` açılışta: teklif anında scooter pili ve sipariş başına enerji ([OrderFlow.Env.scooter]). Bağlantı okurken her saniyelik adım
+     * ekrandaki siparişe gider ([OrderFlow.scooterEnergy]; vardiya kapalıysa yok sayar). Akış kurallarına dokunmaz; hata kaydedilir.
+     */
+    fun bindScooter(ctx: Context, bridge: ScooterBridge) {
+        scooter = bridge
+        stepJob?.cancel()
+        val flow = flow(ctx)
+        val app = ctx.applicationContext
+        stepJob = scope.launch {
+            bridge.steps.collect { step -> Store.guarded(app, "scooter_energy") { flow.scooterEnergy(step.usedWh, step.recoveredWh, step.ms, step.complete) } }
+        }
+    }
+
     /** `:app` açılışta: ekran ve bildirim olayları bu akışa, erişilebilirlik servisinin sipariş işleri [OrdersHost]'a (CAPTURE.md 7.1). */
     fun bind(ctx: Context) {
         Capture.sink = flow(ctx)
@@ -63,6 +89,7 @@ object Orders {
         override val log: LogStore get() = Store.log(ctx)
         override val prefs: KuryelogPrefs.Values = Store.values(ctx)
         override val db: CourierRecords by lazy { AndroidCourierRecords(CourierDb(ctx)) }
+        override val scooter: ScooterBridge get() = Orders.scooter
         override val clock: Clock = Shift.AndroidClock
         override fun importing(): Boolean = Store.importing
         override fun phoneBattery(): Int? = Store.phoneBattery(ctx)

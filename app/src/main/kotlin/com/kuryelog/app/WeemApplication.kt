@@ -8,6 +8,8 @@ import com.kuryelog.app.core.LogImport
 import com.kuryelog.app.core.ShiftHub
 import com.kuryelog.app.core.Store
 import com.kuryelog.app.orders.Orders
+import com.kuryelog.app.scooter.Scooter
+import com.kuryelog.app.scooter.ScooterShiftLink
 
 /** Sürecin girişi: çökme kaydı ([CrashLog]) servislerden ve Activity'den önce kurulur (CORE.md 4.1, RS `RawstatsApp.kt`). */
 class WeemApplication : Application() {
@@ -23,9 +25,11 @@ class WeemApplication : Application() {
         // Ekran/bildirim olayları ve servis tiki sipariş tarafına (CAPTURE.md 7.1). Bağlama hatası kaydedilir, süreç açılır kalır
         // (bağlanmamış hâlde ekran okuma satır yazar, sipariş işi yapmaz).
         Store.guarded(this, "start") { Orders.bind(this) }
+        // Scooter dikişi: teklif anı pili ve sipariş başına enerji (R14); `:orders` `:scooter`'ı tanımaz, bağı burada kurulur.
+        Store.guarded(this, "start") { Orders.bindScooter(this, Scooter.bridge) }
         LogImport.afterImport = Orders::reloadImportedStats
-        // Vardiya dinleyicileri, Rawstats `GpsService` sırasıyla (ORDERS.md 4.2): cep nakdi + CASH PENDING → günlük paket (R17) →
-        // siparişler → (scooter, A5). `onEnd`'de CASH PENDING sonu günlük paketten, o da siparişlerin kapanmasından önce yazılır.
+        // Vardiya dinleyicileri, Rawstats `GpsService` sırasıyla (ORDERS.md 4.2): cep nakdi + CASH PENDING → günlük paket (R17) → şifreli
+        // yedek (N3) → siparişler → scooter (A5.3). `onEnd`'de CASH PENDING sonu günlük paketten, o da siparişlerin kapanmasından önce yazılır.
         Store.guarded(this, "start") {
             ShiftHub.listeners.add("cash_pending", Orders.cashPendingHooks(this))
             ShiftHub.listeners.add("daily_pack", DailyPackHook(this))
@@ -33,6 +37,8 @@ class WeemApplication : Application() {
             ShiftHub.listeners.add("encrypted_backup", EncryptedBackupHook(this))
             ShiftHub.listeners.add("orders", Orders.shiftHooks(this))
         }
+        // Scooter bağlantısı (SCOOTER.md 5.3): vardiya canlı bağlantıyı açar/kapatır, M23, D8 odometre; siparişlerden sonra (ORDERS.md 4.2).
+        Store.guarded(this, "start") { ShiftHub.listeners.add("scooter", ScooterShiftLink.hooks(this)) }
         // E7 ekran okuma uyarısı (CAPTURE.md 5.2): sonuncu (RS: `GpsService.startShift` sonunda).
         ShiftHub.listeners.add("screen_reading", ScreenReadingWarning(this))
     }
