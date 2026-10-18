@@ -18,7 +18,7 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 
 | Bölüm | Konu | Görev | Yazan | Durum |
 |---|---|---|---|---|
-| 0 | özet, WEEM kuralları, görev dizini | tümü | koordinatör | bekliyor <!-- st:0 --> |
+| 0 | özet, WEEM kuralları, görev dizini | tümü | koordinatör | yazılıyor (ajanlardan sonra) (12:17 UTC) <!-- st:0 --> |
 | 1 | kaynak haritası | tümü | koordinatör | bekliyor <!-- st:1 --> |
 | 2 | Y7 harita verisi | A6.3 | ajan R | bekliyor <!-- st:2 --> |
 | 3 | Y3 rota motoru | A6.4 | ajan R | bekliyor <!-- st:3 --> |
