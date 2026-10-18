@@ -43,7 +43,8 @@ class TextCoverageTest {
         val missing = mutableListOf<String>()
         for (file in appSources()) {
             file.readLines().forEachIndexed { i, line ->
-                if (line.trimStart().startsWith("//") || line.trimStart().startsWith("*")) return@forEachIndexed
+                // Yorum satırları (`//`, KDoc `/**` açılışı ve `*` gövdesi) ekrana gitmez (A4.3: A5.3'ün tek satırlık KDoc'u testi düşürüyordu).
+                if (line.trimStart().let { it.startsWith("//") || it.startsWith("/*") || it.startsWith("*") }) return@forEachIndexed
                 for (m in literal.findAll(line)) {
                     if (localLetters.containsMatchIn(m.groupValues[1])) missing += "${file.name}:${i + 1}: ${m.groupValues[1]}"
                 }
