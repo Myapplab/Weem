@@ -27,7 +27,7 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 | 6 | Y1, Y2 harita ekranı | A6.5 | ajan N | bekliyor <!-- st:6 --> |
 | 7 | Y4 navigasyon | A6.6 | ajan N | bitti (12:40 UTC) <!-- st:7 --> |
 | 8 | Y5, Y6 bağlantılar ve adres | A6.6 | ajan N | bitti (12:34 UTC) <!-- st:8 --> |
-| 9 | Y12 yol kalitesi öğrenme | A6.11 | ajan Q | kısmen: 9.1–9.8 yazıldı; sırada 9.9–9.13 (rota bağı, veri, testler, yerleşim, sorular) (12:39 UTC) <!-- st:9 --> |
+| 9 | Y12 yol kalitesi öğrenme | A6.11 | ajan Q | kısmen: 9.1–9.13 taslak yazıldı; son gözden geçirme sürüyor (17:10 UTC) <!-- st:9 --> |
 | 10 | Y9, N5, Y10 | A6.7 | ajan T | bekliyor <!-- st:10 --> |
 | 11 | Y11 ve YolGo gün motoru | A6.8 | ajan T | bekliyor <!-- st:11 --> |
 | 12 | Y17, Y18 | A6.9 | ajan T | bekliyor <!-- st:12 --> |
@@ -1330,6 +1330,111 @@ Harita uzun basış, yalnız ana cadde **ve** tek yön bayraklı kenarda: "Bu ke
 Hayalet kenar gri kesikli (5 px, desen 4/6), ww kesimi yeşil kesikli (4 px, 10/5); onaylı yeşil / kara liste kırmızı / eğimli (Y8). Kalite renk katmanı Y13'tür (9.8.2). Hayalet ve ww kesimi kümeleri graf ya da `ghostRev` değişince yeniden hesaplanır (önbellek).
 
 **WEEM:** ekranlar `:app` (`RoadsScreen.kt` 4 sekme; Bisiklet sekmesi Y15 içeriği), kartlar Harita sekmesinin alt paneline (`WrongWayCard`, `QualityPromptCard`), uzun basış satırları Bölüm 6'nın menüsüne, Ayarlar → Harita ayarları "Yollarım" grubu (ses tuşu anahtarı dahil). Metinler TR/AZ aynen (farklar 9.13).
+
+### 9.9 Rota maliyetine bağ
+
+Planlayıcı girdileri her planda yeniden üretilir (`nav_controller.dart:480-506` → `PlanRequest`; formülün sırası ve sabitleri Bölüm 3, ajan R). Y12 yalnız girdileri üretir:
+
+| Girdi | Üretim (Y12) | Boş veride | Rota etkisi (`router.dart`) |
+|---|---|---|---|
+| `learned: Map<OsmId, LearnedQuality>` | `learnedForRouting()`: **yalnız elle puanlar** `(q 0, c 0, r)` | `{}` | way kalitesi `blendQuality(prior, l)` = `r/100` (56-60); `badWay(osm)` = `r ≤ 25` (140-143) → maliyet ×4 (329) ve "kötü yollardan kaçın" denemesinde yasak (183, 255) |
+| (ön tahmin) | `priorQuality(sınıf, bayrak)` OSM'den | **her zaman** | `c *= 1 + qualityWeight × (1 − q)` (323) |
+| `params.qualityWeight` | `qualityTolerancePct / 100` (`settings.dart:150`; varsayılan 10 → 0,10) | 0,10 | yukarıdaki çarpan |
+| `wwRatio: Map<OsmId, Double>` | `wrongWayRatios()` (yumuşatılmış; yalnız geçişi olan sokak) | `{}` → 0 | ters yön `tCost × (1,2 + 2,0 × oran)` (320); oran 0 + onaylı + ana cadde değil → **iki yönlü** (madde 10b: ceza ve hız tavanı yok, 279); rota özeti `wrongWayRisk` = ters yön metresi ağırlıklı ortalama oran (794, 857) |
+| `wwAvoid: Set<OsmId>` | `wrongWayAvoid(wwMaxProblemPct / 100)` (geçiş ≥ 3, ham oran) | `{}` | o sokakta ters yön yasak (276) |
+| `ghost: Set<EdgeId>` | `ghostEdges(g)` (önbellek: graf ya da `ghostRev` değişince, `nav_controller.dart:761-779`) | `{}` | kenar hiç kullanılmaz, yürüyüşte de (181, 245); eşleştirici de oturtmaz |
+| `wrongWayEdges: Set<EdgeId>` | `wwSegEdges(g)` (aynı önbellek) | `{}` | ana caddede o kenarda ters yön izinli (275); ceza yine var (ana cadde iki yönlü sayılmaz) |
+| `marks: List<SurfaceMark>` | Ses− kötü noktaları (SORU-Q1) | `[]` | ±25 m kesim +3× / +6×; doğrulanmışı "kaçın" denemesinde yasak (79-81, 201-221, 225-242) |
+| `surface`, `surfaceQuality` | Y13 / Y14 | `[]`, `{}` | 1.0'da yok (terim sıfır) |
+
+- **`priorQuality`** (`quality.dart:23-39`): trunk/primary 0,60 · secondary 0,68 · tertiary 0,76 · unclassified/residential/road 0,82 · livingStreet 0,70 · service 0,75 · track 0,45 · cycleway 0,90 · path/footway/pedestrian 0,60 · steps 0,0; `unpaved` → en çok 0,35; `rough` → en çok 0,50. **Sıfırdan öğrenmede bile** (S3) her kenarın kalitesi bu ön tahmindir ve 0,10 ağırlıkla maliyete girer (ör. trunk ×1,04, residential ×1,018). YolGo'da da otomatik öğrenme rotaya girmediği için ilk gün WEEM rotaları bu bakımdan YolGo'yla aynıdır; fark yalnız YolGo'da birikmiş elle puan, ww sayacı, hayalet, ww kesimi, kötü nokta (ve Y8 onay/kara liste) verisinden doğar — A6.10'da açıklanacak fark budur.
+- **Ekran fonksiyonları** (rotaya girmez): `learnedScore` (44-50) = `m ≤ 0` → 1; `q = 1 − 0,11 × durma/km`; `vib > 2,5` → `q −= clamp((vib − 2,5) × 0,1, 0, 0,3)`; sonuç `clamp(0,05, 1)` (km başına 2 durma ≈ %78, 4 ≈ %56, 6 ≈ %34). `learnedConfidence` = `clamp(m/800, 0, 1)`. `blendQuality(prior, l)`: `l == null` → prior; `r > 0` → `clamp(r/100, 0, 1)`; aksi `clamp(prior + (q − prior) × clamp(c, 0, 1), 0, 1)`. `qualityOf(way, g?)`: prior = graf varsa `priorQuality` (way dizini `wayIndexOf`), yoksa 0,8; istatistik varsa `(score, confidence, r)`, yoksa yalnız `r` (`road_knowledge.dart:171-184`).
+- **Oranlar** (65-71): `wrongWayRatio(p, x)` = `p ≤ 0 ? 0 : clamp(x/p, 0, 1)` (ekran ve `wwAvoid`); `wrongWaySmoothed(p, x)` = `clamp((x + 0,1)/(p + 1), 0, 1)` (rota). `streetScoreQuality(s)` = `clamp((s − 1)/9, 0, 1)` (E11, sonra). `QualityBand`: good 0,75, fair 0,5 (renk sınıfı, `qualityColor`).
+- **Not (madde 10b):** "iki yönlü" kuralı `wwRatio == 0` ister; yumuşatma yüzünden **bir geçiş kaydı olan her sokakta oran > 0** olur (1 temiz geçiş → 0,05). "Hayır" cevabı geçişi zaten saydığından sorulan sokak iki yönlü sayılmaz; kural yalnız hiç geçişi kaydedilmemiş onaylı sokakta (ör. Ses+ ile onaylanıp henüz ters sürülmemiş, ya da "Hayır" ile yeni onaylanan komşu parça ilk geçişine kadar) işler. `ww_green_two_way_test` yalnız `CostModel`'i sınar (Bölüm 3). SORU-Q6.
+
+### 9.10 Veri
+
+**YolGo** (`FlutterSharedPreferences`, `flutter.` önekli; S3: **aktarılmaz**):
+
+| Anahtar | Biçim |
+|---|---|
+| `roads.ways.v1` | `{"<wayId>": [m, s, stops, vibSum, vibN, passes, lastAt]}` — `m`, `s` tam sayıya yuvarlak, `stops` ve `vibSum` 1 ondalık, diğerleri tam; < 7 eleman → boş istatistik |
+| `roads.ww.v1` | `{"<wayId>": [passes, problems (1 ondalık), lastAt]}`; < 3 eleman → boş |
+| `roads.ghost.v1` | `[{"w": wayId, "la": lat (6 ondalık), "lo": lon (6), "n": ad, "t": ms, "all": true?}]` — `all` yalnız `true` ise yazılır; `w`/`la`/`lo` sayı değilse öğe atlanır; `t` yoksa 0, `n` yoksa "" |
+| `roads.wwseg.v1` | aynı `GhostMark` dizisi (`all` yok) |
+| `roads.rate.v1` | `{"<wayId>": yüzde}`; okurken `migrate` (1→90, −1→25), sayı değilse 0 |
+| `roads.names.v1` | `{"<wayId>": "ad"}` (dizge değilse "") |
+| `roads.days.v2` | `{"v": 2, "baseWays": {"<id>": [7 sayı]}, "baseWw": {"<id>": [3 sayı]}, "days": {"<yolgo-ms>": {"ways": {…}, "ww": {…}}}}` |
+| `roads.days.damaged.v2` | okunamayan `roads.days.v2`'nin ham kopyası |
+
+Kod çözme (`road_knowledge.dart:222-250`): anahtar `int.tryParse` (değilse atlanır); JSON hatası → **sessizce boş** (sonraki kayıt üstüne yazar, 9.13). Açılışta `_written` ön belleğine `roads.wwseg.v1` girmez (ilk kayıtta gereksiz bir yazım; zararsız).
+
+**Elle kötü noktalar** (YolGo'da Y13 deposu `files/surface-v2/manual-marks.json`): `[{"id": "spot-<ms>", "way": id, "lat", "lon", "at": ms, "label": "rough", "access": "unknown", "source": "user", "removed": false}]` (`surface_models.dart:19-37`); silme = `removed: true` (geri alınabilir); yazım `.tmp` + rename; okunamazsa depo `StateError` (`surface_store.dart:284-287, 369-379`). Gün silme elle işaretleri silmez.
+
+**Olaylar** (sürüş kaydı, Bölüm 12): `ww_pass {way, m, inc, reported?}`, `ww_answer {way, problem, approved?}`, `ww_report {way}`, `undo {way}`, `ghost {way, all?}`, `ww_segment {way, allow}`, `approve` / `steep {way}`, `bad_spot {way}`, `bad_spot_clear {way, n}`, `bad_road_clear {way}`, `wrongway {way, main}`. Koordinat yazılmaz.
+
+**Ayarlar** (`settings.v1` → WEEM `settings.MapSettings`, alan tablosu Bölüm 14):
+
+| Alan | Varsayılan | Sınır / UI |
+|---|---|---|
+| `volumeKeys` | `true` | anahtar (9.5) |
+| `qualityTolerancePct` | 10 | kaydırıcı 0–30 (okuma kıstırmaz, UI kıstırır) → `qualityWeight` = /100 |
+| `showQualityLayer` | `false` | yalnız Y13 katmanı (1.0'da etkisiz) |
+| `wwMaxProblemPct` | 50 | adımlayıcı 20–90, adım 5 |
+| `wwAskAlways` | `false` | anahtar |
+
+**WEEM yeri (öneri):** `files/map/roads/<anahtar>.json` — her YolGo anahtarı ayrı dosya, içerik **birebir aynı JSON** (`roads.ways.v1.json`, `roads.ww.v1.json`, `roads.ghost.v1.json`, `roads.wwseg.v1.json`, `roads.rate.v1.json`, `roads.names.v1.json`, `roads.days.v2.json`, `roads.days.damaged.v2.json`); yazım `.tmp` + rename, aynı 30 sn kısıtı ve "aynıysa yazma". Gerekçe: sürüşte 30 sn'de bir yazılan, sokak sayısıyla büyüyen bloblar (Bakü'de binlerce way → yüzlerce KB) `map` tercih dosyasında her yazımda bütün XML'i yeniden yazdırır; `kuryelog` dosyasına hiç girmez. Kötü noktalar `files/map/manual-marks.json` (aynı biçim; Y13 gelince o depo bu dosyayı devralır). Okunamayan dosya sessizce boşaltılmaz: `<ad>.damaged-<ms>` olarak saklanır, boş başlanır (YolGo'nun `roads.days.damaged.v2` ilkesi bütün dosyalara). Haftalık şifreli yedek (S22) bunları içermez (SORU-Q5).
+
+### 9.11 Testler
+
+Sayım `grep -cE '^\s*(test|testWidgets)\('` (döngü üretimi ayrıca belirtildi); gövdeler okundu.
+
+| Dosya | Sayı | Test adları → neyi doğrular | WEEM hedefi | Görev | Not |
+|---|---|---|---|---|---|
+| `quality_test` | 9 | (1) ön tahmin: residential > primary, unpaved < 0,4, rough ≤ 0,5 · (2) `learnedScore`: 0 durma 1, 2/km ≈ 0,78 (±0,01), 5 < 2, vib 5 düşürür, güven 80 m < 800 m, 5000 m = 1 · (3) `blendQuality`: null → 0,82, (0,1; 0,1) ≈ 0,748, tam güven 0,1, 👍 0,9, 👎 0,25, r 40 → 0,4, migrate · (4) eşit iki yol: kalitesi yüksek seçilir · (5) tolerans 0,10 kısa yol / 0,30 kaliteli / 0 kalite etkisiz (r 30 vs 👍, doğu %16 uzun) · (6) hayalet her koşulda (`routeLeg` ve `computePlans` 800 m) · (7) ww: onaylı 400 m ters, oran 0,02 → risk 0,02, 0,6 → dolambaç, `wwAvoid` → dolambaç · (8) parçalar sıralı, Σ = `rideM` · (9) ham/yumuşatılmış oran 0; 0,25; 0,55; < 0,02 | `route.QualityTest` | A6.2a → **A6.4** (hepsi; `Quality.kt` ve `CostModel` girdileri A6.4'te) | sentetik graf `OsmRaw` + `buildRoadGraph(raw, düz yükseklik)` (Bölüm 2 test yardımcısı); A6.11 bozmadan korur |
+| `road_learner_test` | 9 | metre ≈ 161 / süre ≈ 29 / ad, way değişince geçiş · tam durma 1 + yavaşlama 0,5 = 1,5 · 200 sn bekleme ve `excludeStops` sayılmaz · ≤ 2 sn durma 0,5 · titreşim yalnız sürerken (5, 9 değil) · onaylı ters yön: 1 geçiş, olay ≥ 1, > 25 m, sorun 0 · ters yönde durup devam tek geçiş · onaysız ve ~11 m sayılmaz; "sorun yaşadım" → sorun 1, oran 1 · JSON gidiş-dönüş, `learnedForRouting` r 35, `wrongWayAvoid(0,3)` = {9}, 0,5 → boş | `roads.RoadLearnerTest` | A6.2a → A6.11 | 1 Hz sahte sürücü (`_Ride`), kuzeye düz yol |
+| `road_save_test` | 1 | arka plana geçişteki zorla kayıt katman sayacını artırmaz; `rate(42, 25)` artırır ve `roads.rate.v1`'e yazar | `roads.RoadBookTest` | A6.2a → A6.11 | yaşam döngüsü yerine `onPause()`; bellek içi dosya deposu; sayaç = katman yenileme sayacı |
+| `day_contributions_test` | 3 | (1) seçili gün yalnız kendi otomatik farkını siler; taban/elle/diğer gün kalır; yeniden yüklemede aynı; aynı tarihli yeni gün de silinir · (2) elle sıfırlama yeniden yüklemede kalır · (3) `SurfacePassTracker` (Y13) | `roads.DayContributionsTest` (1–2) | A6.2a → A6.11 (2); **sonra Y13** (1) | kova `yolgo-<ms>`; `bakuDay` → `LogTime.day(ms, ZoneOffset +4)` test saati |
+| `ww_clean_run_test` | 5 | onaysız→onaylı parça: sürüş [101, 100], `wwCleanApprovals` {100, 101} · soru sonrası aynı sürüşte girilen kısa aynı adlı parça eklenir · ana cadde ve kısa başka adlı onaylanmaz, uzun adsız onaylanır ({100, 302}) · araya > 10 sn normal sürüş girerse önceki sokak katılmaz · ters yönde ışıkta durmak sürüşü bölmez | `roads.WwCleanRunTest` | A6.2a → A6.11 | 1 Hz güneye sürücü |
+| `ww_no_problem_green_test` | 5 (6 çalışma; son test TR/AZ döngüsü) | saha: olaylı geçiş, Ses− (hayır) → {100, 101} onaylı ve `streets.approved`'da, yeşil kenar sayısı, toast "Onaylandı: Test küçəsi (iki yön)", sorun 0; 101 devamı yeniden sorulmaz; yeniden açılışta aynı · `wwAskAlways`: olaysız geçişte de sorulur, devamı sorulmaz · "Evet" (Ses+): sorun 1, onay eklenmez, toast "Onaylandı" değil · "Geri al": yalnız yeni onay kalkar · kart TR/AZ: "Hayır"/"Xeyr" dokunuşu → onay + toast metni | `roads.WwAnswerFlowTest` (sahte eşleştirme + sahte `StreetPrefs` + toast havuzu, `VolumeDispatch` üstünden) + `:app` Robolectric `WrongWayCardTest` (TR/AZ) | A6.2a → A6.11 | yeşil çizgi sayısı yerine onaylı kenar kümesi (Bölüm 6 katman fonksiyonu); GPS → eşleştirici yolu Bölüm 7 sahte konumuyla |
+| `street_scores_test` | 12 | E11: ağırlıklı ortanca, yarıda ortalama, sınır sırası, "ölçüm az" (3 parça / 200 m), puansız parça, aynı ad tek sokak, **(7) adsız yol adı TR/AZ (`RoadKnowledge.nameOf`)**, sıra, etiket ekleri, rota kalitesi (v−1)/9, isolate, kalibrasyon puanlayıcı | `roads.RoadNamesTest` (yalnız 7) | A6.2a → A6.11 (1); **sonra Y13/Y14** (11) | 11'i `SurfaceSummary` + `RoadCalibrationRecord` ister (SORU-Q2) |
+| `road_score_ui_test` | 11 | E10/E11 UI: ayrıntıda eski "Rota/harita puanı", sınır etiketleri, parça sırası, Kalite sekmesi sokak listesi, "E10 için yeniden kalibre et", doğrulanmış darbe, ters/eşit referans, eksik seviye istemi, hız bandı uyarıları | — | **sonra Y13/Y14** (11) | hepsi kalibrasyon ve yüzey deposu ister (SORU-Q2) |
+
+Toplam: Y12'ye yazılı 55 testten **32 tanım (33 çalışma) A6.2a'da çevrilir** — quality 9 (A6.4'te yeşil), road_learner 9, road_save 1, day_contributions 2, ww_clean_run 5, ww_no_problem_green 5 (6), street_scores 1 — ve **23'ü sonra (Y13/Y14)**: street_scores 11, road_score_ui 11, day_contributions 1 (SORU-Q2 onaylanırsa `TEST_ENVANTERI` ve `OZELLIK_HARITASI` bu bölüme göre düzeltilir). Ayrıca Y12'nin rota tarafını sınayan Bölüm 3 testleri: `ww_green_two_way_test` (4), `router_test` kötü nokta / cadde oranı / elle kötü puan testleri (A6.4).
+
+**WEEM ekleri (eski testte yok):** `VolumeDispatchTest` (450 ms çift basış, öncelik sırası, uzun basış iptali, soru/kart açıkken yönlendirme, ana cadde reddi), `QualityPromptTest` (başlangıç 80 ve yuvarlama, ±10 sınırları 10/100, 6 sn otomatik kayıt, vazgeç), `RoadFilesTest` (atomik yazım, "aynıysa yazma", 30 sn kısıtı, okunamayan dosyanın `damaged` kopyası), `MarkStoreTest` (kötü nokta ekle/sil/geri al, 2 Bakü günü doğrulama, gün silmede kalır).
+
+### 9.12 WEEM yerleşimi
+
+- **`logic/map`** (saf):
+  - `route/Quality.kt`: `quality.dart` birebir (`LearnedQuality`, `QualityRating`, `priorQuality`, `learnedScore`, `learnedConfidence`, `blendQuality`, `streetScoreQuality`, `wrongWayRatio`, `wrongWaySmoothed`, `QualityBand`) — `CostModel` (A6.4) ve `roads` kullanır; paket döngüsü olmasın diye `roads`'ta değil.
+  - `surface/` (Y13'ün 1.0 alt kümesi, SORU-Q1): `SurfaceMark`, `SurfaceLabel`, `Passability`, `isBadSpot`, `badSpotSpans`, `SpotSpan`, sabitler 25 m / 30 m — router (A6.4) ve Ses− (A6.11) kullanır; Y13 sonra bu pakete eklenir.
+  - `roads/`: `WayStats`, `WwStats`, `GhostMark`, `RoadKnowledge`, `LearnFix`, `WwRun(Way)`, `WwPass`, `wwCleanApprovals`, `RoadLearner` (birebir); `RoadDayContributions`; `StreetRatio` (`streetRatio`, `streetRatioText`); `QualityPrompt` (durum + 6 sn, saat enjekte); `VolumeDispatch` (9.5.2 tablosu: girdi tuş olayı + durum → eylem); `RoadBook` = `RoadController`'ın Riverpod'suz çekirdeği (vardiya kapsamı, `onFix`, soru ve zaman aşımı tik ile, cevap, "Sorun yaşadım", elle eylemler, kayıt politikası, gün silme, rota girdileri `forPlan(g)`); bağımlılıkları port: `RoadFiles` (oku/yaz), `StreetPrefs` (Y8, `route`), `Clock`, `RideLog` olay havuzu, `Toasts` (metin TR/AZ, renk, "Geri al" eylemi, süre — veri olarak), `Haptics`.
+- **`:map`** (Android, `com.kuryelog.app.map`): `RoadFilesAndroid` (`files/map/roads/`, `files/map/manual-marks.json`), `VolumeKeys` (9.5.3), `RoadsRuntime` (`ShiftPort.state` → `RoadBook.scope`; konum + eşleştirici (Bölüm 7) → `onFix`; `OrderEvents.stages` → `excludeStops` için aşama; 5 sn tik; `onPause` → zorla kayıt), plan isteğine girdiler (Bölüm 7 nav).
+- **`:app`:** `RoadsScreen.kt` (4 sekme), `WrongWayCard`, `QualityPromptCard` (Harita sekmesi alt paneli), uzun basış menüsünün Y12 satırları (Bölüm 6), Harita ayarları "Yollarım" grubu ve ses tuşu anahtarı; `MainActivity.dispatchKeyEvent` → `VolumeKeys`.
+- **`:core` portları:** `ShiftPort` (öğrenme kapsamı, kova anahtarı `yolgo-<startedAtMs>`), `OrderEvents.stages` (yer/durak yakını), `Clock` (`LogTime.day` ile gün), gün silme kancası (Bölüm 12/15). Bildirim kullanılmaz (bütün geri bildirim uygulama içi toast + titreşim).
+- **2 telefon (plan 4.5):** harita ve navigasyon Receiver'da → Y12 öğrenme, sorular, kartlar ve ses tuşu yakalama **yalnız Receiver'da**. Provider rolünde Y12 kapalı (öğrenme, soru, ses tuşu yok; Yollarım yerel veriyi salt gösterir, Receiver bağlıyken boş olabilir). Receiver'a ulaşılamayıp rota Provider'da açılsa da Provider öğrenmez (veri tek telefonda kalsın; A8.3'te kesinleşir). Receiver'da `ShiftPort.state` ve `OrderEvents.stages` `:link` üstünden uzaktır; Y12 farkı görmez. `:link` mesajlarında Y12 verisi yok.
+- **Görevler:** A6.4 → `Quality.kt`, `surface/` alt kümesi, `CostModel`'in Y12 girdileri, `quality_test`; A6.5 → katman çizimi ve uzun basış menüsü iskeleti; A6.11 → `roads/` tamamı, `RoadBook`, ses tuşu, ekranlar/kartlar, kalan Y12 testleri, rota girdilerinin bağlanması.
+
+### 9.13 Farklar, açık noktalar ve sorular
+
+**Y13/Y14 sınırı (1.0'da kesilen kod yolları; boşken nötr):** `SensorHub.vibRms` hep 0 → `vibSum/vibN` birikmez, `vib` null, ekranda "sarsıntı ?" (WEEM titreşim sensörü eklemez); `surface`/`surfaceQuality` boş → `segmentCost` yüzey terimi ve `allowedAt` ölçülmüş kesim dışlaması işlemez; `closed` işaretli `SurfaceMark` yalnız Y13 yüzey menüsünden doğar → 1.0'da yok; `streetRouteQualityInBackground` boş liste → `{}`; `street_scores`, `road_score.dart`, `SurfaceQualityTab`'ın Y13/Y14 parçaları, `StreetPiecesScreen`, "Ölçüm ve kalibrasyon", "Haritada yüzey renkleri" katmanı → sonra.
+
+**Eski hatalar / tutarsızlıklar (WEEM kararı):**
+- JSON okuma hatası veriyi sessizce boşaltır ve sonraki kayıt üstüne yazar (`road_knowledge.dart:222-249`) → WEEM: `damaged` kopyası her `roads` dosyası için (9.10).
+- `resetAllQuality` ve `_setStreet(block)` ölü → taşınmaz.
+- `statsRev` (katman sayacı) yalnız testte okunur; harita katmanı artık elle puana bağlı değil (`road_controller.dart:398-404` yorumu eski) → WEEM'de yalnız `road_save_test` uyarlaması için sayaç.
+- `QualityPrompt.open` grafsız `qualityOf` (prior 0,8) → başlangıç değeri aynen (davranış).
+- Gün kimliği/tarih: gün silme ve kötü nokta doğrulaması Bakü günü (UTC+4), hayalet listesindeki tarih telefon yerel → WEEM tek `Clock.zone` (`CORE.md`).
+- Sürüş kaydı olayları adlarıyla korunur (Bölüm 12 biçimi).
+
+**SORU (koordinatöre):**
+- **SORU-Q1 — Ses− kötü noktası Y13 deposuna yazar.** Y13 1.0'da yok; Ses− tek basış (±25 m kötü nokta), Ses− uzun (sil), Kalite sekmesindeki "Elle işaretlenen yüzeyler" ve router'ın kötü nokta cezası bu depoya bağlı. (a) **1.0'da elle kötü nokta alt kümesi** (öneri): `surface/` tipleri + `files/map/manual-marks.json`, 25 m / 30 m / 2 Bakü günü kuralı, rota cezası, uzun basışla silme, Kalite sekmesinde liste (düzenleyici yok); Y13 gelince aynı dosya/tip genişler. `router_test`'in kötü nokta testleri de bunu ister. (b) Ses− tek basış 1.0'da etkisiz — S3 ("Ses+/Ses− dahil") ve S9'a aykırı. Önerilen: (a).
+- **SORU-Q2 — Y12'ye yazılmış 23 test aslında Y13/Y14.** `street_scores_test` (11/12), `road_score_ui_test` (11/11) ve `day_contributions_test` 3. test (`SurfacePassTracker`) E10/E11 "Yol puanları" ve yüzey/kalibrasyon tiplerini ister. (a) "sonra (Y13/Y14)"e taşı (öneri; A6.2a Y12 payı 32 tanım); (b) `Street`/`StreetScore` saf mantığını veri kaynağı olmadan 1.0'da yaz (kullanılmayan kod). Önerilen: (a).
+- **SORU-Q3 — metinler.** (a) aynen; (b) öneri: Kalite sekmesindeki "Eski trafik kayıtları" / "Köhnə trafik qeydləri" (alt "Korundu · yüzey metriğine dönüştürülmedi") WEEM'de sıfırdan biriken veri için yanıltıcı → "Trafik kayıtları" / "Trafik qeydləri", alt "Rotayı etkilemez" / "Marşruta təsir etmir"; ses tuşu anahtarının TR metnine AZ'deki gibi "Ses+ ×2 kalite" eklenir. Önerilen: (b).
+- **SORU-Q4 — ses tuşu yakalama kapsamı.** YolGo tek amaçlı uygulamaydı, önde olduğu her an yakalardı; WEEM'de başka sekmeler var. (a) yalnız Harita sekmesi ve alt ekranları önde iken (öneri; Siparişler/Scooter/Uzaktan/Daha fazla'da tuşlar normal ses); (b) WEEM önde olduğu her an (YolGo gibi). Önerilen: (a).
+- **SORU-Q5 — Y12 verisi yedekte.** S22 haftalık şifreli yedeği `kuryelog` ayarları, gün kayıtları, `restaurants.json`, `courier.db` içerir; `files/map/roads/*` ve `manual-marks.json` girmez → telefon değişince Y12 sıfırdan başlar. (a) S22 aynen (öneri; karar değişmez); (b) `:map`'in elle/öğrenilmiş verisi (Y12 ve Y8 `streets.*`, Y11 ışıklar, Y15 elle bisiklet yolları — öteki bölümlerle birlikte) yedeğe eklensin. Önerilen: (a), istenirse (b) A6.11 sonrasında ayrı iş.
+- **SORU-Q6 — madde 10b "iki yönlü" kuralı yumuşatılmış oranla neredeyse hiç işlemiyor** (9.9 not). (a) aynen (öneri: davranış aynı, A6.10 karşılaştırması temiz); (b) niyete göre: ham `problems == 0` olan onaylı ara sokak iki yönlü (ceza/hız tavanı yok) — rota YolGo'dan ayrılır. Önerilen: (a).
 <!-- END sec:9 -->
 
 <!-- BEGIN sec:10 -->
