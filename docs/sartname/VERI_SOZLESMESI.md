@@ -73,7 +73,9 @@ Bugünkü mesajlar (alan alan: `bulgular/X_protocol.md` P1–P11; WEEM'deki kar�
 | Ev paylaşımı | action `com.kuryelog.app.action.SHARE_HOME` (YG istek kodu 703; extra `lat`,`lon`) | RS → YG | kalkar (S7; tek ev, `:core`) |
 | Ev seçme | action `com.myapplab.yolgo.PICK_HOME` | RS → YG | kalkar (S7; WEEM içi harita) |
 | Değişiklik bildirimi | `contentResolver.notifyChange` (`FeedChanges`: içerik anahtarı, ≥200 ms, kalp atışı) | RS → YG | iç olay akışı; `:link` kuyruğunda aynı kural |
-| 2 telefon taşıması (`yeni`, A8.1) | TCP 47310, UDP işareti 47311, RFCOMM UUID `55a2849b-5970-4a15-a703-6e6dfd08f28f`, çerçeve ve işaret `WEEM` + sürüm 1 (`LINK.md` 1.2–1.4) | P ↔ R | iki telefonda aynı olmalı; değişirse eski sürümle bağlanmaz (sürüm artırılır) |
+| 2 telefon taşıması (`yeni`, A8.1) | TCP 47310, UDP işareti 47311, RFCOMM UUID `55a2849b-5970-4a15-a703-6e6dfd08f28f`, işaret `WEEM` + sürüm 1, çerçeve `HELLO` bağlantı sürümü **2** (A8.2: bayrak baytı, tür 6 `NOISE`, `BYE` 8–9; `LINK.md` 1.2–1.4, 3.4) | P ↔ R | iki telefonda aynı olmalı; değişirse eski sürümle bağlanmaz (sürüm artırılır) |
+| 2 telefon güvenliği (`yeni`, A8.2) | Noise `Noise_XX_P256_AESGCM_SHA256` / `Noise_XXpsk3_P256_AESGCM_SHA256`, prologue `WEEM link 2`, bilgi yükü (protokol **1.0**), zarf v1 (sınıf, ad, `id`, `seq`, `sentAtMs`, `ttlMs`), denetim adları `link.ack`, `link.time`, `link.unpair` (`LINK.md` 3.2–3.11) | P ↔ R | iki telefonda aynı; protokol ana sürümü artarsa eskisiyle bağlanmaz (`issue = VERSION`), küçük sürüm bağlanır |
+| Eşleştirme QR'ı (`yeni`, A8.2; ekran A8.3, S24) | `weem://pair?v=1&id=<cihaz kimliği>&k=<P-256 açık anahtar, base64url>&t=<jeton 32 bayt, base64url>&n=<cihaz adı>` (`LINK.md` 3.3) | veren → okuyan (kamera) | uygulama dışına çıkmaz (Google code scanner); `v` artarsa eski okuyan "güncelleyin" der |
 
 ## 5. SharedPreferences
 
@@ -130,6 +132,17 @@ Kaynak: RS `Store.kt:46-47` ve anahtarları yazan dosyalar (`rg` ile A2.1'de tar
 ### 5.3b WEEM şifreli yedek — dosya **`weem-backup`** + Keystore `WEEM.Backup.v1` — WEEM: **yeni** (A4.3, N3, S22)
 
 Parola AndroidKeyStore AES/GCM anahtarıyla şifreli (`password` = Base64 IV `:` Base64 şifreli metin); `exported.<Pazartesi>` (Long) = o haftanın yedeği dışa aktarıldı. `kuryelog` dışında: hiçbir yedeğe girmez. Tercih `dailyPack` (Bool, true) `kuryelog`'da (5.1).
+
+### 5.3c WEEM 2 telefon eşleşmesi — dosya **`weem-link`** + Keystore **`WEEM.Link.v1`** — WEEM: **yeni** (A8.2, `LINK.md` 3.12)
+
+| Anahtar | Tip / değer |
+|---|---|
+| `identity.key` | String: Base64 NO_WRAP(IV 12 ‖ AES-256-GCM(kimlik özel anahtarı, PKCS#8) + etiket 16), AAD `weem-link/identity/v1`; ana anahtar AndroidKeyStore `WEEM.Link.v1` (AES-256-GCM, kullanıcı doğrulaması yok) |
+| `identity.public` | String: Base64 NO_WRAP(P-256 SEC1 sıkıştırılmamış, 65 bayt) |
+| `peer.id`, `peer.public`, `peer.name`, `peer.pairedAtMs` | eşleşen telefon: cihaz kimliği (küçük harfli UUID), açık anahtarı (Base64 SEC1), cihaz adı (≤ 32 bayt), eşleşme zamanı (Long, ms) |
+| `peer.btAddress` | String: A8.1'in öğrendiği Bluetooth adresi (büyük harf), yoksa yok |
+
+Dosya `MODE_PRIVATE`, yazma eşzamanlı (`commit`). Yedeğe, dışa aktarmaya ve `kuryelog`'a girmez; eşleşme kaldırılınca `peer.*` silinir, `identity.*` kalır.
 
 ### 5.4 YolGo — `FlutterSharedPreferences` (her anahtar `flutter.` önekli) — WEEM: **aktarılmaz** (S1: eski YolGo'ya dışa aktarma eki yok; WEEM başka paketin verisini okuyamaz)
 
@@ -208,6 +221,16 @@ Dışa aktarma ZIP'i `NinebotLogger-<ms>.zip`: `manifest.json` (`schema` 1, `app
 | `app_flutter/TeklifVeriSeti/<gün>/…` | veri seti (Y19) | hayır (S1: dışa aktarma yolu yok); WEEM'de yeni veri seti |
 | `files/surface-v2/…`, `files/surface-raw-v2/…`, `files/road-calibration-v1/<id>.json` | Y13/Y14 | sonra |
 
+### 7.4 WEEM 2 telefon kuyruğu `files/link/` — WEEM: **yeni** (A8.2, `LINK.md` 3.7–3.8, 3.12)
+
+| Yol | İçerik |
+|---|---|
+| `files/link/outbox/<seq, 20 hane>.env` | teslim zorunlu zarf (ikili, `LINK.md` 3.6), onay gelince ya da TTL'de silinir; en çok 2 000 |
+| `files/link/seq` | sıradaki `seq` bloğunun başı (ondalık metin; 256'lık bloklar) |
+| `files/link/seen` | işlenmiş teslim zorunlu `id`'ler (ikili: `id` 16 · tutulma sonu ms i64; en çok 4 096) |
+
+Uygulamanın özel deposunda, ek şifresiz (öteki kayıtlar gibi); yedeğe ve dışa aktarmaya girmez; eşleşme değişince ya da kaldırılınca silinir.
+
 ## 8. Bildirim kanalları ve numaraları
 
 ### 8.1 Bugün
@@ -236,4 +259,5 @@ Tek tablo `:core` `NotificationIds` (tam tablo `CORE.md` 3.3): her bildirim sabi
 
 - Müşteri **telefonu** yalnız `courier.db` (`withPhone=true`), bellek, rozet/balon ve bildirim 12'de; JSONL ve ZIP yedekte yok (`PhoneK25Test`). İstisna (S22, 18 Ekim): N3 parolalı şifreli yedekte `courier.db` satırlarıyla birlikte durur.
 - Müşteri **adı** `courier.db`, `orders.jsonl` (`record`) ve `latest` gözleminde düz; dışa aktarmada `AnalysisExport`/`Redactor` gizler.
+- 2 telefon bağlantısı (A8.2): her ileti uçtan uca şifreli (Noise, `LINK.md` 3.5); anahtar, jeton, QR metni ve düz metin yük loga, `FailureSink`'e ya da çökme kaydına yazılmaz.
 - 2 telefon modunda Receiver'a gitmeyecekler: müşteri adı, telefonu, notlar, bildirim 12 içeriği. Gidebilecekler: aşama, saat, bölge (`Z1..Z4`), restoran adı/koordinatı, müşteri koordinatı ve adres metni (`dropoffAddress`; S5, 17 Ekim), rota hedefi (plan Bölüm 4.4).
