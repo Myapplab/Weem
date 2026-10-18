@@ -17,13 +17,13 @@ object Downloads {
     fun relative(folder: String) = Environment.DIRECTORY_DOWNLOADS + "/" + folder + "/"
 
     /** [replace] true ise aynı klasördeki aynı adlı önceki dosyamız önce silinir (günlük paket: günün paketi yenilenir). */
-    fun save(ctx: Context, folder: String, name: String, replace: Boolean = false, write: (OutputStream) -> Unit): Uri {
+    fun save(ctx: Context, folder: String, name: String, replace: Boolean = false, mime: String = "application/zip", write: (OutputStream) -> Unit): Uri {
         val resolver = ctx.contentResolver
         val relative = relative(folder)
         if (replace) resolver.delete(MediaStore.Downloads.EXTERNAL_CONTENT_URI,
             "${MediaStore.MediaColumns.DISPLAY_NAME}=? AND ${MediaStore.MediaColumns.RELATIVE_PATH}=?", arrayOf(name, relative))
         val cv = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, name); put(MediaStore.MediaColumns.MIME_TYPE, "application/zip")
+            put(MediaStore.MediaColumns.DISPLAY_NAME, name); put(MediaStore.MediaColumns.MIME_TYPE, mime)
             put(MediaStore.MediaColumns.RELATIVE_PATH, relative); put(MediaStore.MediaColumns.IS_PENDING, 1)
         }
         val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv) ?: error("insert")
@@ -35,5 +35,20 @@ object Downloads {
             throw e
         }
         return uri
+    }
+
+    /** Bir dosyamız: ad, adres, boyut. */
+    data class Item(val name: String, val uri: Uri, val bytes: Long)
+
+    /** `Download/<folder>/`'daki kendi dosyalarımız (başka uygulamanınkiler görünmez), ada göre. */
+    fun list(ctx: Context, folder: String): List<Item> {
+        val out = ArrayList<Item>()
+        ctx.contentResolver.query(MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+            arrayOf(MediaStore.MediaColumns._ID, MediaStore.MediaColumns.DISPLAY_NAME, MediaStore.MediaColumns.SIZE),
+            "${MediaStore.MediaColumns.RELATIVE_PATH}=?", arrayOf(relative(folder)), null)?.use { c ->
+            while (c.moveToNext()) out += Item(c.getString(1) ?: continue,
+                android.content.ContentUris.withAppendedId(MediaStore.Downloads.EXTERNAL_CONTENT_URI, c.getLong(0)), c.getLong(2))
+        }
+        return out.sortedBy { it.name }
     }
 }

@@ -29,6 +29,8 @@ class WeemApplication : Application() {
         Store.guarded(this, "start") {
             ShiftHub.listeners.add("cash_pending", Orders.cashPendingHooks(this))
             ShiftHub.listeners.add("daily_pack", DailyPackHook(this))
+            // N3 (S22): günlük paketten sonra, siparişler kapanmadan; kendi iş parçacığında.
+            ShiftHub.listeners.add("encrypted_backup", EncryptedBackupHook(this))
             ShiftHub.listeners.add("orders", Orders.shiftHooks(this))
         }
         // E7 ekran okuma uyarısı (CAPTURE.md 5.2): sonuncu (RS: `GpsService.startShift` sonunda).

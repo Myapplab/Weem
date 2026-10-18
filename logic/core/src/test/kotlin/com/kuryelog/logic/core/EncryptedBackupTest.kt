@@ -152,4 +152,11 @@ class EncryptedBackupTest {
         assertNull(EncryptedBackup.mergeTrip(trip("trip-1", "2026-10-14", "0550000000"), backup))
         assertNull(EncryptedBackup.mergeTrip(trip("trip-1", "2026-10-14", null), trip("trip-1", "2026-10-14", null)))
     }
+
+    @Test fun deletingAnExportedWeekLeavesTodaysOpenShiftAlone() {
+        val days = listOf("2026-10-11", "2026-10-14", "2026-10-18", "2026-10-19")
+        assertEquals(listOf("2026-10-14", "2026-10-18"), EncryptedBackup.deletableDays(week, days, "2026-10-18", shiftOn = false))
+        assertEquals(listOf("2026-10-14"), EncryptedBackup.deletableDays(week, days, "2026-10-18", shiftOn = true))
+        assertEquals(emptyList<String>(), EncryptedBackup.deletableDays(week, listOf("2026-10-19"), "2026-10-19", shiftOn = false))
+    }
 }

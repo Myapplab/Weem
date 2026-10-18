@@ -71,6 +71,10 @@ object EncryptedBackup {
     fun weekOf(fileName: String): Week? = Regex("${BackupExport.APP_NAME}_yedek_([0-9]{4}-[0-9]{2}-[0-9]{2})_([0-9]{4}-[0-9]{2}-[0-9]{2})\\.weem")
         .matchEntire(fileName)?.let { m -> runCatching { week(m.groupValues[1]) }.getOrNull()?.takeIf { it.monday.toString() == m.groupValues[1] && it.sunday.toString() == m.groupValues[2] } }
 
+    /** "Uygulamadan sil" (S22): dışa aktarılan haftanın telefondaki gün kayıtları; vardiya açıkken bugün silinmez (RS `record_stop` kuralı). */
+    fun deletableDays(week: Week, recordedDays: List<String>, today: String, shiftOn: Boolean): List<String> =
+        recordedDays.filter { it in week && !(shiftOn && it == today) }.sorted()
+
     // ---- tercihler
     private val excluded = setOf(KuryelogPrefs.SHIFT, KuryelogPrefs.MANUAL_SESSION, KuryelogPrefs.AUTO_STARTED, KuryelogPrefs.SHIFT_START,
         KuryelogPrefs.SHIFT_START_REASON, KuryelogPrefs.SHIFT_ENDED_AT, KuryelogPrefs.SHIFT_END_REASON, KuryelogPrefs.SHIFT_INTERRUPTED_AT,

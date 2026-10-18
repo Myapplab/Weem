@@ -56,4 +56,32 @@ class RecordExportWiringTest {
             assertTrue(s, s.contains("Store.importing"))
         }
     }
+
+    @Test fun encryptedWeeklyBackupFollowsS22() {
+        val n3 = RepoSource.text("app/src/main/kotlin/com/kuryelog/app/EncryptedBackups.kt")
+        // Shift end: after the daily pack, before the orders close; only with a password; own thread.
+        val pack = app.indexOf("ShiftHub.listeners.add(\"daily_pack\""); val enc = app.indexOf("ShiftHub.listeners.add(\"encrypted_backup\", EncryptedBackupHook(this))")
+        assertTrue(enc > pack && app.indexOf("ShiftHub.listeners.add(\"orders\"") > enc)
+        val hook = RepoSource.body(n3, "class EncryptedBackupHook", "\n}\n")
+        assertTrue(hook.contains("if (!BackupVault(app).hasPassword()) return") && hook.contains("Thread({") && hook.contains("EncryptedBackup.weeks(startMs, nowMs)"))
+        // The password lives in its own Keystore-sealed prefs file, never in kuryelog (which the backup carries).
+        assertTrue(n3.contains("const val FILE = \"weem-backup\"") && n3.contains("\"AndroidKeyStore\""))
+        assertFalse(n3.contains("KuryelogPrefs.FILE"))
+        // Written under the writers' lock, prefs through encodePrefs (no home), the file replaced per week.
+        val write = RepoSource.body(n3, "fun write(ctx: Context, week: EncryptedBackup.Week)", "\n    }\n")
+        assertTrue(write.contains("Store.locked(app)") && write.contains("Store.importing") && write.contains("EncryptedBackup.encodePrefs(Store.prefs(app).all)"))
+        assertTrue(write.contains("Downloads.save(app, EncryptedBackup.FOLDER, week.fileName, replace = true"))
+        // Restore: like the import (shift off, importing flag), settings only where missing, rows only added.
+        val restore = RepoSource.body(n3, "fun restore(ctx: Context", "private fun applyRest")
+        assertTrue(restore.contains("Store.shiftOn(app)") && restore.contains("Store.importing = true") && restore.contains("EncryptedBackup.restore("))
+        assertTrue(n3.contains("EncryptedBackup.missingPrefs(opened.prefs, prefs.all.keys)") && n3.contains("EncryptedBackup.mergeTrip("))
+        // "Uygulamadan sil" only after an export, never today's open shift.
+        val delete = RepoSource.body(n3, "fun deleteWeek(", "\n    }\n")
+        assertTrue(delete.contains("check(BackupVault(ctx).exported(week))") && delete.contains("EncryptedBackup.deletableDays(") && delete.contains("Store.shiftOn(ctx)"))
+        for (net in listOf("java.net", "HttpURLConnection", "okhttp", "Socket")) {
+            assertFalse(net, n3.contains(net))
+            assertFalse(net, RepoSource.text("logic/core/src/main/kotlin/com/kuryelog/logic/core/EncryptedBackup.kt").contains(net))
+        }
+        assertTrue(records.contains("EncryptedBackupTools(lang)"))
+    }
 }

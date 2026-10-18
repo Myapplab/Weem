@@ -16,6 +16,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -30,7 +31,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
+import com.kuryelog.logic.core.EncryptedBackup
 import com.kuryelog.app.core.LogImport
 import com.kuryelog.app.core.Store
 import com.kuryelog.logic.core.DailyPack
@@ -84,6 +89,7 @@ fun RecordsScreen(lang: Lang, onBack: () -> Unit, source: (android.content.Conte
             modifier = Modifier.padding(top = 16.dp),
         ) { Text(Str.RECORDS_IMPORT.get(lang)) }
         BackupTools(lang)
+        EncryptedBackupTools(lang) { version++ }
         status?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp)) }
 
         GuardedPage("records", lang, key = version, build = { source(ctx).let { it to OrdersScreen(it, lang).warm() } }) { (src, screen) ->
@@ -122,6 +128,114 @@ private fun BackupTools(lang: Lang) {
         Text(Str.RECORDS_EXPORT_ANON.get(lang))
     }
     Text(Str.RECORDS_EXPORT_ANON_INFO.get(lang), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+}
+
+/**
+ * N3 şifreli yedek (S22): parola durumu ve belirle/değiştir, "bu haftayı şimdi yedekle", haftalık dosyalar (dışa aktar/paylaş; dışa
+ * aktarıldıktan sonra "Uygulamadan sil" = o haftanın kayıtları, onaylı), "şifreli yedeği geri yükle" (dosya + parola).
+ */
+@Composable
+private fun EncryptedBackupTools(lang: Lang, onChanged: () -> Unit) {
+    val ctx = LocalContext.current
+    var refresh by remember { mutableIntStateOf(0) }
+    val vault = remember { BackupVault(ctx) }
+    val hasPassword = remember(refresh) { vault.hasPassword() }
+    val backups = remember(refresh) { runCatching { EncryptedBackups.list(ctx) }.getOrDefault(emptyList()) }
+    var askPassword by remember { mutableStateOf(false) }
+    var restoreUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var deleteWeek by remember { mutableStateOf<EncryptedBackup.Week?>(null) }
+    fun toast(s: String) = Toast.makeText(ctx, s, Toast.LENGTH_SHORT).show()
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) restoreUri = uri }
+
+    Text(Str.BACKUP_TITLE.get(lang), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    Text(Str.BACKUP_INFO.get(lang), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Text(if (hasPassword) Str.BACKUP_ON.get(lang) else Str.BACKUP_NO_PASSWORD.get(lang), modifier = Modifier.padding(top = 4.dp))
+    OutlinedButton(onClick = { askPassword = true }, Modifier.fillMaxWidth().padding(top = 8.dp)) {
+        Text(if (hasPassword) Str.BACKUP_CHANGE_PASSWORD.get(lang) else Str.BACKUP_SET_PASSWORD.get(lang))
+    }
+    if (hasPassword) OutlinedButton(onClick = {
+        ctx.safely("encrypted_backup") {
+            toast(Str.RECORDS_PREPARING.get(lang))
+            EncryptedBackups.writeNow(ctx) { r ->
+                toast(r.fold({ if (it) Str.BACKUP_SAVED.get(lang) else Str.RECORDS_NO_LOGS.get(lang) }, { Str.ERROR.get(lang) + it.message })); refresh++
+            }
+        }
+    }, Modifier.fillMaxWidth().padding(top = 8.dp)) { Text(Str.BACKUP_NOW.get(lang)) }
+    if (backups.isEmpty()) Text(Str.BACKUP_NONE.get(lang), style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp))
+    for ((week, item) in backups) Card(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+        Column(Modifier.padding(12.dp)) {
+            Text("${week.monday} – ${week.sunday}", fontWeight = FontWeight.Bold)
+            Text(item.name + " · " + Formatter.formatShortFileSize(ctx, item.bytes), style = MaterialTheme.typography.bodySmall)
+            Row {
+                TextButton(onClick = { ctx.safely("encrypted_backup") { EncryptedBackups.export(ctx, week, item.uri, Str.BACKUP_EXPORT.get(lang)); refresh++ } }) {
+                    Text(Str.BACKUP_EXPORT.get(lang))
+                }
+                TextButton(onClick = { if (vault.exported(week)) deleteWeek = week else toast(Str.BACKUP_DELETE_AFTER_EXPORT.get(lang)) }) {
+                    Text(Str.BACKUP_DELETE_WEEK.get(lang), color = if (vault.exported(week)) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+    }
+    OutlinedButton(onClick = {
+        ctx.safely { if (Store.shiftOn(ctx)) toast(Str.RECORDS_IMPORT_STOP.get(lang)) else picker.launch(arrayOf("application/octet-stream", "*/*")) }
+    }, Modifier.fillMaxWidth().padding(top = 8.dp)) { Text(Str.BACKUP_RESTORE.get(lang)) }
+
+    if (askPassword) PasswordDialog(lang, twice = true, onDismiss = { askPassword = false }) { pw ->
+        ctx.safely("encrypted_backup") { vault.setPassword(pw); pw.fill(' ') }
+        askPassword = false; refresh++
+    }
+    restoreUri?.let { uri ->
+        PasswordDialog(lang, twice = false, onDismiss = { restoreUri = null }) { pw ->
+            restoreUri = null
+            ctx.safely("encrypted_restore") {
+                toast(Str.RECORDS_PREPARING.get(lang))
+                EncryptedBackups.restore(ctx, { ctx.contentResolver.openInputStream(uri) }, pw) { r ->
+                    toast(when (r) {
+                        is EncryptedBackups.Restored.Done -> Str.BACKUP_RESTORE_DONE.get(lang)
+                        EncryptedBackups.Restored.ShiftOn -> Str.RECORDS_IMPORT_STOP.get(lang)
+                        EncryptedBackups.Restored.Busy -> Str.RECORDS_PREPARING.get(lang)
+                        EncryptedBackups.Restored.WrongPassword -> Str.BACKUP_WRONG_PASSWORD.get(lang)
+                        is EncryptedBackups.Restored.Failed -> Str.ERROR.get(lang) + r.message
+                    })
+                    onChanged()
+                }
+            }
+        }
+    }
+    deleteWeek?.let { week ->
+        AlertDialog(
+            onDismissRequest = { deleteWeek = null }, title = { Text(Str.BACKUP_DELETE_WEEK.get(lang)) },
+            text = { Text("${week.monday} – ${week.sunday}\n" + Str.BACKUP_DELETE_CONFIRM.get(lang)) },
+            confirmButton = { TextButton(onClick = { ctx.safely("encrypted_backup") { EncryptedBackups.deleteWeek(ctx, week) }; deleteWeek = null; onChanged() }) { Text(Str.BACKUP_DELETE_WEEK.get(lang)) } },
+            dismissButton = { TextButton(onClick = { deleteWeek = null }) { Text(Str.CANCEL.get(lang)) } },
+        )
+    }
+}
+
+/** Parola girişi (gizli); [twice] ise iki kez ve en az 8 karakter. */
+@Composable
+private fun PasswordDialog(lang: Lang, twice: Boolean, onDismiss: () -> Unit, onOk: (CharArray) -> Unit) {
+    var a by remember { mutableStateOf("") }
+    var b by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf(false) }
+    AlertDialog(
+        onDismissRequest = onDismiss, title = { Text(Str.BACKUP_TITLE.get(lang)) },
+        text = {
+            Column {
+                OutlinedTextField(a, { a = it }, label = { Text(Str.BACKUP_PASSWORD.get(lang)) }, singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
+                if (twice) OutlinedTextField(b, { b = it }, label = { Text(Str.BACKUP_PASSWORD_AGAIN.get(lang)) }, singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
+                if (error) Text(Str.BACKUP_PASSWORD_MISMATCH.get(lang), color = MaterialTheme.colorScheme.error)
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                if (a.length < EncryptedBackup.MIN_PASSWORD || (twice && a != b)) error = true else onOk(a.toCharArray())
+            }) { Text(Str.SAVE.get(lang)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(Str.CANCEL.get(lang)) } },
+    )
 }
 
 @Composable
