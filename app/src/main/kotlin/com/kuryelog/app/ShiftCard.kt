@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import com.kuryelog.app.capture.CaptureStatus
 import com.kuryelog.app.core.Home
 import com.kuryelog.app.core.ShiftHub
+import com.kuryelog.app.scooter.ScooterShiftLink
+import com.kuryelog.logic.scooter.ScooterText
 import com.kuryelog.logic.core.Lang
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
@@ -61,6 +63,8 @@ fun ShiftCard(lang: Lang) {
                     Text("$screenReadingOffTitle  !", color = MaterialTheme.colorScheme.error)
                 }
                 status?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                // Scooter satırı ve vardiya içinde sonradan bağlanma / Bluetooth izni (SCOOTER.md 5.3; RS `MainActivity` ana kart).
+                if (on) ScooterRows(lang)
                 if (on && !interrupted) {
                     OutlinedButton(onClick = { ctx.safely { ShiftHub.stop() } }, modifier = Modifier.padding(top = 8.dp)) { Text(Str.SHIFT_STOP.get(lang)) }
                 } else {
@@ -82,3 +86,23 @@ fun locationPermissions(): Array<String> = buildList {
     add(Manifest.permission.ACCESS_FINE_LOCATION); add(Manifest.permission.ACCESS_COARSE_LOCATION)
     if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS)
 }.toTypedArray()
+
+/** Vardiya kartının scooter satırları: bağlantı durumu, "Scooter'a şimdi bağlan" ve (Android 12+) "Bluetooth izni ver". Hata satırı gizler, kartı bozmaz. */
+@Composable
+private fun ScooterRows(lang: Lang) {
+    val ctx = LocalContext.current
+    var refresh by remember { mutableStateOf(0) }
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { refresh++ }
+    val state by produceState<Triple<String, Boolean, Boolean>?>(null, lang, refresh) {
+        while (true) {
+            value = runCatching { Triple(ScooterShiftLink.status(ctx), ScooterShiftLink.canConnectNow(ctx), ScooterShiftLink.needsBluetoothPermission(ctx)) }.getOrNull()
+            delay(2_000)
+        }
+    }
+    val (line, canConnect, needsPermission) = state ?: return
+    Text(line, style = MaterialTheme.typography.bodySmall)
+    if (canConnect) TextButton(onClick = { ctx.safely { ScooterShiftLink.connectNow(ctx); refresh++ } }) { Text(ScooterText.CONNECT_NOW.get(lang)) }
+    if (needsPermission) TextButton(onClick = { ctx.safely { ask.launch(ScooterShiftLink.bluetoothPermissions) } }) {
+        Text(ScooterText.GIVE_PERMISSION.get(lang) + "  !", color = MaterialTheme.colorScheme.error)
+    }
+}

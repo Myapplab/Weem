@@ -28,6 +28,8 @@ enum class ScooterText(override val tr: String, override val az: String) : Bilin
     WAITING_FOR_DATA("Bağlanıyor · scooter verisi bekleniyor", "Qoşulur · skuter məlumatı gözlənilir"),
     EXTERNAL("harici %", "xarici %"),
     THIS_ORDER("bu sipariş ", "bu sifariş "),
+    CONNECT_NOW("Scooter'a şimdi bağlan", "Skuterə indi qoşul"),
+    GIVE_PERMISSION("Scooter için Bluetooth izni ver", "Skuter üçün Bluetooth icazəsi ver"),
     PROVIDER_ROLE("Scooter, Receiver telefonuna bağlı", "Skuter Receiver telefonuna qoşulub"),
 }
 
