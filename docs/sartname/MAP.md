@@ -27,7 +27,7 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 | 6 | Y1, Y2 harita ekranı | A6.5 | ajan N | bekliyor <!-- st:6 --> |
 | 7 | Y4 navigasyon | A6.6 | ajan N | bekliyor <!-- st:7 --> |
 | 8 | Y5, Y6 bağlantılar ve adres | A6.6 | ajan N | bitti (12:34 UTC) <!-- st:8 --> |
-| 9 | Y12 yol kalitesi öğrenme | A6.11 | ajan Q | kısmen: 9.1–9.3 yazıldı; sırada 9.4–9.8 (12:37 UTC) <!-- st:9 --> |
+| 9 | Y12 yol kalitesi öğrenme | A6.11 | ajan Q | kısmen: 9.1–9.8 yazıldı; sırada 9.9–9.13 (rota bağı, veri, testler, yerleşim, sorular) (12:39 UTC) <!-- st:9 --> |
 | 10 | Y9, N5, Y10 | A6.7 | ajan T | bekliyor <!-- st:10 --> |
 | 11 | Y11 ve YolGo gün motoru | A6.8 | ajan T | bekliyor <!-- st:11 --> |
 | 12 | Y17, Y18 | A6.9 | ajan T | bekliyor <!-- st:12 --> |
@@ -847,6 +847,140 @@ Eşleştirici özeti (ayrıntı Bölüm 7): doğruluk > 35 m fix'te güncellenme
 - İlk açılış (kayıt yok): mevcut toplamlar taban (17-19). Bozuk kayıt: ham dizge `roads.days.damaged.v2`'ye kopyalanır, defter mevcut toplamları taban alarak yeniden başlar — geçmiş gün üyeliği uydurulmaz (`road_controller.dart:94-100`).
 - Gün silme (`day_deletion.dart:21-53`; ayrıntı Bölüm 12): seçilen tarih aktif günse önce gün kapatılır; … `deleteContributions(date)` = önce yakala, sonra `deleteDate`, zorla kayıt, yazımı bekle; dönen kimlikler gün kaydından da silinir. Onay metni: "Bu tarihin sürüş, sipariş, olay, istatistik ve otomatik yol ölçümleri silinir. Diğer günler ve elle kaydedilen yollar korunur." / "Bu tarixdəki sürüş, sifariş, hadisə, statistika və avtomatik yol ölçmələri silinir. Başqa günlər və əl ilə qeyd olunan yollar saxlanır."
 - **WEEM:** kova anahtarı aynen `yolgo-<vardiya başlangıcı ms>` (`ShiftPort.state.startedAtMs`; test ve `deleteDate` ayrıştırması birebir kalsın, anlamı WEEM vardiyası); `bakuDay` → `:core` tek saat kuralı `LogTime.day(ms, Clock.zone)` (`CORE.md` "Gün sınırı", 176. satır: Azerbaycan'da fark yok). Gün silme hangi ekrandan tetiklenirse (Y17 gün silme, R12 Kayıtlar; Bölüm 12/15) `:map` kancası `RoadBook.deleteContributions(date)`'i çağırır.
+
+### 9.4 Puan soruları ve kartlar
+
+#### 9.4.1 "Bu yolun kalitesi?" (`quality_prompt.dart`; kart `roads_screen.dart:647-700`)
+
+- Açılış: (a) sürerken **Ses+ iki kez** (450 ms içinde) — o anki eşleşen sokak; eşleşme yoksa toast "Yol eşleşmedi — biraz daha sür" / "Yol tanınmadı — bir az da sür" (turuncu) + titreşim (`nav_controller.dart:695-704`); (b) harita uzun basış satırı "Elle yüzey puanı · <ad>" / "Əl ilə səth balı · <ad>" (`nav_screen.dart:250-256`); (c) kalite sayfası "Kaliteyi % olarak gir" / "Keyfiyyəti faizlə yaz" (`roads_screen.dart:220-227`).
+- Başlangıç değeri: `pct ?? round(qualityOf(way) × 10) × 10`, 10–100'e kıstırılır (`quality_prompt.dart:34-39`). **Not:** `qualityOf` burada grafsız çağrılır → OSM ön tahmini yerine sabit 0,8 (puan/istatistik yoksa 80 başlar; `road_knowledge.dart:171-184`). Açılınca güçlü titreşim.
+- Açıkken: Ses+ / Ses− **±10** (10–100) + seçim titreşimi; çipler %20 · %40 · %60 · %80 · %100; her dokunuş 6 sn sayacını yeniden kurar; **6 sn dokunulmazsa kaydedilir** (`autoSaveS = 6`); "Kaydet" / "Yadda saxla" hemen kaydeder; "Vazgeç" / "Ləğv et" kaydetmeden kapatır (25-76).
+- Kayıt: `rate(way, pct, ad)` + orta titreşim + rota varsa `replan('prefs')`.
+- Kart: başlık "Bu yolun kalitesi?" / "Bu yolun keyfiyyəti?" (renk `qualityColor(pct/100)`), alt satır sokak adı, sağda büyük `%`, ipucu "Ses+ artır · Ses− azalt · 6 sn sonra kendiliğinden kaydedilir" / "Səs+ artır · Səs− azalt · 6 san sonra özü yadda saxlayır". Sıklık sınırı yok (yalnız kullanıcı açar).
+
+#### 9.4.2 👍 / 👎
+
+- Uzun basış menüsündeki kalite satırının sağında 👍 (ipucu "Kaliteli yol" / "Keyfiyyətli yol") → `rate(90)`, 👎 ("Kalitesiz yol" / "Keyfiyyətsiz yol") → `rate(25)`; ad "isimsiz yol" ise ad yazılmaz. Toast `r ≥ 50`: "Kaliteli yol: <ad>" / "Keyfiyyətli yol: <ad>" (yeşil), aksi "Kalitesiz yol: <ad> — mümkünse kaçınılır" / "Keyfiyyətsiz yol: <ad> — mümkün qədər yan keçiləcək" (turuncu); rota varsa yeniden rota (`nav_screen.dart:357-366`).
+- Satır alt yazısı: `st == null || st.m < 50` → "Fiziksel ölçüm ayrıntıları Yollarım → Kalite bölümünde" / "Fiziki ölçmə detalları Yollarım → Keyfiyyət bölməsində", aksi "<x,x> dur-kalk/km · <uzunluk> sürüldü" / "<x,x> dur-qalx/km · <uzunluk> sürülüb"; simge rengi `qualityColor(qualityOf(way, g))` (`nav_screen.dart:250-270`; menü eşiği: basılan yere `nearestEdge(maxDist 40)`, 158-167).
+
+#### 9.4.3 "Ters yönde sorun yaşadın mı?" kartı (`WrongWayCard`, `roads_screen.dart:559-645`)
+
+- Soru açıkken: başlık "Ters yönde sorun yaşadın mı?" / "Əks istiqamətdə problem oldu?" (turuncu, büyük); alt satır "<ad>[ · sert fren / durma algılandı] · Ses+ evet / Ses− hayır · ~<kalan> sn" / "<ad>[ · qəfil əyləc / dayanma oldu] · Səs+ hə / Səs− yox · ~<kalan> san" (kalan = 20 − geçen sn, 0–99; köşeli kısım olay > 0 ise). Düğmeler: "Evet, sorun" / "Hə, oldu" (kırmızı, 52 dp) → `answer(true)`; "Hayır" / "Xeyr" → `answer(false)`.
+- Soru yok, onaylı ters yön geçişi sürerken ince şerit: "Ters yön (onaylı): <ad>[ · sorun <%oran>]" / "Əks istiqamət (təsdiqli): <ad>[ · problem <%oran>]" (oran yalnız geçiş > 0 ise) + düğme "Sorun yaşadım" / "Problem oldu" → `reportProblem()`; kaydedilirse toast "Ters yön sorunu kaydedildi" / "Əks istiqamət problemi qeyd olundu" (turuncu).
+- Zaman aşımı 20 sn (`askTimeoutS`); denetim 5 sn'lik tikte (pratikte 20–25 sn). Mantık 9.6.
+
+#### 9.4.4 Kartların yeri ve sürüşte güvenlik (`nav_screen.dart:61-146`)
+
+- Normal görünüm: alt panelde `QualityPromptCard` + `WrongWayCard` (rota düğmesinin üstünde; gün kartı katlıyken de).
+- Varış odağı (hedefe ≤ 100 m, Bölüm 7): yalnız `WrongWayCard` (+ adres kartı); kalite kartı gizli.
+- "Yalnız harita" kipi: ikisi de gizli; ses tuşları yine işler, zaman aşımı yine sayar.
+- Cevap ekrana bakmadan ses tuşuyla ya da dokunarak. Titreşim: soru/kalite açılınca güçlü, cevap ve ±10'da seçim, kayıtta orta, hata durumunda kısa titreşim. WEEM: aynı dört düzey (`HapticFeedbackConstants` karşılıkları, `:map` ince katman).
+
+### 9.5 Ses+ / Ses− tuşu yakalama
+
+#### 9.5.1 Yerel katman (`MainActivity.kt:54-65, 110-113, 478-503`)
+
+- `captureVolume` (varsayılan `true`); Dart açılışta ve ayar değişince `setVolumeCapture(volumeKeys)` gönderir (`clipboard_sniffer.dart:98-100`, `fireImmediately`; köprü uygulama açılışında kurulur, `main.dart:120`).
+- `dispatchKeyEvent`: yakalama açık + tuş `KEYCODE_VOLUME_UP`/`DOWN` + kanal hazır → olay **tüketilir** (`return true`, sistem sesi değişmez; tekrarlar ve bırakışlar dahil); aksi normal akış.
+  - **Ses+:** `ACTION_DOWN` ve `repeatCount == 0` → hemen `onVolume("up")` (basışta).
+  - **Ses−:** `ACTION_DOWN` (tekrar değil) → `downHeld = true`, 1000 ms sonra `downHold` (hâlâ basılı ve yakalama açıksa `onVolumeDownHold` + `downLongFired`); `ACTION_UP` → gecikme iptal; basılıydı, olay iptal değil ve uzun basış atılmadıysa: `eventTime − downTime ≥ 1000` → `onVolumeDownHold`, aksi `onVolume("down")` (bırakışta).
+- Kapsam: yalnız Activity odaktayken (ekran açık, uygulama önde); ekran kapalı/kilitli ya da arka planda tuşlar sisteme gider (MediaSession ya da erişilebilirlik kullanılmaz). Sürüşte ekran açık tutulur (`setScreenAwake`, Bölüm 6). Gün/rota durumuna bakılmaz: ayar açıksa YolGo önde olduğu her an ses tuşları ses ayarlamaz.
+
+#### 9.5.2 Dağıtım (`NavController.onVolumeKey` / `onVolumeDownHold`, `nav_controller.dart:578-751`)
+
+Öncelik sırası: (1) ters yön sorusu açık → `answer(problem: up)` (Ses+ = "evet, sorun", Ses− = "hayır") · (2) kalite % kartı açık → ±10 · (3) Ses+: 450 ms içinde ikinci Ses+ → kalite % sorusu, tek → 450 ms sonra **onay** · (4) Ses−: 450 ms içinde ikinci Ses− → **aşırı eğimli**, tek → 450 ms sonra **kötü nokta ±25 m** · (5) Ses− uzun (≥ 1 sn) → **sil** (bekleyen tek Ses− zamanlayıcısı iptal).
+
+| Tuş | Koşul | Etki | Toast (TR / AZ) |
+|---|---|---|---|
+| Ses+ tek | 15 sn içinde ters yön önerisi var, öneri ana cadde değil | önerilen sokak onaylı (Y8 `approve`), öneri temizlenir | "Onaylandı: <ad> (iki yön)" / "Təsdiqləndi: <ad> (iki tərəfli)" (yeşil, 6 sn, "Geri al" / "Geri qaytar") |
+| Ses+ tek | eşleşme yok | — | "Yol eşleşmedi — biraz daha sür" / "Yol tanınmadı — bir az da sür" + titreşim |
+| Ses+ tek | eşleşen sokak ana cadde | — | "Ana caddede ters yön onayı kapalı" / "Əsas küçədə əks istiqamət təsdiqi olmur" (kırmızı) + titreşim |
+| Ses+ tek | aksi | eşleşen sokak onaylı | "Onaylandı: <ad> (iki yön)" (yukarıdaki gibi) |
+| Ses− ×2 | eşleşme var | `steep` (Y8) | "Aşırı eğimli: <ad> — yokuş yukarı kullanılmaz" / "Çox dik: <ad> — yoxuşa çıxılmayacaq" (+ "Geri al") |
+| Ses− tek | eşleşme ve konum var | kötü nokta `SurfaceMark(id "spot-<ms>", way, lat, lon, at, label rough, source "user")` kaydedilir, durak varsa yeniden rota; olay `bad_spot {way}`; güçlü titreşim | "Kötü nokta: <ad> · ±25 m (uzun bas: sil)" / "Pis nöqtə: <ad> · ±25 m (uzun bas: sil)" (turuncu) |
+| Ses− tek | konum yok | — | "Konum yok — biraz daha sür" / "Mövqe yoxdur — bir az da sür" + titreşim |
+| Ses− uzun | eşleşme yok | — | "Yol eşleşmedi; kaldırmak için yolun üzerinde dene" / "Yol tanınmadı; silmək üçün yolun üstündə yoxla" |
+| Ses− uzun | aynı way'de konuma ≤ 40 m etkin kötü nokta | hepsi `removed`; durak varsa yeniden rota; olay `bad_spot_clear {way, n}`; orta titreşim | "Kötü nokta silindi: <ad>" / "Pis nöqtə silindi: <ad>" (yeşil) |
+| Ses− uzun | nokta yok; sokak kara listede ya da puanı ≤ 25 | kara listeden çıkar, puan ≤ 25 ise silinir; olay `bad_road_clear {way}`; durak varsa yeniden rota | "Kötü yol işareti kaldırıldı: <ad>" / "Pis yol qeydi silindi: <ad>" (yeşil) |
+| Ses− uzun | hiçbiri | — | "Burada kötü nokta işareti yok" / "Burada pis nöqtə qeydi yoxdur" |
+
+- Onay/eğim (`_setStreet`, 706-750): `streets.*` güncellenir (Bölüm 4), olay `approve|steep {way}`, güçlü titreşim, rota varsa yeniden rota; "Geri al": sokak temizlenir, önceki onay / kara liste / eğim / saat izni geri yazılır, olay `undo {way}`. `_setStreet(block)` dalı ("Kötü Yol: <ad>" / "Pis yol: <ad>") ses tuşundan **erişilmez** (1.3.1'den beri Ses− kötü nokta; sokağı tamamen kapatmak harita menüsünden, Bölüm 4) → WEEM'e taşınmaz.
+- Ters yön önerisi (`_onPosition`, 806-830): onaysız tek yönlü sokakta ters yönde ≥ 40 m (eşleştirici; sokak başına eşleştirici ömründe bir kez, `map_matcher.dart:88-96`) → ana caddede toast "Ana caddede ters yöndesin!" / "Əsas küçədə əks istiqamətdəsən!" (kırmızı) + titreşim; değilse öneri + toast "Ters yön: <ad> — onay için Ses+" / "Əks istiqamət: <ad> — təsdiq üçün Səs+" (turuncu, 10 sn); öneri 15 sn sonra düşer; olay `wrongway {way, main}`. ww kesimi izinli kenarda öneri/uyarı yok.
+- Ayar (`settings_screen.dart:300-306`): "Ses tuşları (Ses+ onay · Ses− kötü nokta ±25 m · Ses− uzun: sil · Ses− ×2 aşırı eğimli)" / "Səs düymələri (Səs+ təsdiq · Səs+ ×2 keyfiyyət · Səs− pis nöqtə ±25 m · Səs− uzun: sil · Səs− ×2 çox dik)", alt yazı "Kapalıyken tuşlar normal ses ayarı yapar" / "Söndürüləndə düymələr adi səsi tənzimləyir" (TR'de "Ses+ ×2 kalite" eksik, 9.13).
+
+#### 9.5.3 WEEM
+
+- Tek Activity: `:app` `MainActivity.dispatchKeyEvent` → `:map` `VolumeKeys` (ince: tüketme kararı, 1000 ms uzun basış `Handler`'ı) → saf `roads.VolumeDispatch` (450 ms çift basış, öncelik sırası, eylem seçimi; saat enjekte, `Clock.monoMs`). Tüketme kuralı YolGo'daki gibi: yakalama açıkken ses tuşu olayları (basış, bırakış, tekrar) tüketilir.
+- Yakalama koşulu: `MapSettings.volumeKeys` (varsayılan açık) **ve** Harita sekmesi ya da onun alt ekranı (Yollarım, Harita ayarları) önde; diğer sekmelerde tuşlar normal (SORU-Q4). Ekran kapalı/kilitli ya da PiP'te yakalama yok; MediaSession ve erişilebilirlik tuş süzgeci **kullanılmaz** (`WatchService` ek yetki almaz).
+- 2 telefon: yakalama ve bütün Y12 eylemleri Receiver'da (9.12).
+
+### 9.6 Ters yön (ww) soruları ve kararlar (`road_controller.dart:160-295`; `road_knowledge.dart:186-196, 288-331`)
+
+- **Geçiş bitince** (`_onPass`): olay `ww_pass {way, m (yuvarlak), inc, reported?}`; son geçiş saklanır (`recent`; eklenen sorun `recentAdded` = geçişte bildirildiyse 1, aksi 0). Geçişte bildirildiyse soru yok. Olaysız (`incidents == 0`) ve "Sorun yok" denmiş sürüşün devamıysa (`identical(run, cleanRun)`) soru yok. `incidents > 0` **ya da** `wwAskAlways` → açık soru varsa önce zaman aşımı kuralıyla kapanır; yeni `WwQuestion(pass, şimdi)` + güçlü titreşim.
+- **Zaman aşımı** (`_expireQuestion`, 190-202): soru kapanır; olaylıysa `problems += 0,5` (son geçişse `recentAdded = 0,5`); olaysızsa hiçbir şey.
+- **Cevap** `answer(problem)` (204-229): soru yoksa `false` (ses tuşu sonraki önceliğe geçer). "Evet" → `problems += 1` (`recentAdded = 1`). "Hayır" → `recent` temizlenir (sonradan sorun eklenemez) ve **YG-Y9 temiz sürüş onayı** `_approveClean`. Olay `ww_answer {way, problem, approved?: [id…]}`; seçim titreşimi; zorla kayıt.
+- **`_approveClean(p)`** (231-262): `cleanRun = p.run`; `wwCleanApprovals(p)`'deki her sokak (zaten onaylı ya da kara listede olan hariç) `streets.approved`'a eklenir (Y8 `approve(id, ad)`); eklenen varsa `approvedRev++` (yeniden rota) ve toast "Onaylandı: <ad1, ad2> (iki yön)" / "Təsdiqləndi: <ad1, ad2> (iki tərəfli)" (adlar tekilleştirilip ", " ile, boş ad "isimsiz yol" / "adsız yol"), yeşil, 6 sn, "Geri al" → eklenenler onaydan çıkar, olay `undo {way}`, `approvedRev++`.
+- **`wwCleanApprovals(p)`** (320-331): `{p.way: p.name}` + aynı sürüşteki her parça: ana cadde değil, eklenmemiş ve (ters yönde ≥ 25 m **ya da** geçişle aynı boş olmayan ad).
+- **"Sorun yaşadım"** `reportProblem()` (264-287): açık soru → `answer(true)`; süren onaylı geçiş → `markLiveReported` (olay `ww_report {way}`); son geçiş ≤ 90 sn önce bittiyse ve `recentAdded < 1` → `problems += 1 − recentAdded`, `recentAdded = 1` (olay `ww_report`). `canReportRecent` aynı koşul.
+- **Rota girdileri** (`road_knowledge.dart:186-196`): `wrongWayRatios()` = geçişi olan sokaklar için **yumuşatılmış** `(problems + 0,1) / (passes + 1)`; `wrongWayAvoid(eşik, minPasses 3)` = geçiş ≥ 3 ve **ham** `problems/passes` ≥ eşik; eşik = `wwMaxProblemPct / 100` (varsayılan %50). Etkisi 9.9.
+- **Elle:** ww satırı menüsü (9.8.4) "Sorunlu geçiş ekle", "Sorunsuz geçiş ekle" (`addWwPass`), "Sayaçları sıfırla" (`resetWw`).
+- **Y8 sınırı:** onay, kara liste, eğim ve saat izni verisi `streets.*` (Bölüm 4, ajan R); Y12 yalnız `approve` / `remove(approved)` çağırır ve `approved` kümesini okur. Ters yön yalnız onaylı (ana cadde olmayan) sokakta ya da ww kesiminde serbesttir (Bölüm 3).
+- **Ayarlar:** `wwMaxProblemPct` (varsayılan 50; Ters yön sekmesi "Sorun eşiği" / "Problem həddi" adımlayıcı 20–90, adım 5), `wwAskAlways` (varsayılan `false`; "Her geçişten sonra sor" / "Hər keçiddən sonra soruş", alt yazı "Kapalı: sadece sert fren / durma algılanınca sorar" / "Söndürülüb: yalnız qəfil əyləc / dayanma olanda soruşur").
+
+### 9.7 Cadde oranı ve kötü noktalar
+
+- **Kötü nokta** (`bad_spots.dart`): `isBadSpot` = silinmemiş, `source == "user"`, `access != closed`, etiket ∈ {rough, pothole, raisedAsphalt, dirt, gravel, obstacle}; etki ±25 m (`badSpotRadiusM`); aynı way'de 30 m içindeki etkin işaretler ≥ 2 **farklı Bakü gününden** ise doğrulanmış (`badSpotConfirmM`); kenar başına kesir aralığı `SpotSpan(edge, f0, f1, confirmed)` (`nearestEdge(maxDist 25, aynı way)`; `r = 25/kenarUzunluğu`). Rota etkisi (Bölüm 3): kesim maliyeti +3× (doğrulanmış +6×), "kötü yollardan kaçın" denemesinde doğrulanmış kesim yasak.
+- **Cadde kötü kesim oranı** (`street_ratio.dart`): kötü uzunluk = Y13 ölçülmüş kesimler (puan < 50, güven ≥ 0,35) ∪ kötü noktaların aralıkları, kenar başına aralık birleşimi; toplam = way'in tekil kenarlarının uzunluğu. Metin: kötü < 1 m → "Kötü kesim yok · <uzunluk>" / "Pis hissə yoxdur · <uzunluk>", aksi "%<p> kötü · <m> m / <uzunluk>" / "%<p> pis · <m> m / <uzunluk>" (uzunluk < 1000 m "N m", aksi Dart `toStringAsFixed(1)` "2.0 km" — noktalı). Uzun basış menüsünde, alt yazı "Ölçülmüş kötü kesimler + kötü noktalar (±25 m)" / "Ölçülmüş pis hissələr + pis nöqtələr (±25 m)" (`nav_screen.dart:271-277`). Test: `router_test` "cadde oranı" (Bölüm 3). WEEM 1.0: yalnız kötü noktalarla (Y13 özeti yok), metin aynen.
+- **E11 sokak puanı** (`street_scores.dart`, "Yol puanları"): Y13 parça özetleri + Y14 kalibrasyon referanslarından 1–10 → **Y12 değil, sonra** (9.11, SORU-Q2). Y12'den tek kullandığı `RoadKnowledge.names`.
+
+### 9.8 Ekranlar
+
+#### 9.8.1 Yollarım (`RoadsScreen`, `roads_screen.dart:23-52`)
+
+Başlık "Yollarım" (TR/AZ aynı); sekmeler "Kalite" / "Keyfiyyət", "Ters yön" / "Əks istiqamət", "Yol yok" / "Yol yoxdur", "Bisiklet" / "Velosiped" (Y15, Bölüm 5). Girişler: Ayarlar → Yollarım akordeonu "Yolları görüntüle" / "Yollara bax" (alt "Kalite · ters yön · yol yok · bisiklet" / "Keyfiyyət · əks istiqamət · yol yoxdur · velosiped"), Sokak bilgileri altında "Yollarım: kalite · ters yön sorunu · yol yok" / "Yol keyfiyyəti və küçə qaydaları" (`settings_screen.dart:243-271`), rota ayrıntısı "Yol ayrıntıları" / "Yol detalları" (`widgets.dart:225`).
+
+#### 9.8.2 Kalite sekmesi
+
+YolGo'da `SurfaceQualityTab(manualRows)` (`surface_screen.dart:46-97`) — Y13/Y14 ağırlıklı:
+
+| Parça | Kaynak | WEEM 1.0 |
+|---|---|---|
+| "Yol puanları" kartı (E11 açıklaması, ölçüm durumu, "Ölçüm ve kalibrasyon" düğmesi) | Y13/Y14 | yok (sonra) |
+| "Elle girilen puanlar" / "Əl ilə yazılan ballar" (açılır): satır = sol `%` kutusu (elle puan, `fmtPct`, renk `qualityColor`), ad, alt yazı `st == null` → "Elle girildi" / "Özün yazmısan", aksi "<x,x> dur-kalk/km · <sarsıntı> · <uzunluk> · <n> geçiş" / "<x,x> dur-qalx/km · <sarsıntı> · <uzunluk> · <n> keçid"; sağda elle puan simgesi; dokununca kalite sayfası | Y12 | var |
+| "Haritada yüzey renkleri" / "Xəritədə səth rəngləri" (`showQualityLayer`) | yalnız Y13 özetlerini çizer (`map_view.dart:82-99`) | gizli; ayar saklanır |
+| "Kalite toleransı" / "Keyfiyyət tolerantlığı" `%` + kaydırıcı 0–30 (30 adım) → `qualityTolerancePct` | Y12/Y3 | var |
+| sokak puanı listesi / "Henüz fiziksel yol ölçümü yok" | Y13/Y14 | yok |
+| "Elle işaretlenen yüzeyler" / "Əl ilə qeyd olunan səthlər": "<ad> · <etiket>", alt "<access> · Kaldırıldı / Kullanıcı kaydı", sil / geri al (rota varsa yeniden rota), dokununca yüzey düzenleyici | Y13 deposu | yalnız Ses− kötü noktaları, sil/geri al; düzenleyici yok (SORU-Q1) |
+| "Eski trafik kayıtları" / "Köhnə trafik qeydləri", alt "Korundu · yüzey metriğine dönüştürülmedi" / "Saxlanıldı · səth ölçməsinə çevrilmədi": `m ≥ 50` way'ler "<uzunluk> · <x,x> dur-kalk/km" | Y12 `WayStats` | var (başlık SORU-Q3) |
+
+Sarsıntı metni (`_bump`, 56-61): `vib == null` → "sarsıntı ?" / "silkələnmə ?", < 2,5 "sarsıntı az" / "silkələnmə az", < 4 "sarsıntı orta" / "silkələnmə orta", aksi "sarsıntı çok" / "silkələnmə çox" (WEEM 1.0'da hep "?", 9.13).
+
+#### 9.8.3 Kalite sayfası (`showQualitySheet`, 172-252)
+
+Başlık ad; alt yazı `st == null` → "Kalite <%q> (tahmin)" / "Keyfiyyət <%q> (təxmini)", aksi "Kalite <%q> · <x,x> dur-kalk/km · <sarsıntı> · <uzunluk> sürüldü" / "… sürülüb" (`q = qualityOf(way, g)`, OSM ön tahminli). Seçenekler: 👍 "Kaliteli yüzey · kullanıcı puanı" / "Hamar səth · istifadəçi balı" (90), 👎 "Bozuk yüzey · kullanıcı puanı" / "Nahamar səth · istifadəçi balı" (25), "Kaliteyi % olarak gir" (9.4.1), puan varsa "Elle puanı kaldır" / "Yazdığım faizi sil", istatistik varsa "Öğrenileni sıfırla" / "Öyrəniləni sıfırla". Her seçimden sonra rota varsa yeniden rota.
+
+#### 9.8.4 Ters yön sekmesi (`_WrongWayTab` 254-318, `_WwRow` 320-418)
+
+- Bilgi kartı: "Ters yönde sorun oranı" / "Əks istiqamətdə problem faizi" + açıklama (273-283, metin aynen), "Sorun eşiği" adımlayıcı, "Her geçişten sonra sor" anahtarı (9.6).
+- Liste: onaylı ∪ ww kaydı olan sokaklar; ham orana göre azalan (kaydı yok = −1), eşitlikte geçişe göre azalan. Boşsa "Onaylı sokak yok. Tek yönlü bir sokakta ters giderken Ses+ ile onaylarsın; ana caddelerde onay kapalı." / "Təsdiqli küçə yoxdur. Birtərəfli küçədə əks istiqamətdə gedərkən Səs+ ilə təsdiqləyirsən; əsas küçələrdə təsdiq olmur."
+- Satır: ad (Y8 `streets.names` önce, sonra `nameOf`); alt "<n> geçiş · <sorun> sorun · <durum>" / "<n> keçid · <sorun> problem · <durum>" (sorun tam sayıysa tam, değilse 1 ondalık); durum: onaylı değil "onay kaldırılmış" / "təsdiq götürülüb", kaçınılıyor (geçiş ≥ 3 ve oran ≥ eşik) "kaçınılıyor" / "yan keçilir" (alt yazı kırmızı), geçiş 0 "veri yok" / "məlumat yoxdur", aksi "kullanılıyor" / "istifadə olunur"; sağda oran `%` (geçiş 0 → "—"), renk: geçiş 0 soluk, ≥ eşik kırmızı, ≥ eşik/2 turuncu, aksi yeşil; simge onaylıysa yeşil.
+- Satır menüsü: "Sorunlu geçiş ekle" / "Problemli keçid əlavə et", "Sorunsuz geçiş ekle" / "Problemsiz keçid əlavə et", "Sayaçları sıfırla" / "Sayğacları sıfırla"; onaylıysa "İzin saatlerini düzenle" / "İcazə saatlarını dəyiş" (alt: saat etiketi ya da "Günün tamamı" / "Bütün gün"; Y8 saat ekranı, Bölüm 4) ve "Onayı kaldır (ters yön kapalı)" / "Təsdiqi götür (əks istiqamət bağlı)".
+
+#### 9.8.5 Yol yok sekmesi ve hayalet ekleme (`_GhostTab` 420-469; 486-555)
+
+- Kart "Haritada var, gerçekte yok" / "Xəritədə var, əslində yoxdur" + açıklama (432-437 aynen). Liste yeniden eskiye: ad, "Sokağın tamamı" / "Bütün küçə" ya da "Bir parça" / "Bir hissə" · `gg.aa.yyyy` (telefon yerel saati), sil (ipucu "Sil (yol varmış)"); boş "Liste boş" / "Siyahı boşdur"; "Tümünü sil" / "Hamısını sil" → onay "Tüm "yol yok" işaretleri silinsin mi?" / "Bütün "yol yoxdur" qeydləri silinsin?" ("Vazgeç" / "Ləğv et", "Sil").
+- Ekleme: harita uzun basış "Burada yol yok" / "Burada yol yoxdur" (alt "<ad> · bu parça rotaya hiç girmez" / "<ad> · bu hissə marşruta heç vaxt düşməyəcək") ve "Bu sokağın tamamı yok" / "Bu küçə ümumiyyətlə yoxdur" (`nav_screen.dart:311-329`); rota sırasında "Yol yok" düğmesi (`widgets.dart:381-387`) → seçici "Hangi yol yok?" / "Hansı yol yoxdur?" (alt "Seçtiğin parça bir daha rotaya girmez; rota hemen yeniden hesaplanır." / "Seçdiyin hissə bir daha marşruta düşməyəcək; marşrut dərhal yenidən hesablanır."): rotanın ilk bacağında konumdan sonraki (bitişi > konum + 3 m) en çok 6 parça, satır "şu an üzerindesin · <uzunluk>" / "hazırda bunun üstündəsən · <uzunluk>" ya da "<mesafe> sonra · <uzunluk> uzunluk" / "<mesafe> sonra · uzunluğu <uzunluk>", dipte "Listede yoksa: haritada o yola uzun bas → "Burada yol yok"." / "Siyahıda yoxdursa: xəritədə o yolun üstündə barmağını saxla → "Burada yol yoxdur"." (506-555).
+- Ekleyince toast "Yol yok: <ad>[ (tamamı)] — rotaya girmez" / "Yol yoxdur: <ad>[ (bütün küçə)] — marşruta düşməyəcək" (turuncu, 7 sn, "Geri al" → işaret silinir) (486-504).
+
+#### 9.8.6 ww kesimi (`nav_screen.dart:226-247`)
+
+Harita uzun basış, yalnız ana cadde **ve** tek yön bayraklı kenarda: "Bu kesimde ters yöne izin ver" / "Bu hissədə əks istiqamətə icazə ver" ya da (izinliyse) "Bu kesimde ters yön iznini kaldır" / "Bu hissədə əks istiqamət icazəsini sil", alt "<ad> · yalnız bu kavşak arası, ana cadde" / "<ad> · yalnız bu kəsişmələr arası, əsas küçə" → toast "Bu kesimde ters yön serbest: <ad>" / "Bu hissədə əks istiqamət açıqdır: <ad>" ya da "Ters yön izni kaldırıldı: <ad>" / "Əks istiqamət icazəsi silindi: <ad>" (yeşil).
+
+#### 9.8.7 Harita katmanı (`map_view.dart:37-50, 82-140`; çizim Bölüm 6)
+
+Hayalet kenar gri kesikli (5 px, desen 4/6), ww kesimi yeşil kesikli (4 px, 10/5); onaylı yeşil / kara liste kırmızı / eğimli (Y8). Kalite renk katmanı Y13'tür (9.8.2). Hayalet ve ww kesimi kümeleri graf ya da `ghostRev` değişince yeniden hesaplanır (önbellek).
+
+**WEEM:** ekranlar `:app` (`RoadsScreen.kt` 4 sekme; Bisiklet sekmesi Y15 içeriği), kartlar Harita sekmesinin alt paneline (`WrongWayCard`, `QualityPromptCard`), uzun basış satırları Bölüm 6'nın menüsüne, Ayarlar → Harita ayarları "Yollarım" grubu (ses tuşu anahtarı dahil). Metinler TR/AZ aynen (farklar 9.13).
 <!-- END sec:9 -->
 
 <!-- BEGIN sec:10 -->
