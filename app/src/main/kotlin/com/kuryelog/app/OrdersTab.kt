@@ -106,6 +106,7 @@ private fun OrdersHome(
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
         NowCard(today.nowTitle, today.now, today.active.map { it.label to it.tripId }) { src.showCustomerCard(it); onChanged() }
         CardView(today.hero, onMetric = { metric = it })
+        today.report?.let { CardView(it) }
         today.platforms.forEach { CardView(it) }
         // RS `renderOrders`: seçici gün sayfalarının üstünde; iki sekme aynı gün sayfalarını paylaşır.
         OfferScoreSelector(scores.lang, scores.on, scores.pick)

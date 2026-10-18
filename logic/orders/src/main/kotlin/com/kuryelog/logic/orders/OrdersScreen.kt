@@ -41,7 +41,7 @@ data class Card(val blocks: List<Block>, val tone: Tone = Tone.NEUTRAL, val hero
 data class ActiveTrip(val tripId: String, val platform: String, val label: String)
 
 /** "ŞU AN" kartı ve Bugün (Rawstats ana sayfası: ŞU AN, Net kazanç, platform kartları). */
-data class Today(val nowTitle: String, val now: String?, val active: List<ActiveTrip>, val hero: Card, val platforms: List<Card>)
+data class Today(val nowTitle: String, val now: String?, val active: List<ActiveTrip>, val hero: Card, val platforms: List<Card>, val report: Card? = null)
 
 data class MetricList(val title: String, val summary: String, val rows: List<Pair<String, Boolean>>, val empty: String?)
 
@@ -140,10 +140,16 @@ class OrdersScreen(private val src: OrdersSource, lang: Lang) {
         val a = OrderHistory.averages(both, ::platformOf)
         fun m(v: Double?) = v?.let { f1(it) + " " + tl("dk", "dəq") } ?: "—"
         val wh = a.energyWh?.let { f1(it) + " Wh" } ?: "—"
+        // A4.2 (S8): enerji maliyeti varsa net'ten düşer (rapor kartı `:economics`'ten); yoksa Rawstats'ın sayısı değişmez.
+        val summary = src.daySummary(OrderHistory.Day(src.today(), both), true, ::tl)
+        val cost = summary?.energyCostAzn ?: 0.0
+        val hours = src.shiftMinutes(src.today()) / 60.0
+        val net = st.net - cost
+        val perHour = if (cost > 0.0) (if (hours > 0.01) net / hours else 0.0) else st.perHour
         val blocks = listOf(
-            Block.Line(tl("Net kazanç", "Xalis qazanc"), Style.MUTED),
-            Block.Big(f2(st.net) + " ₼"),
-            Block.Tiles(listOf(Tile(st.delivered.toString(), tl("teslim", "çatdırılma")), Tile(f1(st.perHour) + " ₼", tl("saat başına", "saat başına")),
+            Block.Line(if (cost > 0.0) tl("Net kazanç (enerji maliyeti düşülmüş)", "Xalis qazanc (enerji xərci çıxılmış)") else tl("Net kazanç", "Xalis qazanc"), Style.MUTED),
+            Block.Big(f2(net) + " ₼"),
+            Block.Tiles(listOf(Tile(st.delivered.toString(), tl("teslim", "çatdırılma")), Tile(f1(perHour) + " ₼", tl("saat başına", "saat başına")),
                 Tile(dk(sessions.sumOf { it.minutes }), tl("çevrimiçi", "onlayn")))),
             Block.Divider,
             Block.Tiles(listOf(Tile(sessions.sumOf { it.offers }.toString(), tl("görülen teklif", "görülən təklif")), Tile(st.accepted.toString(), tl("kabul", "qəbul")),
@@ -170,7 +176,7 @@ class OrdersScreen(private val src: OrdersSource, lang: Lang) {
             val p = platformOf(it.pkg)
             ActiveTrip(it.id, p, tl("$p müşteri kartını göster", "$p müştəri kartını göstər"))
         } else emptyList()
-        return Today(tl("ŞU AN", "İNDİ"), now, active, Card(blocks, hero = true), platforms)
+        return Today(tl("ŞU AN", "İNDİ"), now, active, Card(blocks, hero = true), platforms, summary?.card)
     }
 
     private fun unpricedNote(n: Int) = tl("Fiyatı okunamayan $n sipariş brüt ve net toplamına eklenmedi.", "Qiyməti oxunmayan $n sifariş ümumi və xalis cəmə əlavə edilmədi.")
@@ -261,7 +267,9 @@ class OrdersScreen(private val src: OrdersSource, lang: Lang) {
         if (d.unconfirmed > 0) head += Block.Line(tl("Sonucu doğrulanmamış: ${d.unconfirmed}", "Nəticəsi təsdiqlənməyən: ${d.unconfirmed}"), Style.MUTED)
         if (d.inferred > 0) head += Block.Line(tl("Doğrulanmamış teslim: ${d.inferred} (sonraki sipariş başladı; teslim ve net toplamına dahil, platform listesiyle eşleşince doğrulanır)",
             "Təsdiqlənməmiş çatdırılma: ${d.inferred} (növbəti sifariş başladı; çatdırılma və xalis cəmə daxildir, platforma siyahısı ilə uyğunlaşanda təsdiqlənir)"), Style.MUTED)
-        val cards = listOfNotNull(cashCard(date, d), officialCard(platform, date, d), missedCard(platform, date), boostCard(platform, date))
+        // A4.2: gün sonu raporu yalnız "Tüm siparişler" görünümünde (net platformlar toplamıdır; enerji platforma bölünmez).
+        val report = if (platform == null) src.daySummary(d, date == src.today(), ::tl)?.card else null
+        val cards = listOfNotNull(report, cashCard(date, d), officialCard(platform, date, d), missedCard(platform, date), boostCard(platform, date))
         val live = src.live().map { it.id }.toSet()
         val trips = d.trips.sortedBy { OrderHistory.offerAt(it) }
             .map { trip -> tripCard(trip, trip.id in live && src.canAct, d.trips.filter { platformOf(it.pkg) == platformOf(trip.pkg) }) }

@@ -19,11 +19,8 @@ object DayReportCard {
             Block.Line(if (today) tl("Günün özeti (şimdiye dek)", "Günün xülasəsi (indiyədək)") else tl("Gün sonu raporu", "Gün sonu hesabatı"), Style.TITLE),
             Block.Line(tl("Net kazanç (enerji maliyeti düşülmüş)", "Xalis qazanc (enerji xərci çıxılmış)"), Style.MUTED),
             Block.Big(f2(r.net) + " ₼"),
-            Block.Tiles(listOf(
-                Tile(f2(r.gross) + "₼", tl("brüt", "ümumi")),
-                Tile("+" + f2(r.tips) + "₼", tl("bahşiş", "çaypulu")),
-                Tile("−" + f2(r.commission) + "₼", tl("komisyon", "komissiya")),
-                Tile("−" + f2(r.energyCost) + "₼", tl("enerji", "enerji")))),
+            Block.Tiles(listOf(Tile(f2(r.gross) + "₼", tl("brüt", "ümumi")), Tile("+" + f2(r.tips) + "₼", tl("bahşiş", "çaypulu")))),
+            Block.Tiles(listOf(Tile("−" + f2(r.commission) + "₼", tl("komisyon", "komissiya")), Tile("−" + f2(r.energyCost) + "₼", tl("enerji maliyeti", "enerji xərci")))),
         )
         b += Block.Line(energyNote(r, tl), Style.MUTED)
         if (r.commissionMissing) b += Block.Line(tl("Filo komisyonu girilmemiş: komisyon 0 sayıldı, net = brüt + bahşiş (Daha fazla → Siparişler ayarları).",

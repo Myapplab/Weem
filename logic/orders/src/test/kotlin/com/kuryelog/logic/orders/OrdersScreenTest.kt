@@ -180,6 +180,36 @@ class OrdersScreenTest {
         assertNull(today.now)
     }
 
+    @Test fun daySummaryShowsTheReportAndSubtractsEnergyCostFromTheHeroNet() {
+        val r = rig()
+        r.add(trip("a", gross = 3.0)); r.add(trip("b", pkg = bolt, at = t0 + hour, gross = 5.0, restaurant = "Test Kafe")); r.add(trip("old", at = yesterday))
+        r.write("2026-10-16", "events.jsonl", JSONObject().put("type", "shift_end").put("min", 120.0).put("km", 12.5))
+        // Bağlı değil: kart yok, Rawstats sayısı değişmez.
+        val plain = OrdersScreen(r.source, Lang.TR)
+        assertNull(plain.today().report); assertEquals("Net kazanç", (plain.today().hero.blocks[0] as Block.Line).text)
+        assertTrue(plain.dayDetail("2026-10-16").cards.none { c -> lines(c).any { it.startsWith("Gün sonu") } })
+        val seen = mutableListOf<Pair<String, Boolean>>()
+        val src = object : OrdersSource by r.source {
+            override fun daySummary(day: OrderHistory.Day, today: Boolean, tl: (String, String) -> String): DayNetSummary {
+                seen += day.date to today
+                return DayNetSummary(Card(listOf(Block.Line(tl("Gün sonu raporu", "Gün sonu hesabatı"), Style.TITLE)), outlined = true), 0.5)
+            }
+        }
+        val screen = OrdersScreen(src, Lang.TR)
+        val today = screen.today()
+        assertEquals("Gün sonu raporu", (today.report!!.blocks[0] as Block.Line).text)
+        assertEquals("Net kazanç (enerji maliyeti düşülmüş)", (today.hero.blocks[0] as Block.Line).text)
+        assertEquals("7.50 ₼", (today.hero.blocks[1] as Block.Big).text)   // 8.00 − 0.50
+        assertEquals("3.8 ₼", today.hero.blocks.filterIsInstance<Block.Tiles>()[0].items[1].value)   // 7.50 / 2 saat = 3.75
+        assertEquals("2026-10-16" to true, seen.first())
+        // Gün ayrıntısı: rapor ilk kart, yalnız "Tüm siparişler"de; dünün raporu "şimdiye dek" değil.
+        val d = screen.dayDetail("2026-10-15")
+        assertEquals("Gün sonu raporu", lines(d.cards[0])[0]); assertEquals("2026-10-15" to false, seen.last())
+        val n = seen.size
+        assertTrue(screen.dayDetail("2026-10-16", "Wolt").cards.none { c -> lines(c).any { it.startsWith("Gün sonu") } }); assertEquals(n, seen.size)
+        assertEquals("Gün sonu hesabatı", lines(OrdersScreen(src, Lang.AZ).dayDetail("2026-10-15").cards[0])[0])
+    }
+
     // ---- Gün sayfaları: sıra, başlık, platform süzgeci ----
 
     @Test fun pagesGoNewestFirstAndTheHeaderCarriesTheDay() {

@@ -52,11 +52,11 @@ interface OrdersSource {
     /** E4 (A4.1): sipariş kartının "Teklif puanı" satırı (`:economics` verir, `:app` bağlar); bağlı değilse ya da teklif yoksa null. */
     fun offerScoreLine(trip: TripRecord, tl: (String, String) -> String): String? = null
     /** N4/N8 (A4.2): günün gün sonu raporu kartı ve net'ten düşülen enerji maliyeti (`:economics` verir, `:app` bağlar); bağlı değilse null. [today] true = gün sürüyor ("şimdiye dek"). */
-    fun daySummary(day: OrderHistory.Day, today: Boolean, tl: (String, String) -> String): DaySummary? = null
+    fun daySummary(day: OrderHistory.Day, today: Boolean, tl: (String, String) -> String): DayNetSummary? = null
 }
 
 /** Gün sonu raporu kartı ([card]) ve "Net kazanç"tan düşülecek enerji maliyeti ([energyCostAzn], 0 = düşülecek yok). */
-data class DaySummary(val card: Card, val energyCostAzn: Double)
+data class DayNetSummary(val card: Card, val energyCostAzn: Double)
 
 /**
  * Dosya ve veritabanı okuyan [OrdersSource]. [flow] null ise yalnız saklı kayıtlar; verilince canlı kopya saklıyı ezer (RS
