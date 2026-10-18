@@ -24,7 +24,7 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 | 3 | Y3 rota motoru | A6.4 | ajan R | bitti (17:15 UTC) <!-- st:3 --> |
 | 4 | Y8 sokak kararları | A6.4 | ajan R | bitti (17:15 UTC) <!-- st:4 --> |
 | 5 | Y15, Y16, Y21 | A6.8 | ajan R | bitti (17:15 UTC) <!-- st:5 --> |
-| 6 | Y1, Y2 harita ekranı | A6.5 | ajan N | bekliyor <!-- st:6 --> |
+| 6 | Y1, Y2 harita ekranı | A6.5 | ajan N | kısmen: 6.1–6.5 yazıldı; sırada 6.6 katmanlar ve uzun basış menüsü (17:18 UTC) <!-- st:6 --> |
 | 7 | Y4 navigasyon | A6.6 | ajan N | bitti (12:40 UTC) <!-- st:7 --> |
 | 8 | Y5, Y6 bağlantılar ve adres | A6.6 | ajan N | bitti (12:34 UTC) <!-- st:8 --> |
 | 9 | Y12 yol kalitesi öğrenme | A6.11 | ajan Q | bitti (17:16 UTC) <!-- st:9 --> |
@@ -679,7 +679,76 @@ Fixture'lar aynen: `_single(tags)` (way 500, 400 m kuzey), `_parallel(east)` (ba
 <!-- BEGIN sec:6 -->
 ## 6. Y1 Harita ekranı ve Y2 İkinci harita görünümü (A6.5)
 
-_Yazılıyor (ajan N)._
+### 6.1 Kaynak ve kapsam
+
+- YG `lib/main.dart` (178) ve `lib/core/day_scope.dart:8-9` (ana kabuk, pasif oturum); `lib/ui/nav_screen.dart:40-153` (yerleşim), `:155-366` (uzun basış menüsü); `map_hud_layout.dart` (29); `map_hud.dart` (arama çubuğu Bölüm 8.8, `RouteFab` Bölüm 7.11); `map_view.dart` (1178: yüzey seçimi, altlıklar, işaret akışı, katmanlar, işaretler); `google_map_surface.dart` (302); `puck_style.dart` (38); `locate_button.dart` (66); `lib/core/theme.dart` (190), `app_info.dart` (19), `lib/ui/brand.dart` (78); `setup_screen.dart` (211); `settings_screen.dart:26-92, 138-196, 418-527` (yapı); `maps_help.dart` (45); `home_picker.dart` (107) + `android_overlay/HomePickActivity.kt` (56), `HomePickContract.java`; `MainActivity.kt:99-104, 198-222, 236-258, 282-286, 299-338` (ekran açık, dosya kaydetme, `openUrl`, Play Services, yaşam döngüsü); `ci/build.sh:87-104` (Maps anahtarı); `pubspec.yaml:19-23, 44, 56-68`; `assets/fonts/` (Inter, 6 dosya, 2,0 MB); `assets/brand/` (hiçbir yerde kullanılmıyor).
+- Başkalarının bölümü: takip, yaklaşma yakınlaştırması, varış odağı, rota çizimi, rota paneli ve sol göstergeler Bölüm 7; harita verisi fazları ve ekran metinleri Bölüm 2.9; sokak kararı/hayalet/ww çizgilerinin ölçüleri 9.8.7; POI verisi ve düzenleyicisi Bölüm 5 (Y16); ışık işaretleri Bölüm 11 (Y11); hava yuvarlağı Bölüm 10; hatırlatıcı ve görev kartları Bölüm 13; gün kartının içeriği (aşama satırları, İstatistik) Bölüm 11/12.
+- Bulgu: Y1/Y2 için ham bulgu yoktu (`OZELLIK_HARITASI` Y1/Y2 satırları; Y2'nin testi yok → karakterizasyon testi). G2 haritadan seçme `bulgular/Y_tracking.md` §G2 satır satır doğrulandı (düzeltme 6.16).
+
+### 6.2 Ana kabuk (`main.dart`)
+
+- **Açılış:** yalnız dikey (`portraitUp`, :40); tercihler önyüklenir; ayrı Dart girişi `pickHomeMain` ev seçici içindir (6.11).
+- **Hep yaşayanlar** (:112-128): yüzey servisi, konum, sensörler, sürüş günlüğü, veri seti, batarya, pano, yerel köprü, Rawstats evi, yalnız-nav, nav yayını; gün, yol öğrenme ve hatırlatıcı dinlenir.
+- **Dil ve tema** (:138-158): `I18n.resolve(settings.lang)`; tema `light` → gündüz paleti, `auto` → telefonun gece/gündüz modu, diğer her değer (`dark` varsayılan, eski `dark-ui`) → gece paleti. Durum çubuğu saydam, simgeler zemine zıt; gezinme çubuğu zemin rengi. Tema geçişi animasyonsuz. Yerel `tr`/`az`.
+- **İlk ekran** (:171-175): graf hazırsa harita ekranı; faz `checking`/`unpacking` ise açılış ekranı; aksi kurulum ekranı (6.9; fazlar Bölüm 2.9).
+- **Ekranı açık tutma** (`_updateAwake`, :82-86): koşul `gün açık || rota var`; wakelock + yerel `setScreenAwake` (`FLAG_KEEP_SCREEN_ON`, `MainActivity.kt:99-104`; her `onResume`'da yeniden uygulanır, :324-330). Yeniden değerlendirme: açılışta, öne dönüşte, gün açılıp kapanınca ve `hasRoute || durak var` değişince. Ses tuşları da ancak ekran açıkken yakalanır (Bölüm 9).
+- **Pasif oturum** (`day_scope.dart:8-9`; `main.dart:63-74, 93-108`): uygulama arka plana geçerken gün kapalıysa `passive.pausedAt.v2 = şimdi` (ms) yazılır ve wakelock kapanır. Açılışta ve öne dönüşte `!gün açık && pausedAt != null && şimdi − pausedAt ≥ 5 dk` ise rota silinir (`clearRoute`); anahtar her seferinde silinir. Öne dönüşte ayrıca yüzey servisi yeniden denenir (Y13, sonra).
+- **WEEM:** tek Activity (`:app` `MainActivity`), Harita sekmesi `MapTab` (açılış sekmesi). Dil ve tema `:app`'in (`lang`, `theme`; `logic/app` `ThemeMode` SYSTEM/LIGHT/DARK): YolGo'nun varsayılanı `dark`, WEEM'in SYSTEM (A1.3) — fark bilerek. Pasif oturum saf `logic/map` `nav.PassiveSession` (5 dk), anahtar `passive.pausedAt.v2` (`map` dosyası); öne/arkaya geçiş `MainActivity` `onStart`/`onStop`. Ekran açık: `:app` Activity bayrağı modüllerin isteklerinin VEYA'sı — `:map` (gün açık ya da rota var) ve `:scooter` (S2 `keep_screen_on`, bugün `ScooterTab` görünümünde).
+
+### 6.3 Harita ekranı yerleşimi (`nav_screen.dart`, `map_hud_layout.dart`)
+
+Üç kip (`nav_screen.dart:57-153`):
+1. **Varış odağı** (klavye kapalı ve odak açık; Bölüm 7.10): üstte bildirim şeridi + hatırlatıcı kartı; altta ters yön kartı + `ArrivalAddressCard`; arama, ayar, göstergeler, gün kartı, konum ve rota düğmesi yok.
+2. **Yalnız harita** (haritaya tek dokunuş açar/kapatır, `_toggleMapOnly`): sağ üstte "Panelleri göster" / "Panelləri göstər" (`show-panels`, `fullscreen_exit`), altta konum düğmesi.
+3. **Normal:** üstte [arama çubuğu (Bölüm 8.8) | ayar düğmesi (`open-settings`, `settings_rounded`, ipucu "Ayarlar" / "Tənzimləmələr") → Ayarlar sayfası], 16 px, hava yuvarlağı (ayar açıksa; Bölüm 10), 6 px, sol göstergeler (`ModePager`; klavye açıkken yok; Bölüm 7.11), 6 px, bildirim şeridi, hatırlatıcı kartı (Bölüm 13). Ana ekranda menü (`main-menu`) ve kayıt noktası yok. Altta gün kartı katlıysa (`shiftBarCollapsed`): puan sorusu kartı, ters yön kartı (Bölüm 9), sonra satır [solda gün kartı simgeleri | sağda konum düğmesi, 10 px, rota düğmesi]; açıksa sağa hizalı sütun: konum düğmesi, 10 px, puan sorusu, ters yön kartı, rota düğmesi, 8 px, gün kartı. En üstte görev uyarısı katmanı (Bölüm 13).
+
+`MapHudLayout` (:4-27): harita tam ekran; üst panel `SafeArea` (alt hariç), kenar 8/6/8/0 px, yüksekliği en çok `kullanılabilir × (klavye açık ? 0,95 : 0,64)` (kullanılabilir = ekran − klavye − sistem boşlukları), taşarsa kaydırılır; alt panel yalnız klavye kapalıyken, sol/sağ/alt 8 px, en çok ekranın %58'i, alttan dolarak kaydırılır; uyarı katmanı en üstte. **Kural:** paneller yalnız çizdikleri denetimlere sahiptir, boş alan haritanındır (kaydırma ve iki parmak yakınlaştırma geçer; `HitTestBehavior.deferToChild`); uyarı engeli (`ModalBarrier`) varken harita girdi almaz.
+
+**WEEM:** Compose'da `Modifier.verticalScroll` ve `pointerInput` boş alanda da sürüklemeyi yutar. HUD kapsayıcıları içeriği kadar yer kaplar (`wrapContentHeight` + `heightIn(max = …)`), kaydırma yalnız içerik sınırı aşınca; haritanın üstünde tam ekran saydam katman olmaz. `map_hud_gesture_test` bu kuralı sınar (6.14).
+
+### 6.4 Harita yüzeyleri
+
+**Ortak** (`map_view.dart:161-500`):
+- **Seçim:** `mapStyle == "google"` ve derleme Google'a açıksa (`GOOGLE_MAPS_ENABLED`, 6.10) Google yüzeyi; aksi flutter_map (anahtarsız derlemede `google` → `minimal`). Yüzey değişince kamera "hazır değil" sayılır.
+- **Başlangıç:** merkez = işaret ?? son konum ?? Bakü (40.4093, 49.8671); yakınlık 16,2 (`standardZoom`). Hazır olunca son konum varsa işaret oraya; Google'da rota varsa rota sığdırılır, yoksa konuma dönülür; flutter_map'te her zaman konuma dönülür.
+- **Sınırlar:** flutter_map yakınlık 11–19, döndürme jesti kapalı (harita yalnız kamera yönüyle döner); Google 11–20, eğme, pusula, yakınlık düğmeleri, araç çubuğu ve "konumum" düğmesi kapalı, iç boşluk 16/120/16/240 px (HUD payı).
+- **Kamera hareketi kısıtı** (`_move`, :193-209): flutter_map en sık 80 ms'de bir; Google en sık 160 ms'de bir ve önceki hareket bitmeden yenisi yok (animasyonsuz `moveCamera`). Takip, yaklaşma, odak ve yön kuralları Bölüm 7.10.
+- **Konum işaretinin akışı** (`_onFix`, :306-370): doğruluk >65 m ya da geçersiz → yok sayılır. Hareket = hız ≥1,5 m/s ve yön 0–360°; dönüş = önceki yönle fark ≥25°. İşaret yön filtresi (`HeadingFilter`) yalnız hareketli, doğruluk ≤25 m ve yön doğruluğu ≤45° iken beslenir (ağırlık dönüşte 0,85, aksi 0,4), aksi sıfırlanır. Kayma süresi `clamp(0,85 × iki fix arası, 250, 1000)` ms, doğrusal ara değer. Graf varken, hareketli ve doğruluk ≤25 m ise **yola oturtma**: en yakın kenar (dönüşte 10 m ve yön toleransı 25°, aksi 15 m / 40°; "yol yok" kenarları hariç); nokta kenara taşınır; kenar yönü (iki yönden GPS'e yakın olanı) GPS yönüne <30° ise yön o olur. **İleri tahmin:** `min(hız × (dönüşte 0,3 : 0,7) sn, 15 m)` yön boyunca. >120 m sıçramada (ilk fix, tünel çıkışı) kaymadan geçilir; ilk fix'te kamera yönü bu yön olur.
+
+**Google yüzeyi** (`google_map_surface.dart`):
+- Yalnız görüntü katmanı: bütün çizgiler YolGo'nun; Map ID, Routes, Navigation ve Places SDK kullanılmaz (:54-55).
+- **Stil:** renk şeması sabit açık (çalışırken değiştirmek 1.4.0'da bazı telefonlarda boş bej harita veriyordu, :253-256); koyu harita JSON stille (`googleMapStyle`, :23-49; 16 kural, zemin `#1d2330`, yazı `#8a96a8`/`#141922`, yollar `#2f3a4c`/`#3a465a`/`#4a566c`, su `#0e1626` …; aynen alınır); koyu = gece paleti ve tema `dark-ui` değil (`googleDarkMap`, :52); yakınlık <17'de `poi.business` ve `transit` gizli (YolGo kendi yerlerini çizer). Tema ya da uyumluluk değişince yüzey yeniden kurulur.
+- **Çizgiler:** flutter_map çizgileri aynı genişlik ve renkle, sıra = `zIndex`; düz olmayan her desen 8 px çizgi / 6 px boşluk olur (6.16).
+- **İşaretler:** yerler (kamera merkezinin 900 m içi, en yakından en çok 100; yakınlık eşiği ışık 16,5, metro 13, AVM 15, diğerleri 16,5; ışık dışındakilere ≥17,6'da ilk 35'e ad etiketi; ikonlar 3× ölçekli bit eşlemi, önbellek >250'de boşalır; zoom ≥0,4 değişince ya da merkez >100 m kayınca yenilenir), duraklar (mor iğne, bilgi "1", "2"…), varılan hedef (yeşil iğne), konum (düz, yönle döner, z 100; yön yoksa nokta, ok koşulu varsa ok, aksi koni + nokta; 6.5), doğruluk dairesi (8 < doğruluk < 80 m; dolgu `#1F4285F4`, kenar `#334285F4` 1 px). Konum çizimi en sık 120 ms'de bir. Parmak 8 px'ten fazla kayarsa "elle hareket" (Bölüm 7.10).
+- `googleMapCompatibility` (API ekranında "Google Maps uyumluluk modu" / "Google Maps uyğunluq rejimi", varsayılan kapalı): Flutter platform görünümü kipi (`useAndroidViewSurface`, :99-100).
+
+**flutter_map yüzeyi = Y2** (`_baseLayers`, `map_view.dart:625-690`; Esri kökü `https://server.arcgisonline.com/ArcGIS/rest/services/…/MapServer/tile/{z}/{y}/{x}`; User-Agent paket adı):
+
+| Seçim (ayar metni TR / AZ) | Açık | Koyu (gece paleti, `dark-ui` hariç) | maxNative | Atıf (sol alt, 9 pt) |
+|---|---|---|---|---|
+| CARTO anahtarı dolu (her seçimi ezer) | `https://{a,b,c,d}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png?key=<anahtar>` | aynı yol `dark_all` | — | "© OpenStreetMap · © CARTO" |
+| `minimal` "Sade · YolGo" / "Sadə · YolGo" (**varsayılan**) | `Canvas/World_Light_Gray_Base` + sade sokak katmanı | `Canvas/World_Dark_Gray_Base` + sokak katmanı | 16 | "© Esri · © OpenStreetMap" |
+| `osm` "OpenStreetMap" | `https://tile.openstreetmap.org/{z}/{x}/{y}.png` | Esri Dark Gray | 19 | "© OpenStreetMap" |
+| `esri` "Esri · detaylı" / "Esri · ətraflı" | `World_Street_Map` | Esri Dark Gray | 19 | "© Esri · © OpenStreetMap" |
+| `sat` "Uydu" / "Peyk" | `World_Imagery` + `Reference/World_Transportation` + `Reference/World_Boundaries_and_Places` | aynı, fotoğraf %40 karartılır | 19 | "© Esri · © OpenStreetMap" |
+| `google` "Google Maps" (anahtarsız derlemede seçilemez) | Google yüzeyi | JSON koyu stil | — | Google'ın kendi logosu |
+
+- **Sade sokak katmanı** (`_StreetDetailLayer`, :930-970): yalnız `minimal` ve CARTO anahtarı yokken; yakınlık ≥16,5'te görünen alandaki graf kenarları (en çok 1 800; "yol yok" hariç): ana yol 4 px, yaya sınıfı 1,1 px, diğer 2,4 px; renk koyu temada ana `#455267` / diğer `#303E50`, açıkta `#D1D9E2` / `#E2E7ED`. Yakınlık ≥17,3'te sokak adları: OSM yolu başına bir, en çok 35, kenarın orta noktasında, 150×35 px kutular çakışmaz, 10,5 pt.
+- **WEEM (S4):** ikinci görünüm MapLibre Native, iki stil: **(1) OSM raster** (`tile.openstreetmap.org`; atıf "© OpenStreetMap contributors", dokununca `https://www.openstreetmap.org/copyright`), **(2) vektör** (anahtarsız kaynak, SORU-N5). OSM karo kullanım politikası: tanıtıcı User-Agent (`WEEM/<sürüm> (personal courier navigation)`), HTTP önbellek başlıklarına uyma, toplu indirme ve önceden doldurma yok, görünür atıf; ihlalde sunucu engelleyebilir. Tek kullanıcılı kurye kullanımı bu sınırda; MapLibre'nin disk önbelleği açık kalır, çevrimdışı paket indirilmez. Vektör kaynak önerileri: (a) kendi Bakü PMTiles dosyası (OSM verisinden, uygulamayla ya da harita verisi gibi elle indirilir; çevrimdışı, sunucusuz; boyut ve MapLibre sürümünün `pmtiles://` desteği A6.5'te doğrulanır), (b) OpenFreeMap (anahtarsız ve kayıtsız barındırılan vektör karoları ve stilleri; dış sunucu). APK boyutu: MapLibre'nin yerel kütüphaneleri ABI başına ölçülür, sonuç bu bölüme yazılır (A6.5, plan S4).
+
+### 6.5 Konum işareti ve konum düğmesi
+
+**İşaret** (`puck_style.dart`, `map_view.dart:830-898`; iki yüzey aynı ölçüler):
+- Ölçüler: beyaz halka r 10, mavi nokta r 7,5 (`#1A73E8`), gölge r 11 (`#40000000`, bulanıklık 4), yön konisi r 28 ve ±30° (radyal geçiş `#4285F4` %55 → %0), çizim kutusu 60×60, ok boyu 22 (Ekim planı madde 5: Google Maps gibi küçük; 1.x'teki büyütme geri alındı).
+- Ok yalnız **rota açık ve işaret yönü belli** iken (`puckShowsArrow(route, course) = route && course != null`); dururken ya da rota yokken nokta (+ yön biliniyorsa koni). Ok yolu: uç `(c.x, c.y − s/2)`, sağ `(c.x + 0,4s, c.y + s/2)`, çentik `(c.x, c.y + 0,22s)`, sol `(c.x − 0,4s, c.y + s/2)`; çizim: 1 px aşağı kaymış gölge (`#40000000`, bulanıklık 3), 3 px beyaz kenar (yuvarlak köşe), mavi dolgu; yöne göre döndürülür.
+- Yön kaynağı: ok için yalnız GPS yönü (filtreli, 6.4); koni için GPS yönü yoksa pusula (Bölüm 7.6). Google'da yön yoksa yalnız nokta çizilir (pusula konisi yok); koni bit eşlemi `#AA4285F4` → `#004285F4` (flutter_map'te %55; küçük fark, 6.16).
+- Doğruluk dairesi: 8 < doğruluk < 80 m iken, metre yarıçaplı (renkler 6.4).
+
+**Konum düğmesi** (`locate_button.dart`; `map_view.dart:211-264`):
+- Kamera kipi `cameraModeOf(follow, headingUp)`: takip yoksa `free`, takipte yön-yukarıysa `followHeading`, kuzey-yukarıysa `followNorth`; başlangıç `followHeading`.
+- Düğme (`smart-locate`, 64×64, daire, panel zemini, çerçeve; simge 30, mavi): `free` → `location_searching_rounded`, ipucu "Konumuma dön" / "Mövqeyimə qayıt"; `followNorth` → `my_location_rounded`, "Gidiş yönüne çevir" / "Hərəkət istiqamətinə çevir"; `followHeading` → `navigation_rounded`, "Kuzey yukarı" / "Şimal yuxarı". Simge anahtarı `locate-<kip>`.
+- Basınca (`smartLocate`): takipte ama elle yakınlaştırılmışsa yalnız standart yakınlığa döner (`recenter`); aksi `locateActionFor`: `free` → konuma dön (yön tercihi korunur), `followNorth` → yön-yukarı, `followHeading` → kuzey-yukarı (kuzeye geçerken kamera hemen 0°'ye döner); yön değişiminde de takip ve otomatik yakınlık yeniden açılır.
+- `recenter(resetZoom = true)`: bekleyen geri-takip iptal, takip açık, `resetZoom` ise otomatik yakınlık açık; işaret yoksa son konum, o da yoksa konum servisi başlatılır; kamera hazırsa `resetZoom ? otomatikYakınlık : şimdiki` ve yön-yukarıysa kamera yönüyle.
 <!-- END sec:6 -->
 
 <!-- BEGIN sec:7 -->
