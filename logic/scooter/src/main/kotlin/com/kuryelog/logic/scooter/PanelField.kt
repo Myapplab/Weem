@@ -1,5 +1,6 @@
 package com.kuryelog.logic.scooter
 
+import com.kuryelog.logic.core.Lang
 import java.util.Collections
 import java.util.Locale
 
@@ -55,6 +56,42 @@ enum class PanelField(val key: String, val label: String, val unit: String) {
         RIDE_TIME -> "süre"
         else -> unit
     }
+
+    /** Ayar listesindeki ad (A5.4, G3): TR [label] aynen, AZ karşılığı. */
+    fun title(lang: Lang): String = if (lang == Lang.TR) label else when (this) {
+        SPEED -> "Sürət"
+        POWER -> "Güc"
+        BATTERY -> "Batareya"
+        RANGE -> "Məsafə"
+        VOLTAGE -> "Gərginlik"
+        CURRENT -> "Cərəyan"
+        TEMP -> "Temperatur"
+        EXT_BATTERY -> "Xarici batareya"
+        MAX_SPEED -> "Maks. sürət"
+        ODOMETER -> "Ümumi km"
+        SCOOTER_TRIP -> "Skuterin sürüş məsafəsi"
+        RIDE_TIME -> "Skuterin sürüş müddəti"
+        TRIP_WH -> "Bu gediş enerji"
+        TRIP_PCT -> "Bu gediş batareya"
+        TRIP_KM -> "Bu gediş məsafə"
+        AVG_SPEED -> "Orta sürət"
+    }
+
+    /** Birim satırı, dile göre ([caption] TR'dir). Birimler (km/h, W, %) iki dilde aynı. */
+    fun caption(lang: Lang): String = if (lang == Lang.TR) caption() else when (this) {
+        TRIP_WH -> "Wh • gediş"
+        TRIP_PCT -> "% • gediş"
+        TRIP_KM -> "km • gediş"
+        AVG_SPEED -> "orta km/h"
+        EXT_BATTERY -> "% • xarici"
+        MAX_SPEED -> "maks. km/h"
+        ODOMETER -> "ümumi km"
+        RIDE_TIME -> "müddət"
+        else -> unit
+    }
+
+    /** Birim, dile göre ("dk:sn" AZ'de "dəq:san"). */
+    fun unit(lang: Lang): String = if (lang == Lang.AZ && this == RIDE_TIME) "dəq:san" else unit
 
     companion object {
         const val MAX = 4
