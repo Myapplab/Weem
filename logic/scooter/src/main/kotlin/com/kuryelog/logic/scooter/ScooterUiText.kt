@@ -223,7 +223,8 @@ enum class ScooterUiText(override val tr: String, override val az: String) : Bil
     N_STOP("Durdur", "Dayandır"),
     PACK_ON("İkinci batarya bağlı • %%%s", "İkinci batareya qoşulub • %%%s"),
     PACK_OFF("İkinci batarya 60 sn'dir okunmuyor", "İkinci batareya 60 san-dir oxunmur"),
-    PAIR_CHANNEL("Scooter eşleştirme", "Skuter cütləşməsi"),
+    PAIR_CHANNEL("Eşleştirme onayı", "Cütləşmə təsdiqi"),
+    PAIR_REPLIED("Scooter yanıt verdi", "Skuter cavab verdi"),
 
     // Bilgi sayfası (NB `InfoSheet`; "Rawstats" → "WEEM").
     INFO_PAIR_T("Eşleştirme", "Cütləşmə"),

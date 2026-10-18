@@ -7,7 +7,9 @@ import android.app.PendingIntent
 import android.content.Context
 import android.os.VibrationEffect
 import android.os.Vibrator
+import com.kuryelog.app.core.Store
 import com.kuryelog.logic.core.NotificationIds
+import com.kuryelog.logic.scooter.ScooterUiText
 import org.json.JSONObject
 
 /**
@@ -44,12 +46,15 @@ class PairAttention(private val context: Context, private val audit: (String, JS
         }
         audit("pair_attention", json("message", MESSAGE, "first_reply", true, "vibrator_available", available, "vibration_requested", requested, "vibration_error", error))
         try {
-            val channel = NotificationChannel(CHANNEL, "Eşleştirme onayı", NotificationManager.IMPORTANCE_HIGH)
+            // Denetim satırı [MESSAGE] (veri, TR); ekrandaki metin dile göre (A5.4).
+            val lang = Store.lang(context)
+            val text = ScooterUiText.PAIR_ATTENTION.get(lang)
+            val channel = NotificationChannel(CHANNEL, ScooterUiText.PAIR_CHANNEL.get(lang), NotificationManager.IMPORTANCE_HIGH)
             channel.setSound(null, null)
             channel.enableVibration(false)
             manager.createNotificationChannel(channel)
-            val b = Notification.Builder(context, CHANNEL).setSmallIcon(android.R.drawable.stat_sys_data_bluetooth).setContentTitle("Scooter yanıt verdi")
-                .setContentText(MESSAGE).setStyle(Notification.BigTextStyle().bigText(MESSAGE)).setOnlyAlertOnce(true)
+            val b = Notification.Builder(context, CHANNEL).setSmallIcon(android.R.drawable.stat_sys_data_bluetooth).setContentTitle(ScooterUiText.PAIR_REPLIED.get(lang))
+                .setContentText(text).setStyle(Notification.BigTextStyle().bigText(text)).setOnlyAlertOnce(true)
             context.packageManager.getLaunchIntentForPackage(context.packageName)?.let {
                 b.setContentIntent(PendingIntent.getActivity(context, REQUEST, it, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT))
             }
