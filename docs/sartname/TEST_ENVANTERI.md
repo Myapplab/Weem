@@ -380,3 +380,5 @@ R4 Rawstats testleri `logic/economics`'te yeşil (ayrıntı `ECONOMICS.md` 5): `
 - **R4 sayısındaki YolGo Dart dosyaları** `offer_engine_test` (7) ve `route_costing_test` (6) YolGo'nun kendi teklif/rota maliyetidir (rota motoru Y3, batarya Y9): **A6.7'ye (N5)** kalır (`OZELLIK_HARITASI` N5 aynı 13 testi sayar).
 - `ScooterOrderEnergyTest` (7) A5.3'te çevrildi (`SCOOTER.md` 13.5).
 - `CrashGuardTest.refusedForegroundStartStillReachesStartForeground` (A4.3 + A5.3 birleşmesinden beri kırmızıydı: `ScooterService` başlatışını vardiya servisi sayıyordu) düzeltildi.
+
+**A4.2 (18 Ekim, yeni testler; Rawstats'ta karşılığı yok):** `logic/economics` `DayReportTest` 10 + `DaySummariesTest` 1; `logic/orders` `OrderSettingsTest` 5 + `OrdersScreenTest.daySummaryShowsTheReportAndSubtractsEnergyCostFromTheHeroNet`; `:app` Robolectric `OrdersSettingsScreenTest` 5 + `OrdersTabTest` 2 rapor testi.

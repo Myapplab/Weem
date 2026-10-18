@@ -143,6 +143,7 @@ enum class Text(override val tr: String, override val az: String) : Bilingual {
     OSET_KWH("kWh fiyatı (₼)", "kWh qiyməti (₼)"),
     OSET_EFFICIENCY("Şarj verimi (yüzde)", "Şarj səmərəsi (faiz)"),
     OSET_GOAL("Günlük net hedef (₼)", "Gündəlik xalis hədəf (₼)"),
+    OSET_REPORT_CHANNEL("Gün sonu raporu", "Gün sonu hesabatı"),
     OSET_UNSET("girilmedi", "daxil edilməyib"),
     OSET_DEFAULT("%s (varsayılan)", "%s (susmaya görə)"),
     OSET_EMPTY_CLEARS("Boş bırakıp kaydedersen değer silinir.", "Boş buraxıb yadda saxlasan dəyər silinir."),

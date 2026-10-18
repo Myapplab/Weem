@@ -108,6 +108,7 @@ Bugünkü mesajlar (alan alan: `bulgular/X_protocol.md` P1–P11; WEEM'deki kar�
 | `scooter.shiftLink` | Bool | bağlantıyı vardiya açtı | `:scooter` · A5 |
 | `shiftOdoFirstKm`, `shiftOdoLastKm` | Long m (−1) | `CORE` 1.4 D8 | `:scooter` · A5 (okuyan `:core`) |
 | `shiftOdoLastAt` | Long ms | `CORE` 1.4 | `:scooter` · A5 |
+| `economics.kwhPrice`, `economics.chargeEfficiencyPct`, `economics.dailyGoalAzn` | Float (yok: maliyet yok sayılır / %90 / hedef yok) | **yeni** (A4.2, S8): kWh fiyatı ₼, şarj verimi %, günlük net hedef ₼ | `:economics` · A4.2 (`NetSettings`) |
 | `economics.share` | Bool | YolGo'ya paylaşım anahtarı | **kalkar** (S7; okunmaz, silinmez) |
 
 `home.ui.*` tercih değildir (Activity durum paketi, 2.2). `pocket_cash`, `cash_received` bildirim yanıt (`RemoteInput`) anahtarlarıdır, tercih değil.
@@ -218,6 +219,7 @@ Dışa aktarma ZIP'i `NinebotLogger-<ms>.zip`: `manifest.json` (`schema` 1, `app
 | 4000 + (tripId.hashCode() & 0xFFF) = **4000–8095** | `cash_tips` "Nakit bahşiş sorusu", HIGH | RS | `CashTipPrompt.kt:22-24` | **çakışma:** aralık 4901, 4902, 5101–5103, 7100, 7301'i kapsar |
 | 4901 | `pocket_cash` "Vardiya başı nakit sorusu", HIGH | RS | `PocketCashPrompt.kt:25-28` | aralık içinde |
 | 4902 | `scooter_link` "Scooter bağlantısı" | RS | `ScooterLink.kt:31-44` | aralık içinde |
+| 4903 | `day_report` "Gün sonu raporu", DEFAULT | **WEEM (yeni)** | `DayReportHook.kt` (A4.2) | çakışma yok (`NotificationIds.DAY_REPORT`) |
 | 5101 / 5102 | `auto_start` "Otomatik başlatma", HIGH (ev / scooter) | RS | `AutoStartNotice.kt:17-23` | aralık içinde |
 | **5103** | `auto_start` (vardiya) **ve** `screen_reading` "Ekran okuma uyarısı" | RS | `AutoStartNotice.kt:20`, `ScreenReading.kt:38` | **iki sabit aynı numara** |
 | 7 | `recording` "Scooter kaydı" (FGS) | NB | `RecordingService.java:64-66` | — |

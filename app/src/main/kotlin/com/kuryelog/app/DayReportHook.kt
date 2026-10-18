@@ -14,6 +14,7 @@ import com.kuryelog.logic.core.ShiftMachine
 import com.kuryelog.logic.economics.DayReportCard
 import com.kuryelog.logic.orders.OrdersScreen
 import org.json.JSONObject
+import com.kuryelog.logic.app.Text as Str
 
 /**
  * Vardiya sonu (A4.2, N4/N8): günün raporu bildirim olarak çıkar (net, brüt, bahşiş, komisyon, enerji, hedefe kalan); aynı kart Siparişler
@@ -43,7 +44,7 @@ class DayReportHook(ctx: Context) : ShiftMachine.Hooks {
             if (day.delivered.isEmpty()) return
             val (title, body) = DayReportCard.notification(Economics.daySummaries(ctx).report(day)) { tr, az -> if (lang == Lang.AZ) az else tr }
             val nm = ctx.getSystemService(NotificationManager::class.java)
-            nm.createNotificationChannel(NotificationChannel(CHANNEL, if (lang == Lang.AZ) "Gün sonu hesabatı" else "Gün sonu raporu", NotificationManager.IMPORTANCE_DEFAULT))
+            nm.createNotificationChannel(NotificationChannel(CHANNEL, Str.OSET_REPORT_CHANNEL.get(lang), NotificationManager.IMPORTANCE_DEFAULT))
             val open = PendingIntent.getActivity(ctx, NotificationIds.DAY_REPORT, ctx.packageManager.getLaunchIntentForPackage(ctx.packageName) ?: Intent().setPackage(ctx.packageName), PendingIntent.FLAG_IMMUTABLE)
             nm.notify(NotificationIds.DAY_REPORT, Notification.Builder(ctx, CHANNEL).setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle(title)
                 .setContentText(body.lineSequence().first()).setStyle(Notification.BigTextStyle().bigText(body)).setContentIntent(open).setAutoCancel(true).build())

@@ -505,7 +505,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Testler:** `OfferNetLineTest` (6) — **6**
 - **Veri:** gün klasörü
 - **Bağımlı:** R12, R13, R14, R8
-- **WEEM:** `:economics` · 4 (A4.2)
+- **WEEM:** `:economics` · 4 (A4.2) — **bitti** (18 Ekim): `DayReport`/`DayReportCard`/`DaySummaries`, Siparişler kartı + vardiya sonu bildirimi; ayrıntı `ECONOMICS.md` 6.1
 
 ### N5 Menzil uyarısı
 - **Eski kod:** yeni; temeli YG `battery_estimator.dart`, `remaining_km_e12`, `lib/economics/offer_engine.dart`, `route_costing.dart`
@@ -526,7 +526,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Testler:** **yok**
 - **Veri:** yeni tercih
 - **Bağımlı:** N4
-- **WEEM:** `:economics` · 4 (A4.2)
+- **WEEM:** `:economics` · 4 (A4.2) — **bitti** (18 Ekim): `NetSettings.DAILY_GOAL`, rapor satırı; `DayReportTest` 10
 
 ## Sonra (3) ve çıkarılan (1) — WEEM 1.0'da yazılmaz
 
