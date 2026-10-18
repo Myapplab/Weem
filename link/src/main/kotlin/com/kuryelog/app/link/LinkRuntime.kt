@@ -10,20 +10,32 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.SystemClock
+import com.kuryelog.app.core.Shift
 import com.kuryelog.logic.core.FailureSink
 import com.kuryelog.logic.link.BondedDevice
+import com.kuryelog.logic.link.FileMessengerStore
+import com.kuryelog.logic.link.Fingerprint
+import com.kuryelog.logic.link.Incoming
 import com.kuryelog.logic.link.LanTargets
 import com.kuryelog.logic.link.LinkCommand
 import com.kuryelog.logic.link.LinkConfig
 import com.kuryelog.logic.link.LinkEvent
-import com.kuryelog.logic.link.LinkMachine
+import com.kuryelog.logic.link.LinkProtocol
+import com.kuryelog.logic.link.LinkStack
 import com.kuryelog.logic.link.LinkStatus
+import com.kuryelog.logic.link.LocalIdentity
+import com.kuryelog.logic.link.MessengerConfig
+import com.kuryelog.logic.link.PairingQr
 import com.kuryelog.logic.link.PeerId
-import com.kuryelog.logic.link.SendResult
+import com.kuryelog.logic.link.PeerInfo
+import com.kuryelog.logic.link.PeerRecord
+import com.kuryelog.logic.link.QrResult
 import com.kuryelog.logic.link.Transport
+import com.kuryelog.logic.link.Trust
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.io.Closeable
+import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -33,6 +45,7 @@ import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketAddress
+import java.security.SecureRandom
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
@@ -45,12 +58,14 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * 2 telefon taşımasının Android kabuğu (LINK.md 1.1): [LinkMachine]'i tek kilit altında sürer, komutlarını TCP, UDP işareti ve
- * klasik Bluetooth RFCOMM soketlerine çevirir. Karar veren kod `logic/link`'te; burada yalnız soket, zamanlayıcı ve ağ okuması.
+ * 2 telefon bağlantısının Android kabuğu (LINK.md 1.1, 3.13): [LinkStack]'i (makine + `Messenger`) tek kilit altında sürer,
+ * komutlarını TCP, UDP işareti ve klasik Bluetooth RFCOMM soketlerine çevirir; kimlik ve eş kaydı [LinkVault]'ta (Keystore
+ * `WEEM.Link.v1` + `weem-link`), teslim zorunlu kuyruk `files/link/`'te. Karar veren kod `logic/link`'te.
  *
- * Ön plan servisi değildir: barındıran servis (A8.3) [start]/[stop] çağırır, [shutdown] ile bırakır. İş parçacığı güvenlidir;
- * dinleyici çağrıları kilit dışında, olayı üreten iş parçacığında yapılır (uzun iş yapılmamalı).
- * Cihazda doğrulanmadı (A8.1); Bluetooth'un scooter BLE'sine etkisi LINK.md Bölüm 2 planıyla ölçülür.
+ * Ön plan servisi değildir: barındıran servis ve ekranlar (QR, S24) A8.3'te; [start]/[startPairing]/[pairWith]/[stop] onlar çağırır.
+ * İş parçacığı güvenlidir; dinleyici çağrıları kilit dışında, olayı üreten iş parçacığında yapılır (uzun iş yapılmamalı; teslim
+ * zorunlu iletinin onayı dinleyici döndükten sonra gider). Anahtar, jeton, QR metni ve yük loga ya da [failures]'a yazılmaz.
+ * Cihazda doğrulanmadı (A8.1, A8.2); Bluetooth'un scooter BLE'sine etkisi LINK.md Bölüm 2 planıyla ölçülür.
  */
 @SuppressLint("MissingPermission") // Bluetooth çağrıları btPermitted() denetiminden sonra; reddedilirse yedek kapalı sayılır.
 class LinkRuntime(
@@ -61,15 +76,35 @@ class LinkRuntime(
 ) {
     interface Listener {
         fun onStatus(status: LinkStatus) {}
-        fun onData(payload: ByteArray, transport: Transport) {}
-        fun onPeerSeen(peer: PeerId) {}
-        fun onBtPeerLearned(address: String) {}
+
+        /** Eşten gelen ileti (son durum ya da teslim zorunlu; tekrarlar atılmış). */
+        fun onMessage(message: Incoming) {}
+
+        /** Eşleştirme tamamlandı; kayıt saklandı. */
+        fun onPaired(peer: PeerRecord) {}
+
+        /** Eşleştirme penceresi eşleşmeden bitti (5 dk); eski eşleşme sürer. */
+        fun onPairingExpired() {}
+
+        /** Öteki telefon eşleşmeyi kaldırdı; bu telefonda da kayıt silindi, bağlantı durdu. */
+        fun onUnpaired() {}
+
+        /** Eşin doğrulanmış bilgisi: protokol ve uygulama sürümü, cihaz adı (LINK.md 3.10). */
+        fun onPeerInfo(info: PeerInfo) {}
+
+        fun onAcked(type: String, id: UUID) {}
+        fun onExpired(type: String, id: UUID) {}
+
+        /** Saat farkı (eşin saati − bu telefonunki) ve belirsizliği, ms. */
+        fun onClock(offsetMs: Long, uncertaintyMs: Long) {}
     }
 
     private val app = context.applicationContext
     private val cfg = LinkConfig()
     private val lock = Any()
-    private val machine = LinkMachine(cfg)
+    private val linkVault = LinkVault(app)
+    private val random = SecureRandom()
+    private val stack = LinkStack(cfg, FileMessengerStore(File(app.filesDir, STORE_DIR)), secureRandom = random)
     private val io: ExecutorService = Executors.newCachedThreadPool { r -> Thread(r, "weem-link-io").apply { isDaemon = true } }
     private val timer: ScheduledExecutorService =
         Executors.newSingleThreadScheduledExecutor { r -> Thread(r, "weem-link-timer").apply { isDaemon = true } }
@@ -84,6 +119,8 @@ class LinkRuntime(
     private var btServer: BluetoothServerSocket? = null
     private var wake: ScheduledFuture<*>? = null
     private var poll: ScheduledFuture<*>? = null
+    private var identity: LocalIdentity? = null
+    private var listenOnly = false
 
     @Volatile private var running = false
     private val refreshLock = Any()
@@ -93,25 +130,63 @@ class LinkRuntime(
     private val _status = MutableStateFlow(LinkStatus.OFF)
     val status: StateFlow<LinkStatus> = _status
 
+    /** Eşleşmiş telefon (yoksa `null`). */
+    val peer: PeerRecord? get() = linkVault.vault.peer()
+
+    /** Bu telefonun parmak izi (A8.3: iki ekranda karşılaştırılır); kimlik açılamazsa `null`. */
+    fun fingerprint(): String? = synchronized(lock) { identityOrNull()?.let { Fingerprint.of(it.keys.public) } }
+
     /**
-     * 2 telefon modunu açar ya da ayarlarını günceller. [listenOnly] = scooter'a bağlı telefon: Bluetooth'ta yalnız bekler.
-     * [btPeerAddress] = daha önce öğrenilen eş adresi ([Listener.onBtPeerLearned]).
+     * 2 telefon modunu eşleşmiş eşle açar ya da ayarlarını günceller; eşleşme yoksa `false`. [listenOnly] = scooter'a bağlı
+     * telefon: Bluetooth'ta yalnız bekler.
      */
-    fun start(self: PeerId, expectedPeer: PeerId? = null, btPeerAddress: String? = null, listenOnly: Boolean = false) {
-        synchronized(lock) {
-            if (!running) {
-                running = true
-                net.start { bg { refresh() } }
-                poll = try {
-                    timer.scheduleWithFixedDelay({ refresh() }, POLL_MS, POLL_MS, TimeUnit.MILLISECONDS)
-                } catch (e: RejectedExecutionException) {
-                    null
-                }
-            }
-        }
-        // Soket açma işi `io`'da (dispatch → listen); burada yalnız makine güncellenir.
-        feed(LinkEvent.Enable(self, expectedPeer, btPeerAddress, listenOnly))
-        bg { refresh() }
+    fun start(listenOnly: Boolean = false): Boolean {
+        val p = linkVault.vault.peer() ?: return false
+        enable(Trust.Paired(p), listenOnly)
+        return true
+    }
+
+    /** Veren telefon: 5 dk'lık eşleştirme penceresi açar (eski eş bu sürede bağlanamaz) ve QR metnini döner (yalnız ekranda). */
+    fun startPairing(listenOnly: Boolean = false): String {
+        val token = ByteArray(PairingQr.TOKEN_LENGTH).also(random::nextBytes)
+        val me = synchronized(lock) { identityOrNull() } ?: throw IllegalStateException("link identity unavailable")
+        enable(Trust.Issuer(token, now() + PairingQr.WINDOW_MS), listenOnly)
+        val text = PairingQr(me.id, me.keys.public, token, me.info.deviceName).toUri()
+        token.fill(0)
+        return text
+    }
+
+    /** Okuyan telefon: taranan QR'la eşleştirmeyi başlatır (5 dk dener). Geçersiz ya da yeni sürüm QR'ında açılmaz. */
+    fun pairWith(qrText: String, listenOnly: Boolean = false): QrResult {
+        val r = PairingQr.parse(qrText)
+        if (r is QrResult.Ok) enable(Trust.Scanner(r.qr, now() + PairingQr.WINDOW_MS), listenOnly)
+        return r
+    }
+
+    /** Eşleştirmeden vazgeç: eşleşme varsa ona döner, yoksa durur. */
+    fun cancelPairing() {
+        if (!start(listenOnly)) stop()
+    }
+
+    /** Eşleşmeyi kaldırır (3.11): bağlıysa eşe söyler, kuyrukları ve kaydı siler, durur. Kimlik anahtarı kalır. */
+    fun unpair() {
+        locked { stack.unpair(now(), wall()) }
+        linkVault.vault.removePeer()
+        stop()
+    }
+
+    /** Son durum (tür başına en yenisi; LINK.md 3.7). Geçersiz tür, TTL ya da çok büyük yükte `IllegalArgumentException`. */
+    fun publishLatest(type: String, payload: ByteArray, ttlMs: Long): UUID {
+        var id: UUID? = null
+        locked(rethrow = true) { id = stack.publishLatest(type, payload, ttlMs, now(), wall()) }
+        return id!!
+    }
+
+    /** Teslim zorunlu: dönmeden `files/link/outbox/`'a yazılır, onaya ya da TTL'ye kadar yeniden gider. */
+    fun publishReliable(type: String, payload: ByteArray, ttlMs: Long = MessengerConfig.DAY_MS): UUID {
+        var id: UUID? = null
+        locked(rethrow = true) { id = stack.publishReliable(type, payload, ttlMs, now(), wall()) }
+        return id!!
     }
 
     fun stop() {
@@ -137,36 +212,82 @@ class LinkRuntime(
         timer.shutdownNow()
     }
 
-    /** Opak yük (A8.2 zarfı) etkin kanaldan gider; Bluetooth'ta ≤ 4 KiB. */
-    fun send(payload: ByteArray): SendResult {
-        val result: SendResult
-        var callbacks: List<() -> Unit> = emptyList()
+    // --- yığın ---
+
+    private fun enable(trust: Trust, listenOnly: Boolean) {
         synchronized(lock) {
-            result = try {
-                machine.send(payload, now()).also { callbacks = dispatch(machine.drain()) }
-            } catch (t: RuntimeException) {
-                failures.failure("link", t)
-                callbacks = emptyList()
-                SendResult.NO_LINK
+            this.listenOnly = listenOnly
+            if (!running) {
+                running = true
+                net.start { bg { refresh() } }
+                poll = try {
+                    timer.scheduleWithFixedDelay({ refresh() }, POLL_MS, POLL_MS, TimeUnit.MILLISECONDS)
+                } catch (e: RejectedExecutionException) {
+                    null
+                }
             }
         }
-        callbacks.forEach { runCatching { it() } }
-        return result
+        // Soket açma işi `io`'da (dispatch → listen); burada yalnız makine güncellenir.
+        locked {
+            val me = identityOrNull() ?: return@locked
+            stack.handle(LinkEvent.Enable(me, trust, linkVault.vault.btAddress(), listenOnly), now(), wall())
+        }
+        bg { refresh() }
     }
 
-    // --- makine ---
+    /**
+     * Kilit altında; kimlik ilk kullanımda Keystore'dan açılır ya da üretilir (açılamazsa yenisi: öteki telefon yeniden eşleşir).
+     * Keystore hiç çalışmazsa `null` ve [failures]'a yalnız istisna türü gider (anahtar yok).
+     */
+    private fun identityOrNull(): LocalIdentity? {
+        identity?.let { return it }
+        return try {
+            val id = PeerId.of(Shift.deviceId(app)) ?: throw IllegalStateException("device id")
+            val keys = linkVault.vault.identity().keys
+            LocalIdentity(id, keys, info(id)).also { identity = it }
+        } catch (e: Exception) {
+            failures.failure("link", e)
+            null
+        }
+    }
 
-    private fun feed(e: LinkEvent) {
-        var callbacks: List<() -> Unit> = emptyList()
+    private fun info(id: PeerId): PeerInfo {
+        val pi = try {
+            @Suppress("DEPRECATION")
+            app.packageManager.getPackageInfo(app.packageName, 0)
+        } catch (e: PackageManager.NameNotFoundException) {
+            null
+        }
+        val code = (pi?.longVersionCode ?: 0L).coerceIn(0L, 0xffffffffL)
+        return PeerInfo(id, LinkProtocol.MAJOR, LinkProtocol.MINOR, code, pi?.versionName.orEmpty(), Build.MODEL.orEmpty())
+    }
+
+    private fun feed(e: LinkEvent) = locked { stack.handle(e, now(), wall()) }
+
+    /**
+     * [block] ve komutların uygulanması kilit altında, dinleyiciler kilit dışında; gelen ileti verildiyse dinleyiciler döndükten
+     * sonra `delivered` (teslim zorunlu onayı, LINK.md 3.8). [rethrow] = yayınlamadaki geçersiz girdi çağırana döner.
+     */
+    private fun locked(rethrow: Boolean = false, block: () -> Unit) {
+        val callbacks = ArrayList<() -> Unit>()
+        var messages = false
         synchronized(lock) {
             try {
-                machine.handle(e, now())
-                callbacks = dispatch(machine.drain())
-            } catch (t: RuntimeException) {
+                block()
+            } catch (t: IllegalArgumentException) {
+                if (rethrow) throw t
+                failures.failure("link", t)
+            } catch (t: Exception) {
+                failures.failure("link", t)
+            }
+            try {
+                messages = dispatch(stack.drain(), callbacks)
+            } catch (t: Exception) {
                 failures.failure("link", t)
             }
         }
         callbacks.forEach { runCatching { it() } }
+        if (messages) locked { stack.delivered(now(), wall()) }
     }
 
     /** Arka plan işi; [shutdown]'dan sonra gelen iş sessizce düşer (iş parçacığında yakalanmayan hata uygulamayı çökertir). */
@@ -184,9 +305,12 @@ class LinkRuntime(
         null
     }
 
-    /** Kilit altında; soket işi iş parçacıklarına gider, makineye geri bildirim her zaman `io` üstünden (yeniden giriş yok). */
-    private fun dispatch(cmds: List<LinkCommand>): List<() -> Unit> {
-        val callbacks = ArrayList<() -> Unit>()
+    /**
+     * Kilit altında; soket işi iş parçacıklarına gider, makineye geri bildirim her zaman `io` üstünden (yeniden giriş yok).
+     * Kalıcı yan etkiler (eş kaydı, Bluetooth adresi) burada; dönüş = gelen ileti var mı.
+     */
+    private fun dispatch(cmds: List<LinkCommand>, callbacks: MutableList<() -> Unit>): Boolean {
+        var messages = false
         for (c in cmds) {
             when (c) {
                 is LinkCommand.Listen -> {
@@ -206,28 +330,66 @@ class LinkRuntime(
                     val port = c.port
                     bg { net.broadcast(bytes, port) }
                 }
-                is LinkCommand.Deliver -> {
-                    val payload = c.payload
-                    val transport = c.transport
-                    callbacks += { listener.onData(payload, transport) }
-                }
+                is LinkCommand.Deliver -> Unit // Messenger'lı yığında çıkmaz
                 is LinkCommand.Status -> {
                     val s = c.status
                     _status.value = s
                     callbacks += { listener.onStatus(s) }
                 }
-                is LinkCommand.PeerSeen -> {
+                is LinkCommand.Paired -> {
                     val p = c.peer
-                    callbacks += { listener.onPeerSeen(p) }
+                    persist { linkVault.vault.savePeer(p) }
+                    callbacks += { listener.onPaired(p) }
+                }
+                is LinkCommand.Peer -> {
+                    val i = c.info
+                    callbacks += { listener.onPeerInfo(i) }
+                }
+                LinkCommand.PairingExpired -> callbacks += {
+                    cancelPairing()
+                    listener.onPairingExpired()
                 }
                 is LinkCommand.BtPeerLearned -> {
                     val a = c.address
-                    callbacks += { listener.onBtPeerLearned(a) }
+                    persist { linkVault.vault.saveBtAddress(a) }
                 }
                 is LinkCommand.Wake -> schedule(c.atMs)
+                is LinkCommand.Message -> {
+                    messages = true
+                    val m = c.message
+                    callbacks += { listener.onMessage(m) }
+                }
+                is LinkCommand.Acked -> {
+                    val a = c
+                    callbacks += { listener.onAcked(a.type, a.id) }
+                }
+                is LinkCommand.Expired -> {
+                    val x = c
+                    callbacks += { listener.onExpired(x.type, x.id) }
+                }
+                is LinkCommand.Clock -> {
+                    val k = c
+                    callbacks += { listener.onClock(k.offsetMs, k.uncertaintyMs) }
+                }
+                LinkCommand.Unpaired -> {
+                    persist { linkVault.vault.removePeer() }
+                    callbacks += {
+                        stop()
+                        listener.onUnpaired()
+                    }
+                }
             }
         }
-        return callbacks
+        return messages
+    }
+
+    /** Kayıt yazımı başarısız olsa da partinin kalan komutları (soket yazmaları) uygulanır. */
+    private fun persist(block: () -> Unit) {
+        try {
+            block()
+        } catch (e: Exception) {
+            failures.failure("link", e)
+        }
     }
 
     private fun schedule(atMs: Long?) {
@@ -500,6 +662,8 @@ class LinkRuntime(
 
     private fun now() = SystemClock.elapsedRealtime()
 
+    private fun wall() = System.currentTimeMillis()
+
     /** Bir kanalın soketi: yazma kuyruğu (sırayla, `BYE` sonra kapanış) ve okuma döngüsü. */
     private inner class Pipe(val id: Int, private val socket: Closeable) {
         private val queue = LinkedBlockingQueue<ByteArray>()
@@ -573,6 +737,7 @@ class LinkRuntime(
 
     private companion object {
         const val POLL_MS = 5_000L
+        const val STORE_DIR = "link"
         const val RETRY_LISTEN_MS = 5_000L
         const val READ_BUF = 16 * 1024
         const val BEACON_BUF = 64

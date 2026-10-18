@@ -80,6 +80,21 @@ class IdentityVaultTest {
     }
 
     @Test
+    fun unreachableKeystoreDoesNotReplaceTheIdentity() {
+        val first = vault.identity().keys
+        val stored = prefs.getString("identity.key")
+        val broken = IdentityVault(prefs, { throw java.security.KeyStoreException("keystore busy") }, random)
+        try {
+            broken.identity()
+            throw AssertionError("Keystore'a ulaşılamazken kimlik yenilenmemeli")
+        } catch (e: IdentityVault.KeyUnavailableException) {
+            assertFalse(e.message!!.contains(stored!!))
+        }
+        assertEquals(stored, prefs.getString("identity.key"))
+        assertArrayEquals(first.public, vault.identity().keys.public)
+    }
+
+    @Test
     fun publicKeyNotMatchingThePrivateIsReplaced() {
         vault.identity()
         prefs.edit().putString("identity.public", Base64.getEncoder().encodeToString(P256.generate(random).public)).commit()

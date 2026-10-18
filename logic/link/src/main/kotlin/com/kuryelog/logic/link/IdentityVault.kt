@@ -1,5 +1,6 @@
 package com.kuryelog.logic.link
 
+import java.security.GeneralSecurityException
 import java.security.SecureRandom
 import java.util.Base64
 import javax.crypto.Cipher
@@ -52,21 +53,35 @@ class IdentityVault(
     /** [created] = yeni üretildi; [replacedUnreadable] = saklanan açılamadı, yenisi yazıldı (öteki telefon yeniden eşleşmeli). */
     class Loaded(val keys: DhKeyPair, val created: Boolean, val replacedUnreadable: Boolean)
 
+    /** Keystore'a şimdi ulaşılamıyor (geçici olabilir): saklanan kimliğe dokunulmadı, sonra yeniden denenir. */
+    class KeyUnavailableException internal constructor(cause: Throwable) : IllegalStateException("Link master key unavailable", cause)
+
+    /**
+     * Saklanan kimlik; yoksa üretilir. Saklanan bozuksa (etiket tutmuyor, Keystore anahtarı değişmiş, açık anahtar uymuyor) yenisi
+     * yazılır. Ana anahtara hiç ulaşılamıyorsa [KeyUnavailableException] (kimlik yenilenmez: geçici hata eşleşmeyi bozmasın).
+     */
     @Synchronized
     fun identity(): Loaded {
+        val key = try {
+            master()
+        } catch (e: Exception) {
+            throw KeyUnavailableException(e)
+        }
         val enc = prefs.getString(IDENTITY_KEY)
         val pub = prefs.getString(IDENTITY_PUBLIC)
         var unreadable = enc != null || pub != null
         if (enc != null && pub != null) {
             try {
-                return Loaded(open(enc, pub), created = false, replacedUnreadable = false)
-            } catch (e: Exception) {
+                return Loaded(open(key, enc, pub), created = false, replacedUnreadable = false)
+            } catch (e: GeneralSecurityException) {
+                unreadable = true
+            } catch (e: IllegalArgumentException) {
                 unreadable = true
             }
         }
         val keys = P256.generate(random)
         val c = Cipher.getInstance("AES/GCM/NoPadding")
-        c.init(Cipher.ENCRYPT_MODE, master())
+        c.init(Cipher.ENCRYPT_MODE, key)
         c.updateAAD(AAD.toByteArray(Charsets.UTF_8))
         val pkcs8 = P256.pkcs8(keys)
         val sealed = c.doFinal(pkcs8)
@@ -80,11 +95,12 @@ class IdentityVault(
         return Loaded(keys, created = true, replacedUnreadable = unreadable)
     }
 
-    private fun open(enc: String, pub: String): DhKeyPair {
+    /** Bozuk veri, etiket ya da anahtar uyuşmazlığı → `GeneralSecurityException`/`IllegalArgumentException` (kalıcı). */
+    private fun open(key: SecretKey, enc: String, pub: String): DhKeyPair {
         val all = Base64.getDecoder().decode(enc)
         if (all.size < 12 + 16 + 1) throw NoiseException("identity length")
         val c = Cipher.getInstance("AES/GCM/NoPadding")
-        c.init(Cipher.DECRYPT_MODE, master(), GCMParameterSpec(128, all.copyOf(12)))
+        c.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(128, all.copyOf(12)))
         c.updateAAD(AAD.toByteArray(Charsets.UTF_8))
         val pkcs8 = c.doFinal(all.copyOfRange(12, all.size))
         try {
