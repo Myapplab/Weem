@@ -25,7 +25,7 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 | 4 | Y8 sokak kararları | A6.4 | ajan R | bitti (12:40 UTC) <!-- st:4 --> |
 | 5 | Y15, Y16, Y21 | A6.8 | ajan R | bekliyor <!-- st:5 --> |
 | 6 | Y1, Y2 harita ekranı | A6.5 | ajan N | bekliyor <!-- st:6 --> |
-| 7 | Y4 navigasyon | A6.6 | ajan N | bekliyor <!-- st:7 --> |
+| 7 | Y4 navigasyon | A6.6 | ajan N | bitti (12:40 UTC) <!-- st:7 --> |
 | 8 | Y5, Y6 bağlantılar ve adres | A6.6 | ajan N | bitti (12:34 UTC) <!-- st:8 --> |
 | 9 | Y12 yol kalitesi öğrenme | A6.11 | ajan Q | kısmen: 9.1–9.8 yazıldı; sırada 9.9–9.13 (rota bağı, veri, testler, yerleşim, sorular) (12:39 UTC) <!-- st:9 --> |
 | 10 | Y9, N5, Y10 | A6.7 | ajan T | bekliyor <!-- st:10 --> |
@@ -595,7 +595,174 @@ _Yazılıyor (ajan N)._
 <!-- BEGIN sec:7 -->
 ## 7. Y4 — Navigasyon (A6.6)
 
-_Yazılıyor (ajan N)._
+### 7.1 Kaynak ve kapsam
+
+- YG `lib/nav/nav_controller.dart` (987; merkez: duraklar → iki modda rota → takip), `reroute_gate.dart` (40), `approach_zoom.dart` (30), `arrival_focus.dart` (54), `route_line.dart` (34), `toast.dart` (53), `nav_feed.dart` (227); `lib/tracking/location_service.dart` (224), `map_matcher.dart` (103), `nav_only.dart` (55), `compass.dart` (22), `heading_filter.dart` (10), `native_telemetry.dart:56-103` (hızlı konum okuması; dosyanın kalanı Bölüm 12); `lib/ui/widgets.dart:148-191, 212-227, 285-551` (rota göstergeleri, alt panel, bildirim şeridi), `map_hud.dart:78-111` (`RouteFab`), `nav_screen.dart:57-153, 370-399` (yerleşim, varış kartı), `map_view.dart:161-500, 692-753` (kamera ve rota çizimi); `android_overlay/NavFeedProvider.kt` (sağlayıcı, çevrilmez), `MainActivity.kt:249-258, 340-374` (pusula).
+- Başkalarının bölümü: rota motoru ve `Plan`/`RouteLeg` modeli Bölüm 3; sokak kararları (`streets.*`, saat izni) Bölüm 4; ters yön soruları, Ses+/Ses− ve `_learn` (yol öğrenme) Bölüm 9; sipariş aşaması ve hedef bağlama (`ShiftController.setDestination`, `startHomeReturn`), ışık/kaldırım Bölüm 11; rota kaydı (`RouteRecorder`, `*_route_*.json`) ve sürüş günlüğü Bölüm 12; harita ekranı ve uzun basış menüsü Bölüm 6; hedefin metinden çözülmesi Bölüm 8.
+- Bulgu: Y4 için ham bulgu yoktu; bu bölüm kaynaktan tam çıkarmadır. `TEST_ENVANTERI`'ndeki "sapma 8 sn" (`yolgo_rules_test`) düzeltmesi 7.17'de.
+
+### 7.2 Durum modeli
+
+`Stop` (`nav_controller.dart:63-94`): `point`, `label`, `unitNote?` (kapı notu), `confidence` (high|medium|low), `restaurant?` (true/false/null = bilinmiyor), `orderId?`, `purpose` (`manual` varsayılan | `order` | `home`), `origin` (`intent`|`clipboard`|`search`|`map`|`order`; varsayılan `map`), `requestedAt?`, `sourcePackage?`. `forOrder(n, toRestaurant)` aynı Stop'u `purpose=order`, `orderId=n`, `restaurant=toRestaurant` ile kopyalar (kaynak, saat, gönderen korunur).
+
+`NavState` (:96-170): `stops`, `plans: Map<RideMode, Plan>` (iki mod: `battery` "BATARYA"/"BATAREYA" 🔋, `time` "ZAMAN"/"VAXT" ⚡; `physics.dart:21-25`), `mode` (varsayılan `battery`), `busy`, `busyText?`, `error?`, `seq` (her yeni rotada +1; ekranda halka efekti ve rotayı sığdırma), `pending?` (Bölüm 8), `suggestion?` (ters yön önerisi, Bölüm 9), `arrived?` (son varılan durak; kapı notu kartı), `reached?` (varılan hedefin iğnesi; `reachedKeepM = 250`), `homeSuggest`. Türetilen: `plan = plans[mode] ?? ilk plan`; `hasRoute = plans` dolu; `activeStop` = planın sırasındaki ilk durak (`plan.order.first`), plan yoksa ilk durak.
+
+### 7.3 Rota açan girişler
+
+| Giriş | YG | Davranış |
+|---|---|---|
+| Dış metin (bağlantı, paylaşım, pano) | `onExternalText` :276-342 | Bölüm 8.7 (ayrıştır, çöz, <60 m kuralı, durak yoksa rota, varsa bekleyen kart) |
+| Arama çubuğu (Enter) | `search` :356-379 | Bölüm 8.7; `origin=search`, doğrudan yeni rota |
+| Öneri seçimi / haritada nokta | `goTo(p, label?, restaurant?, origin="map")` :387-393 | tek durak (`label` yoksa "Harita noktası"/"Xəritə nöqtəsi"), `arrived`, `reached`, `pending` silinir; `_bindShiftTarget`; `replan()` |
+| "Durak olarak ekle" | `addStop(p, label?)` :395-399 | durak sona eklenir, `arrived` silinir (`reached` kalır); `replan()` |
+| Bekleyen kart | `acceptPending(addStop)` :345-352 | Bölüm 8.7 |
+| Eve dön | `goHome` :401-418 | yalnız gün açıkken; ev yoksa bildirim (7.8); `homeSuggest=false`; `startHomeReturn` (Bölüm 11); tek durak `{ev, label "Ev"/"Ev", restaurant=false, purpose=home}`; `replan()` |
+| Sipariş değişimi | `build` :214-228 | şu anki sipariş numarası değişince (önceki null değilse): hedef = restorandan çıkılmadıysa `restTarget`, çıkıldıysa `customerTarget`. Hedef yoksa rota silinir ve "Sipariş #N seçildi · hedef konumu gir" / "Sifariş #N seçildi · ünvanı daxil et" (6 sn); varsa `goTo(hedef, restaurant = restorandan çıkılmadı, label = restoran adı, origin "order")` |
+| Bitir | `clearRoute` :443-448 | rota kaydı `clear` ile kapanır; olay `route_clear`; sıra++; `stops`, `plans`, `busy`, `error`, `pending`, `reached` temizlenir |
+| Mod | `setMode(m)` :450-455 | aynıysa yok; olay `mode {m}`; seçim titreşimi |
+
+`_bindShiftTarget(stop, restaurant?)` (:431-441): gün açık ve `purpose != home` ise restoran mı (`_restaurantTarget`, Bölüm 8.7) hesaplanır, `ShiftController.setDestination(nokta, restaurant, name=label)` çağrılır (siparişin restoran/müşteri hedefi saklanır, Bölüm 11); açık sipariş varsa aynı Stop `forOrder(n, restoran)` olur.
+
+### 7.4 Rota hesabı (`replan(reason)`, :459-574)
+
+Nedenler: `route` (yeni hedef; varsayılan), `reroute` (sapma), `prefs` (sokak/öğrenme/ayar değişti), `hours` (saat izni değişti), `battery` (düşük batarya eşiği).
+1. Sıra numarası (`_planSeq`) artar; yanıt geldiğinde değişmişse atılır.
+2. `prefs` ve `hours`'ta eski plan HEMEN silinir (artık izinsiz rota ekranda etkin kalmasın).
+3. Graf yoksa `error` = "Harita verisi yok — Ayarlar → İlave ayarlar → Harita verisi" / "Xəritə məlumatı yoxdur — Tənzimləmələr → Əlavə tənzimləmələr → Xəritə məlumatları"; durak yoksa planlar silinir.
+4. `busy`, "Rota hesaplanıyor…" / "Marşrut hesablanır…".
+5. Başlangıç `LocationService.current()` (7.6); yön yalnız son fix hızı ≥2 m/s ve yön ≥0 ise.
+6. `PlanRequest` (Bölüm 3): `graph`, `origin`, `heading`, `stops` (noktalar), `params = settings.paramsFor(batarya %)`, `approved/blocked/steep/reverseHours` (Bölüm 4), `departure = şimdi UTC`, `ghost`, `learned`, `wwRatio`, `wwAvoid = road.wrongWayAvoid(wwMaxProblemPct/100)`, `wrongWayEdges` (Bölüm 9), `surface`, `surfaceQuality`, `marks` (Y13; WEEM 1.0'da boş, Bölüm 3), `bikeways` (Bölüm 5). İşçide (`RouteWorker`, Bölüm 3) hesaplanır.
+7. Plan yoksa: olay `routing_failure {reason, originInMap, targets: [{inside, nearestM}]}` (`nearestM` = 500 m içinde en yakın kenar, yuvarlak). `reroute`/`battery` ise ve eski plan varsa (H3, `keepPlanOnFailure`) eski rota kalır, `RerouteGate.failed(şimdi, başlangıç)`, turuncu bildirim "Yeni rota bulunamadı — eski rota sürüyor" / "Yeni marşrut tapılmadı — köhnə marşrut davam edir" (4 sn); aksi planlar silinir, `error = sonuç hatası`, titreşim.
+8. Plan varsa: `RerouteGate.reset()`; `plans`, `error=null`, `seq` yalnız `route`'ta +1; rota kaydı (`_record`, Bölüm 12: `route` ya da kayıt yoksa yeni kayıt, aksi `replanned`); olay `route` (nedeni `route` ise) ya da `reroute` (diğer her neden) `{mode, m (sürüş, yuvarlak), walk, s, wh (0,1 hane), up, stops, to: [[lat 4 hane, lon 4 hane]…]}`; `route`'ta güçlü titreşim.
+9. Uyarı (H2, `shouldShowRouteWarning`): planın ilk uyarısı, anahtar `"<ilk durak lat>,<lon>|<uyarı>"`; `route`'ta her zaman, diğer nedenlerde yalnız anahtar değiştiyse turuncu bildirim (metin Bölüm 3; AZ `trMsg`). Son anahtar saklanır.
+10. İstisna: `reroute`/`battery` ve eski plan varsa sessizce eski rota (`failed(şimdi, null)`); aksi `error = _humanize(e)` (Bölüm 8.7), titreşim.
+
+### 7.5 Yeniden hesap tetikleri (`build`, :196-261)
+
+| Tetik | Koşul | Neden |
+|---|---|---|
+| Saat izni | gün açıkken 5 sn'de bir izinli ters yön kümesi (`ReverseHours.allows(şimdi)`) yeniden hesaplanır; küme değiştiyse ve durak varsa | `hours` |
+| "Yol yok" işareti (`ghostRev`) | önceki değer vardı, değişti, rota var | `prefs` |
+| Ters yön onayı (`approvedRev`) | aynı | `prefs` |
+| Ayar `qualityTolerancePct`, `wwMaxProblemPct`, `turnPenaltyS`, `bikewayCostPct` | aynı | `prefs` |
+| Elle bisiklet yolu (`bikewayMarks`) | aynı | `prefs` |
+| Harita verisi sonradan geldi | graf null → dolu, durak var | `_bindShiftTarget` + `route` |
+| Batarya `lowBatteryPct` altına indi | 7.8 | `battery` |
+| Rotadan sapma | 7.7 `RerouteGate` | `reroute` |
+| Varıştan sonra kalan durak | 7.8 | `route` |
+| Ses tuşu / uzun basış sokak kararı, kötü nokta, kalite puanı | Bölüm 9, 4 | `prefs` |
+
+### 7.6 Konum (`LocationService`)
+
+- **Akış** (`location_service.dart:110-146`): izin varsa son bilinen konum (≤30 sn ve geçerliyse) önbelleğe; Fused sağlayıcı, `bestForNavigation`, mesafe filtresi 0, aralık 500 ms. Gün açıkken ya da yalnız-nav kipindeyken ön plan bildirimi: başlık "<Ad> aktif" / "<Ad> işləyir"; metin gün açıkken "Navigasyon ve sürüş kaydı çalışıyor" / "Naviqasiya və sürüş qeydi işləyir", yalnız-nav'da "Gün bitti; rota bitene kadar navigasyon sürüyor" / "Gün bitdi; marşrut bitənə qədər naviqasiya davam edir"; kanal "<Ad> konum" / "<Ad> məkan"; uyanık tutma; kalıcı.
+- **Kapsam:** akış yalnız `günAçık || yalnızNav || önde` iken; gün açık ve yerel telemetri servisi varsa Dart akışı durur, konum yerel servisten gelir (`configure(dayActive, nativeAvailable)`, :56-77). Yerel fix: `latest` ~300 ms'de bir (önde), arkadayken en çok 1 sn'de bir; aynı `utc` ikinci kez yayınlanmaz; `day` alanı açık günle eşleşmeli (`native_telemetry.dart:56-103`).
+- **Süzgeç** (`_emit`, :78-82): izinli kapsamda, taze (≤15 sn; doğruluk 0–65 m; geçerli koordinat; gelecek ≤5 sn), zaman damgası öncekinden büyük.
+- `lastPoint` = son fix ≤30 sn tazeyse. Bekçi: 15 sn'de bir son fix 25 sn'den eskiyse yeniden başlat; hata ya da akış bitince 3 sn sonra yeniden başlat.
+- **`current(maxAge = 20 sn)`** (:156-186): taze önbellek varsa o; yoksa izin (yoksa `LocationUnavailable("Konum izni yok veya GPS kapalı")`); `getCurrentPosition(high, 8 sn)` taze değilse `"GPS konumu eski veya belirsiz"`; hata olursa `routeOrigin(son, bilinenSon, şimdi)`, o da yoksa `"GPS sinyali alınamadı"`.
+- **`routeOrigin`** (:190-202, saf): son ve Android'in bilinen son konumundan en yenisi; doğruluk 0–150 m, geçerli ve `(0,0)` değil, yaş −5 sn…3 dk.
+- **İzin** (:204-214): konum servisi kapalı → `serviceOff`; izin `denied` ise iste; `always`/`whileInUse` yeterli.
+- **Pusula** (`MainActivity.kt:340-374`, `compass.dart`, `heading_filter.dart`): döndürme vektörü; telefon dikse (`|rot[8]| < 0.7`, gidonda) arka kameranın yönü, yataysa üst kenar; Bakü manyetik sapması `GeomagneticField(40.40, 49.87, 0)` eklenir; ≥100 ms ve ≥1,5° değişimde gönderilir; önde açılır, arkada kapanır. Dart'ta `compass = eski + fark·0.35` (360 sarması); `HeadingFilter` ağırlık 0.4 (dönüşte 0.85, Bölüm 6). Pusula yalnız konum okunun yönü içindir; rota başlangıç yönü GPS'ten.
+
+### 7.7 Takip döngüsü (`_onPosition`, :806-864)
+
+Her fix'te sırayla:
+1. **Yol eşleştirme** (`MapMatcher.update`, `map_matcher.dart:54-102`): doğruluk >35 m → önceki sonuç; hareket = hız ≥2 m/s ve yön ≥0; en yakın kenar 30 m içinde (hareketteyse yönle, bulunamazsa yönsüz; "yol yok" kenarları hariç); `forward` = yön ile parça yönü farkı ≤90° (dururken öncekisi); `wrongWay` = hareketli, tek yönün tersi ve `contraflow` yok. Ters yön önerisi: onaysız sokakta ve izinli kesim değilken aynı yolda ≥40 m ters gidilince **bir kez** (`_suggested`) `WrongWayEvent(way, ad, mainRoad)`. Ana caddede kırmızı bildirim "Ana caddede ters yöndesin!" / "Əsas küçədə əks istiqamətdəsən!" + titreşim; değilse öneri (`suggestion`) + turuncu "Ters yön: <ad> — onay için Ses+" / "Əks istiqamət: <ad> — təsdiq üçün Səs+" (10 sn), öneri 15 sn sonra kalkar. Olay `wrongway {way, main}`. Adsız yol "isimsiz yol"/"adsız yol". (Onay akışı Bölüm 9.)
+2. **Öğrenme** (`_learn`, Bölüm 9) ve **rota kaydı** (`_recordFix`, Bölüm 12: rotaya uzaklık, ortalama hız).
+3. **İğne:** `reached` varken doğruluk ≤30 m ve iğneye uzaklık >250 m ise iğne kalkar.
+4. Plan yoksa, hesap sürüyorsa ya da doğruluk >30 m ise dur.
+5. **Varış** (ilk bacak): kapıya ≤35 m, ya da bacakta yürüme varken park noktasına (sürüş çizgisinin sonu) ≤20 m ve hız <2 m/s → `_arrive`; park noktasında varışta ayrıca "Park et · N m yürü" / "Saxla · N m piyada" (10 sn, yürüme simgesi).
+6. **Sapma:** rotaya uzaklık = sürüş çizgisine; bacak başında yaya yolu yürüyüşü (`startWalk`, ≥2 nokta) varsa ikisinin küçüğü. `RerouteGate.feed` (`reroute_gate.dart:6-31`): doğruluk sonlu, 0–30 m ve fix yaşı ±5 sn değilse sayaç sıfır; eşik `clamp(1.5·doğruluk + 12, 25, 45)` m; eşiği aşan **art arda 2** fix; son denemeden 2 sn geçmeli; başarısız denemeden sonra 10 sn geçmeden ve başarısız konumdan 30 m'den fazla gidilmeden yeniden denenmez (H3) → `replan(reroute)`.
+
+Uzaklık (`_distanceToPolyline`, :964-974): yerel düzlem izdüşümü (`LocalProjection`), parçalara en kısa uzaklık; çizgi <2 nokta → 0.
+
+### 7.8 Varış, iğne, eve dönüş, batarya
+
+- `_arrive(plan)` (:866-893): `idx = plan.order.first` (yoksa 0); rota kaydı `arrive` ile kapanır; olay `arrive {la, lo}` (4 hane); güçlü titreşim; 90 sn sonra `arrived` kalkar (aynı durak hâlâ oradaysa); `stops` = kalanlar, `plans` silinir (eski sıra geçersiz), `arrived = reached = durak`; kalan durak varsa `replan(route)`; kalan yoksa batarya % ≤ `homeReturnPct` (30) ise `homeSuggest`.
+- İğne (`reached`): kapı notu kartı kapanınca da kalır; yeni rota (`goTo`, yeni durakla `acceptPending(false)`, `search`), rota silme ya da 250 m uzaklaşma kaldırır; durak eklemek kaldırmaz.
+- Batarya (`_onBattery`, :895-908): önceki % ≥ `lowBatteryPct` (50) ve yeni < eşik ise bir kez turuncu "Batarya ~%N — eğim limiti %M" / "Batareya ~%N — yoxuş limiti %M" (6 sn; M = `lowBatteryGradePct`, 10) ve rota varsa `replan(battery)`; eşik üstüne çıkınca bayrak sıfırlanır. % ≤ `homeReturnPct` ve durak yokken `homeSuggest`. Batarya kaynağı Bölüm 10.
+- Eve dönüş kartı (`BottomPanel`): "Batarya düşük — eve dön?" / "Batareya azdır — evə qayıdaq?", "Eve git" / "Evə get", kapat.
+- Ev yoksa (`goHome`): turuncu "Ev konumu Rawstats'ta ayarlanır" / "Ev ünvanı Rawstats-da təyin olunur" (6 sn). **WEEM:** ev `:core`'da; metin "Ev konumu ayarlanmamış — Daha fazla → Ev konumu" (yeni metin; 7.17). YolGo'nun H5 `refreshIfStale` (Rawstats'tan evi tazeleme) kalkar (tek ev, S7).
+
+### 7.9 Kalan yol ve `RouteStatus`
+
+- **Ölçüm** (`NavFeedLeg`, `nav_feed.dart:94-110`): etkin (ilk) bacağın sürüş çizgisi (`RouteLine`: kümülatif haversine uzunluğu; `project` = en yakın parçaya izdüşüm, `along` ve dik uzaklık) ve dönüşlerin çizgi üstündeki yerleri; fix için `kalan = max(0, uzunluk − along) + walkM` (0,1 m'ye yuvarlanır), `kalanDönüş = along'dan sonraki dönüş sayısı`, `onRoute = dik uzaklık ≤ 40 m` (`offRouteM`), `measuredAtMs = fix zamanı`.
+- **Canlı ölçüm** (`NavFeedRouteController`, :167-199): yalnız doğruluk ≤50 m fix'lerle ölçülür (kaba konum yok sayılır); bacak değişince çizgi yeniden kurulur; açılışta son konum ölçülür. Hem göstergeler hem yayın bunu kullanır.
+- **Yayın** (YolGo: `content://az.duzyol.app.nav/nav/v1/current`, Rawstats için): `NavFeed.target(activeStop, seenAt)`: durak yoksa ya da ev rotasıysa null (ev koordinatı gönderilmez); geçersiz koordinat null; lat/lon 6 haneye yuvarlanır; `kind` = restaurant/customer/unknown (`Stop.restaurant`); `origin` bilinmeyen değerse `map`; `requestedAtMs` = `requestedAt` ya da hedefin ilk görüldüğü an. Yük v1 `{schemaVersion 1, source "yolgo", generatedAtMs, updatedAtMs, target{lat, lon, kind, origin, requestedAtMs, sourcePackage}|null, route{remainingM, remainingTurns, measuredAtMs, onRoute}|null}`, ≤4 000 karakter.
+- **Ne zaman** (`NavFeedGate`, :114-140): açılışta bir kez (hedef yok da olsa); hedef ya da rotanın varlığı değişince; dönüş sayısı değişince; kalan ≥20 m değişince; rotadayken (`onRoute`) son yayından 10 sn sonra (rota dışında kalp atışı yok). `updatedAtMs` yalnız içerik değişince ilerler.
+- **WEEM:** sağlayıcı ve imza kapısı kalkar (S7); aynı ölçüm `NavPort.route: StateFlow<RouteStatus?>` olarak verilir (`logic/core` `NavMessages.kt`: `RouteStatus{target{lat, lon, kind, origin, requestedAtMs, sourcePackage}, route{remainingM, remainingTurns, measuredAtMs}, updatedAtMs}`). `onRoute` iç alandır (`:map` `RouteProgress`), `RouteStatus.Route`'ta yoktur; Rawstats okuyucusu (`NavBinding`, `CustomerCard`) onu kullanmıyordu. `StateFlow` her ölçümde değil, `NavFeedGate` kuralıyla güncellenir (`:orders` ve 2 telefon `RouteStatus` R→P mesajı aynı akışı okur; plan 4.4: en çok 1/sn). Ev rotasında `target=null`, `route` var.
+
+### 7.10 Kamera
+
+- **Hız tabanı** (`approach_zoom.dart:15`): `<6 km/s → 16.6`, `<16 → 16.2`, `<24 → 15.9`, aksi `15.6`.
+- **Yaklaşma** (`zoomFor`, :18-25): kalan ≥1 000 m ya da bilinmiyorsa taban; aksi `t = (1000 − clamp(d, 100, 1000)) / 900`, `zoom = taban + (17.5 − taban)·(t²(3 − 2t))` (smoothstep). Kalan = rota üstündeyse ölçüm (7.9), değilse park noktasına kuş uçuşu (`map_view.dart:412-426`). Otomatik yakınlık her karede hedefe %4 yaklaşır.
+- **Elle dokunma** (`refollowAfterGesture`, :31-34; `map_view.dart:430-439`): kaydırma/yakınlaştırma takibi ve otomatik zoom'u durdurur; rota açıkken son dokunuştan **10 sn** sonra takip + otomatik zoom döner; rota yokken hareket hâlindeyken **8 sn** sonra takip döner, seçilen ölçek korunur.
+- **Yeni rota** (`seq` değişince): bütün rota + konum ekrana sığdırılır (OSM yüzeyinde kenar payı 40/170/40/230 px, en çok zoom 16.5; Google'da 32 px), takip durur, 5 sn sonra konuma dönülür.
+- **Varış odağı** (`arrival_focus.dart`): rota açık ve varılmamışken kalan ≤100 m'de girer, >150 m'de çıkar (histerezis); kalan bilinmiyorsa (rota dışı ya da ölçüm yok) durum değişmez; rota kalkınca kapanır. Odakta kamera `focusCamera`: merkez = konum ile hedefin orta noktası; iki nokta kısa kenarın %70'ine sığacak zoom `log2(156543.03392·cos(lat)·px / mesafe)`, [18, 19] aralığına kıstırılır; merkez kayması ve zoom her karede %8 yaklaşır. Odaktayken ekran (Bölüm 6): yalnız harita, konum, bildirim şeridi, hatırlatıcı kartı, iş uyarıları, ters yön kartı ve alttaki `ArrivalAddressCard` (hedef adı 2 satır, kapı notu 2 satır, rotadaysa sağda "N m"; ev simgesi / restoran simgesi / konum simgesi).
+- **Yön:** yön-yukarı kipte kamera yönü hareket yönüne her karede %12 (dönüşte %25) yaklaşır; kuzey-yukarı kipte 0. Konum düğmesi kipleri Bölüm 6.
+
+### 7.11 Ekran parçaları ve metinler
+
+- **Rota paneli** (`BottomPanel`, `widgets.dart:315-394`; `RouteFab`, `map_hud.dart:78-111` ile açılır; hata ya da bekleyen gelince kendiliğinden açılır; en çok 220 px, kaydırılır). Gövde önceliği: bekleyen kart → hesaplanıyor (`busyText` ya da "Çalışıyor…"/"Hesablanır…") → etkin durak → varış kartı → hata satırı (`trMsg(error)` + durak varsa "Tekrar"/"Yenidən" → `replan`). Üstte eve dönüş önerisi; çifte siparişte ilk kapıya varınca varış kartı sonraki rota sırasında da görünür. Altta: rota varsa "Yol yok"/"Yol yoxdur" (rota üzerindeki parçayı "yol yok" işaretleme seçicisi, Bölüm 9), durak ya da rota varsa "Bitir"/"Tamamla" (`clearRoute`).
+- **Etkin durak** (`_ActiveStop`, :396-442): etiket (1 satır), sağda `"<dk> dk · <HH:mm>"` (`route-eta`; `<1` dk altı; varış saati Bölüm 10 `arrivalClock`), kapı notu (20 pt, turuncu), ortalama hız satırı (`_AvgSpeed`: "Ort. N km/s" + "· hareketteyken M"; rota kaydından, Bölüm 12), "Güzergâh: A → B → C" (ilk bacağın ilk 3 sokağı), güven düşükse "⚠ Adres emin değil — pini kontrol et" / "⚠ Ünvan dəqiq deyil — nöqtəni yoxla".
+- **Varış kartı** (`_Arrived`, :470-491): "Vardın: <etiket>" / "Çatdın: <etiket>", kapı notu 24 pt turuncu, kapat.
+- **Sol göstergeler** (`ModePager`, :148-191; ayrıntı ve hız/batarya Bölüm 10): rota varken "Rota süresi" (`metric-time`, `<dk> dk`, alt yazı varış saati), rotadayken "Durağa kalan" / "Dayanacağa qalan" (`metric-remaining`, kalan `x.x km` (1 hane), alt yazı "yürüme dahil" / "piyada daxil"; ölçüm yoksa ya da rota dışındaysa gizli), rota kaydı ortalaması varsa "Rota ortalama hızı" (`metric-avg`). Dokununca açılan panel (:212-227): mod seçimi (BATARYA/ZAMAN), `"Varış HH:mm · <toplam sürüş km>[ · Kalan x.x km] · ≈W Wh · ↑m · ↓m"`, `"Yürüme: N m · K durak"`, `"Ters yön: N m · risk %R"`, yüzey satırı (Y13; WEEM 1.0'da "yeterli ölçüm yok" metni), "Yol ayrıntıları" → Yollarım (Bölüm 9).
+- **Bildirim şeridi** (`ToastController`/`ToastBanner`, `toast.dart`, `widgets.dart:285-311`): tek bildirim; yenisi eskisini siler; varsayılan 4 sn, renk varsayılan mavi; isteğe bağlı simge ve eylem ("Geri al"); kenarlık rengi bildirim rengi.
+- **Rota çizimi** (`map_view.dart:692-753`): her bacakta parlama (14 px, mavi %18) + eğime göre renkli çekirdek (6 px; renk `AppColors.forGrade(Δh / max(d, 20))`, Bölüm 6) + itilerek yürünen parçalar (`pushedRuns`, kesikli 8/6, yürüme rengi) + başta yaya yolu yürüyüşü (`startWalk`, 4 px kesikli) + sondaki yürüme (4 px düz). Diğer modun planı soluk gri (4 px, `0x66A0A8B8`). Durak rozetleri sırayla 1, 2…; ilk durakta yeni rotada genişleyen halka (`seq`); varılan iğne yeşil bayrak.
+
+### 7.12 Yalnız-navigasyon kipi (`nav_only.dart`, H1/F4.4)
+
+Saf geçiş `nextNavOnly(s, dayActive, hasRoute, now, dayJustEnded)`: gün açık ya da rota yok → kapalı; açıkken 90 dk (`navOnlyMax`) dolunca kapanır; kapalıyken yalnız gün **bu anda** kapandıysa ve rota açıksa açılır (`since = şimdi`). Açıkken konum arka planda sürer (ön plan bildirimi 7.6; gün satırı ve yüzey kaydı yok); varış/rota silme kapatır. Gün kapalıyken çizilen rota bu kipi açmaz.
+
+### 7.13 Ses tuşları ve sokak işaretleri
+
+`onVolumeKey(up)` ve `onVolumeDownHold` (:576-746) navigasyon denetleyicisindedir ama davranışları Y12/Y8'dir: sıra = açık ters yön sorusu → kalite yüzdesi penceresi → Ses+ tek basış onay / çift basış (450 ms) kalite penceresi, Ses− tek basış ±25 m kötü nokta / çift basış aşırı eğimli, Ses− uzun basış (≥1 000 ms) işaret kaldırma; her biri bildirim, "Geri al" ve `replan(prefs)`. Ayrıntı ve metinler **Bölüm 9** (Ses tuşu yakalama) ve **Bölüm 4** (sokak kararları).
+
+### 7.14 Veri
+
+| Ad | Ayrıntı | WEEM |
+|---|---|---|
+| Sürüş günlüğü olayları | `route`/`reroute {mode, m, walk, s, wh, up, stops, to}`, `routing_failure {reason, originInMap, targets[{inside, nearestM}]}`, `route_clear`, `mode {m}`, `arrive {la, lo}` (4 hane), `wrongway {way, main}`, `route_end` (Bölüm 12), `intent`/`external`/`resolved` (Bölüm 8) | aynı adlar ve alanlar (Bölüm 12) |
+| Rota kaydı | `app_flutter/logs/<gün>_route_<ms>.json` (`logging` ayarı açıkken, ≥2 iz noktası) | Bölüm 12 |
+| `nav/v1/current` | 7.9 yük v1 | kalkar → `NavPort.route` (`RouteStatus`) |
+| Ayarlar | `homeReturnPct` 30, `lowBatteryPct` 50, `lowBatteryGradePct` 10, `qualityTolerancePct` 10, `wwMaxProblemPct` 50, `turnPenaltyS` 12, `bikewayCostPct` 85 (değişince yeniden hesap) | `MapSettings` (Bölüm 14) |
+| Konum ön plan bildirimi | geolocator'ın kendi kanalı "<Ad> konum"; YolGo numarası yok | gün açıkken `:core` vardiya servisi (1, `shift`) taşır; yalnız-nav için yeni numara gerekir → 7.17 SORU-N4 |
+
+### 7.15 Testler
+
+| Dosya | Sayı | Test adları → neyi doğrular | WEEM hedefi | Görev | Not |
+|---|---:|---|---|---|---|
+| YT `approach_zoom_test` | 4 | hız tabanı 0/10/20/30 km/s → 16.6/16.2/15.9/15.6; ≥1 km ya da bilinmiyorsa taban; ≤100 m 17.5, 1 km→100 m tek yönlü, 10 m'de <0.05 sıçrama, uçlarda yavaş; dokunmadan sonra rota açıkken 10 sn → takip+zoom, rota yokken hareketteyken 8 sn → takip (ölçek korunur), duruyorken hiç | `nav.ApproachZoomTest` | A6.2b → A6.6 | saf |
+| YT `arrival_focus_test` | 4 | histerezis 100/150 m, bilinmeyen kalanda durum korunur, varınca/rota yokken kapalı; sağlayıcı kalan yolu izler, plan silinince kapanır; `focusCamera` orta nokta, zoom [18, 19], iki nokta ekranda; 3 m'de 19, 400 m'de 18 | `nav.ArrivalFocusTest` | A6.2b → A6.6 | saf (sağlayıcı testi `StateFlow` ile) |
+| YT `arrival_pin_test` | 3 | varınca durak silinir, `arrived` ve `reached` aynı durak; 91 sn sonra `arrived` null, `reached` kalır; kartı kapatmak iğneyi silmez; 120 m'de kalır, 80 m doğruluklu fix silmez, 280 m'de kalkar; `addStop` iğneyi korur, `goTo` ve `clearRoute` kaldırır | `nav.NavControllerArrivalTest` | A6.2b → A6.6 | sahte konum akışı, boş graf, sanal saat (90 sn); günlük sahte |
+| YT `native_fast_fix_test` | 2 | hızlı okuma günlük satırı istemez, aynı `utc` iki kez yayınlanmaz (`latest` 3 çağrı → 2 yayın); arka planda en çok 1/sn, öne dönünce hemen | `nav.FastFixGateTest` (saf: `utc` tekilleştirme + arka plan 1 sn kısıtı) | A6.2b → A6.6 | WEEM'de yerel telemetri köprüsü yok; kural `:map` konum kaynağı birleştiricisine (7.16) taşınır |
+| YT `nav_assistant_test` | 1 (döngüyle 2) | restoran=true: konuma yakın dış hedef (<60 m) restoran olduğu için kabul, sipariş açmaz; aşamalar yalnız sipariş akışından (`to_pickup` → `toRestaurant`, `at_dropoff` → `atCustomer`, boş → teslim 1), teslimde yakındaki görev uyarısı (Y20). restoran=false: hata, durak yok | `nav.NavAssistantTest` | A6.2b → A6.6 (+ A6.9 görev kısmı) | `OrderEvents.stages` sahte `TripStages` ile beslenir (feed v2 JSON yerine); görev tetikleyici Bölüm 13 |
+| YT `nav_feed_test` | 11 | hedef: tür/kaynak/istek saati/gönderen, 6 hane; ev rotası ve durak yok → null; `forOrder` kaynağı korur; kalan 1 040 m/2 dönüş, 540/1, 800'de 0 dönüş, 120 m doğuda `onRoute=false`; rota/konum yok → null; yük anahtar sırası ve ≤4 000; yayın kapısı (açılış, hedef, ≥20 m, dönüş, 10 sn, rota dışında kalp yok, rota silindi); `IncomingLink.parse` (Bölüm 8); köprü teslimi; denetleyici + yayıncı: intent hedefi siparişe bağlanınca da `intent` kalır, `map`, silinince null; pano/arama kaynakları | `nav.RouteProgressTest`, `nav.RouteStatusGateTest`, `nav.NavControllerOriginTest`; `input.IncomingLinkTest` (2 test) | A6.2b → A6.6 | yük JSON'u yerine `RouteStatus` alanları ve `NavPort.route` akışı denetlenir; "kurye uygulaması köprüsü" testi `LinkIntake` saf kısmına uyarlanır |
+| YT `nav_only_location_test` | 2 | saf geçişler (90 dk, varış, yeni gün, rota yokken biten gün açmaz); sağlayıcı: gün bitince rota açıksa konum sürer, varışta kapanır | `nav.NavOnlyTest` | A6.2b → A6.6 | `ShiftPort.state` sahte |
+| YT `remaining_km_e12_test` | 7 (5 tanım + 2 dilde dönen 2 tanım; çalışmada 9) | gösterge = yayınla aynı kalan (sürüş + yürüme, `rideM` değil), her fix'te tazelenir (20 m yayın eşiğinden bağımsız), AZ "Dayanacağa qalan", rota dışında/rota yokken gizli, yeni bacak son fix'le ölçülür, açılır panelde "toplam · Kalan x.x km", başlık + "yürüme dahil"/"piyada daxil" | `nav.RouteProgressTest` (ölçüm) + `:app` Robolectric `MapMetricsTest` (gösterge metinleri) | A6.2b → A6.6 (gösterge A6.7 ile) | Compose ekranı Bölüm 6/10 |
+| YT `route_warnings_h2_h3_test` | 3 | H2 uyarı yeni rotada hep, diğerinde durak/uyarı değişince; H3 `keepPlanOnFailure` yalnız `reroute`/`battery`; başarısızlıktan sonra 10 sn ya da 30 m | `nav.RerouteGateTest` | A6.2b → A6.6 | saf |
+| YT `v150_features_test` | 15 | **rota başlangıcı** (3): 1 dk/90 m → kabul, en yeni seçilir, 4 dk/400 m/(0,0) red → `nav.RouteOriginTest`; **evden çıkınca gün** (5): `HomeDepartureDetector` + `autoStartDay` göçü → çevrilmez (ölü kod; ev kuralı `:core` `ShiftMachine`, CORE.md); **hız seçenekleri** (3) → `ride.SpeedOptionsTest` (Bölüm 10); **koyu Google harita** (1) → `ui.GoogleMapStyleTest` (Bölüm 6); **ana ekran parçaları** (3) → `:app` Robolectric `MapMetricsTest`/`SpeedSheetTest` (Bölüm 6/10) | (satırda) | A6.2b → A6.6/A6.5/A6.7 | 10 çevrilir, 5 çevrilmez |
+| YT `yolgo_rules_test` | 4 | iki taze sapma fix'i (35 m, doğruluk 5) 2. fix'te yeniden rota ister, 2 sn sonra tekrar; doğruluk 100 / 20 sn eski fix / 10 m sapma istemez → `nav.RerouteGateTest`; sipariş JSON'u geri sarılmaz → `day` (Bölüm 11); belirsiz yüzey ışık eşleşmesini kapatmaz → `day` (Bölüm 11); hava şeridi saatleri → `weather` (Bölüm 10) | (satırda) | A6.2b → A6.6/A6.8/A6.7 | 4'ü de çevrilir |
+| YK `NavFeedContractTest` (6'nın 4'ü) | 4 | yol/sütun/hedef paket sabitleri; yalnız v1 `yolgo` yükü ve ≤4 000; boş durum yükü; her sorguda paket + imza denetimi | — | — | `pathsMatchRawstatsReader`, `everyQueryRechecksTheCallersPackageAndSigner` **çevrilmez** (sağlayıcı ve imza kalkar, S7); `onlyAYolGoV1PayloadIsServed`, `withoutAPublishedStateTheProviderSaysThereIsNoTarget` A2.5'te karşılandı (`logic/core` `MessagesTest.routeStatusFromTodaysNavFeed`); kalan 2 test Bölüm 8 |
+| YT `offer_navigation_removed_test` | 4 | varış odağında yalnız harita + alttaki adres kartı (ekranın alt yarısında), uyarılar görünür; ana ekranda menü yok, ayar simgesi Ayarlar'ı açar, kayıt noktası yok, Yollarım'da "● Kayıt sürüyor"; Ayarlar'da "Teklif kazancı" yok, veri seti açılır (2 dil); teklif açılışı sayfa açmaz, veri seti zenginleştirmesi sinyalle | ilk 2 test `:app` Robolectric `MapTabTest` (Bölüm 6) | A6.2b → A6.5/A6.6 | `TEST_ENVANTERI` hepsini "çevrilmez" sayıyordu; **öneri:** ilk 2 uyarlanır (Y1/Y4 ekran kuralı), son 2 çevrilmez (kaldırılmış teklif sayfası; veri seti tetikleri Bölüm 13) |
+
+Bu bölümün sahip olduğu dosyalardan çevrilen (A6.2b): approach 4 + arrival_focus 4 + arrival_pin 3 + fast_fix 2 + nav_assistant 1 + nav_feed 11 (2'si `input` paketine) + nav_only 2 + remaining_km 7 + h2_h3 3 + v150 10 (3'ü `ride`, 1'i `ui`, 3'ü `:app`) + yolgo_rules 4 (2'si `day`, 1'i `weather`) + offer_navigation_removed 2 = **53 test**; çevrilmez: v150 5, `NavFeedContractTest` 2, `offer_navigation_removed` 2; A2.5'te karşılandı: `NavFeedContractTest` 2.
+
+### 7.16 WEEM yerleşimi
+
+- **`logic/map` paketi `nav`:** `NavController` (saf durum makinesi; girişler: hedefler, fix'ler, ayar/öğrenme sürümleri, batarya, vardiya; çıkışlar: `NavState`, olaylar, `RouteStatus`), `NavState`, `Stop`, `RerouteGate` (+ `shouldShowRouteWarning`, `keepPlanOnFailure`), `ApproachZoom` (`speedZoom`, `zoomFor`, `refollowAfterGesture`), `ArrivalFocus` (+ `focusCamera`), `RouteLine`, `RouteProgress` (`NavFeedLeg` karşılığı, `onRoute` dahil), `RouteStatusGate` (`NavFeedGate`), `MapMatcher` (+ `MatchInfo`, `WrongWayEvent`), `NavOnly`, `RouteOrigin` (`routeOrigin`), `FixGate` (taze/artan süzgeç, `utc` tekilleştirme, arka planda 1 sn), `HeadingFilter`, `CompassSmoother`. Rota hesabı `route` paketinde (Bölüm 3); işçi Android'de coroutine (`Dispatchers.Default`) + zaman aşımı.
+- **Android `:map`:** `NavLocation` (Fused 500 ms, `PRIORITY_HIGH_ACCURACY`; harita önde, gün açık ya da yalnız-nav iken; gün açıkken ön plan servisi `:core` `ShiftService`'tir (1), onun yanında ikinci istek olarak açılır — `ShiftService`'in kendi GPS'i 2 sn aralıklı, navigasyon için yetmez), yalnız-nav ön plan servisi (`NavOnlyService`, tür `location`; 7.17 SORU-N4), `CompassSensor` (döndürme vektörü, Bakü sapması, ≥100 ms/≥1,5°), `NavPortImpl` (`route` = `RouteStatusGate`'ten geçen `RouteStatus`; `open(target)` → `NavController.openTarget`, Bölüm 8.12), rota işçisi.
+- **`:app`:** `MapTab` (harita + HUD; Bölüm 6), rota paneli, varış kartı, sol göstergeler, bildirim şeridi.
+- **`:core` bağları:** `ShiftPort.state` (gün açık mı; yalnız-nav geçişi; `goHome` koşulu), `:core` ev (`goHome`), `OrderEvents.stages` (YolGo'nun feed v2 sipariş izleyicisinin karşılığı; sipariş hedef bağı Bölüm 11), `ScooterBridge.live`/batarya (Bölüm 10).
+- **2 telefon:** navigasyon Receiver'da çalışır (harita, rota, takip). `RouteStatus` R→P (Provider'daki `:orders` varış ve müşteri kartı için; plan 4.4). Hedefler P→R `NavTarget` (Bölüm 8.12). Receiver'da vardiya `ShiftState` mesajıyla izlenir; Receiver'ın konum ön plan servisi `:map`'in kendi servisidir (A8.3'te kesinleşir).
+
+### 7.17 Farklar ve açık noktalar
+
+- **Bulgu/envanter düzeltmesi:** `yolgo_rules_test` "sapma 8 sn" diye özetlenmişti; test "iki taze sapma fix'i 8 sn **beklemeden** yeniden rota ister" (eşik `clamp(1.5·doğruluk + 12, 25, 45)`, 2 fix, 2 sn soğuma). 8 sn kuralı yalnız rota yokken dokunmadan sonra takibe dönüştür (7.10).
+- **Ölü kod:** `HomeDepartureDetector` (`home_departure.dart`) ve onun `v150_features_test` grubu (5 test) çevrilmez; `check(force)` (Bölüm 8).
+- **WEEM'de baştan doğru:** yerel telemetri köprüsü (`yolgo/telemetry-v2`, `latest`/`poll`) yok; konum tek `:map` kaynağından, `FixGate` aynı kuralı uygular. "GPS konumu eski veya belirsiz" iki dilli olur (Bölüm 8 SORU-N2). Ev uyarısı metni Rawstats'a gönderme yapmaz (7.8): önerilen TR "Ev konumu ayarlanmamış — Daha fazla → Ev konumu", AZ "Ev ünvanı təyin edilməyib — Daha çox → Ev ünvanı" (A6.6'da `:app` menü adlarıyla eşlenir).
+- **Aynen korunan:** iki mod (batarya/zaman) iki ayrı plan; uyarı ve hata metinleri Bölüm 3'ün `trMsg` sözlüğünden; `routing_failure` olayında yalnız `inside`/`nearestM` (koordinat yazılmaz); varışta plan silinir ve kalan duraklar yeniden sıralanır.
+- **SORU-N4 (koordinatöre; Bölüm 14 `NotificationIds`):** gün bittiğinde rota açıksa (yalnız-nav, ≤90 dk) konumun arka planda sürmesi için bir ön plan servisi bildirimi gerekir; YolGo bunu geolocator'ın kendi bildirimiyle yapıyordu, `CORE.md` 3.3 tablosunda karşılığı yok. Öneri: yeni `NAV_ONLY_FGS` **7402**, yeni kanal `navigation` (LOW; ad "WEEM navigasyon"/"WEEM naviqasiya"; `yolgo_recording` kullanılmaz, CORE.md 3.3'te vardiya servisine birleşti); vardiya sonu iptal listesine girmez (kendi 90 dk sınırıyla kapanır). Varsayılan: öneri.
+- **Risk:** Wolt/Bolt öndeyken navigasyonun arka planda sürmesi vardiya servisinin ömrüne bağlıdır (gün açıkken); Xiaomi/Poco arka plan kısıtı ve pil iyileştirmesi telefonda denenmeli (A6.10 yan yana sürüş). 500 ms Fused isteği + `ShiftService` 2 sn GPS isteği birlikte çalışır (Android birleştirir); pil etkisi A10'da ölçülür.
 <!-- END sec:7 -->
 
 <!-- BEGIN sec:8 -->
