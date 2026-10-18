@@ -15,6 +15,7 @@ import com.kuryelog.logic.core.LogStore
 import com.kuryelog.logic.core.LogTime
 import com.kuryelog.logic.core.ManualSessionPolicy
 import com.kuryelog.logic.core.NavKind
+import com.kuryelog.logic.core.OfferSummary
 import com.kuryelog.logic.core.RouteStatus
 import com.kuryelog.logic.core.ScooterBridge
 import com.kuryelog.logic.core.ShiftMachine
@@ -32,14 +33,18 @@ import java.util.TimeZone
 interface OrderObserver {
     /** Açılış (`econ.restart`): bekleyen ve düşen teklifler. */
     fun restart(now: Long, kept: Collection<OfferState>, dropped: List<OfferState>) {}
+    /** Açılışta veritabanından sonra (Rawstats `:259-264`): açık boşta dönemi ve açık beklemeler sansürlü satır olarak yazılır. */
+    fun restored() {}
     /** Her kare, oturumlar yazıldıktan sonra (4.3 adım 13: bekleme nedenleri, `waitCore.observe`, `economics-exposure.jsonl`). */
     fun waits(o: CourierObservation, events: List<CoreEvent>, now: Long) {}
     /** Her kare, teklif anı eklentilerinden sonra, olaylar işlenmeden önce (4.3 adım 17: gölge karar, `econ.frame`). */
-    fun frame(o: CourierObservation, events: List<CoreEvent>, before: Map<String, OfferState>, core: DeliveryCore, open: List<OnlineSessions.Session>) {}
+    fun frame(o: CourierObservation, events: List<CoreEvent>, before: Map<String, OfferState>, core: DeliveryCore, open: List<OnlineSessions.Session>, now: Long) {}
     /** Olay üreten öbür girişler (dokunuş, nakit toplama, konum, navigasyon bağı, elle teslim): `econ.events`. */
     fun events(now: Long, events: List<CoreEvent>, before: Map<String, OfferState>, core: DeliveryCore, open: List<OnlineSessions.Session>, idleUpdate: Boolean = true) {}
     /** Ret dokunuşu (bekleme nedeni `after_decline_observed`). */
     fun declineTap(pkg: String, at: Long) {}
+    /** Dokunuşun olayları, oturumlara işlenirken (Rawstats `:488`: ret → bekleme nedeni `after_decline_observed`). */
+    fun clicked(pkg: String, events: List<CoreEvent>) {}
     fun distance(now: Long, m: Double) {}
     /** Vardiya sonu, çekirdek durmadan önce (`waitCore.stop`, açık beklemeler). */
     fun stopping(now: Long) {}
@@ -49,6 +54,13 @@ interface OrderObserver {
     fun cancellation(pkg: String) {}
 
     object NONE : OrderObserver
+}
+
+/** ORDERS.md 13.3: teklif özetinin ekonomi alanları (bölgeler, R4 puanı, net); `:economics` uygular, `:app` bağlar. */
+interface OfferAnnotator {
+    fun annotate(offer: OfferState, summary: OfferSummary): OfferSummary = summary
+
+    object NONE : OfferAnnotator
 }
 
 /**
@@ -70,6 +82,8 @@ class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
         val scooter: ScooterBridge get() = ScooterBridge.NONE
         val weather: WeatherPort get() = WeatherPort.NONE
         val observer: OrderObserver get() = OrderObserver.NONE
+        /** Teklif özetinin bölge, puan ve net alanları (`:economics`, ORDERS.md 13.3); `NONE` veri uydurmaz. */
+        val annotator: OfferAnnotator get() = OfferAnnotator.NONE
         /** `Store.importing` (ZIP içe aktarma sürüyor). */
         fun importing(): Boolean = false
         fun phoneBattery(): Int? = null
@@ -188,6 +202,7 @@ class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
             if (shiftOn()) core.start()
         } catch (e: Exception) { failure("database", e) }
         initialized = true
+        env.observer.restored()
         try {
             sessions.restore(env.prefs.getString(OPEN_SESSIONS, null))
             // Process died after the shift ended: close at the last online screen seen.
@@ -296,7 +311,7 @@ class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
             boosts.atOffer(o, now).let { b -> offer.boostValue = b.value; offer.boostUnit = b.unit; offer.boostSource = b.source; offer.boostSeenAt = b.seenAt }
             env.log.lastLocation?.let { l -> offer.lat = l.lat; offer.lon = l.lon; offer.gpsAccuracyM = l.accM; offer.gpsAgeMs = now - l.atMs }
         } }
-        env.observer.frame(o, events, before, core, sessions.openSessions())
+        env.observer.frame(o, events, before, core, sessions.openSessions(), now)
         process(events)
         // Online state and promotion validity are recorded separately from offers.
         if (o.stage == ScreenStage.IDLE || o.stage == ScreenStage.OFFLINE || o.multipliers.isNotEmpty()) {
@@ -424,6 +439,7 @@ class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
         val before = core.pending.values.associateBy { it.id }
         val events = core.click(pkg, text, at)
         events.forEach { e -> sessions.event(e) }
+        env.observer.clicked(pkg, events)
         env.observer.events(at, events, before, core, sessions.openSessions())
         process(events); if (events.isNotEmpty()) saveSessions(emptyList(), force = true); persist(true)
     }
@@ -825,7 +841,7 @@ class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
     @Synchronized fun stored(): List<TripRecord> { init(); return env.db.trips().mapNotNull { runCatching { RecordJson.trip(it) }.getOrNull() } }
 
     /** WEEM `OrderEvents.offers` (ORDERS.md 13.2): K21 kuralıyla dışa verilebilir teklifler. */
-    @Synchronized fun offers(now: Long = now()) = OfferSummaries.of(core.running, core.pending.values, now, restartedAtMs)
+    @Synchronized fun offers(now: Long = now()) = OfferSummaries.of(core.running, core.pending.values, now, restartedAtMs, env.annotator)
     /** WEEM `OrderEvents.stages` (E8). */
     @Synchronized fun stages(now: Long = now()) = OrderStages.of(core.trips.values, { tripEnds[it] }, now)
 

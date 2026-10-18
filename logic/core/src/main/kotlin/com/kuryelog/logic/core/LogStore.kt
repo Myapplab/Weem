@@ -18,8 +18,9 @@ class LogStore(
     private val writeErrorPrefix: () -> String = { "Kayıt yazılamadı: " },
     private val dayWritten: (day: String, name: String) -> Unit = { _, _ -> },
 ) : FailureSink {
-    /** `events.jsonl` satırlarındaki son konum (`loc`); vardiya servisi yazar (A2.4). */
-    data class Loc(val lat: Double, val lon: Double, val accM: Double, val atMs: Long)
+    /** `events.jsonl` satırlarındaki son konum (`loc`); vardiya servisi yazar (A2.4). [speedMs]: fix'in kendi hızı (m/s; Rawstats
+     *  `Location.hasSpeed()`/`speed`, ekonomi `courierState.speedKmh`), yoksa null. */
+    data class Loc(val lat: Double, val lon: Double, val accM: Double, val atMs: Long, val speedMs: Double? = null)
 
     @Volatile var lastError: String? = null
     @Volatile var lastLocation: Loc? = null

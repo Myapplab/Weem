@@ -1,0 +1,5042 @@
+{
+ "schema": "kuryeplus-shadow-corpus/1",
+ "generatedBy": "docs/ekonomi-v2/araclar/shadow_parity.py --make-corpus (verbatim copy, offer scenarios only)",
+ "sources": [
+  {
+   "file": "docs/teklif-ekonomisi/v2/recheck/harness/golden_corpus.json",
+   "schema": "kuryelog-golden-replay/1",
+   "generatedFrom": "gen_corpus.py",
+   "labels": {
+    "woltOffer": {
+     "pkg": "com.wolt.courierapp",
+     "src": "kuryelog_after/app/src/test/java/com/kuryelog/app/CourierFlowTest.kt:11 (customer address synthetic)"
+    },
+    "boltOffer": {
+     "pkg": "com.bolt.food.courier",
+     "src": "kuryelog_after/app/src/test/java/com/kuryelog/app/CourierFlowTest.kt:10"
+    },
+    "boltPickup2": {
+     "pkg": "com.bolt.food.courier",
+     "src": "kuryelog_after/app/src/test/java/com/kuryelog/app/CourierFlowTest.kt:12 (order ids synthetic)"
+    },
+    "boltPickupStacked": {
+     "pkg": "com.bolt.food.courier",
+     "src": "kuryelog_after/app/src/test/java/com/kuryelog/app/CourierFlowTest.kt:12 (ids synthetic; content after a stacked accept is UNVERIFIED)"
+    },
+    "boltIdleA": {
+     "pkg": "com.bolt.food.courier",
+     "src": "kuryelog_after/app/src/test/java/com/kuryelog/app/CourierFlowTest.kt:13"
+    },
+    "boltWaiting": {
+     "pkg": "com.bolt.food.courier",
+     "src": "kynowa:app/src/test/java/com/kuryelog/app/DeliveryRecognitionTest.kt:28"
+    },
+    "boltOffline": {
+     "pkg": "com.bolt.food.courier",
+     "src": "kynowa:app/src/test/java/com/kuryelog/app/DeliveryRecognitionTest.kt:29"
+    },
+    "boltDrop": {
+     "pkg": "com.bolt.food.courier",
+     "src": "kuryelog_after/app/src/test/java/com/kuryelog/app/CourierFlowTest.kt:14 (name/address synthetic)"
+    },
+    "boltCardDelivered": {
+     "pkg": "com.bolt.food.courier",
+     "src": "kynowa:app/src/test/java/com/kuryelog/app/DeliveryRecognitionTest.kt:25-27 (synthetic in source)"
+    },
+    "boltClosedPanel": {
+     "pkg": "com.bolt.food.courier",
+     "src": "kuryelog_after/app/src/test/java/com/kuryelog/app/CourierFlowTest.kt:26"
+    },
+    "boltAllDeliveries": {
+     "pkg": "com.bolt.food.courier",
+     "src": "kynowa:app/src/test/java/com/kuryelog/app/DeliveryRecognitionTest.kt:95"
+    },
+    "boltEarningsSchedule": {
+     "pkg": "com.bolt.food.courier",
+     "src": "kynowa:app/src/test/java/com/kuryelog/app/DeliveryRecognitionTest.kt:97"
+    },
+    "boltDeliveryCompleted": {
+     "pkg": "com.bolt.food.courier",
+     "src": "kuryelog_after/app/src/test/java/com/kuryelog/app/CourierFlowTest.kt:45"
+    },
+    "woltWaiting": {
+     "pkg": "com.wolt.courierapp",
+     "src": "kynowa:app/src/test/java/com/kuryelog/app/DeliveryRecognitionTest.kt:19"
+    },
+    "woltHot": {
+     "pkg": "com.wolt.courierapp",
+     "src": "kynowa:app/src/test/java/com/kuryelog/app/DeliveryRecognitionTest.kt:20"
+    },
+    "woltOffline": {
+     "pkg": "com.wolt.courierapp",
+     "src": "kynowa:app/src/test/java/com/kuryelog/app/DeliveryRecognitionTest.kt:21"
+    },
+    "woltBan": {
+     "pkg": "com.wolt.courierapp",
+     "src": "kuryelog_after/app/src/test/java/com/kuryelog/app/CourierFlowTest.kt:54"
+    },
+    "woltPickup": {
+     "pkg": "com.wolt.courierapp",
+     "src": "kuryelog_after/app/src/test/java/com/kuryelog/app/CourierFlowTest.kt:33"
+    },
+    "woltCard": {
+     "pkg": "com.wolt.courierapp",
+     "src": "kynowa:app/src/test/java/com/kuryelog/app/DeliveryRecognitionTest.kt:14-18 (synthetic in source)"
+    },
+    "woltPopup": {
+     "pkg": "com.wolt.courierapp",
+     "src": "kynowa:app/src/test/java/com/kuryelog/app/DeliveryRecognitionTest.kt:105"
+    },
+    "woltMenu": {
+     "pkg": "com.wolt.courierapp",
+     "src": "kynowa:app/src/test/java/com/kuryelog/app/DeliveryRecognitionTest.kt:82 (courier name synthetic)"
+    },
+    "woltStats": {
+     "pkg": "com.wolt.courierapp",
+     "src": "kynowa:app/src/test/java/com/kuryelog/app/DeliveryRecognitionTest.kt:92"
+    },
+    "woltQuickLinks": {
+     "pkg": "com.wolt.courierapp",
+     "src": "kynowa:app/src/test/java/com/kuryelog/app/DeliveryRecognitionTest.kt:101"
+    },
+    "woltDropCheckId": {
+     "pkg": "com.wolt.courierapp",
+     "src": "kuryelog_after/app/src/test/java/com/kuryelog/app/CourierFlowTest.kt:38 (name/address synthetic)"
+    },
+    "woltIdleBonus": {
+     "pkg": "com.wolt.courierapp",
+     "src": "kuryelog_after/app/src/test/java/com/kuryelog/app/CourierFlowTest.kt:53"
+    }
+   }
+  },
+  {
+   "file": "docs/teklif-ekonomisi/v2/recheck/sonuc-2026-10-06/saha/field_corpus.json",
+   "schema": "kuryelog-golden-replay/1",
+   "generatedFrom": "field_corpus.py",
+   "labels": {}
+  }
+ ],
+ "scenarios": [
+  {
+   "id": "G01",
+   "title": "Wolt offer -> Accept tap -> pickup (baseline)",
+   "covers": [
+    "K20",
+    "K7"
+   ],
+   "note": "",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295210000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295220000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 3 min",
+      "Decline",
+      "₼2.31",
+      "2 stops (2.8 km) • 8–16 min",
+      "Izmir Doner Tantuni No1",
+      "9RQW+344 Baku, Baku, AZ1000",
+      "Customer drop-off",
+      "Test 2, Bakı",
+      "Accept"
+     ],
+     "actions": [
+      "Accept",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791295221000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 3 min",
+      "Decline",
+      "₼2.31",
+      "2 stops (2.8 km) • 8–16 min",
+      "Izmir Doner Tantuni No1",
+      "9RQW+344 Baku, Baku, AZ1000",
+      "Customer drop-off",
+      "Test 2, Bakı",
+      "Accept"
+     ],
+     "actions": [
+      "Accept",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295224000,
+     "pkg": "com.wolt.courierapp",
+     "text": "Accept"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295225000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltPickup",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Pickup 3 min",
+      "Pickup from",
+      "Donerist-Kebabist Sahil",
+      "Sabail district, Uzeyir Hajibeyov str., 27, AZ1000 Baku"
+     ],
+     "actions": [
+      "Collect"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791295226000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltPickup",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Pickup 3 min",
+      "Pickup from",
+      "Donerist-Kebabist Sahil",
+      "Sabail district, Uzeyir Hajibeyov str., 27, AZ1000 Baku"
+     ],
+     "actions": [
+      "Collect"
+     ]
+    },
+    {
+     "kind": "feed",
+     "at": 1791295226000
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295230000
+    }
+   ],
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "G02",
+   "title": "Bolt offer -> priced-button tap -> pickup; Bolt card lacks drop-off",
+   "covers": [
+    "K8",
+    "K20"
+   ],
+   "note": "",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295210000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295220000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Cook Box by Merkez Lahmacun Nizami",
+      "Mehemmed Naxcivani 15",
+      "~8 min",
+      "~14 min",
+      "22 min, 4,49 ₼"
+     ],
+     "actions": [
+      "22 min, 4,49 ₼",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "feed",
+     "at": 1791295221000
+    },
+    {
+     "kind": "click",
+     "at": 1791295223000,
+     "pkg": "com.bolt.food.courier",
+     "text": "22 min, 4,49 ₼"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295225000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltPickup2",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Order is being prepared",
+      "Arrive in 11 min",
+      "Xengeland",
+      "Mehdi Hüseyn 99",
+      "Orders to pick up:",
+      "2",
+      "#AAAA1",
+      "Items (0)",
+      "#BBBB2"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295230000
+    }
+   ],
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "G03",
+   "title": "Wolt offer -> Decline tap -> idle map (two stable reads)",
+   "covers": [
+    "K5",
+    "K18"
+   ],
+   "note": "",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295210000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295220000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 3 min",
+      "Decline",
+      "₼2.31",
+      "2 stops (2.8 km) • 8–16 min",
+      "Izmir Doner Tantuni No1",
+      "9RQW+344 Baku, Baku, AZ1000",
+      "Customer drop-off",
+      "Test 2, Bakı",
+      "Accept"
+     ],
+     "actions": [
+      "Accept",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295225000,
+     "pkg": "com.wolt.courierapp",
+     "text": "Decline"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295226000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295227000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295237000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295240000
+    }
+   ],
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "G04",
+   "title": "Bolt offer ignored -> timeout -> idle map (no tap)",
+   "covers": [
+    "K17",
+    "K18"
+   ],
+   "note": "",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295210000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295220000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Cook Box by Merkez Lahmacun Nizami",
+      "Mehemmed Naxcivani 15",
+      "~8 min",
+      "~14 min",
+      "22 min, 4,49 ₼"
+     ],
+     "actions": [
+      "22 min, 4,49 ₼",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791295230000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Cook Box by Merkez Lahmacun Nizami",
+      "Mehemmed Naxcivani 15",
+      "~8 min",
+      "~14 min",
+      "22 min, 4,49 ₼"
+     ],
+     "actions": [
+      "22 min, 4,49 ₼",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791295240000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Cook Box by Merkez Lahmacun Nizami",
+      "Mehemmed Naxcivani 15",
+      "~8 min",
+      "~14 min",
+      "22 min, 4,49 ₼"
+     ],
+     "actions": [
+      "22 min, 4,49 ₼",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791295281000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295282000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295290000
+    }
+   ],
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "G05",
+   "title": "Same-platform stacked Bolt offer during active trip -> Decline -> back to task screen",
+   "covers": [
+    "K1"
+   ],
+   "note": "Whether Bolt/Wolt in Baku send same-platform offers during an active task is UNVERIFIED (ask in test shift).",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295205000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Cook Box by Merkez Lahmacun Nizami",
+      "Mehemmed Naxcivani 15",
+      "~8 min",
+      "~14 min",
+      "22 min, 4,49 ₼"
+     ],
+     "actions": [
+      "22 min, 4,49 ₼",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295208000,
+     "pkg": "com.bolt.food.courier",
+     "text": "22 min, 4,49 ₼"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295210000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltPickup2",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Order is being prepared",
+      "Arrive in 11 min",
+      "Xengeland",
+      "Mehdi Hüseyn 99",
+      "Orders to pick up:",
+      "2",
+      "#AAAA1",
+      "Items (0)",
+      "#BBBB2"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295260000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltPickup2",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Order is being prepared",
+      "Arrive in 11 min",
+      "Xengeland",
+      "Mehdi Hüseyn 99",
+      "Orders to pick up:",
+      "2",
+      "#AAAA1",
+      "Items (0)",
+      "#BBBB2"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295320000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Cook Box by Merkez Lahmacun Nizami",
+      "Mehemmed Naxcivani 15",
+      "~8 min",
+      "~14 min",
+      "22 min, 4,49 ₼"
+     ],
+     "actions": [
+      "22 min, 4,49 ₼",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295325000,
+     "pkg": "com.bolt.food.courier",
+     "text": "Decline"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295327000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltPickup2",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Order is being prepared",
+      "Arrive in 11 min",
+      "Xengeland",
+      "Mehdi Hüseyn 99",
+      "Orders to pick up:",
+      "2",
+      "#AAAA1",
+      "Items (0)",
+      "#BBBB2"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295330000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltPickup2",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Order is being prepared",
+      "Arrive in 11 min",
+      "Xengeland",
+      "Mehdi Hüseyn 99",
+      "Orders to pick up:",
+      "2",
+      "#AAAA1",
+      "Items (0)",
+      "#BBBB2"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295800000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltDrop",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Drop off in -1 min",
+      "Test C. #AAAA1",
+      "Items (1)",
+      "Address",
+      "Test 5, Bakı",
+      "Instructions",
+      "Meet at my door",
+      "Floor",
+      "3",
+      "Arrived",
+      "Slide to confirm"
+     ],
+     "actions": [
+      "Arrived"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295850000,
+     "pkg": "com.bolt.food.courier",
+     "text": "Complete delivery"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295860000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltDrop",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Drop off in -1 min",
+      "Test C. #BBBB2",
+      "Items (1)",
+      "Address",
+      "Test 5, Bakı",
+      "Instructions",
+      "Meet at my door",
+      "Floor",
+      "3",
+      "Arrived",
+      "Slide to confirm"
+     ],
+     "actions": [
+      "Arrived"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295900000,
+     "pkg": "com.bolt.food.courier",
+     "text": "Complete delivery"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295901000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295902000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791296000000
+    }
+   ],
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "G06",
+   "title": "Same-platform stacked Bolt offer during active trip -> Accept",
+   "covers": [
+    "K1",
+    "K13"
+   ],
+   "note": "Screen content after accepting a stacked order is UNVERIFIED; pickup frame reuses transcribed labels with synthetic ids.",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295205000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Cook Box by Merkez Lahmacun Nizami",
+      "Mehemmed Naxcivani 15",
+      "~8 min",
+      "~14 min",
+      "22 min, 4,49 ₼"
+     ],
+     "actions": [
+      "22 min, 4,49 ₼",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295208000,
+     "pkg": "com.bolt.food.courier",
+     "text": "22 min, 4,49 ₼"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295210000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltPickup2",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Order is being prepared",
+      "Arrive in 11 min",
+      "Xengeland",
+      "Mehdi Hüseyn 99",
+      "Orders to pick up:",
+      "2",
+      "#AAAA1",
+      "Items (0)",
+      "#BBBB2"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295260000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltPickup2",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Order is being prepared",
+      "Arrive in 11 min",
+      "Xengeland",
+      "Mehdi Hüseyn 99",
+      "Orders to pick up:",
+      "2",
+      "#AAAA1",
+      "Items (0)",
+      "#BBBB2"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295320000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Cook Box by Merkez Lahmacun Nizami",
+      "Mehemmed Naxcivani 15",
+      "~8 min",
+      "~14 min",
+      "22 min, 4,49 ₼"
+     ],
+     "actions": [
+      "22 min, 4,49 ₼",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295325000,
+     "pkg": "com.bolt.food.courier",
+     "text": "22 min, 4,49 ₼"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295327000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltPickupStacked",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Order is being prepared",
+      "Arrive in 11 min",
+      "Xengeland",
+      "Mehdi Hüseyn 99",
+      "Orders to pick up:",
+      "2",
+      "#AAAA1",
+      "Items (0)",
+      "#CCCC3"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295800000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltDrop",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Drop off in -1 min",
+      "Test C. #AAAA1",
+      "Items (1)",
+      "Address",
+      "Test 5, Bakı",
+      "Instructions",
+      "Meet at my door",
+      "Floor",
+      "3",
+      "Arrived",
+      "Slide to confirm"
+     ],
+     "actions": [
+      "Arrived"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295850000,
+     "pkg": "com.bolt.food.courier",
+     "text": "Complete delivery"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295860000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltDrop",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Drop off in -1 min",
+      "Test C. #BBBB2",
+      "Items (1)",
+      "Address",
+      "Test 5, Bakı",
+      "Instructions",
+      "Meet at my door",
+      "Floor",
+      "3",
+      "Arrived",
+      "Slide to confirm"
+     ],
+     "actions": [
+      "Arrived"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295900000,
+     "pkg": "com.bolt.food.courier",
+     "text": "Complete delivery"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295960000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltDrop",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Drop off in -1 min",
+      "Test C. #CCCC3",
+      "Items (1)",
+      "Address",
+      "Test 5, Bakı",
+      "Instructions",
+      "Meet at my door",
+      "Floor",
+      "3",
+      "Arrived",
+      "Slide to confirm"
+     ],
+     "actions": [
+      "Arrived"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791296000000,
+     "pkg": "com.bolt.food.courier",
+     "text": "Complete delivery"
+    },
+    {
+     "kind": "frame",
+     "at": 1791296001000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791296002000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791296100000
+    }
+   ],
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "G07",
+   "title": "Same-platform stacked Bolt offer during active trip -> timeout (no tap)",
+   "covers": [
+    "K1",
+    "K17"
+   ],
+   "note": "",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295205000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Cook Box by Merkez Lahmacun Nizami",
+      "Mehemmed Naxcivani 15",
+      "~8 min",
+      "~14 min",
+      "22 min, 4,49 ₼"
+     ],
+     "actions": [
+      "22 min, 4,49 ₼",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295208000,
+     "pkg": "com.bolt.food.courier",
+     "text": "22 min, 4,49 ₼"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295210000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltPickup2",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Order is being prepared",
+      "Arrive in 11 min",
+      "Xengeland",
+      "Mehdi Hüseyn 99",
+      "Orders to pick up:",
+      "2",
+      "#AAAA1",
+      "Items (0)",
+      "#BBBB2"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295260000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltPickup2",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Order is being prepared",
+      "Arrive in 11 min",
+      "Xengeland",
+      "Mehdi Hüseyn 99",
+      "Orders to pick up:",
+      "2",
+      "#AAAA1",
+      "Items (0)",
+      "#BBBB2"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295320000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Cook Box by Merkez Lahmacun Nizami",
+      "Mehemmed Naxcivani 15",
+      "~8 min",
+      "~14 min",
+      "22 min, 4,49 ₼"
+     ],
+     "actions": [
+      "22 min, 4,49 ₼",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791295330000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Cook Box by Merkez Lahmacun Nizami",
+      "Mehemmed Naxcivani 15",
+      "~8 min",
+      "~14 min",
+      "22 min, 4,49 ₼"
+     ],
+     "actions": [
+      "22 min, 4,49 ₼",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791295382000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltPickup2",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Order is being prepared",
+      "Arrive in 11 min",
+      "Xengeland",
+      "Mehdi Hüseyn 99",
+      "Orders to pick up:",
+      "2",
+      "#AAAA1",
+      "Items (0)",
+      "#BBBB2"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295385000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltPickup2",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Order is being prepared",
+      "Arrive in 11 min",
+      "Xengeland",
+      "Mehdi Hüseyn 99",
+      "Orders to pick up:",
+      "2",
+      "#AAAA1",
+      "Items (0)",
+      "#BBBB2"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295400000
+    }
+   ],
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "G08",
+   "title": "Split screen: Wolt offer accepted while a Bolt trip is active",
+   "covers": [
+    "K5",
+    "K9",
+    "K20"
+   ],
+   "note": "",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Cook Box by Merkez Lahmacun Nizami",
+      "Mehemmed Naxcivani 15",
+      "~8 min",
+      "~14 min",
+      "22 min, 4,49 ₼"
+     ],
+     "actions": [
+      "22 min, 4,49 ₼",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295202000,
+     "pkg": "com.bolt.food.courier",
+     "text": "22 min, 4,49 ₼"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295203000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltPickup2",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Order is being prepared",
+      "Arrive in 11 min",
+      "Xengeland",
+      "Mehdi Hüseyn 99",
+      "Orders to pick up:",
+      "2",
+      "#AAAA1",
+      "Items (0)",
+      "#BBBB2"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295204000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295214000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295230000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 3 min",
+      "Decline",
+      "₼2.31",
+      "2 stops (2.8 km) • 8–16 min",
+      "Izmir Doner Tantuni No1",
+      "9RQW+344 Baku, Baku, AZ1000",
+      "Customer drop-off",
+      "Test 2, Bakı",
+      "Accept"
+     ],
+     "actions": [
+      "Accept",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295233000,
+     "pkg": "com.wolt.courierapp",
+     "text": "Accept"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295235000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltPickup",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Pickup 3 min",
+      "Pickup from",
+      "Donerist-Kebabist Sahil",
+      "Sabail district, Uzeyir Hajibeyov str., 27, AZ1000 Baku"
+     ],
+     "actions": [
+      "Collect"
+     ]
+    },
+    {
+     "kind": "distance",
+     "at": 1791295400000,
+     "m": 3000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295500000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltDrop",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Drop off in -1 min",
+      "Test C. #AAAA1",
+      "Items (1)",
+      "Address",
+      "Test 5, Bakı",
+      "Instructions",
+      "Meet at my door",
+      "Floor",
+      "3",
+      "Arrived",
+      "Slide to confirm"
+     ],
+     "actions": [
+      "Arrived"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295510000,
+     "pkg": "com.bolt.food.courier",
+     "text": "Complete delivery"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295520000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltDrop",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Drop off in -1 min",
+      "Test C. #BBBB2",
+      "Items (1)",
+      "Address",
+      "Test 5, Bakı",
+      "Instructions",
+      "Meet at my door",
+      "Floor",
+      "3",
+      "Arrived",
+      "Slide to confirm"
+     ],
+     "actions": [
+      "Arrived"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295530000,
+     "pkg": "com.bolt.food.courier",
+     "text": "Complete delivery"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295531000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295532000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295800000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltCard",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Dropoff to",
+      "Customer A",
+      "Test küçəsi 39k, Bakı",
+      "INFO",
+      "ITEMS",
+      "Address details",
+      "Address details",
+      "Block B ( TEST evleri) (Domofon kodu: 68🔔)",
+      "Notes",
+      "BLOCK B\n(Domofon kodu: 68🔔)\nMertebe 6...",
+      "Translate",
+      "Order details",
+      "From",
+      "Punkap",
+      "#408",
+      "Difficulties with the delivery?",
+      "Send a message",
+      "Order delivered!"
+     ],
+     "actions": [
+      "Send a message",
+      "Order delivered!"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791295801000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295803000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295900000
+    }
+   ],
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "G09",
+   "title": "Split screen: both platforms idle, Wolt offer arrives",
+   "covers": [
+    "K5"
+   ],
+   "note": "",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295201000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295205000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295206000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295210000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295211000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295215000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295216000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295220000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295221000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295225000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295226000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295230000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295231000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295235000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295236000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295240000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295241000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295245000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295246000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295250000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295251000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295255000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295256000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295260000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295261000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295262000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 3 min",
+      "Decline",
+      "₼2.31",
+      "2 stops (2.8 km) • 8–16 min",
+      "Izmir Doner Tantuni No1",
+      "9RQW+344 Baku, Baku, AZ1000",
+      "Customer drop-off",
+      "Test 2, Bakı",
+      "Accept"
+     ],
+     "actions": [
+      "Accept",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791295266000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295270000
+    }
+   ],
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "G10",
+   "title": "Wolt 'Orders coming in hot!' banner inside one wait",
+   "covers": [
+    "K5"
+   ],
+   "note": "",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295210000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295220000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltHot",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Orders coming in hot!",
+      "8 live hotspots",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295230000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltHot",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Orders coming in hot!",
+      "8 live hotspots",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295240000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295250000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 3 min",
+      "Decline",
+      "₼2.31",
+      "2 stops (2.8 km) • 8–16 min",
+      "Izmir Doner Tantuni No1",
+      "9RQW+344 Baku, Baku, AZ1000",
+      "Customer drop-off",
+      "Test 2, Bakı",
+      "Accept"
+     ],
+     "actions": [
+      "Accept",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295260000
+    }
+   ],
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "G11",
+   "title": "Popup ('Keyfiyyəti qoruyaq!') over the waiting map",
+   "covers": [
+    "K5"
+   ],
+   "note": "",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295210000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295215000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltPopup",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Keyfiyyəti qoruyaq!",
+      "Termoçantadan istifadə qaydaları.",
+      "Anladım!"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295220000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295230000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 3 min",
+      "Decline",
+      "₼2.31",
+      "2 stops (2.8 km) • 8–16 min",
+      "Izmir Doner Tantuni No1",
+      "9RQW+344 Baku, Baku, AZ1000",
+      "Customer drop-off",
+      "Test 2, Bakı",
+      "Accept"
+     ],
+     "actions": [
+      "Accept",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295240000
+    }
+   ],
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "G12",
+   "title": "Wait crosses the 19:00 Baku hour boundary",
+   "covers": [
+    "K5"
+   ],
+   "note": "",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791298770000
+    },
+    {
+     "kind": "frame",
+     "at": 1791298770000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791298780000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791298790000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791298800000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791298810000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791298820000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791298830000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791298860000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 3 min",
+      "Decline",
+      "₼2.31",
+      "2 stops (2.8 km) • 8–16 min",
+      "Izmir Doner Tantuni No1",
+      "9RQW+344 Baku, Baku, AZ1000",
+      "Customer drop-off",
+      "Test 2, Bakı",
+      "Accept"
+     ],
+     "actions": [
+      "Accept",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791298870000
+    }
+   ],
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "G13",
+   "title": "Delivery demand changes Medium -> High during one wait",
+   "covers": [
+    "K5"
+   ],
+   "note": "",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295210000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295220000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295230000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "High",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295240000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "High",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295250000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 3 min",
+      "Decline",
+      "₼2.31",
+      "2 stops (2.8 km) • 8–16 min",
+      "Izmir Doner Tantuni No1",
+      "9RQW+344 Baku, Baku, AZ1000",
+      "Customer drop-off",
+      "Test 2, Bakı",
+      "Accept"
+     ],
+     "actions": [
+      "Accept",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295260000
+    }
+   ],
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "G14",
+   "title": "Bolt offer readable only by OCR (accessibility frame UNKNOWN at the same instant)",
+   "covers": [
+    "K5"
+   ],
+   "note": "",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295210000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295220000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295230000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltClosedPanel",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Baku",
+      "Mapbox",
+      "Show map"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295230000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltOffer",
+     "source": "ocr",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Cook Box by Merkez Lahmacun Nizami",
+      "Mehemmed Naxcivani 15",
+      "~8 min",
+      "~14 min",
+      "22 min, 4,49 ₼"
+     ],
+     "actions": [
+      "Decline",
+      "22 min, 4,49 ₼"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791295240000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltPickup2",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Order is being prepared",
+      "Arrive in 11 min",
+      "Xengeland",
+      "Mehdi Hüseyn 99",
+      "Orders to pick up:",
+      "2",
+      "#AAAA1",
+      "Items (0)",
+      "#BBBB2"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295250000
+    }
+   ],
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "G15",
+   "title": "Same Wolt offer, OCR text jitter (reorder, 'No1'->'Nol', address wrapped)",
+   "covers": [
+    "K7"
+   ],
+   "note": "OCR perturbations are deterministic operators on transcribed labels, not new labels.",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295220000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 3 min",
+      "Decline",
+      "₼2.31",
+      "2 stops (2.8 km) • 8–16 min",
+      "Izmir Doner Tantuni No1",
+      "9RQW+344 Baku, Baku, AZ1000",
+      "Customer drop-off",
+      "Test 2, Bakı",
+      "Accept"
+     ],
+     "actions": [
+      "Accept",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791295220000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltOffer",
+     "source": "ocr",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Ready in 3 min",
+      "₼2.31",
+      "2 stops (2.8 km) • 8–16 min",
+      "Izmir Doner Tantuni Nol",
+      "9RQW+344 Baku, Baku, AZ1000",
+      "Customer drop-off",
+      "Test 2,",
+      "Bakı",
+      "Accept"
+     ],
+     "actions": [
+      "Decline",
+      "Accept"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791295222000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 3 min",
+      "Decline",
+      "₼2.31",
+      "2 stops (2.8 km) • 8–16 min",
+      "Izmir Doner Tantuni No1",
+      "9RQW+344 Baku, Baku, AZ1000",
+      "Customer drop-off",
+      "Test 2, Bakı",
+      "Accept"
+     ],
+     "actions": [
+      "Accept",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791295223000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltOffer",
+     "source": "ocr",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Ready in 3 min",
+      "₼2.31",
+      "2 stops (2.8 km) • 8–16 min",
+      "Izmir Doner Tantuni Nol",
+      "9RQW+344 Baku, Baku, AZ1000",
+      "Customer drop-off",
+      "Test 2,",
+      "Bakı",
+      "Accept"
+     ],
+     "actions": [
+      "Decline",
+      "Accept"
+     ]
+    },
+    {
+     "kind": "feed",
+     "at": 1791295224000
+    },
+    {
+     "kind": "click",
+     "at": 1791295225000,
+     "pkg": "com.wolt.courierapp",
+     "text": "Accept"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295226000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltPickup",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Pickup 3 min",
+      "Pickup from",
+      "Donerist-Kebabist Sahil",
+      "Sabail district, Uzeyir Hajibeyov str., 27, AZ1000 Baku"
+     ],
+     "actions": [
+      "Collect"
+     ]
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295230000
+    }
+   ],
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "G19",
+   "title": "Three Wolt declines then 'set offline until 21:46 for declining too many deliveries'",
+   "covers": [
+    "K18"
+   ],
+   "note": "The real decline threshold is UNKNOWN; this is a sequence test, not a threshold claim.",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295210000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 3 min",
+      "Decline",
+      "₼2.31",
+      "2 stops (2.8 km) • 8–16 min",
+      "Izmir Doner Tantuni No1",
+      "9RQW+344 Baku, Baku, AZ1000",
+      "Customer drop-off",
+      "Test 2, Bakı",
+      "Accept"
+     ],
+     "actions": [
+      "Accept",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295215000,
+     "pkg": "com.wolt.courierapp",
+     "text": "Decline"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295216000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295217000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295240000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 3 min",
+      "Decline",
+      "₼2.31",
+      "2 stops (2.8 km) • 8–16 min",
+      "Izmir Doner Tantuni No1",
+      "9RQW+344 Baku, Baku, AZ1000",
+      "Customer drop-off",
+      "Test 2, Bakı",
+      "Accept"
+     ],
+     "actions": [
+      "Accept",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295245000,
+     "pkg": "com.wolt.courierapp",
+     "text": "Decline"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295246000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295247000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295270000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 3 min",
+      "Decline",
+      "₼2.31",
+      "2 stops (2.8 km) • 8–16 min",
+      "Izmir Doner Tantuni No1",
+      "9RQW+344 Baku, Baku, AZ1000",
+      "Customer drop-off",
+      "Test 2, Bakı",
+      "Accept"
+     ],
+     "actions": [
+      "Accept",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295275000,
+     "pkg": "com.wolt.courierapp",
+     "text": "Decline"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295276000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295277000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295300000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltBan",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Unable to go online",
+      "You've been set offline until 21:46 for declining too many deliveries.",
+      "Go online",
+      "Delivery demand Medium",
+      "Hər sifariş üçün əlavə 40% from 12:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295301000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltBan",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Unable to go online",
+      "You've been set offline until 21:46 for declining too many deliveries.",
+      "Go online",
+      "Delivery demand Medium",
+      "Hər sifariş üçün əlavə 40% from 12:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295310000
+    }
+   ],
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "G21",
+   "title": "Wait and trip cross midnight (23:59 -> 00:13 Baku)",
+   "covers": [
+    "VM5",
+    "K19"
+   ],
+   "note": "",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791316740000
+    },
+    {
+     "kind": "frame",
+     "at": 1791316740000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791316750000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791316760000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791316770000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791316780000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791316790000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791316800000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791316805000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 3 min",
+      "Decline",
+      "₼2.31",
+      "2 stops (2.8 km) • 8–16 min",
+      "Izmir Doner Tantuni No1",
+      "9RQW+344 Baku, Baku, AZ1000",
+      "Customer drop-off",
+      "Test 2, Bakı",
+      "Accept"
+     ],
+     "actions": [
+      "Accept",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791316808000,
+     "pkg": "com.wolt.courierapp",
+     "text": "Accept"
+    },
+    {
+     "kind": "frame",
+     "at": 1791316810000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltPickup",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Pickup 3 min",
+      "Pickup from",
+      "Donerist-Kebabist Sahil",
+      "Sabail district, Uzeyir Hajibeyov str., 27, AZ1000 Baku"
+     ],
+     "actions": [
+      "Collect"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791317520000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltCard",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Dropoff to",
+      "Customer A",
+      "Test küçəsi 39k, Bakı",
+      "INFO",
+      "ITEMS",
+      "Address details",
+      "Address details",
+      "Block B ( TEST evleri) (Domofon kodu: 68🔔)",
+      "Notes",
+      "BLOCK B\n(Domofon kodu: 68🔔)\nMertebe 6...",
+      "Translate",
+      "Order details",
+      "From",
+      "Punkap",
+      "#408",
+      "Difficulties with the delivery?",
+      "Send a message",
+      "Order delivered!"
+     ],
+     "actions": [
+      "Send a message",
+      "Order delivered!"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791317530000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791317531500,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791317540000
+    }
+   ],
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "G22",
+   "title": "Process death in the middle of a wait",
+   "covers": [
+    "K19",
+    "K5"
+   ],
+   "note": "",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295210000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295220000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "process_death",
+     "at": 1791295225000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295240000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295250000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 3 min",
+      "Decline",
+      "₼2.31",
+      "2 stops (2.8 km) • 8–16 min",
+      "Izmir Doner Tantuni No1",
+      "9RQW+344 Baku, Baku, AZ1000",
+      "Customer drop-off",
+      "Test 2, Bakı",
+      "Accept"
+     ],
+     "actions": [
+      "Accept",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295260000
+    }
+   ],
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "G23",
+   "title": "Process death with a pending Bolt offer; feed read 5 min later",
+   "covers": [
+    "K21"
+   ],
+   "note": "",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Cook Box by Merkez Lahmacun Nizami",
+      "Mehemmed Naxcivani 15",
+      "~8 min",
+      "~14 min",
+      "22 min, 4,49 ₼"
+     ],
+     "actions": [
+      "22 min, 4,49 ₼",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "process_death",
+     "at": 1791295205000
+    },
+    {
+     "kind": "feed",
+     "at": 1791295500000
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295510000
+    }
+   ],
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "G25",
+   "title": "Bolt bundle: two customers, slider screens, back to waiting",
+   "covers": [
+    "K8"
+   ],
+   "note": "",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Cook Box by Merkez Lahmacun Nizami",
+      "Mehemmed Naxcivani 15",
+      "~8 min",
+      "~14 min",
+      "22 min, 4,49 ₼"
+     ],
+     "actions": [
+      "22 min, 4,49 ₼",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295202000,
+     "pkg": "com.bolt.food.courier",
+     "text": "22 min, 4,49 ₼"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295203000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltPickup2",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Order is being prepared",
+      "Arrive in 11 min",
+      "Xengeland",
+      "Mehdi Hüseyn 99",
+      "Orders to pick up:",
+      "2",
+      "#AAAA1",
+      "Items (0)",
+      "#BBBB2"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295300000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltCardDelivered",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Drop off in -4 min",
+      "Test C. #AAAA1",
+      "Items (3)",
+      "Address",
+      "Test 5, Bakı",
+      "Instructions",
+      "Meet at the door",
+      "Call",
+      "Chat",
+      "Delivery issues?",
+      "Delivered",
+      "Slide to confirm"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295400000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltCardDelivered",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Drop off in -4 min",
+      "Test C. #BBBB2",
+      "Items (3)",
+      "Address",
+      "Test 5, Bakı",
+      "Instructions",
+      "Meet at the door",
+      "Call",
+      "Chat",
+      "Delivery issues?",
+      "Delivered",
+      "Slide to confirm"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295500000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295501500,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295510000
+    }
+   ],
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "G26",
+   "title": "Wolt multi-stop offer ('2 stops') reaches the YolGo feed",
+   "covers": [
+    "K8"
+   ],
+   "note": "",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 3 min",
+      "Decline",
+      "₼2.31",
+      "2 stops (2.8 km) • 8–16 min",
+      "Izmir Doner Tantuni No1",
+      "9RQW+344 Baku, Baku, AZ1000",
+      "Customer drop-off",
+      "Test 2, Bakı",
+      "Accept"
+     ],
+     "actions": [
+      "Accept",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "feed",
+     "at": 1791295201000
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295205000
+    }
+   ],
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "G27",
+   "title": "Wolt window hidden behind full-screen Bolt (no Wolt frames 10s->50s)",
+   "covers": [
+    "K5"
+   ],
+   "note": "",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295210000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295212000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295217000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295222000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295227000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295232000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295237000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295242000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295247000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1.6x",
+      "1.7x",
+      "Looking for orders",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295250000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltWaiting",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Expect a task soon",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 50% from 08:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295255000,
+     "pkg": "com.wolt.courierapp",
+     "label": "woltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 3 min",
+      "Decline",
+      "₼2.31",
+      "2 stops (2.8 km) • 8–16 min",
+      "Izmir Doner Tantuni No1",
+      "9RQW+344 Baku, Baku, AZ1000",
+      "Customer drop-off",
+      "Test 2, Bakı",
+      "Accept"
+     ],
+     "actions": [
+      "Accept",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295260000
+    }
+   ],
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "G28",
+   "title": "Late OCR offer frame after acceptance must not resurrect the offer",
+   "covers": [
+    "K7"
+   ],
+   "note": "",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295201000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltOffer",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Cook Box by Merkez Lahmacun Nizami",
+      "Mehemmed Naxcivani 15",
+      "~8 min",
+      "~14 min",
+      "22 min, 4,49 ₼"
+     ],
+     "actions": [
+      "22 min, 4,49 ₼",
+      "Decline"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791295202000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltPickup2",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Order is being prepared",
+      "Arrive in 11 min",
+      "Xengeland",
+      "Mehdi Hüseyn 99",
+      "Orders to pick up:",
+      "2",
+      "#AAAA1",
+      "Items (0)",
+      "#BBBB2"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295201500,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltOffer",
+     "source": "ocr",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Cook Box by Merkez Lahmacun Nizami",
+      "Mehemmed Naxcivani 15",
+      "~8 min",
+      "~14 min",
+      "22 min, 4,49 ₼"
+     ],
+     "actions": [
+      "Decline",
+      "22 min, 4,49 ₼"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791295203000,
+     "pkg": "com.bolt.food.courier",
+     "label": "boltPickup2",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Order is being prepared",
+      "Arrive in 11 min",
+      "Xengeland",
+      "Mehdi Hüseyn 99",
+      "Orders to pick up:",
+      "2",
+      "#AAAA1",
+      "Items (0)",
+      "#BBBB2"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295210000
+    }
+   ],
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "F01",
+   "title": "Real Wolt decline: offer E5 -> Decline -> 'Decline offer?' E4 -> Decline -> minimized waiting map E6",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E1",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Baku Central",
+      "Delivery demand",
+      "Low",
+      "NOW",
+      "09:00",
+      "15:00",
+      "21:00",
+      "03:00",
+      "EXPECTED DEMAND",
+      "EARN EXTRA",
+      "Starts in 4 hours",
+      "Boost",
+      "Hər sifariş üçün əlavə 20%",
+      "18:00-20:00",
+      "Quick links",
+      "Previous task",
+      "Scheduled offline",
+      "Support",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295201000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E1",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Baku Central",
+      "Delivery demand",
+      "Low",
+      "NOW",
+      "09:00",
+      "15:00",
+      "21:00",
+      "03:00",
+      "EXPECTED DEMAND",
+      "EARN EXTRA",
+      "Starts in 4 hours",
+      "Boost",
+      "Hər sifariş üçün əlavə 20%",
+      "18:00-20:00",
+      "Quick links",
+      "Previous task",
+      "Scheduled offline",
+      "Support",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295210000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E5",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Ready in 1 min",
+      "₼3.94",
+      "2 stops (4.2 km) • 11–19 min",
+      "Test Restoran",
+      "Test küç. 1, Baku, AZ1025",
+      "Customer drop-off",
+      "40°22'00.0\"N 49°50'00.0\"E, Baku",
+      "Accept"
+     ],
+     "actions": [
+      "Decline",
+      "Accept"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791295211000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E5",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Ready in 1 min",
+      "₼3.94",
+      "2 stops (4.2 km) • 11–19 min",
+      "Test Restoran",
+      "Test küç. 1, Baku, AZ1025",
+      "Customer drop-off",
+      "40°22'00.0\"N 49°50'00.0\"E, Baku",
+      "Accept"
+     ],
+     "actions": [
+      "Decline",
+      "Accept"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295214000,
+     "pkg": "com.wolt.courierapp",
+     "text": "Decline"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295215000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E4",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 7 min",
+      "Decline offer?",
+      "You'll lose potential earnings and it might take some time to find another offer in your delivery area.",
+      "Decline",
+      "Return to offer details"
+     ],
+     "actions": [
+      "Decline",
+      "Return to offer details"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791295216000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E4",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 7 min",
+      "Decline offer?",
+      "You'll lose potential earnings and it might take some time to find another offer in your delivery area.",
+      "Decline",
+      "Return to offer details"
+     ],
+     "actions": [
+      "Decline",
+      "Return to offer details"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295218000,
+     "pkg": "com.wolt.courierapp",
+     "text": "Decline"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295219000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E6",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Baku Central",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 20% from 18:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295220000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E6",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Baku Central",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 20% from 18:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295230000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E6",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Baku Central",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 20% from 18:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295260000
+    }
+   ],
+   "corpus": "sonuc-2026-10-06/saha/field_corpus.json"
+  },
+  {
+   "id": "F02",
+   "title": "Same, but the waiting sheet is expanded (E1) and toolbar icons expose 'Menu/Notifications/Stats' (hypothesis C2)",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E1",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Baku Central",
+      "Delivery demand",
+      "Low",
+      "NOW",
+      "09:00",
+      "15:00",
+      "21:00",
+      "03:00",
+      "EXPECTED DEMAND",
+      "EARN EXTRA",
+      "Starts in 4 hours",
+      "Boost",
+      "Hər sifariş üçün əlavə 20%",
+      "18:00-20:00",
+      "Quick links",
+      "Previous task",
+      "Scheduled offline",
+      "Support",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295201000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E1",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Baku Central",
+      "Delivery demand",
+      "Low",
+      "NOW",
+      "09:00",
+      "15:00",
+      "21:00",
+      "03:00",
+      "EXPECTED DEMAND",
+      "EARN EXTRA",
+      "Starts in 4 hours",
+      "Boost",
+      "Hər sifariş üçün əlavə 20%",
+      "18:00-20:00",
+      "Quick links",
+      "Previous task",
+      "Scheduled offline",
+      "Support",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295210000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E5",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Ready in 1 min",
+      "₼3.94",
+      "2 stops (4.2 km) • 11–19 min",
+      "Test Restoran",
+      "Test küç. 1, Baku, AZ1025",
+      "Customer drop-off",
+      "40°22'00.0\"N 49°50'00.0\"E, Baku",
+      "Accept"
+     ],
+     "actions": [
+      "Decline",
+      "Accept"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791295211000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E5",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Ready in 1 min",
+      "₼3.94",
+      "2 stops (4.2 km) • 11–19 min",
+      "Test Restoran",
+      "Test küç. 1, Baku, AZ1025",
+      "Customer drop-off",
+      "40°22'00.0\"N 49°50'00.0\"E, Baku",
+      "Accept"
+     ],
+     "actions": [
+      "Decline",
+      "Accept"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295214000,
+     "pkg": "com.wolt.courierapp",
+     "text": "Decline"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295215000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E4",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 7 min",
+      "Decline offer?",
+      "You'll lose potential earnings and it might take some time to find another offer in your delivery area.",
+      "Decline",
+      "Return to offer details"
+     ],
+     "actions": [
+      "Decline",
+      "Return to offer details"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791295216000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E4",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 7 min",
+      "Decline offer?",
+      "You'll lose potential earnings and it might take some time to find another offer in your delivery area.",
+      "Decline",
+      "Return to offer details"
+     ],
+     "actions": [
+      "Decline",
+      "Return to offer details"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295218000,
+     "pkg": "com.wolt.courierapp",
+     "text": "Decline"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295219000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E1+icons",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Baku Central",
+      "Delivery demand",
+      "Low",
+      "NOW",
+      "09:00",
+      "15:00",
+      "21:00",
+      "03:00",
+      "EXPECTED DEMAND",
+      "EARN EXTRA",
+      "Starts in 4 hours",
+      "Boost",
+      "Hər sifariş üçün əlavə 20%",
+      "18:00-20:00",
+      "Quick links",
+      "Previous task",
+      "Scheduled offline",
+      "Support",
+      "Go offline",
+      "Menu",
+      "Notifications",
+      "Stats"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295220000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E1+icons",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Baku Central",
+      "Delivery demand",
+      "Low",
+      "NOW",
+      "09:00",
+      "15:00",
+      "21:00",
+      "03:00",
+      "EXPECTED DEMAND",
+      "EARN EXTRA",
+      "Starts in 4 hours",
+      "Boost",
+      "Hər sifariş üçün əlavə 20%",
+      "18:00-20:00",
+      "Quick links",
+      "Previous task",
+      "Scheduled offline",
+      "Support",
+      "Go offline",
+      "Menu",
+      "Notifications",
+      "Stats"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295230000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E1+icons",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Baku Central",
+      "Delivery demand",
+      "Low",
+      "NOW",
+      "09:00",
+      "15:00",
+      "21:00",
+      "03:00",
+      "EXPECTED DEMAND",
+      "EARN EXTRA",
+      "Starts in 4 hours",
+      "Boost",
+      "Hər sifariş üçün əlavə 20%",
+      "18:00-20:00",
+      "Quick links",
+      "Previous task",
+      "Scheduled offline",
+      "Support",
+      "Go offline",
+      "Menu",
+      "Notifications",
+      "Stats"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295260000
+    }
+   ],
+   "corpus": "sonuc-2026-10-06/saha/field_corpus.json"
+  },
+  {
+   "id": "F03",
+   "title": "Same as F01 with the '1 deliveries declined' banner over the waiting map",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E1",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Baku Central",
+      "Delivery demand",
+      "Low",
+      "NOW",
+      "09:00",
+      "15:00",
+      "21:00",
+      "03:00",
+      "EXPECTED DEMAND",
+      "EARN EXTRA",
+      "Starts in 4 hours",
+      "Boost",
+      "Hər sifariş üçün əlavə 20%",
+      "18:00-20:00",
+      "Quick links",
+      "Previous task",
+      "Scheduled offline",
+      "Support",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295201000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E1",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Baku Central",
+      "Delivery demand",
+      "Low",
+      "NOW",
+      "09:00",
+      "15:00",
+      "21:00",
+      "03:00",
+      "EXPECTED DEMAND",
+      "EARN EXTRA",
+      "Starts in 4 hours",
+      "Boost",
+      "Hər sifariş üçün əlavə 20%",
+      "18:00-20:00",
+      "Quick links",
+      "Previous task",
+      "Scheduled offline",
+      "Support",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295210000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E5",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Ready in 1 min",
+      "₼3.94",
+      "2 stops (4.2 km) • 11–19 min",
+      "Test Restoran",
+      "Test küç. 1, Baku, AZ1025",
+      "Customer drop-off",
+      "40°22'00.0\"N 49°50'00.0\"E, Baku",
+      "Accept"
+     ],
+     "actions": [
+      "Decline",
+      "Accept"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791295211000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E5",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Ready in 1 min",
+      "₼3.94",
+      "2 stops (4.2 km) • 11–19 min",
+      "Test Restoran",
+      "Test küç. 1, Baku, AZ1025",
+      "Customer drop-off",
+      "40°22'00.0\"N 49°50'00.0\"E, Baku",
+      "Accept"
+     ],
+     "actions": [
+      "Decline",
+      "Accept"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295214000,
+     "pkg": "com.wolt.courierapp",
+     "text": "Decline"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295215000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E4",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 7 min",
+      "Decline offer?",
+      "You'll lose potential earnings and it might take some time to find another offer in your delivery area.",
+      "Decline",
+      "Return to offer details"
+     ],
+     "actions": [
+      "Decline",
+      "Return to offer details"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791295216000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E4",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Ready in 7 min",
+      "Decline offer?",
+      "You'll lose potential earnings and it might take some time to find another offer in your delivery area.",
+      "Decline",
+      "Return to offer details"
+     ],
+     "actions": [
+      "Decline",
+      "Return to offer details"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295218000,
+     "pkg": "com.wolt.courierapp",
+     "text": "Decline"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295219000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E6+banner",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1 deliveries declined",
+      "Quick reminder, declining too many can mean being set offline!",
+      "Baku Central",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 20% from 18:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295220000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E6+banner",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "1 deliveries declined",
+      "Quick reminder, declining too many can mean being set offline!",
+      "Baku Central",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 20% from 18:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295230000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E6",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Baku Central",
+      "Delivery demand",
+      "Medium",
+      "Hər sifariş üçün əlavə 20% from 18:00"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295260000
+    }
+   ],
+   "corpus": "sonuc-2026-10-06/saha/field_corpus.json"
+  },
+  {
+   "id": "F06",
+   "title": "Offer read by OCR with KuryeLog's own badge lines inside the crop (Android 11-13, C16)",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E1",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Baku Central",
+      "Delivery demand",
+      "Low",
+      "NOW",
+      "09:00",
+      "15:00",
+      "21:00",
+      "03:00",
+      "EXPECTED DEMAND",
+      "EARN EXTRA",
+      "Starts in 4 hours",
+      "Boost",
+      "Hər sifariş üçün əlavə 20%",
+      "18:00-20:00",
+      "Quick links",
+      "Previous task",
+      "Scheduled offline",
+      "Support",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295201000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E1",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Baku Central",
+      "Delivery demand",
+      "Low",
+      "NOW",
+      "09:00",
+      "15:00",
+      "21:00",
+      "03:00",
+      "EXPECTED DEMAND",
+      "EARN EXTRA",
+      "Starts in 4 hours",
+      "Boost",
+      "Hər sifariş üçün əlavə 20%",
+      "18:00-20:00",
+      "Quick links",
+      "Previous task",
+      "Scheduled offline",
+      "Support",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295210000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E5ocr+badge",
+     "source": "ocr",
+     "complete": true,
+     "texts": [
+      "● 30.1 km",
+      "Wolt · 2.21₼ · Teklif",
+      "Bugün: 7 sipariş",
+      "Decline",
+      "Ready in 1 min",
+      "₼3.94",
+      "2 stops (4.2 km) • 11–19 min",
+      "Test Restoran",
+      "Test küç. 1, Baku, AZ1025",
+      "Customer drop-off",
+      "40°22'00.0\"N 49°50'00.0\"E, Baku",
+      "Accept"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295211000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E5",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Ready in 1 min",
+      "₼3.94",
+      "2 stops (4.2 km) • 11–19 min",
+      "Test Restoran",
+      "Test küç. 1, Baku, AZ1025",
+      "Customer drop-off",
+      "40°22'00.0\"N 49°50'00.0\"E, Baku",
+      "Accept"
+     ],
+     "actions": [
+      "Decline",
+      "Accept"
+     ]
+    },
+    {
+     "kind": "click",
+     "at": 1791295214000,
+     "pkg": "com.wolt.courierapp",
+     "text": "Accept"
+    },
+    {
+     "kind": "frame",
+     "at": 1791295215000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E8",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Pickup from",
+      "TEST RESTORAN",
+      "Test küç. 1, AZ1010 Baku",
+      "Notes",
+      "Test tarif",
+      "Translate",
+      "Collect order",
+      "#014",
+      "Test A.",
+      "ORDER DETAILS",
+      "1 x Test",
+      "Collect",
+      "Difficulties with the delivery?",
+      "Cancel this delivery",
+      "Collect orders"
+     ],
+     "actions": [
+      "Collect",
+      "Cancel this delivery"
+     ]
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295260000
+    }
+   ],
+   "corpus": "sonuc-2026-10-06/saha/field_corpus.json"
+  },
+  {
+   "id": "F07",
+   "title": "Offer read by accessibility first, then OCR with KuryeLog's badge lines (Android 11-13, C16 + K7 enrich)",
+   "steps": [
+    {
+     "kind": "shift_start",
+     "at": 1791295200000
+    },
+    {
+     "kind": "frame",
+     "at": 1791295200000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E1",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Baku Central",
+      "Delivery demand",
+      "Low",
+      "NOW",
+      "09:00",
+      "15:00",
+      "21:00",
+      "03:00",
+      "EXPECTED DEMAND",
+      "EARN EXTRA",
+      "Starts in 4 hours",
+      "Boost",
+      "Hər sifariş üçün əlavə 20%",
+      "18:00-20:00",
+      "Quick links",
+      "Previous task",
+      "Scheduled offline",
+      "Support",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295201000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E1",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Baku Central",
+      "Delivery demand",
+      "Low",
+      "NOW",
+      "09:00",
+      "15:00",
+      "21:00",
+      "03:00",
+      "EXPECTED DEMAND",
+      "EARN EXTRA",
+      "Starts in 4 hours",
+      "Boost",
+      "Hər sifariş üçün əlavə 20%",
+      "18:00-20:00",
+      "Quick links",
+      "Previous task",
+      "Scheduled offline",
+      "Support",
+      "Go offline"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "frame",
+     "at": 1791295209000,
+     "pkg": "com.wolt.courierapp",
+     "label": "E5",
+     "source": "accessibility",
+     "complete": true,
+     "texts": [
+      "Decline",
+      "Ready in 1 min",
+      "₼3.94",
+      "2 stops (4.2 km) • 11–19 min",
+      "Test Restoran",
+      "Test küç. 1, Baku, AZ1025",
+      "Customer drop-off",
+      "40°22'00.0\"N 49°50'00.0\"E, Baku",
+      "Accept"
+     ],
+     "actions": [
+      "Decline",
+      "Accept"
+     ]
+    },
+    {
+     "kind": "frame",
+     "at": 1791295211500,
+     "pkg": "com.wolt.courierapp",
+     "label": "E5ocr+badge",
+     "source": "ocr",
+     "complete": true,
+     "texts": [
+      "● 30.1 km",
+      "Wolt · 2.21₼ · Teklif",
+      "Bugün: 7 sipariş",
+      "Decline",
+      "Ready in 1 min",
+      "₼3.94",
+      "2 stops (4.2 km) • 11–19 min",
+      "Test Restoran",
+      "Test küç. 1, Baku, AZ1025",
+      "Customer drop-off",
+      "40°22'00.0\"N 49°50'00.0\"E, Baku",
+      "Accept"
+     ],
+     "actions": []
+    },
+    {
+     "kind": "feed",
+     "at": 1791295212000
+    },
+    {
+     "kind": "shift_stop",
+     "at": 1791295270000
+    }
+   ],
+   "corpus": "sonuc-2026-10-06/saha/field_corpus.json"
+  }
+ ],
+ "parser": [
+  {
+   "id": "P01",
+   "label": "woltOffer",
+   "pkg": "com.wolt.courierapp",
+   "texts": [
+    "Ready in 3 min",
+    "Decline",
+    "₼2.31",
+    "2 stops (2.8 km) • 8–16 min",
+    "Izmir Doner Tantuni No1",
+    "9RQW+344 Baku, Baku, AZ1000",
+    "Customer drop-off",
+    "Test 2, Bakı",
+    "Accept"
+   ],
+   "actions": [
+    "Accept",
+    "Decline"
+   ],
+   "src": "kuryelog_after/app/src/test/java/com/kuryelog/app/CourierFlowTest.kt:11 (customer address synthetic)",
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "P02",
+   "label": "boltOffer",
+   "pkg": "com.bolt.food.courier",
+   "texts": [
+    "Decline",
+    "Cook Box by Merkez Lahmacun Nizami",
+    "Mehemmed Naxcivani 15",
+    "~8 min",
+    "~14 min",
+    "22 min, 4,49 ₼"
+   ],
+   "actions": [
+    "22 min, 4,49 ₼",
+    "Decline"
+   ],
+   "src": "kuryelog_after/app/src/test/java/com/kuryelog/app/CourierFlowTest.kt:10",
+   "corpus": "harness/golden_corpus.json"
+  },
+  {
+   "id": "FP01",
+   "label": "E5 offer a11y",
+   "pkg": "com.wolt.courierapp",
+   "texts": [
+    "Decline",
+    "Ready in 1 min",
+    "₼3.94",
+    "2 stops (4.2 km) • 11–19 min",
+    "Test Restoran",
+    "Test küç. 1, Baku, AZ1025",
+    "Customer drop-off",
+    "40°22'00.0\"N 49°50'00.0\"E, Baku",
+    "Accept"
+   ],
+   "actions": [
+    "Decline",
+    "Accept"
+   ],
+   "corpus": "sonuc-2026-10-06/saha/field_corpus.json"
+  },
+  {
+   "id": "FP02",
+   "label": "E5 offer OCR",
+   "pkg": "com.wolt.courierapp",
+   "texts": [
+    "Decline",
+    "Ready in 1 min",
+    "₼3.94",
+    "2 stops (4.2 km) • 11–19 min",
+    "Test Restoran",
+    "Test küç. 1, Baku, AZ1025",
+    "Customer drop-off",
+    "40°22'00.0\"N 49°50'00.0\"E, Baku",
+    "Accept"
+   ],
+   "actions": [],
+   "corpus": "sonuc-2026-10-06/saha/field_corpus.json"
+  },
+  {
+   "id": "FP08",
+   "label": "E5 OCR + badge",
+   "pkg": "com.wolt.courierapp",
+   "texts": [
+    "● 30.1 km",
+    "Wolt · 2.21₼ · Teklif",
+    "Bugün: 7 sipariş",
+    "Decline",
+    "Ready in 1 min",
+    "₼3.94",
+    "2 stops (4.2 km) • 11–19 min",
+    "Test Restoran",
+    "Test küç. 1, Baku, AZ1025",
+    "Customer drop-off",
+    "40°22'00.0\"N 49°50'00.0\"E, Baku",
+    "Accept"
+   ],
+   "actions": [],
+   "corpus": "sonuc-2026-10-06/saha/field_corpus.json"
+  }
+ ]
+}
