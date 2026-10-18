@@ -13,8 +13,12 @@ import java.util.zip.GZIPInputStream
  * (OrderTracker.kt:300-381, 396-470, 511-572, 807-828) ve gün klasörlerini yazar. Android'e bağlı kısımlar yok: konum (null),
  * Geocoder (sonuç yok), YolGo, hava, ekonomi kaydedicisi (yalnız economics-exposure), bildirimler, balon/kart pencereleri. Saat = kare anı.
  * Gün başına yeni süreç (vardiya ilk karede başlar, son kareden 1 ms sonra biter).
+ *
+ * [economics] (WEEM A4.1, `--economics`): ekonomi kaydedicileri de çalışır (OrderTracker.kt:97-215 ve kancaları `:253-264, 287-289,
+ * 333-349, 364-365, 467`): `EconomicsRecorder`, `WaitObservation`, `ShadowMode`, `OfferScore`, `EnergySegments`. Konum, scooter, hava ve
+ * komisyon ayarı yok (ücret tabanı `unknown`, bölge `unknown`); enerji satırının monoton saati = kare anı × 10⁶ ns (WEEM testi aynısını verir).
  */
-class Tracker(val out: File) {
+class Tracker(val out: File, private val economics: Boolean = false) {
     val core = DeliveryCore()
     private val sessions = OnlineSessions()
     private val boosts = BoostLog()
@@ -29,13 +33,52 @@ class Tracker(val out: File) {
         val d = File(out, day ?: Store.day(clock)); d.mkdirs(); File(d, name).appendText(line + "\n")
     }
 
-    fun start(now: Long) { clock = now; core.start(); persist(true) }
+    fun start(now: Long) {
+        clock = now
+        // init: econ.restart (no pending offer survives in a fresh process); restoreIdle/restoreOpenWaits find nothing.
+        writeRows(econ.restart(now, core.pending.values, emptyList(), feeBasis))
+        core.start(); persist(true)
+    }
     fun stop(now: Long) {
         clock = now
         sessions.stop().forEach { append("online-sessions.jsonl", OnlineSessions.json(it).put("t", Store.ts(it.endAt)).toString()) }
+        writeRows(econ.waits(waitCore.stop()))
+        val before = core.pending.values.associateBy { it.id }
         val events = core.stop(now)
+        writeRows(econ.stop(now, events, before, core, feeBasis))
         process(events); persist(true)
     }
+
+    // ---- ekonomi (OrderTracker.kt:97-215); yalnız [economics] ile yazılır
+    private val waitCore = WaitObservation()
+    private val declineIntentAt = HashMap<String, Long>()
+    private val shadow = ShadowMode()
+    private val econ = EconomicsRecorder().also { r -> r.verdictShadow = { shadow.verdictFor(it) } }
+    private val feeBasis: (String) -> String = { "unknown" }
+    private val scored = LinkedHashSet<String>()
+    private fun writeRows(rows: List<EconomicsRecorder.Row>) {
+        if (!economics) return
+        for (r in rows) {
+            append(r.file, r.json.toString(), r.day)
+            if (r.file == EconomicsLogs.OFFERS) scoreOffer(r.json)
+            val stamp = EnergySegments.Stamp(clock, clock * 1_000_000L, EnergySegments.DEFAULT_SCOOTER, "default_single_scooter", null)
+            val energy = when (r.file) {
+                EconomicsLogs.LEGS -> EnergySegments.fromLegs(r.json, stamp)
+                EconomicsLogs.IDLE -> listOfNotNull(EnergySegments.fromIdle(r.json, stamp))
+                else -> emptyList()
+            }
+            for (e in energy) append(EnergySegments.FILE, e.toString(), r.day)
+        }
+    }
+    private fun scoreOffer(offerRow: JSONObject) {
+        val id = offerRow.optString("offerKey").takeIf { it.isNotEmpty() } ?: return
+        if (!scored.add(id)) return
+        while (scored.size > 512) scored.remove(scored.first())
+        val trip = if (offerRow.optString("decisionKind") == "accepted_observed") core.trips.values.firstOrNull { it.offer?.id == id }?.id else null
+        append(OfferScore.FILE, OfferScore.row(offerRow, shadow.entry(id), trip, clock).toString(), Store.day(offerRow.optLong("firstSeenAtMs")))
+    }
+    private fun shadowContext(now: Long) = ShadowEvaluator.Context.of(econ.courierState(now, core, sessions.openSessions().map { it.pkg }, OfferGeo.UNKNOWN, null),
+        null, null, ShadowEvaluator.SHADOW)
 
     fun onScreen(pkg: String, texts: List<String>, actions: List<String>, now: Long, source: String) {
         clock = now
@@ -46,13 +89,19 @@ class Tracker(val out: File) {
         val o = CourierParser.parse(pkg, texts, actions, now, source, true).let { CashPayment.attach(it, CashPayment.parse(pkg, texts, null)) }
         PlatformTotals.fromStats(o)?.let { platformTotals(listOf(it), now) }
         val closedSession = sessions.observe(o)
+        val before = core.pending.values.associateBy { it.id }
         val events = core.observe(o)
         (core.pending[pkg] ?: core.active(pkg)?.offer)?.takeIf { it.feeAt == now && it.feeOcrMs == null }?.let { it.feeOcrMs = 0 }
         events.forEach { e -> linkSession(e); val t = e.tripId?.let { core.trips[it] }; sessions.event(e, t?.customers?.size ?: 1, t?.deliveredInferredAt != null) }
         listOfNotNull(closedSession).forEach { append("online-sessions.jsonl", OnlineSessions.json(it).put("t", Store.ts(it.endAt)).toString()) }
+        for (e in events) when (e.type) {
+            "delivered" -> waitCore.nextCause(pkg, "after_delivery_observed")
+            "rejected" -> waitCore.nextCause(pkg, if (now - (declineIntentAt[pkg] ?: Long.MIN_VALUE) in 0..30000) "after_decline_observed" else "after_offer_disappearance")
+        }
+        val hour = java.util.Calendar.getInstance(TimeZone.getTimeZone("Asia/Baku")).apply { timeInMillis = now }.get(java.util.Calendar.HOUR_OF_DAY)
+        writeRows(econ.waits(waitCore.observe(o, "unknown", "unknown", hour)))
         if (now - (exposureAt[pkg] ?: 0) >= 5000 || events.isNotEmpty()) {
             exposureAt[pkg] = now
-            val hour = java.util.Calendar.getInstance(TimeZone.getTimeZone("Asia/Baku")).apply { timeInMillis = now }.get(java.util.Calendar.HOUR_OF_DAY)
             append("economics-exposure.jsonl", JSONObject().put("at", now).put("pkg", pkg).put("stage", o.stage.name).put("complete", o.complete).put("source", o.source)
                 .put("demand", o.demand ?: "unknown").put("vehicleMode", "unknown").put("zone", "unknown").put("bakuHour", hour)
                 .put("dispatchAvailabilityVerified", false).toString())
@@ -62,6 +111,8 @@ class Tracker(val out: File) {
             offer.phoneBattery = 77
             boosts.atOffer(o, now).let { b -> offer.boostValue = b.value; offer.boostUnit = b.unit; offer.boostSource = b.source; offer.boostSeenAt = b.seenAt }
         } }
+        if (economics) shadow.frame(o, core.pending[pkg]) { shadowContext(now) }
+        writeRows(econ.frame(o, events, before, core, sessions.openSessions(), OfferGeo.UNKNOWN, feeBasis))
         process(events)
         if (o.stage == ScreenStage.IDLE || o.stage == ScreenStage.OFFLINE || o.multipliers.isNotEmpty()) {
             val j = JSONObject().put("pkg", pkg).put("stage", o.stage.name).put("demand", o.demand).put("bonus_pct", o.bonusPct)
@@ -157,6 +208,7 @@ class Tracker(val out: File) {
             events += core.cashCollected(t.id, at, r.amount, now)
         }
         if (events.isEmpty()) return
+        writeRows(econ.events(now, events, emptyMap(), core, sessions.openSessions(), feeBasis))
         process(events); persist(true)
     }
     private val offloadsWritten = HashSet<String>()
@@ -217,10 +269,11 @@ fun OrderTracker_platform(pkg: String) = if (pkg.contains("wolt", true)) "Wolt" 
 
 fun main(args: Array<String>) {
     val frames = File(args[0]); val out = File(args[1]); out.deleteRecursively(); out.mkdirs()
+    val economics = "--economics" in args
     val stages = StringBuilder()
     val rows = GZIPInputStream(frames.inputStream()).bufferedReader().readLines().filter { it.isNotBlank() }.map { JSONObject(it) }
     for ((day, fs) in rows.groupBy { it.getString("gun") }) {
-        val tr = Tracker(out)
+        val tr = Tracker(out, economics)
         fun at(o: JSONObject) = OffsetDateTime.parse(o.getString("t").replace(Regex("([+-]\\d{2})(\\d{2})$"), "$1:$2")).toInstant().toEpochMilli()
         val first = at(fs.first()); val last = fs.maxOf { at(it) }
         tr.start(first); tr.cashPendingShift(CashPending.SHIFT_START, first, first)
