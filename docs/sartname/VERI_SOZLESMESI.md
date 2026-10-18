@@ -99,7 +99,7 @@ Bugünkü mesajlar (alan alan: `bulgular/X_protocol.md` P1–P11; WEEM'deki kar�
 | `commission`, `commission:<pkg>` | Float | filo komisyonu | `:orders` · A3 |
 | `customerCard` | Bool | müşteri kartı | `:orders` · A3 |
 | `customerCardSizePct`, `restaurantBubbleWidthPct` | Int (85, 90) | balon boyu | `:orders` · A3 |
-| `onlineSessions.v1`, `economicsIdle.v1`, `openWaits.v1` | String JSON | açık oturum/bekleme | `:orders` · A3 |
+| `onlineSessions.v1`, `economicsIdle.v1`, `openWaits.v1` | String JSON | açık oturum/bekleme | `:orders` · A3 (`onlineSessions.v1`); `:economics` · A4.1 (öbür ikisi, `EconomicsObserver`) |
 | `cashPending.azn`, `cashPending.at` | String / Long | son Wolt nakit borcu | `:orders` · A3 |
 | `economics.vehicle`, `economics.zone`, `economics.appMode` (`shadow`), `economics.scooterId` | String | ekonomi ayarları | `:economics` · A4 |
 | `dailyPack` | Bool (true) | günlük paket | `:core` · A4.3 |

@@ -25,14 +25,14 @@ Kaynak: `rawstats @ 6388c04`; kök `/home/user/kurye_nav`. Kısaltma: `K/` = `ap
 (R4, R14, R15, R18, N3, N4, N5, N8 — YAZILACAK)
 
 ## 2. Veri sözleşmesi kalemleri
-(YAZILACAK)
+A4.1'de yazıldı: `ECONOMICS.md` 2 (kayıt dosyaları, tercih anahtarları), 3 (kancalar), 4 (WEEM farkları).
 
 ## 3. Test envanteri
 Sayım komutu: `cd app/src/test/java/com/kuryelog/app; grep -o '@Test' <dosya>.kt | wc -l` (satır başına bir `@Test`; `grep -c` ile aynı sonuç).
 
 | Test dosyası | Sayı | Neyi doğrular | Hedef |
 |---|---|---|---|
-| EconomicsLogsTest | 21 | (YAZILACAK) | :economics R4 |
+| EconomicsLogsTest | 21 | SPEC §17.2 satırları (offers/legs/idle/penalties/waits), gizlilik, şema dökümü | :economics R4 (A4.1, `ECONOMICS.md` 5) |
 | EconomicsObservationTest | 13 | bekleme/görünürlük gözlemi (WaitObservation) ve feed gizliliği | :orders/:economics (bekleme) |
 | EconomicsV2GoldenTest | 8 | ref.py altın vektörleri, enerji, sıralama, <5 ms, Python yuvarlama | :economics R4 |
 | EconomicsV2PriorsTest | 4 | önseller ref.py ile anahtar anahtar | :economics R4 |
