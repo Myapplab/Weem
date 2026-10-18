@@ -24,6 +24,10 @@ Kaynak: Rawstats `rawstats` @ `6388c04` (salt okunur). Ayrı bir ekonomi şartna
 | `RecordJson.kt:6-10` (JSON yardımcıları) | `Json.kt` | `:orders`'takiler `internal`; aynısı |
 | `OrderTracker.kt:97-215` ve kancaları | `EconomicsObserver.kt` | `:orders` `OrderObserver` + `OfferAnnotator` (3. bölüm) |
 | `MainActivity.kt:686-697, 741, 804-869, 1092-1093` | `OfferScorePage.kt` + `:app` `OfferScoresPage.kt` | E4 ekranı (6. bölüm) |
+| `MainActivity.kt:849-867` (`offerScoreOf`, `pickRating`, 10 sn önbellek) | `OfferScoreBook.kt` | E4 okuyucusu: puanlar teklifin gününden, gün başına 10 sn önbellek, puan verince temizlenir; kart satırı |
+| `OrderTracker` nesnesi (ortam: `Store`, `SystemClock`) | Android `:economics` `Economics.kt` | Süreçte tek `EconomicsObserver` + `OfferScoreBook`; ortam: `Store.log`, `Store.values`, `Shift.AndroidClock`, `SystemClock.elapsedRealtimeNanos`, scooter köprüsü `Orders.scooter` |
+
+**Android bağlama (A4.1):** `WeemApplication.onCreate` → `ShiftHub.attach`'tan hemen sonra, `Orders.bind`'dan önce `Economics.bind(ctx)` → `Orders.bindEconomics(observer, annotator)` (ikisi de aynı `EconomicsObserver`). `:orders` `AndroidEnv.observer/annotator` her çağrıda `Orders.observer/annotator`'ı okur; bağlanmadan önce `NONE`. Akışın ilk girişi (`init`: `restart`, `restored`) bağlamadan sonra olmalı: `Application.onCreate` her servis ve Activity'den önce çalıştığı için öyle. Scooter köprüsü ayrı bağlanmaz: `Economics` ortamı `Orders.scooter`'ı okur (`Orders.bindScooter`, A5.3). Modül sınırı: `economics → core, orders` (`gradle/module-graph.properties`); `:app` `logic/economics`'i E4 için doğrudan görür.
 
 ## 2. Kayıtlar ve tercihler (değişmez; VERI_SOZLESMESI 5, 7.1)
 
@@ -84,21 +88,23 @@ Kaynak: Rawstats `rawstats` @ `6388c04` (salt okunur). Ayrı bir ekonomi şartna
 | `OfferWindowsTest` | 1 | yeni (ORDERS.md 15.3): `OfferWindows` = `PRIORS` |
 | `SahaEconomicsTest` | 4 | yeni: saha uçtan uca (aşağıda) |
 | `OfferScorePageTest` | 3 | yeni (karakterizasyon): E4 sayfası |
+| `OfferScoreBookTest` | 2 | yeni: E4 okuyucusu (teklifin günü, 10 sn önbellek, düzeltme yeni satır, kart satırı) |
 
 - **Saha uçtan uca (`SahaEconomicsTest`):** 11–12 Ekim'in 6.481 saha karesi WEEM `OrderFlow` + `EconomicsObserver`'dan geçer; Rawstats'ın kendi sınıflarıyla `tools/shadow-fixture --economics` üretilmiş `shadow/saha_rawstats_ekonomi_2026-10-11_12.zip` ile **16 dosyanın her satırı aynı** (offers 31, legs 24, idle 23, penalties 51, waits 75, exposure, energy 84, offer-scores 31; JSON anahtar sırası hariç). Puanlar gerçekten hesaplanmış (≥ 28 puan, her teklifte gölge karar). `OrderObserver.NONE` ekonomi dosyası yazmaz. Bir kanca nedenini bozan deneme testi kırdı (bozma geri alındı).
-- `:orders` `OrdersScreenTest.offerScoreLineOpensTheOfferDetails` (kart satırı), `:app` `OrdersTabTest.offerScoreTabRatesAnOrder` (Robolectric, Compose: seçici, puan sayfası, 1–10 sorusu, puanın yazılması).
+- `:orders` `OrdersScreenTest.offerScoreLineOpensTheOfferDetails` (kart satırı), `:app` `OrdersTabTest.offerScoreTabRatesAnOrder` (Robolectric, Compose: seçici, puan sayfası, 1–10 sorusu, `economics-offer-ratings.jsonl` satırı, puan sekmesinde platform seçicisi ve "Günün tüm ayrıntıları" yok, sipariş kartında "Teklif puanı" satırı).
 - Python referansı: `ref.py`'yi yeniden çalıştırmak gerekmedi (vektörler Rawstats'ınkiyle bayt bayt aynı, `golden_vectors.json` = `docs/ekonomi-v2/golden_vectors.json`).
 
 ## 6. E4 "Teklif puanı" ekranı (Rawstats `MainActivity`)
 
 - Siparişler sekmesinde "Siparişler | Teklif puanı" seçicisi (RS `renderOrders` `segmented`); gün sayfaları ortak. Puan sekmesinde her gün sayfası: açıklama kartı (motor sürümü `EconomicsV2 2.1.0`, eşleme), "Ortalama fark (uygulama − sen)", "En büyük farklar" (en çok 3), sonra o günün siparişleri teklif anına göre: "SS:dd · platform · restoran" ve "Uygulama N · Sen M (fark ±k)" (ikisi de varsa vurgulu). Teklifsiz sipariş "Teklif görülmedi, puan yok" (dokunulmaz). Dokununca "Bu teklife puanın (1–10)" (1 · çok kötü … 10 · çok iyi); seçim `economics-offer-ratings.jsonl`'e yeni satır (`via: day_screen`), düzeltme de yeni satır; kaydedilemezse "Puan kaydedilemedi".
 - Puan sekmesinde platform seçicisi ve "Günün tüm ayrıntıları" gizli, seçili platform süzgeci geçerli (RS aynı).
-- Sipariş kartı, "Teklif ayrıntıları"nın ilk satırı: "Teklif puanı: Uygulama N · Sen M" (`OrdersSource.offerScoreLine`, `:app` `OrdersAccess` → `Economics.cardLine`).
+- Sipariş kartı, "Teklif ayrıntıları"nın ilk satırı: "Teklif puanı: Uygulama N · Sen M" (`OrdersSource.offerScoreLine`; `:app` `OrdersAccess.withOfferScores` kaynağı sarar → `OfferScoreBook.cardLine`, Android'de `Economics.scores`).
+- Compose (`:app` `OfferScoresPage.kt`): seçici `SingleChoiceSegmentedButtonRow` (RS `segmented`), Bugün kartlarının altında, gün sayfalarının üstünde (RS'de Bugün kartları Ana sayfadaydı); `DayPages(scoreDay = …)` puan sekmesinde sayfa gövdesini değiştirir. Açıklama kartındaki eşleme metni "ⓘ" düğmesiyle açılır (RS `info`, ad "Açıklamayı göster"). Puan sorusu tek seçimli liste (seçili = son puanım), "İptal". Metinlerin hepsi `OfferScorePage`'te TR/AZ.
 - Telefonda denenmedi; JVM'de Robolectric ile çizildi.
 
 ## 7. Açık noktalar ve riskler
 
-1. **Telefonda denenmedi:** Android bağlama (`Orders.bindEconomics` akışın ilk girişinden önce, `Economics.bindScooter`), gerçek vardiyada satırların yazılması, E4 ekranı. A3.10 (K) gölge modda Rawstats'la yan yana bakılabilir.
+1. **Telefonda denenmedi:** Android bağlama (`Economics.bind` → `Orders.bindEconomics`, akışın ilk girişinden önce; scooter `Orders.scooter`), gerçek vardiyada satırların yazılması, E4 ekranı. A3.10 (K) gölge modda Rawstats'la yan yana bakılabilir. Bağlamanın kendisi JVM'de test edilmedi (Android `Application` sırası); `SahaEconomicsTest` aynı gözlemciyi `OrderFlow.Env.observer` ile uçtan uca sınar.
 2. Gölge raporu (`:orders:shadowReport`) ekonomi dosyalarının içeriğini karşılaştırmaz (iki uygulamanın teklif/sipariş kimlikleri farklı); yalnız sayar. İçerik eşitliği `SahaEconomicsTest`'te aynı karelerle kanıtlı.
 3. Hava (A6) ve konum hızı gelene dek bazı alanlar null/`not_observed` (Rawstats'ta da YolGo yokken aynı).
 4. `OfferSummary.score` (teklif özetinde canlı puan) Rawstats feed'inde yoktu; değer `OfferScore.row`'un sonra yazacağı puanla aynı, yalnız `:map`/`:link` (A6, A8) okuyacak. Görünür bir yerde kullanılması o görevlerde kullanıcı kararıdır.

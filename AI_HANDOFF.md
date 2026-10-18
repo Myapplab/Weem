@@ -2,6 +2,11 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-18 — A4.1 ekonomi v2, teklif puanı E4 (Claude Opus · high; dal `ccr-2996bfa0-f2gopg` → `main`)
+- Yapılan: `logic/economics` (Rawstats 8 dosya satır satır, `EconomicsObserver` kancaları, `OfferScorePage`, `OfferScoreBook`); Android `:economics` `Economics` (ortam: `Store`, `Shift.AndroidClock`, `elapsedRealtimeNanos`, scooter `Orders.scooter`); `Orders.bindEconomics` + `WeemApplication` (`Orders.bind`'dan önce); `:app` `OfferScoresPage.kt` (seçici, gün sayfası, 1–10 sorusu), `OrdersAccess.withOfferScores` (kart satırı). Ayrıntı `ECONOMICS.md`.
+- Doğrulama: `./gradlew -p logic test` 1083 yeşil (economics 116: altın vektörler, `SahaEconomicsTest` 16 dosya Rawstats'la satır satır aynı); kök `test lintDebug assembleDebug` yeşil (`OrdersTabTest.offerScoreTabRatesAnOrder`). CI koşusu yok; **telefonda denenmedi**.
+- Açık kalan: gerçek vardiyada ekonomi satırları ve E4 ekranı (A3.10 gölge modda bakılabilir); hava A6'ya dek `not_observed`; `OfferSummary.score` görünür kullanımı A6/A8'de kullanıcı kararı. Sıradaki A4.2.
+
 ## 2026-10-18 — A5.4 Scooter sekmesi, yüzen panel, tanı, ZIP paylaşımı (Claude Opus · high; dal `claude/a5-4-scooter-compose-tools-3urwtl` → `main`)
 - Yapılan: `logic/scooter` `ScooterUiText` (TR/AZ), `ScooterPanel`, `FloatRules`, `ScooterSettings`, `PanelField` AZ + `ScooterUiTest` 23; `:scooter` `DashboardView` (NB çizimi), `FloatPainter`, `FloatingPanel` (düz View overlay, `OwnOverlays`), `BleScan`, `Scooter.export` (İndirilenler/WEEM + paylaş)/`cleanOld`; bildirimler TR/AZ; `:app` `ScooterTab`, `ScooterSettingsScreen` (Tanı dahil), `ScooterPip`, `MainActivity` top sayacı + PiP. Ayrıntı `SCOOTER.md` 13.6, farklar F-S9…F-S14.
 - Düzeltme: `ScooterService` reddedilen ön plan başlatması `refuseStart()` (önce `startForeground`); `CrashGuardTest` A5.3 birleşmesinden beri `main`'de kırmızıydı, test genişletildi.
@@ -135,15 +140,3 @@ Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 
 - Doğrulama: `./gradlew -p logic test` yeşil (8 test + grafik denetimi); yasak bağımlılık ve döngü denemede yakalandı; composite bağlama boş bir kopya projede denendi. Android katmanı derlenmedi (`dl.google.com` kapalı); CI yok.
 - Not: Maven Central proxy üstünden ara sıra 429 veriyor → `--max-workers=1` ya da yeniden dene (kanca bunu yapıyor).
 - Açık kalan: A1.2 + A1.4 (CI ilk derleme; kök Android betikleri ilk kez orada doğrulanır). `app` sürüm kodu geçici 34.
-
-## 2026-10-17 — A0.1 planın son hâli: şartname + mimari + iş listesi (Claude; dal `claude/weem-plan-specification-dq4yxx`)
-- Yapılan: `docs/sartname/OZELLIK_HARITASI.md` (63 özellik → eski kod, test, veri, bağımlılık, modül/aşama), `VERI_SOZLESMESI.md` (bileşen, izin, tercih, veritabanı, dosya, Keystore, bildirim no; 5103 ve 4000–8095 çakışması), `TEST_ENVANTERI.md` (1.761 test/denetim, 1.582'si çevrilir; betikle sayıldı), `bulgular/` (ham). Plan 4.1–4.7: `logic/` ayrı build, modül sınırları, `:core` arayüzleri, 2 telefon mesajları alan alan. İş listesi 47 oturumluk göreve bölündü; Açık sorular S1–S13.
-- Önemli bulgular: YolGo'da ayar/sokak/ışık/POI için dışa aktarma yok (S1); Y12 rota maliyetini etkiliyor (S3); Rawstats'ta INTERNET izni kaldırılmış (WEEM internetli, `:capture` ağsız).
-- Usage: 10 paralel okuma ajanı hesabın usage'ını ~1 saatte bitirdi; kullanıcı isteğiyle durduruldu. Sürüş Paneli ve bazı Y/R özelliklerinin ayrıntısı şartname görevlerinde (A2.1, A3.1, A5.1, A6.1, tek ajan) çıkarılacak.
-- Doğrulama: yalnız belge; mekanik denetim (634 başvurudan 18'i geçersiz, test sayıları eşleşti). Kod yok, CI yok.
-- Açık kalan: kullanıcı açık soruları yanıtlar (A0.2); sıradaki iş A1.1.
-
-## 2026-10-17 — Repo Myapplab'a taşındı, son plan kontrolü (Claude; `9a4c75a`)
-- Yapılan: kullanıcı repoyu `mehemmedsh/Weem` → `Myapplab/Weem` taşıdı (eski adres yönleniyor). Plana 2 telefon akış ayrıntıları, Receiver donanım ölçütleri, en kritik bilinmeyen (Pixel cepteyken teklif okuma), kod sadeleştirme adımı (A10.2), satır tahmini eklendi. İş listesine Aşama 0: A0.1 (planın son hâli, ultracode) ve K0.1 (kodsuz saha denemesi).
-- Doğrulama: yalnız belge. Kod yok, CI yok.
-- Açık kalan: A0.1 yeni hesapta ultracode ile; sonra A1.1.
