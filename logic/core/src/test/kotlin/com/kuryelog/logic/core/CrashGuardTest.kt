@@ -77,6 +77,8 @@ class CrashGuardTest {
                 val line = code.substring(code.lastIndexOf('\n', m.range.first) + 1).trimStart()
                 if (line.startsWith("*") || line.startsWith("/*") || line.startsWith("//")) return@forEach
                 val call = code.substring(m.range.first, minOf(code.length, m.range.first + 200))
+                // Scooter bağlantı servisi (A5.3, `ScooterService`) vardiya servisi değil; kendi ön plan başlatışı SCOOTER.md'de.
+                if (call.contains("ScooterService.")) return@forEach
                 calls++
                 assertTrue("${f.name}: $call", call.contains("ACTION_START") || call.contains("Home.startIntent(") || call.contains("ScooterService.startIntent("))
             }

@@ -21,12 +21,13 @@ object OfferSummaries {
         now - o.lastSeenAt <= MAX_UNSEEN_MS && o.lastSeenAt >= startedAtMs
 
     /** [active]: çekirdek çalışıyor; [startedAtMs]: süreç başlangıcı (öncesinde son görülen teklifler yeniden görülene dek verilmez). */
-    fun of(active: Boolean, offers: Collection<OfferState>, now: Long, startedAtMs: Long = Long.MIN_VALUE): List<OfferSummary> {
+    fun of(active: Boolean, offers: Collection<OfferState>, now: Long, startedAtMs: Long = Long.MIN_VALUE,
+           annotator: OfferAnnotator = OfferAnnotator.NONE): List<OfferSummary> {
         val rows = ArrayList<OfferSummary>()
         if (active) for (o in offers) {
             if (rows.size >= MAX_OFFERS) break
             if (!exportable(o, now, startedAtMs)) continue
-            rows += summary(o, now) ?: continue
+            rows += annotator.annotate(o, summary(o, now) ?: continue)
         }
         return rows
     }

@@ -5,6 +5,8 @@
 //       --args="$PWD/logic/capture/src/testFixtures/resources/saha/saha_kareleri_2026-10-11_12.jsonl.gz /tmp/shadow-out"
 //   (cd /tmp/shadow-out && zip -q -9 -r -X saha_rawstats_2026-10-11_12.zip 2026-* && gzip -9 stages.txt)
 //   → saha_rawstats_2026-10-11_12.zip ve stages.txt.gz (= saha_rawstats_asamalar_2026-10-11_12.txt.gz)
+// Ekonomi fikstürü (A4.1; `logic/economics` `SahaEconomicsTest`): aynı komut, --args'ın sonuna `--economics`, sonra
+//   (cd /tmp/shadow-out && zip -q -9 -r -X saha_rawstats_ekonomi_2026-10-11_12.zip 2026-*/economics-*.jsonl -x '*platform-*' '*cash-*' '*boosts*')
 plugins { kotlin("jvm") version "2.4.0"; application }
 dependencies { implementation("org.json:json:20240303") }
 kotlin { jvmToolchain(21) }

@@ -397,7 +397,7 @@ class OrdersScreen(private val src: OrdersSource, lang: Lang) {
 
     /**
      * Bir siparişin tam kartı (RS `renderTrip`): E2 restoran beklemesi ve E3 boost/sıcaklık zaman çizelgesinden önce, saatler saniyesiz (K22).
-     * [actions] true: düzeltme düğmeleri (bahşiş, nakit cevabı, müşteri kartı, "Teslim ettim"). Teklif puanı satırı :economics'in (A4.1).
+     * [actions] true: düzeltme düğmeleri (bahşiş, nakit cevabı, müşteri kartı, "Teslim ettim"). Teklif puanı satırı :economics'in ([OrdersSource.offerScoreLine], A4.1).
      */
     fun tripCard(trip: TripRecord, actions: Boolean = false, sameDay: List<TripRecord> = emptyList()): TripCard {
         val name = platformOf(trip.pkg)
@@ -450,6 +450,8 @@ class OrdersScreen(private val src: OrdersSource, lang: Lang) {
         val (cashBlocks, cashAction) = cashSection(trip, src.cashTipRows(day)[trip.id], actions)
         b += cashBlocks
         b += Block.Sub(tl("Teklif ayrıntıları", "Təklif təfərrüatları"))
+        // E4: the app's score of the offer and mine (rated on Siparişler → Teklif puanı).
+        trip.offer?.let { src.offerScoreLine(trip, ::tl) }?.let { b += Block.Line(it, Style.BOLD) }
         // E3: the boost moved to the top of the card (OrderHistory.boostTempLine); the full weather stays here.
         weatherLine(trip)?.let { b += Block.Line(it, Style.MUTED) }
         // D6: how fast the offer and its fee were read.

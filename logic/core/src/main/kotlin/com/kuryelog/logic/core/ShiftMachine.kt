@@ -157,7 +157,7 @@ class ShiftMachine(
         val derived = track.derivedSpeed(f)
         val speed = if (f.hasSpeed) f.speed.toDouble() else derived
         track.seen(f)
-        log.lastLocation = LogStore.Loc(f.lat, f.lon, f.accuracy.toDouble(), f.timeMs)
+        log.lastLocation = LogStore.Loc(f.lat, f.lon, f.accuracy.toDouble(), f.timeMs, if (f.hasSpeed) f.speed.toDouble() else null)
         // K38: eve dönüş vardiyayı bitirir (yarıçap dışına bir kez çıktıktan sonra); bitiş fix'i gps.csv'ye yazılmaz.
         val busy = runCatching { hooks.busy() }.getOrDefault(false)
         if (home.observe(f.homeFix(), true, busy) == HomeShift.Decision.END) { stop(HomeShift.REASON_ARRIVAL); return }

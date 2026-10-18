@@ -319,6 +319,21 @@ class OrdersScreenTest {
         assertEquals(listOf("Bahşişi düzenle", "Düzeltme: teslim edildi olarak kaydet"), screen.tripCard(open, actions = true).actions.map { it.label })
     }
 
+    /** E4 (A4.1): "Teklif ayrıntıları"nın ilk satırı `:economics`'in puan satırı (RS MainActivity.kt:1092-1093); bağlı değilken yok. */
+    @Test fun offerScoreLineOpensTheOfferDetails() {
+        val r = rig(); val a = trip("a"); r.add(a)
+        val plain = OrdersScreen(r.source, Lang.TR).tripCard(a).card.blocks
+        assertFalse(plain.any { it is Block.Line && it.text.startsWith("Teklif puanı") })
+        val scored = object : OrdersSource by r.source {
+            override fun offerScoreLine(trip: TripRecord, tl: (String, String) -> String) = tl("Teklif puanı", "Təklif balı") + ": " + trip.offer!!.id
+        }
+        val blocks = OrdersScreen(scored, Lang.AZ).tripCard(a).card.blocks
+        val sub = blocks.indexOf(Block.Sub("Təklif təfərrüatları"))
+        assertEquals(Block.Line("Təklif balı: o-a", Style.BOLD), blocks[sub + 1])
+        // Teklifsiz sipariş: satır yok.
+        assertFalse(OrdersScreen(scored, Lang.TR).tripCard(a.copy(offer = null)).card.blocks.any { it is Block.Line && it.text.startsWith("Teklif puanı") })
+    }
+
     @Test fun tripCardKeepsTheTimelineAndTheListRowsOfTheSameCustomerOnce() {
         val r = rig()
         val a = trip("a")

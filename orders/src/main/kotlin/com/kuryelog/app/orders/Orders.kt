@@ -17,7 +17,9 @@ import com.kuryelog.logic.core.LogStore
 import com.kuryelog.logic.core.ScooterBridge
 import com.kuryelog.logic.core.ShiftMachine
 import com.kuryelog.logic.orders.CourierRecords
+import com.kuryelog.logic.orders.OfferAnnotator
 import com.kuryelog.logic.orders.OrderFlow
+import com.kuryelog.logic.orders.OrderObserver
 import com.kuryelog.logic.orders.TripRecord
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -68,6 +70,20 @@ object Orders {
         }
     }
 
+    /**
+     * Ekonomi dikişi (ECONOMICS.md 3): `:app` bağlayana dek `NONE` (ekonomi satırı yazılmaz, teklif özetinde puan yok). `:orders`
+     * `:economics`'i tanımaz. Akışın ilk girişinden önce bağlanmalı (`restart`/`restored` kancaları ilk girişte bir kez çalışır):
+     * `WeemApplication.onCreate` başında, [bind]'dan önce.
+     */
+    @Volatile var observer: OrderObserver = OrderObserver.NONE
+        private set
+    @Volatile var annotator: OfferAnnotator = OfferAnnotator.NONE
+        private set
+    fun bindEconomics(observer: OrderObserver, annotator: OfferAnnotator) {
+        this.observer = observer
+        this.annotator = annotator
+    }
+
     /** `:app` açılışta: ekran ve bildirim olayları bu akışa, erişilebilirlik servisinin sipariş işleri [OrdersHost]'a (CAPTURE.md 7.1). */
     fun bind(ctx: Context) {
         Capture.sink = flow(ctx)
@@ -90,6 +106,8 @@ object Orders {
         override val prefs: KuryelogPrefs.Values = Store.values(ctx)
         override val db: CourierRecords by lazy { AndroidCourierRecords(CourierDb(ctx)) }
         override val scooter: ScooterBridge get() = Orders.scooter
+        override val observer: OrderObserver get() = Orders.observer
+        override val annotator: OfferAnnotator get() = Orders.annotator
         override val clock: Clock = Shift.AndroidClock
         override fun importing(): Boolean = Store.importing
         override fun phoneBattery(): Int? = Store.phoneBattery(ctx)

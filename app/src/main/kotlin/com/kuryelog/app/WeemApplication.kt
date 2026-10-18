@@ -7,6 +7,7 @@ import com.kuryelog.app.core.CrashLog
 import com.kuryelog.app.core.LogImport
 import com.kuryelog.app.core.ShiftHub
 import com.kuryelog.app.core.Store
+import com.kuryelog.app.economics.Economics
 import com.kuryelog.app.orders.Orders
 import com.kuryelog.app.scooter.Scooter
 import com.kuryelog.app.scooter.ScooterShiftLink
@@ -22,6 +23,9 @@ class WeemApplication : Application() {
         super.onCreate()
         // ShiftPort durumu tercihlerden (süreç vardiya sürerken yeniden başlamış olabilir).
         ShiftHub.attach(this)
+        // Ekonomi dikişi (ECONOMICS.md 3): akışın ilk girişinden önce (kancalar `restart`/`restored` ilk girişte bir kez); `:orders`
+        // `:economics`'i tanımaz, bağı burada kurulur. Hata kaydedilir: bağlanmazsa akış ekonomi satırı yazmadan çalışır.
+        Store.guarded(this, "start") { Economics.bind(this) }
         // Ekran/bildirim olayları ve servis tiki sipariş tarafına (CAPTURE.md 7.1). Bağlama hatası kaydedilir, süreç açılır kalır
         // (bağlanmamış hâlde ekran okuma satır yazar, sipariş işi yapmaz).
         Store.guarded(this, "start") { Orders.bind(this) }

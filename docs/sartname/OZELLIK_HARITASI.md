@@ -245,6 +245,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `economics-*.jsonl`, `economics-offer-scores/ratings.jsonl`
 - **Bağımlı:** R3, R10, R14, R15, Y3/Y9 (rota maliyeti)
 - **WEEM:** `:economics` `logic/` · 4 (A4.1)
+- **Ayrıntı:** `ECONOMICS.md` (A4.1 bitti: Rawstats 77 + ekonomi payı 19 test yeşil, saha uçtan uca, E4 ekranı; YolGo `offer_engine_test`/`route_costing_test` 13 → A6.7, N5)
 
 ### R5 Sipariş takibi
 - **Eski kod:** RS `DeliveryCore.kt`, `OrderTracker.kt`, `TripStages.kt`, `VenueArrival.kt`, `ArrivalDistance.kt`, `WaitObservation.kt`, `DeliveryDeadline.kt`, `Readiness.kt`

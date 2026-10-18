@@ -1,0 +1,509 @@
+{
+ "note": "centers rounded to 1e-7; compare with |diff| <= 1e-7. 'plus_short' uses ref as the reference location (courier GPS, else Baku centre). 'zone' and 'hourBlock' come from ref.py (SPEC 8.1) and must match exactly.",
+ "bakuReference": [
+  40.4093,
+  49.8671
+ ],
+ "hub": [
+  40.4093,
+  49.8671
+ ],
+ "zones": [
+  [
+   "Z1",
+   0.0,
+   2.5
+  ],
+  [
+   "Z2",
+   2.5,
+   6.0
+  ],
+  [
+   "Z3",
+   6.0,
+   12.0
+  ],
+  [
+   "Z4",
+   12.0,
+   null
+  ]
+ ],
+ "hourBlocks": [
+  [
+   "B0",
+   0,
+   480
+  ],
+  [
+   "B1",
+   480,
+   705
+  ],
+  [
+   "B2",
+   705,
+   900
+  ],
+  [
+   "B3",
+   900,
+   1080
+  ],
+  [
+   "B4",
+   1080,
+   1290
+  ],
+  [
+   "B5",
+   1290,
+   1440
+  ]
+ ],
+ "rows": [
+  {
+   "kind": "plus_short",
+   "text": "9RQW+344",
+   "ref": [
+    40.4093,
+    49.8671
+   ],
+   "full": "8HGF9RQW+344",
+   "center": [
+    40.3876375,
+    49.8453281
+   ]
+  },
+  {
+   "kind": "plus_short",
+   "text": "9RQW+344",
+   "ref": [
+    40.37,
+    49.8
+   ],
+   "full": "8HGF9RQW+344",
+   "center": [
+    40.3876375,
+    49.8453281
+   ]
+  },
+  {
+   "kind": "plus_short",
+   "text": "CRJ8+X5",
+   "ref": [
+    40.4093,
+    49.8671
+   ],
+   "full": "8HGFCRJ8+X5",
+   "center": [
+    40.4324375,
+    49.8154375
+   ]
+  },
+  {
+   "kind": "plus_short",
+   "text": "9G8F+6X",
+   "ref": [
+    47.4,
+    8.6
+   ],
+   "full": "8FVC9G8F+6X",
+   "center": [
+    47.3655625,
+    8.5249375
+   ]
+  },
+  {
+   "kind": "plus_short",
+   "text": "2FCX+2X",
+   "ref": [
+    40.95,
+    49.5
+   ],
+   "full": "8HHF2FCX+2X",
+   "center": [
+    41.0200625,
+    49.4999375
+   ]
+  },
+  {
+   "kind": "plus_short",
+   "text": "C22C+22",
+   "ref": [
+    40.4,
+    49.97
+   ],
+   "full": "8HGGC22C+22",
+   "center": [
+    40.4000625,
+    50.0200625
+   ]
+  },
+  {
+   "kind": "plus_short",
+   "text": "XRH2+X2",
+   "ref": [
+    40.03,
+    49.8
+   ],
+   "full": "8HFFXRH2+X2",
+   "center": [
+    39.9799375,
+    49.8000625
+   ]
+  },
+  {
+   "kind": "plus_full",
+   "text": "8HGFCV58+PR",
+   "center": [
+    40.4093125,
+    49.8670625
+   ]
+  },
+  {
+   "kind": "plus_full",
+   "text": "8FVC9G8F+6X",
+   "center": [
+    47.3655625,
+    8.5249375
+   ]
+  },
+  {
+   "kind": "plus_full",
+   "text": "8FVC9G8F+6XQ",
+   "center": [
+    47.3655875,
+    8.5249844
+   ]
+  },
+  {
+   "kind": "encode",
+   "latLng": [
+    40.4093,
+    49.8671
+   ],
+   "full10": "8HGFCV58+PR",
+   "full11": "8HGFCV58+PRH"
+  },
+  {
+   "kind": "encode",
+   "latLng": [
+    40.366667,
+    49.833333
+   ],
+   "full10": "8HGF9R8M+M8",
+   "full11": "8HGF9R8M+M88"
+  },
+  {
+   "kind": "dms",
+   "text": "40°22'00.0\"N 49°50'00.0\"E, Baku",
+   "latLng": [
+    40.3666667,
+    49.8333333
+   ]
+  },
+  {
+   "kind": "dms",
+   "text": "40°23'15.5\"N 49°51'2.25\"E",
+   "latLng": [
+    40.3876389,
+    49.850625
+   ]
+  },
+  {
+   "kind": "dms",
+   "text": "Mirzəağa Əliyev 249, Bakı, 1014",
+   "latLng": null
+  },
+  {
+   "kind": "dms",
+   "text": "9RQW+344 Baku, Baku, AZ1000",
+   "latLng": null
+  },
+  {
+   "kind": "card",
+   "text": "40°22'00.0\"N 49°50'00.0\"E, Baku",
+   "ref": [
+    40.4093,
+    49.8671
+   ],
+   "latLng": [
+    40.3666667,
+    49.8333333
+   ],
+   "source": "dms"
+  },
+  {
+   "kind": "card",
+   "text": "9RQW+344 Baku, Baku, AZ1000",
+   "ref": [
+    40.4093,
+    49.8671
+   ],
+   "latLng": [
+    40.3876375,
+    49.8453281
+   ],
+   "source": "plus_code"
+  },
+  {
+   "kind": "card",
+   "text": "9RQW+344 Baku, Baku, AZ1000",
+   "ref": null,
+   "latLng": [
+    40.3876375,
+    49.8453281
+   ],
+   "source": "plus_code"
+  },
+  {
+   "kind": "card",
+   "text": "8HGFCV58+PR",
+   "ref": null,
+   "latLng": [
+    40.4093125,
+    49.8670625
+   ],
+   "source": "plus_code"
+  },
+  {
+   "kind": "card",
+   "text": "Test küç. 1, AZ1010 Baku",
+   "ref": [
+    40.4093,
+    49.8671
+   ],
+   "latLng": null,
+   "source": null
+  },
+  {
+   "kind": "card",
+   "text": "Customer drop-off",
+   "ref": [
+    40.4093,
+    49.8671
+   ],
+   "latLng": null,
+   "source": null
+  },
+  {
+   "kind": "zone",
+   "latLng": [
+    40.4093,
+    49.8671
+   ],
+   "kmFromHub": 0.0,
+   "zone": "Z1"
+  },
+  {
+   "kind": "zone",
+   "latLng": [
+    40.3876375,
+    49.8453281
+   ],
+   "kmFromHub": 3.0333588,
+   "zone": "Z2"
+  },
+  {
+   "kind": "zone",
+   "latLng": [
+    40.4324375,
+    49.8154375
+   ],
+   "kmFromHub": 5.0740225,
+   "zone": "Z2"
+  },
+  {
+   "kind": "zone",
+   "latLng": [
+    40.3666667,
+    49.8333333
+   ],
+   "kmFromHub": 5.5364394,
+   "zone": "Z2"
+  },
+  {
+   "kind": "zone",
+   "latLng": [
+    40.45,
+    49.95
+   ],
+   "kmFromHub": 8.3496827,
+   "zone": "Z3"
+  },
+  {
+   "kind": "zone",
+   "latLng": [
+    40.56,
+    50.05
+   ],
+   "kmFromHub": 22.8050399,
+   "zone": "Z4"
+  },
+  {
+   "kind": "zone",
+   "latLng": [
+    40.3,
+    49.6
+   ],
+   "kmFromHub": 25.6897969,
+   "zone": "Z4"
+  },
+  {
+   "kind": "zone",
+   "latLng": [
+    40.43169307710377,
+    49.8671
+   ],
+   "kmFromHub": 2.49,
+   "zone": "Z1"
+  },
+  {
+   "kind": "zone",
+   "latLng": [
+    40.4318729411769,
+    49.8671
+   ],
+   "kmFromHub": 2.51,
+   "zone": "Z2"
+  },
+  {
+   "kind": "zone",
+   "latLng": [
+    40.463169289900236,
+    49.8671
+   ],
+   "kmFromHub": 5.99,
+   "zone": "Z2"
+  },
+  {
+   "kind": "zone",
+   "latLng": [
+    40.46334915397336,
+    49.8671
+   ],
+   "kmFromHub": 6.01,
+   "zone": "Z3"
+  },
+  {
+   "kind": "zone",
+   "latLng": [
+    40.517128511837036,
+    49.8671
+   ],
+   "kmFromHub": 11.99,
+   "zone": "Z3"
+  },
+  {
+   "kind": "zone",
+   "latLng": [
+    40.51730837591016,
+    49.8671
+   ],
+   "kmFromHub": 12.01,
+   "zone": "Z4"
+  },
+  {
+   "kind": "hourBlock",
+   "minuteOfDay": -30,
+   "block": "B5"
+  },
+  {
+   "kind": "hourBlock",
+   "minuteOfDay": -0.5,
+   "block": "B5"
+  },
+  {
+   "kind": "hourBlock",
+   "minuteOfDay": 0,
+   "block": "B0"
+  },
+  {
+   "kind": "hourBlock",
+   "minuteOfDay": 359.9,
+   "block": "B0"
+  },
+  {
+   "kind": "hourBlock",
+   "minuteOfDay": 479.5,
+   "block": "B0"
+  },
+  {
+   "kind": "hourBlock",
+   "minuteOfDay": 480,
+   "block": "B1"
+  },
+  {
+   "kind": "hourBlock",
+   "minuteOfDay": 660,
+   "block": "B1"
+  },
+  {
+   "kind": "hourBlock",
+   "minuteOfDay": 704.5,
+   "block": "B1"
+  },
+  {
+   "kind": "hourBlock",
+   "minuteOfDay": 705,
+   "block": "B2"
+  },
+  {
+   "kind": "hourBlock",
+   "minuteOfDay": 840,
+   "block": "B2"
+  },
+  {
+   "kind": "hourBlock",
+   "minuteOfDay": 899.5,
+   "block": "B2"
+  },
+  {
+   "kind": "hourBlock",
+   "minuteOfDay": 900,
+   "block": "B3"
+  },
+  {
+   "kind": "hourBlock",
+   "minuteOfDay": 1079.5,
+   "block": "B3"
+  },
+  {
+   "kind": "hourBlock",
+   "minuteOfDay": 1080,
+   "block": "B4"
+  },
+  {
+   "kind": "hourBlock",
+   "minuteOfDay": 1289.5,
+   "block": "B4"
+  },
+  {
+   "kind": "hourBlock",
+   "minuteOfDay": 1290,
+   "block": "B5"
+  },
+  {
+   "kind": "hourBlock",
+   "minuteOfDay": 1439,
+   "block": "B5"
+  },
+  {
+   "kind": "hourBlock",
+   "minuteOfDay": 1439.5,
+   "block": "B5"
+  },
+  {
+   "kind": "hourBlock",
+   "minuteOfDay": 1440,
+   "block": "B0"
+  },
+  {
+   "kind": "hourBlock",
+   "minuteOfDay": 1500,
+   "block": "B0"
+  }
+ ]
+}

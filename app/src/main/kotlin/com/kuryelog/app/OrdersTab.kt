@@ -52,6 +52,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.kuryelog.app.core.Store
 import com.kuryelog.logic.core.Lang
+import com.kuryelog.logic.economics.OfferScoreBook
 import com.kuryelog.logic.orders.CashTips
 import com.kuryelog.logic.orders.DayDetail
 import com.kuryelog.logic.orders.OrderHistory
@@ -65,33 +66,39 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 /**
- * Siparişler sekmesi (A3.8, ORDERS.md 10.3): "Bugün" kartları, gün sayfaları (sola kaydırma eski güne), gün ayrıntısı. İçerik ve
- * metinler `logic/orders` [OrdersScreen]'den (testli); burada yalnız çizim ve dokunuşlar. Açıkken vardiya varsa 5 sn'de bir yenilenir.
+ * Siparişler sekmesi (A3.8, ORDERS.md 10.3): "Bugün" kartları, gün sayfaları (sola kaydırma eski güne), gün ayrıntısı; "Siparişler |
+ * Teklif puanı" seçicisi (E4, A4.1). İçerik ve metinler `logic/orders` [OrdersScreen]'den ve `logic/economics`'ten (testli); burada yalnız
+ * çizim ve dokunuşlar. Açıkken vardiya varsa 5 sn'de bir yenilenir.
  */
 @Composable
-fun OrdersTab(lang: Lang, source: (Context) -> OrdersSource = OrdersAccess::source) {
+fun OrdersTab(lang: Lang, source: (Context) -> OrdersSource = OrdersAccess::source, offerScores: (Context) -> OfferScoreBook = OrdersAccess::offerScores) {
     val ctx = LocalContext.current
     var version by remember { mutableIntStateOf(0) }
     var detail by rememberSaveable { mutableStateOf<String?>(null) }
     var platform by rememberSaveable { mutableStateOf("") }
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
+    var scoreTab by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) { while (true) { delay(REFRESH_MS); if (Store.shiftOn(ctx)) version++ } }
-    GuardedPage("orders", lang, key = version, build = { source(ctx).let { it to OrdersScreen(it, lang).warm() } }) { (src, screen) ->
+    GuardedPage("orders", lang, key = version, build = { source(ctx).let { Triple(it, OrdersScreen(it, lang).warm(), offerScores(ctx)) } }) { (src, screen, book) ->
         val day = detail
         if (day != null) {
             DayDetailScreen(screen, src, day, platform.ifEmpty { null }, onBack = { detail = null }) { version++ }
         } else {
-            OrdersHome(screen, src, platform.ifEmpty { null }, { platform = it ?: "" }, selected, { selected = it }, { detail = it }) { version++ }
+            val scores = ScoreTab(lang, book, scoreTab) { scoreTab = it }
+            OrdersHome(screen, src, platform.ifEmpty { null }, { platform = it ?: "" }, selected, { selected = it }, { detail = it }, scores) { version++ }
         }
     }
 }
 
 private const val REFRESH_MS = 5_000L
 
+/** E4 seçicisinin durumu: [on] "Teklif puanı" seçili. */
+private class ScoreTab(val lang: Lang, val book: OfferScoreBook, val on: Boolean, val pick: (Boolean) -> Unit)
+
 @Composable
 private fun OrdersHome(
     screen: OrdersScreen, src: OrdersSource, platform: String?, onPlatform: (String?) -> Unit, selected: String?, onSelected: (String) -> Unit,
-    onDetail: (String) -> Unit, onChanged: () -> Unit,
+    onDetail: (String) -> Unit, scores: ScoreTab, onChanged: () -> Unit,
 ) {
     val today = remember(screen) { screen.today() }
     var metric by remember { mutableStateOf<OrderHistory.Metric?>(null) }
@@ -100,8 +107,13 @@ private fun OrdersHome(
         NowCard(today.nowTitle, today.now, today.active.map { it.label to it.tripId }) { src.showCustomerCard(it); onChanged() }
         CardView(today.hero, onMetric = { metric = it })
         today.platforms.forEach { CardView(it) }
+        // RS `renderOrders`: seçici gün sayfalarının üstünde; iki sekme aynı gün sayfalarını paylaşır.
+        OfferScoreSelector(scores.lang, scores.on, scores.pick)
+        val scoreDay: (@Composable ColumnScope.(String) -> Unit)? = if (!scores.on) null else { date ->
+            OfferScoresDay(screen, scores.book, src.zone(), date, platform, scores.lang, screen.labels.cancel)
+        }
         DayPages(screen, records = false, archive = false, platform = platform, onPlatform = onPlatform, selected = selected, onSelected = onSelected,
-            onDetail = onDetail, onTrip = { trip = it })
+            onDetail = onDetail, onTrip = { trip = it }, scoreDay = scoreDay)
     }
     metric?.let { m -> MetricDialog(screen, m) { metric = null } }
     trip?.let { id -> TripDialog(screen, id) { trip = null } }
@@ -128,13 +140,15 @@ private fun NowCard(title: String, text: String?, buttons: List<Pair<String, Str
 /**
  * Gün sayfaları: tarihler yeniden eskiye (sola kaydırma eski güne); başlıkta ‹ › okları, dokununca tarih seçici, toplamlar, km ve aktif
  * süre; platform süzgeci; sipariş satırları. [records] true: Kayıtlar sayfası ([archive]: arşivlenmiş günler), [extra] her sayfanın sonuna
- * o günün kayıt kartını koyar.
+ * o günün kayıt kartını koyar. [scoreDay] verilince (E4 "Teklif puanı") sayfa gövdesi odur; platform seçicisi ve "Günün tüm ayrıntıları"
+ * gizlenir, seçili platform süzgeci geçerli kalır (RS aynı).
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DayPages(
     screen: OrdersScreen, records: Boolean, archive: Boolean, platform: String?, onPlatform: (String?) -> Unit, selected: String?,
     onSelected: (String) -> Unit, onDetail: (String) -> Unit, onTrip: (String) -> Unit, extra: @Composable ColumnScope.(String) -> Unit = {},
+    scoreDay: (@Composable ColumnScope.(String) -> Unit)? = null,
 ) {
     val ctx = LocalContext.current
     val labels = screen.labels
@@ -175,12 +189,16 @@ fun DayPages(
             Text(header.activity, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
-    Row(Modifier.fillMaxWidth().padding(bottom = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    if (scoreDay == null) Row(Modifier.fillMaxWidth().padding(bottom = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         FilterChip(selected = platform == null, onClick = { onPlatform(null) }, label = { Text(labels.allOrders) })
         for (name in OrderHistory.PLATFORMS) FilterChip(selected = platform == name, onClick = { onPlatform(name) }, label = { Text(name) })
     }
     HorizontalPager(pager, Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, key = { dates[it] }) { i ->
         val date = dates[i]
+        if (scoreDay != null) {
+            Column(Modifier.fillMaxWidth().padding(bottom = 8.dp)) { scoreDay(date); extra(date) }
+            return@HorizontalPager
+        }
         val page = remember(screen, date, platform) { screen.page(date, platform) }
         Column(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
             page.empty?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp)) }
