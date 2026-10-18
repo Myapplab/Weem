@@ -31,7 +31,7 @@ Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanl
 | 10 | Y9, N5, Y10 | A6.7 | ajan T | bitti (17:29 UTC) <!-- st:10 --> |
 | 11 | Y11 ve YolGo gün motoru | A6.8 | ajan T1 | yazılıyor (ajan T1 başladı) (17:51 UTC) <!-- st:11 --> |
 | 12 | Y17, Y18 | A6.9 | ajan T1 | bekliyor <!-- st:12 --> |
-| 13 | Y19, Y20 | A6.9 | ajan T2 | bekliyor <!-- st:13 --> |
+| 13 | Y19, Y20 | A6.9 | ajan T2 | yazılıyor (ajan T2 başladı) (17:51 UTC) <!-- st:13 --> |
 | 14 | veri sözleşmesi | tümü | koordinatör | bekliyor <!-- st:14 --> |
 | 15 | WEEM yerleşimi | tümü | koordinatör | bekliyor <!-- st:15 --> |
 | 16 | test eşlemesi A6.2a/A6.2b | A6.2a, A6.2b | koordinatör | bekliyor <!-- st:16 --> |
