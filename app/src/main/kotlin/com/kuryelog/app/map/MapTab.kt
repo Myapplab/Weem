@@ -69,7 +69,8 @@ class MapTabActions(
  * Harita sekmesi (YolGo `nav_screen.dart:57-153`; MAP.md 6.3): harita yüzeyi + HUD (arama çubuğu `map-search`, hava şeridi, sol göstergeler, gün eylemleri, konum düğmesi,
  * alt yer düğmesi); sekmede menü, ayar düğmesi ve kayıt noktası yok. Varış odağında yalnız harita, bildirim şeridi (`toast-banner`), hatırlatıcı yuvası (`reminder-slot`), görev
  * uyarıları (`task-alerts`), ters yön kartı ve alttaki `arrival-address` kartı. Yalnız harita kipinde sağ üstte "Panelleri göster" (`show-panels`) ve konum düğmesi.
- * Dışarı dokunuş açık gün kartını katlar. Yuvalar ([toast], [reminder], [taskAlerts], [wrongWay], [routePanel]) sahip görevlerde dolar.
+ * Dışarı dokunuş açık gün kartını katlar. Yuvalar ([toast], [reminder], [taskAlerts], [wrongWay], [routePanel]) sahip görevlerde dolar; [metrics] sol göstergeler (A6.7),
+ * [topCard] arama çubuğunun üstünde (vardiya kapalıyken `ShiftCard`).
  */
 @Composable
 fun MapTab(
@@ -86,6 +87,8 @@ fun MapTab(
     taskAlerts: @Composable () -> Unit = {},
     wrongWay: @Composable () -> Unit = {},
     routePanel: @Composable () -> Unit = {},
+    metrics: @Composable () -> Unit = { MapMetrics(state.metrics, lang) },
+    topCard: @Composable () -> Unit = {},
 ) {
     val alerts = @Composable { Box(Modifier.fillMaxSize().testTag("task-alerts")) { taskAlerts() } }
     val toastSlot = @Composable { Box(Modifier.fillMaxWidth().testTag("toast-banner")) { toast() } }
@@ -149,11 +152,12 @@ fun MapTab(
             keyboard = keyboard, map = mapSurface, alerts = alerts,
             header = {
                 Column(Modifier.fillMaxWidth()) {
+                    topCard()
                     SearchBar(lang, actions.onSearch)
                     Spacer(Modifier.height(16.dp))
                     if (state.weatherStrip) WeatherChip(state.weather, lang, state.nowMs, onRefresh = actions.onWeatherRefresh)
                     Spacer(Modifier.height(6.dp))
-                    if (!keyboard) MapMetrics(state.metrics, lang)
+                    if (!keyboard) metrics()
                     Spacer(Modifier.height(6.dp))
                     toastSlot()
                     reminderSlot()

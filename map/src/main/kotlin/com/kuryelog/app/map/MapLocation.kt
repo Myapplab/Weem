@@ -7,7 +7,6 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
-import android.os.Build
 import android.os.Looper
 import android.os.SystemClock
 import androidx.compose.runtime.Composable
@@ -80,5 +79,5 @@ private fun start(context: Context, lm: LocationManager?, listener: LocationList
 private fun Location.toPuckFix() = PuckFix(
     lat = latitude, lon = longitude, accuracyM = if (hasAccuracy()) accuracy.toDouble() else Double.POSITIVE_INFINITY,
     speedMps = if (hasSpeed()) speed.toDouble() else -1.0, headingDeg = if (hasBearing()) bearing.toDouble() else -1.0,
-    headingAccuracyDeg = if (Build.VERSION.SDK_INT >= 26 && hasBearingAccuracy()) bearingAccuracyDegrees.toDouble() else 0.0,
+    headingAccuracyDeg = if (hasBearingAccuracy()) bearingAccuracyDegrees.toDouble() else 0.0,
 )

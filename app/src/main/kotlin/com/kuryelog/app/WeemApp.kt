@@ -35,6 +35,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.kuryelog.app.core.CrashLog
 import com.kuryelog.app.core.Store
+import com.kuryelog.app.map.MapScreen
+import com.kuryelog.app.map.MapSettingsScreen
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.app.Tab
 import com.kuryelog.logic.app.Text as Str
@@ -94,8 +96,8 @@ fun WeemApp(
                         // A3.8: Siparişler sekmesi.
                         Tab.ORDERS -> OrdersTab(lang)
                         Tab.MORE -> MoreScreen(lang, langSetting, theme, versionName, onLangSetting, onTheme)
-                        // G1: vardiya düğmesi açılış sekmesinde (harita A6'da gelir).
-                        Tab.MAP -> Column { ShiftCard(lang); PlaceholderScreen(selected, lang) }
+                        // A6.5: Harita sekmesi (graf yokken vardiya kartı + kurulum kartı; G1 vardiya düğmesi açılış sekmesinde).
+                        Tab.MAP -> MapScreen(lang, dark)
                         // A5.4: Scooter sekmesi (canlı panel, tarama, eşleştirme, ayarlar, tanı, ZIP).
                         Tab.SCOOTER -> ScooterTab(lang, dark, scooterImmersive) { scooterImmersive = it }
                         else -> PlaceholderScreen(selected, lang)
@@ -138,6 +140,11 @@ private fun MoreScreen(
     var records by rememberSaveable { mutableStateOf(false) }
     var home by rememberSaveable { mutableStateOf(false) }
     var ordersSettings by rememberSaveable { mutableStateOf(false) }
+    var mapSettings by rememberSaveable { mutableStateOf(false) }
+    if (mapSettings) {
+        MapSettingsScreen(lang, weatherStrip = true, onWeatherStripChange = {}, onBack = { mapSettings = false })
+        return
+    }
     if (ordersSettings) {
         OrdersSettingsScreen(lang, onBack = { ordersSettings = false })
         return
@@ -155,6 +162,9 @@ private fun MoreScreen(
 
         Section(Str.HOME_TITLE.get(lang)) {
             TextButton(onClick = { home = true }) { Text(Str.HOME_OPEN.get(lang)) }
+        }
+        Section(Str.MSET_TITLE.get(lang)) {
+            TextButton(onClick = { mapSettings = true }) { Text(Str.MSET_OPEN.get(lang)) }
         }
         Section(Str.OSET_TITLE.get(lang)) {
             TextButton(onClick = { ordersSettings = true }) { Text(Str.OSET_OPEN.get(lang)) }
