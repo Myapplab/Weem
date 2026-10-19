@@ -13,4 +13,8 @@ class MemoryMapPrefs(initial: Map<String, Any> = emptyMap()) : MapPrefs {
     override fun setBool(key: String, value: Boolean) { values[key] = value }
     override fun getString(key: String): String? = values[key] as? String
     override fun setString(key: String, value: String) { values[key] = value }
+    override fun getDouble(key: String): Double? = (values[key] as? Number)?.toDouble()
+    override fun setDouble(key: String, value: Double) { values[key] = value }
+    override fun getLong(key: String): Long? = (values[key] as? Number)?.toLong()
+    override fun setLong(key: String, value: Long) { values[key] = value }
 }

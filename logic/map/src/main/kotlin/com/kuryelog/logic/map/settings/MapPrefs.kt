@@ -11,4 +11,8 @@ interface MapPrefs {
     fun setBool(key: String, value: Boolean)
     fun getString(key: String): String?
     fun setString(key: String, value: String)
+    fun getDouble(key: String): Double?
+    fun setDouble(key: String, value: Double)
+    fun getLong(key: String): Long?
+    fun setLong(key: String, value: Long)
 }
