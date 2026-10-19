@@ -18,3 +18,6 @@ class OsmRaw {
 
 /** Overpass JSON `elements` (düğüm/yol) → ham depo; `MAP.md` 2.3. İskelet (A6.2a). */
 fun OsmRaw.addOverpassJson(json: String): OsmRaw = TODO("A6.3")
+
+/** Harita dosyası okunamadı (sihir/sürüm farklı): "Harita dosyası eski sürüm" (Dart `FormatException`). */
+class MapFormatException(message: String) : Exception(message)

@@ -49,13 +49,14 @@ class CostModel(
     val wrongWayEdges: Set<Int> = emptySet(),
     val reverseHours: Map<Long, ReverseHours> = emptyMap(),
     val bikeways: Set<Long> = emptySet(),
+    val learned: Map<Long, LearnedQuality> = emptyMap(),
     val marks: List<SurfaceMark> = emptyList(),
     val departureMs: Long? = null,
 ) {
-    /** Kenar × yön (0 ileri, 1 geri) maliyet, süre (sn) ve enerji (Wh). */
-    val cost: Array<DoubleArray> get() = TODO("A6.4")
-    val time: Array<DoubleArray> get() = TODO("A6.4")
-    val wh: Array<DoubleArray> get() = TODO("A6.4")
+    /** Kenar × yön (0 ileri, 1 geri) maliyet, süre (sn) ve enerji (Wh); dizin `kenar * 2 + yön` (YolGo `Float64List`). */
+    val cost: DoubleArray get() = TODO("A6.4")
+    val time: DoubleArray get() = TODO("A6.4")
+    val wh: DoubleArray get() = TODO("A6.4")
     val heuristicScale: Double get() = TODO("A6.4")
 
     fun allowed(edge: Int, dir: Int): Boolean = TODO("A6.4")

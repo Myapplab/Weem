@@ -73,4 +73,17 @@ class RouteEngineTest {
             assertEquals(400.0, allowed.plans.getValue(RideMode.TIME).legs.single().wrongWayM, 5.0)
         }
     }
+
+    /** `bikeway_e13_test.dart` "RouteWorker.compute elle işareti isolate'e taşır". */
+    @Test
+    fun engineCarriesManualBikewayMarks() = runBlocking {
+        val g = TestGraphs.parallel()
+        fun bikeRequest(bikeways: Set<Long>) = PlanRequest(
+            g, p(0.0, 0.0), listOf(p(0.0, 400.0)), RideParams(), approved = emptySet(), blocked = emptySet(), bikeways = bikeways,
+        )
+        RouteEngine().use { engine ->
+            assertEquals(440.0, engine.compute(bikeRequest(emptySet())).plans.getValue(RideMode.TIME).rideM, 5.0)
+            assertEquals(480.0, engine.compute(bikeRequest(setOf(401L, 402L, 403L))).plans.getValue(RideMode.TIME).rideM, 5.0)
+        }
+    }
 }
