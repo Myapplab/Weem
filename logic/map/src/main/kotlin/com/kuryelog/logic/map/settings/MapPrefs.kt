@@ -15,4 +15,7 @@ interface MapPrefs {
     fun setDouble(key: String, value: Double)
     fun getLong(key: String): Long?
     fun setLong(key: String, value: Long)
+
+    /** Anahtarı siler (günü kapanan `shift.v1` gibi); varsayılan boş dizgeyle işaretler, Android uygulaması gerçekten siler. */
+    fun remove(key: String) = setString(key, "")
 }

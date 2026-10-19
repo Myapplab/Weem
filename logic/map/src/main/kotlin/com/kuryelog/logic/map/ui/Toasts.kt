@@ -1,7 +1,7 @@
 package com.kuryelog.logic.map.ui
 
 /** Harita bildirim şeridi verisi (MAP.md 7: metin, renk, süre, "Geri al" eylemi). */
-enum class ToastTone { GREEN, PURPLE, ORANGE, RED, BIKEWAY }
+enum class ToastTone { GREEN, PURPLE, ORANGE, RED, BIKEWAY, PINK, FOOD, BLUE }
 
 class MapToast(
     val text: String,
