@@ -2,6 +2,13 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-19 — A6.2a testleri çevir: rota, harita verisi, Y12 (Claude Sonnet · high; dal `ccr-4340bbea-jlvo9l`, kod `59a4401`)
+- Yapılan: YolGo 17 test dosyasından 110 test `logic/map`'e çevrildi (`graph` 17, `route`/`settings`/`ui`/`nav` 70, `roads` 23); ortak graflar `route/TestGraphs.kt`, sahte saat/dosya/tercih `TestFakes.kt`, `TestPrefs.kt`. Gövdesiz iskelet imzalar (`TODO("A6.3"/"A6.4"/"A6.6"/"A6.8"/"A6.11")`; `geo` ve `RideParams` tam): A6.3–A6.11 doldurur.
+- Sapmalar (`TEST_ENVANTERI` "A6.2a çeviri durumu"): `StreetRatioTest` yalnız nokta satırları (Y13 sonra); kart Compose testi A6.11'de; ayar testlerinden `autoStartDay`/`voice` iddiaları düştü; `NavController` yalnız alt küme (A6.6).
+- Doğrulama: `LC_ALL=C.UTF-8 ./gradlew -p logic :map:test` → 110 test, 110 kırmızı (hepsi `NotImplementedError`/beklenen hata türü); `-p logic compileTestKotlin` ve kök `:map:compileDebugKotlin` yeşil. CI yok (`[skip ci]`), telefonda denenecek bir şey yok.
+- **`main`'e birleşmedi** (testler bilerek kırmızı); `main`'e yalnız belgeler (`WEEM_ISLER.md`, `TEST_ENVANTERI.md`, `AGENTS.md` ortam notu, bu not). **Ortam:** bulut kabuğu `POSIX` yerel ayarlı → `LC_ALL=C.UTF-8 ./gradlew …` (Türkçe test adı sınıfları kırılıyordu).
+- Açık kalan: A6.2b (Sonnet · high) aynı dalda; sonra A6.3 (Opus · high). 19 kullanıcı sorusu (`MAP.md` 17.1) varsayılanla ilerliyor.
+
 ## 2026-10-19 — A6.1 Aşama 6 şartnamesi bitti (Claude Opus · xhigh + ultracode; 18 Ekim en çok 3 paralel ajan, 19 Ekim tek oturum, alt ajansız; dal `ccr-98bcbbad-hb6cd9` → `main`)
 - Yapılan: `docs/sartname/MAP.md` 0–17 (~3.000 satır): Y1–Y12, Y15–Y21, N5 davranışı eski koddan satır satır; bu oturumda 11.9–17 ve 0 (ışık ölçer ve gün motoru çalışma düzeni, sürüş günlüğü ve kayıtlar, İstatistik, veri seti, görevler ve hatırlatıcılar, 14–16'ya ekler ve test toplamları, sorular, görev dizini). Tutarlılık (17.5): SORU-12-2 soru değil (plan Bölüm 1 + A7.1 içe aktarmaya karar vermiş); `OZELLIK_HARITASI` Ayrıntı → MAP.md, "içe aktar" → "yeniden girilir" (S1); `TEST_ENVANTERI` hedefleri (çevrilecek 1.572); `VERI_SOZLESMESI` 5.4/5.5/7.3/7.5/8.2; `CORE.md` 3.3 (7401 kullanılmaz, 7402 öneri) ve 6.2 (`TelemetryJournalTest` sonra); A6.8 ← A6.2a.
 - Doğrulama: yalnız belge (kod, test, CI yok); satırlar YolGo `870ab6e` ve Rawstats `6388c04` açılarak; YolGo 83 + 15 test dosyasının (564 + 88) payları betikle denetlendi, uyuşmazlık yok. Telefonda denenmedi.
