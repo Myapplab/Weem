@@ -126,6 +126,9 @@ class MapShiftActionsTest {
         for ((phase, text) in expected) {
             day = dayWith(order = phase)
             compose.waitForIdle()
+            // YolGo her aşamayı ayrı testte taze kartla çizer; burada aşama değişimi kartı kendiliğinden açtığı için önce 20 sn bekleyip katlanmasını bekle.
+            compose.mainClock.advanceTimeBy(MapShiftActionsDefaults.COLLAPSE_AFTER_MS + 1_000)
+            compose.waitForIdle()
             compose.onNodeWithTag("shift-collapsed").performTouchInput { swipeRight() }
             compose.waitForIdle()
             compose.onNodeWithTag("shift-card").assertExists()
