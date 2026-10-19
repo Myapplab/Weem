@@ -173,7 +173,7 @@ class RoadGraph(
     private val cellStart: IntArray
     private val cellEdges: IntArray
 
-    /** Sorgu damgası (tekrarları eler). Dart gibi tek iş parçacığı varsayar: sorgular eşzamanlı çağrılmaz. */
+    /** Sorgu damgası (tekrarları eler); [nearestEdge] kilitli (Dart'ta graf her isolate'e kopyalanırdı, burada paylaşılır). */
     private val seen: IntArray
     private var stamp = 0
 
@@ -273,8 +273,9 @@ class RoadGraph(
 
     /**
      * En yakın kenar. [accept] ile süzülür; [heading] verilirse yönü ±[headingTol] dışında kalan parçalar atlanır
-     * (iki yön de kabul).
+     * (iki yön de kabul). İş parçacığı güvenli (rota işçisi ve ekran aynı grafı sorar).
      */
+    @Synchronized
     fun nearestEdge(
         lat: Double,
         lon: Double,

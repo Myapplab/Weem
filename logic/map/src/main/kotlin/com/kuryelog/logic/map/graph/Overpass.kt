@@ -3,7 +3,6 @@ package com.kuryelog.logic.map.graph
 import com.kuryelog.logic.map.geo.BBox
 import com.kuryelog.logic.map.net.HttpPort
 import com.kuryelog.logic.map.net.HttpRequest
-import java.io.IOException
 import java.net.SocketTimeoutException
 import java.net.URI
 import java.net.URLEncoder
@@ -104,7 +103,7 @@ class OverpassFetcher(
                 } catch (e: SocketTimeoutException) {
                     lastError = MapMsg.mirrorNoAnswer(host)
                     log?.invoke(MapMsg.noAnswer(host))
-                } catch (e: IOException) {
+                } catch (e: Exception) {
                     lastError = MapMsg.mirrorProblem(host, e.message ?: e.toString())
                     log?.invoke(MapMsg.connError(host))
                 }
