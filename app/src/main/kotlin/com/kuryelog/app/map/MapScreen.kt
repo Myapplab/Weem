@@ -173,8 +173,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, mapStyle: Str
             },
             onShowPanels = { mapOnly = false },
         ),
-        // Sol göstergeler A6.7'de (MapMetrics); vardiya kapalıyken ya da yarıda kalmışken başlat/bitir kartı üstte.
-        metrics = {},
+        // Vardiya kapalıyken ya da yarıda kalmışken başlat/bitir kartı üstte.
         topCard = { if (!active || interrupted) ShiftCard(lang) },
     )
     if (askHome) {

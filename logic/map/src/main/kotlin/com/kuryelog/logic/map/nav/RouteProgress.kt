@@ -2,12 +2,15 @@ package com.kuryelog.logic.map.nav
 
 import com.kuryelog.logic.core.NavKind
 import com.kuryelog.logic.core.RouteStatus
+import com.kuryelog.logic.map.geo.GeoPoint
 import com.kuryelog.logic.map.route.Plan
+import com.kuryelog.logic.map.route.RouteGeometry
+import kotlin.math.max
 
 /** Etkin bacağın bir fix için ölçümü (MAP.md 7.9, `NavFeedLeg`): [onRoute] iç alandır, `RouteStatus.Route`'ta yoktur. */
 data class RouteMeasure(val remainingM: Double, val remainingTurns: Int, val measuredAtMs: Long, val onRoute: Boolean)
 
-/** Ölçüm saf işlevleri (MAP.md 7.9). İskelet (A6.2b). */
+/** Ölçüm saf işlevleri (MAP.md 7.9). `measure` A6.7'de öne alındı (sol göstergeler `MapMetrics` onu okur); izleyici ve yayın kapısı A6.6. */
 object RouteProgress {
     const val OFF_ROUTE_M = 40.0
 
@@ -15,7 +18,13 @@ object RouteProgress {
      * Etkin (ilk) bacağın sürüş çizgisine izdüşüm: `kalan = max(0, uzunluk − along) + walkM` (0,1 m'ye yuvarlanır), `kalanDönüş` = along'dan sonraki dönüşler,
      * `onRoute` = dik uzaklık ≤ [OFF_ROUTE_M]. Plan, fix ya da bacak yoksa null.
      */
-    fun measure(plan: Plan?, fix: NavFix?): RouteMeasure? = TODO("A6.6")
+    fun measure(plan: Plan?, fix: NavFix?): RouteMeasure? {
+        val leg = plan?.legs?.firstOrNull() ?: return null
+        fix ?: return null
+        val hit = RouteGeometry.project(leg.ride, GeoPoint(fix.lat, fix.lon))
+        val remaining = max(0.0, hit.length - hit.along) + leg.walkM
+        return RouteMeasure(Math.round(remaining * 10) / 10.0, leg.turns.count { it.atM > hit.along }, fix.atMs, hit.dist <= OFF_ROUTE_M)
+    }
 }
 
 /** Hedef alanı → `RouteStatus.Target`: durak yoksa ya da ev rotasıysa null; lat/lon 6 hane; `kind` restoran/müşteri/bilinmiyor; istek saati yoksa ilk görülme anı. */

@@ -264,9 +264,6 @@ object WeatherIcons {
         val wind = h.wind ?: return null
         return Extra(false, Math.round(wind).toString())
     }
-
-    /** `_value(n, unit, digits)`: yoksa "—". */
-    fun value(n: Double?, unit: String, digits: Int = 0): String = if (n == null) "—" else String.format(Locale.ROOT, "%.${digits}f", n) + unit
 }
 
 /** Çekme ve yenileme kuralları (MAP.md 10.7, 10.8): saf karar, Android `WeatherRuntime`/`WeatherWork` uygular. */

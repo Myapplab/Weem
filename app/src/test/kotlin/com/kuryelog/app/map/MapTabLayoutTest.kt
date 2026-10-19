@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -56,7 +57,8 @@ class MapTabLayoutTest {
         var dark by mutableStateOf(false)
         var state by mutableStateOf(MapTabState(day = day(OrderPhase.AT_RESTAURANT), weather = WeatherView(report = report4()), nowMs = now))
         compose.setContent {
-            WeemTheme(dark) { Box(Modifier.width(width.dp).height(844.dp)) { MapTab(state, Lang.TR) } }
+            // Dart'ta 4 ayrı çalışma: her (genişlik × tema) çifti yeni bir MapTab kurar (gün kartı katlı başlar).
+            WeemTheme(dark) { key(width, dark) { Box(Modifier.width(width.dp).height(844.dp)) { MapTab(state, Lang.TR) } } }
         }
         for (w in listOf(320, 390)) for (d in listOf(false, true)) {
             width = w; dark = d

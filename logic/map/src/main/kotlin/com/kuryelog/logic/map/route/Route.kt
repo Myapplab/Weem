@@ -108,8 +108,13 @@ class Plan(val mode: RideMode, val order: List<Int>, val legs: List<RouteLeg>) {
 
 object RouteGeometry {
     /** Noktanın çizgi boyunca ilerlemesi (m): en yakın izdüşümün başlangıca uzaklığı. */
-    fun progressAlong(line: List<RoutePoint>, p: GeoPoint): Double {
-        if (line.size < 2) return 0.0
+    fun progressAlong(line: List<RoutePoint>, p: GeoPoint): Double = project(line, p).along
+
+    /** Çizgiye izdüşüm (`RouteLine.project`): [Projection.along] başlangıca uzaklık (m), [Projection.dist] dik uzaklık (m), [Projection.length] çizgi uzunluğu (m). */
+    class Projection(val along: Double, val dist: Double, val length: Double)
+
+    fun project(line: List<RoutePoint>, p: GeoPoint): Projection {
+        if (line.size < 2) return Projection(0.0, Double.POSITIVE_INFINITY, 0.0)
         val proj = LocalProjection(p.lat, p.lon)
         var best = Double.POSITIVE_INFINITY
         var bestAlong = 0.0
@@ -125,7 +130,7 @@ object RouteGeometry {
             }
             along += seg
         }
-        return bestAlong
+        return Projection(bestAlong, best, along)
     }
 
     /** [leg] çizgisinin scooter itilerek yürünen kısımları ([RouteSeg.walk]; haritada kesikli); bitişik parçalar birleşir. */

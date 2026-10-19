@@ -132,13 +132,17 @@ fun MapTab(
     var rootCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
     var cardBounds by remember { mutableStateOf(Rect.Zero) }
     val hasRoute = state.nav.hasRoute || state.nav.busy || state.nav.pending != null
-    val bar = @Composable {
-        MapShiftActions(
-            state.day, hasRoute, lang, onHome, onStats, onEnd,
-            modifier = Modifier.onGloballyPositioned { cardBounds = it.boundsInRoot() },
-            collapseSignal = collapseSignal, onCollapsedChange = { shiftCollapsed = it },
-        )
+    // Gün kartı konum ve rota düğmeleriyle yer değiştirince (katlı ↔ açık) hareketli içerik olarak taşınır; yoksa açık/katlı durumu sıfırlanır.
+    val bar = remember {
+        movableContentOf<ShiftBarArgs> { a ->
+            MapShiftActions(
+                a.day, a.hasRoute, a.lang, a.onHome, a.onStats, a.onEnd,
+                modifier = Modifier.onGloballyPositioned { cardBounds = it.boundsInRoot() },
+                collapseSignal = a.collapseSignal, onCollapsedChange = { shiftCollapsed = it },
+            )
+        }
     }
+    val barArgs = ShiftBarArgs(state.day, hasRoute, lang, onHome, onStats, onEnd, collapseSignal)
     val locate = @Composable { SmartLocateButton(state.cameraMode, actions.onLocate, lang = lang) }
     Box(
         modifier.fillMaxSize().onGloballyPositioned { rootCoords = it }.pointerInput(Unit) {
@@ -176,7 +180,7 @@ fun MapTab(
                         wrongWay()
                         routePanel()
                         Row(verticalAlignment = Alignment.Bottom) {
-                            Box(Modifier.weight(1f), contentAlignment = Alignment.BottomStart) { bar() }
+                            Box(Modifier.weight(1f), contentAlignment = Alignment.BottomStart) { bar(barArgs) }
                             Spacer(Modifier.width(8.dp))
                             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 locate()
@@ -192,13 +196,24 @@ fun MapTab(
                         routePanel()
                         RouteFab(actions.onRouteFab, lang = lang)
                         Spacer(Modifier.height(8.dp))
-                        bar()
+                        bar(barArgs)
                     }
                 }
             },
         )
     }
 }
+
+/** Gün kartının (`MapShiftActions`) hareketli içeriğe verilen girdileri. */
+private class ShiftBarArgs(
+    val day: DayView,
+    val hasRoute: Boolean,
+    val lang: Lang,
+    val onHome: () -> Unit,
+    val onStats: () -> Unit,
+    val onEnd: () -> Unit,
+    val collapseSignal: Int,
+)
 
 /** Arama çubuğu (`map-search`; MAP.md 8.8): ipucu "Adres veya mekân ara"; arama akışı A6.6. */
 @Composable

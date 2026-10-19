@@ -39,7 +39,7 @@ object MapTestFixtures {
     )
 
     /** 4 saatlik rapor: 18:00'dan, sıcaklık 23, 22, 21, 20 (`hud_layout_test` `PreviewWeather`). */
-    fun report4() = WeatherReport(AT, (0 until 4).map { WeatherHour(LocalDateTime.of(2026, 10, 2, 18 + it, 0), 23.0 - it, 22.0, if (it == 0) 40.0 else 10.0, 0.4, 12.0, 20.0, code = 61, isDay = true) })
+    fun report4() = WeatherReport(AT, (0 until 4).map { WeatherHour(LocalDateTime.of(2026, 10, 2, 18 + it, 0), 23.0 - it, 18.0, if (it == 0) 40.0 else 10.0, 0.4, 12.0, 20.0, code = 61, isDay = true) })
 
     /** 8 saatlik rapor: 10:00'dan, sıcaklık 20…27 (`v160_y1_y2_test` `_EightHours`). */
     fun report8() = WeatherReport(AT, (0 until 8).map { WeatherHour(LocalDateTime.of(2026, 10, 9, 10 + it, 0), 20.0 + it, 20.0, 10.0, 0.0, 10.0, 12.0, code = 0, isDay = true) })
