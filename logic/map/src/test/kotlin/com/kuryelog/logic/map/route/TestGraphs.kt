@@ -228,4 +228,21 @@ object TestGraphs {
         raw.addWay(OsmWay(203, listOf(5, 3), RESIDENTIAL))
         return flat(raw)
     }
+
+    /**
+     * `ww_no_problem_green_test` `_graph`: tek yönlü (kuzeye) "Test küçəsi" OSM'de iki parça — 100 (150–300 m, daha önce Ses+ ile
+     * onaylı) ve 101 (0–150 m, onaysız); 102 çift yönlü çıkış (batıya, "Yan küçə").
+     */
+    fun answerGraph(): RoadGraph {
+        val raw = OsmRaw()
+        raw.addNode(1, lat(0.0), lon(0.0))
+        raw.addNode(2, lat(150.0), lon(0.0))
+        raw.addNode(3, lat(300.0), lon(0.0))
+        raw.addNode(4, lat(0.0), lon(-150.0))
+        val street = mapOf("highway" to "residential", "oneway" to "yes", "name" to "Test küçəsi")
+        raw.addWay(OsmWay(100, listOf(2, 3), street))
+        raw.addWay(OsmWay(101, listOf(1, 2), street))
+        raw.addWay(OsmWay(102, listOf(1, 4), mapOf("highway" to "residential", "name" to "Yan küçə")))
+        return flat(raw)
+    }
 }

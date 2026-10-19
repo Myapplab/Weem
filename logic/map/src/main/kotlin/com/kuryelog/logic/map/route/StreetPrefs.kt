@@ -17,3 +17,9 @@ enum class StreetList { APPROVED, BLOCKED, STEEP }
 object StreetPrefsCodec {
     fun load(prefs: MapPrefs): StreetPrefs = TODO("A6.4")
 }
+
+/** Sokak kararlarını işleyen ve `streets.*` anahtarlarına yazan depo (MAP.md 4.2 işlem tablosu). İskelet (A6.2a). */
+class StreetPrefsStore(private val prefs: MapPrefs) {
+    val current: StreetPrefs get() = TODO("A6.4")
+    fun approve(way: Long, name: String): Unit = TODO("A6.4")
+}
