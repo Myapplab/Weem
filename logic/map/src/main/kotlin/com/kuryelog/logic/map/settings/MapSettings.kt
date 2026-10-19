@@ -4,6 +4,7 @@ import com.kuryelog.logic.map.geo.BBox
 import com.kuryelog.logic.map.geo.Baku
 import com.kuryelog.logic.map.route.RideParams
 import com.kuryelog.logic.map.route.VehicleProfile
+import com.kuryelog.logic.map.ui.MapStyles
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -38,7 +39,7 @@ data class MapSettings(
     /** Ters yön sorun oranı eşiği (%): aşan onaylı sokakta (≥ 3 geçiş) ters yöne girilmez. */
     val wwMaxProblemPct: Double = 50.0,
     val wwAskAlways: Boolean = false,
-    val mapStyle: String = "minimal",
+    val mapStyle: String = MapStyles.DEFAULT,
     /** Trafik ışığı sayımı: durma noktası ışığa en fazla bu kadar yakın (m). */
     val lightMaxM: Double = 5.0,
     /** Rota: her belirgin dönüş bu kadar saniye pahalı sayılır. */
