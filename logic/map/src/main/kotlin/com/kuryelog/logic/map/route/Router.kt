@@ -10,12 +10,15 @@ import kotlin.math.sqrt
 /**
  * Hesap izleyicisi (MAP.md 3.11, 3.13): [check] her 1.024 yığın çekişinde ve planlayıcıda her bacaktan önce çağrılır (fırlatırsa
  * hesap durur; `RouteEngine` coroutine işinin `ensureActive`'ini verir); sayaçlar A* işini ölçer (çekilen düğüm, gevşetilen kenar,
- * bacak denemesi).
+ * bacak denemesi, önbellekten atılan hata).
  */
 class RouteProbe(private val cancel: (() -> Unit)? = null) {
     var legs = 0L
     var pops = 0L
     var edges = 0L
+
+    /** Planlayıcının önbellekten yeniden attığı başarısız bacaklar (YolGo bunları yeniden hesaplardı). */
+    var cachedFailures = 0L
 
     fun check() {
         cancel?.invoke()

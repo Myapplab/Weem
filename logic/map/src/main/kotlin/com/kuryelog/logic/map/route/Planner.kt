@@ -47,9 +47,12 @@ object Planner {
         var error: RouteMsg? = null
         // Bütün denemeler aynı kalkış anıyla (YolGo her CostModel'de ayrı `now` alırdı; fark mikrosaniye).
         val departure = r.departure ?: Instant.now()
+        // Saatli izin yokken bir bacağın başarısı ve hatası moddan bağımsızdır (izinli kenarlar, adaylar, başlangıç ve bitiş
+        // teklifleri moda bakmaz; mod yalnız maliyeti ölçekler): başarısız bacak iki modda bir kez hesaplanır.
+        val failures = if (r.reverseHours.isEmpty()) HashMap<Long, RoutingException>() else null
         for (mode in RideMode.entries) {
             try {
-                plans[mode] = planWithAvoid(r, mode, departure, probe)
+                plans[mode] = planWithAvoid(r, mode, departure, failures, probe)
             } catch (e: RoutingException) {
                 if (error == null) error = e.msg
             }
@@ -61,7 +64,13 @@ object Planner {
      * Önce kötü yollar dışlanarak; bağlantı yoksa kötü yollara izin verilir ve her bacağa uyarı eklenir. Kara liste, özel alan,
      * "yol yok" ve eğim kuralları gevşetilmez. (YolGo `_planForMode` ölçülmüş yüzey adayı Y13 ile gelir; 1.0'da tek aday.)
      */
-    private fun planWithAvoid(r: PlanRequest, mode: RideMode, departure: Instant, probe: RouteProbe?): Plan {
+    private fun planWithAvoid(
+        r: PlanRequest,
+        mode: RideMode,
+        departure: Instant,
+        failures: MutableMap<Long, RoutingException>?,
+        probe: RouteProbe?,
+    ): Plan {
         fun model(avoid: Boolean) = CostModel(
             r.graph, mode = mode, params = r.params, approved = r.approved, blocked = r.blocked, steep = r.steep, avoidBad = avoid,
             ghost = r.ghost, learned = r.learned, marks = r.marks, wwRatio = r.wwRatio, wwAvoid = r.wwAvoid,
@@ -69,23 +78,40 @@ object Planner {
             departure = departure,
         )
         return try {
-            bestOrder(model(true), r, mode, probe)
+            bestOrder(model(true), r, mode, failures, probe)
         } catch (_: RoutingException) {
-            val plan = bestOrder(model(false), r, mode, probe)
+            val plan = bestOrder(model(false), r, mode, failures, probe)
             Plan(plan.mode, plan.order, plan.legs.map { it.withWarnings(it.warnings + RouteMsg.BAD_ROADS_NEEDED) })
         }
     }
 
-    /** Çifte sipariş: bütün sıralar denenir (en çok 4 durak → 24), toplam maliyeti en düşük sıra (eşitlikte ilk) seçilir. */
-    private fun bestOrder(model: CostModel, r: PlanRequest, mode: RideMode, probe: RouteProbe?): Plan {
+    /**
+     * Çifte sipariş: bütün sıralar denenir (en çok 4 durak → 24), toplam maliyeti en düşük sıra (eşitlikte ilk) seçilir. Saatli
+     * izin yokken bacaklar önbellekte; başarısız bacak da ([failures], iki mod ortak): aynı girdi aynı hatayı verir, sonuç YolGo'yla
+     * aynıdır. YolGo hatalı bacağı her sırada ve her modda yeniden hesaplıyordu (biri erişilemeyen 4 durakta Bakü ölçeğinde ~300
+     * bacak, MAP.md 3.13). Anahtar çakışmasız (YolGo `i·100 + j` 100'den çok durakta çakışırdı).
+     */
+    private fun bestOrder(model: CostModel, r: PlanRequest, mode: RideMode, failures: MutableMap<Long, RoutingException>?, probe: RouteProbe?): Plan {
         val points = listOf(r.origin) + r.stops // 0 = başlangıç
-        val cache = HashMap<Int, RouteLeg>()
+        val cache = HashMap<Long, RouteLeg>()
         fun leg(i: Int, j: Int, elapsed: Double): RouteLeg {
             probe?.check()
             val heading = if (i == 0) r.heading else null
             // Saatli izin varken bacak başlangıç anına bağlıdır: önbellek yok.
-            if (r.reverseHours.isNotEmpty()) return Router.routeLeg(model, points[i], points[j], heading, startOffsetS = elapsed, probe = probe)
-            return cache.getOrPut(i * 100 + j) { Router.routeLeg(model, points[i], points[j], heading, probe = probe) }
+            if (failures == null) return Router.routeLeg(model, points[i], points[j], heading, startOffsetS = elapsed, probe = probe)
+            val key = (i.toLong() shl 31) or j.toLong()
+            cache[key]?.let { return it }
+            val failKey = if (model.avoidBad) key or (1L shl 62) else key
+            failures[failKey]?.let {
+                probe?.let { p -> p.cachedFailures++ }
+                throw it
+            }
+            return try {
+                Router.routeLeg(model, points[i], points[j], heading, probe = probe).also { cache[key] = it }
+            } catch (e: RoutingException) {
+                failures[failKey] = e
+                throw e
+            }
         }
 
         val idx = (1..r.stops.size).toList()

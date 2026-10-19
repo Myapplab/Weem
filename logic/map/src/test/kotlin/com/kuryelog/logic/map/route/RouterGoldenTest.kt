@@ -26,7 +26,8 @@ import org.junit.Test
  * sayaç satırıyla) sabit tohumlu rastgele şehirlerde çalıştırır. Bu test aynı OSM girdisinden grafı kendisi kurar (A6.3
  * `buildRoadGraph`), KNG1 baytlarını ve her sorgunun sonucunu karşılaştırır: hata metni, kenar dizisi, dönüşler, sokaklar, uyarılar,
  * sıra ve A* sayaçları (bacak, yığın çekişi, gevşetilen kenar) birebir; ondalıklar 1e-9 göreli payla (JVM ve Dart `sin/cos`
- * son basamakta ayrışabilir; telefonda ikisi de aynı libm'i kullanır).
+ * son basamakta ayrışabilir; telefonda ikisi de aynı libm'i kullanır). Tek fark: planlayıcı başarısız bacağı önbellekten yeniden
+ * atar (YolGo yeniden hesaplardı); o planlarda sayaçlar YolGo'nunkini aşamaz, sonuç yine birebir.
  */
 class RouterGoldenTest {
     private val golden: JSONObject by lazy {
@@ -224,8 +225,14 @@ class RouterGoldenTest {
             "plans" to res.plans.entries.associate { (mode, plan) ->
                 mode.name.lowercase() to mapOf("order" to plan.order, "legs" to plan.legs.map { legJson(it, probePoint) })
             },
-            "stats" to listOf(probe.legs, probe.pops, probe.edges),
+            // Önbellekten hata atıldıysa (YolGo yeniden hesaplardı) iş YolGo'nunkinden az olur, sonuç aynı kalır.
+            "stats" to listOf(probe.legs, probe.pops, probe.edges).let { if (probe.cachedFailures > 0) AtMost(it) else it },
         )
+    }
+
+    /** Sayaçlar en çok beklenen kadar (birebir değil). */
+    private class AtMost(val values: List<Long>) {
+        override fun toString() = "≤$values"
     }
 
     private fun line(pts: List<RoutePoint>): List<Any> {
@@ -266,6 +273,11 @@ class RouterGoldenTest {
                 }
             }
             is JSONArray -> {
+                if (actual is AtMost) {
+                    val e = (0 until expected.length()).map { expected.getLong(it) }
+                    if (actual.values.size != e.size || actual.values.indices.any { actual.values[it] > e[it] }) diffs += "$path: $actual > beklenen $e"
+                    return
+                }
                 val a = actual as? List<*> ?: return run { diffs += "$path: dizi bekleniyordu, $actual" }
                 if (a.size != expected.length()) {
                     diffs += "$path: boy ${a.size} ≠ beklenen ${expected.length()} (beklenen $expected, gelen $a)"

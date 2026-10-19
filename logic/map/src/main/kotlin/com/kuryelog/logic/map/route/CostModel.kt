@@ -1,6 +1,5 @@
 package com.kuryelog.logic.map.route
 
-import com.kuryelog.logic.map.geo.Geo
 import com.kuryelog.logic.map.graph.RoadClass
 import com.kuryelog.logic.map.graph.RoadGraph
 import com.kuryelog.logic.map.graph.WayFlag
@@ -62,20 +61,19 @@ class CostModel(
     /** A* sezgisinin çarpanı (E13: bisiklet yolu varken `bikewayFactor`, yoksa 1). */
     val heuristicScale: Double
 
-    /** Kenar yönü başına giriş/çıkış açısı (Dart `Float32List`). */
-    private val startB = FloatArray(g.edgeCount * 2)
-    private val endB = FloatArray(g.edgeCount * 2)
+    /** Grafa bağlı tablolar (açılar, ön kalite, way dizini): bütün sorgular paylaşır. */
+    private val tables = GraphTables.of(g)
 
-    /** Kötü nokta aralıkları: kenar → aralıklar (işaret sırasıyla). */
-    private val spots = HashMap<Int, ArrayList<SpotSpan>>()
+    /** Kötü nokta aralıkları: kenar → aralıklar (işaret sırasıyla); işaret yoksa boş. */
+    private val spots: Array<ArrayList<SpotSpan>?> = arrayOfNulls(if (marks.isEmpty()) 0 else g.edgeCount)
 
-    // Way başına kural girdileri (kenar başına küme aramasının sonucu aynı, yalnız bir kez hesaplanır).
+    // Way başına kural girdileri: kenar başına küme aramasıyla aynı sonuç, girdi kümeleri üstünden bir kez işaretlenir.
     private val wayCount = g.wayOsmId.size
-    private val wayApproved = BooleanArray(wayCount)
-    private val wayBlocked = BooleanArray(wayCount)
-    private val waySteep = BooleanArray(wayCount)
-    private val wayAvoidWw = BooleanArray(wayCount)
-    private val wayBike = BooleanArray(wayCount)
+    private val wayApproved = wayMask(approved)
+    private val wayBlocked = wayMask(blocked)
+    private val waySteep = wayMask(steep)
+    private val wayAvoidWw = wayMask(wwAvoid)
+    private val wayBike = wayMask(bikeways)
     private val wayBad = BooleanArray(wayCount)
     private val wayRatio = DoubleArray(wayCount)
     private val wayHours: Array<ReverseHours?> = arrayOfNulls(if (reverseHours.isEmpty()) 0 else wayCount)
@@ -84,51 +82,36 @@ class CostModel(
 
     init {
         val wayQ = FloatArray(wayCount)
-        for (w in 0 until wayCount) {
-            val osm = g.wayOsmId[w]
-            val flags = g.wayFlags[w].toInt() and 0xFFFF
-            wayApproved[w] = osm in approved
-            wayBlocked[w] = osm in blocked
-            waySteep[w] = osm in steep
-            wayAvoidWw[w] = osm in wwAvoid
-            wayBike[w] = osm in bikeways
-            wayBad[w] = badWay(osm)
-            wayRatio[w] = wwRatio[osm] ?: 0.0
-            if (wayHours.isNotEmpty()) wayHours[w] = reverseHours[osm]
-            wayQ[w] = Quality.blendQuality(Quality.priorQuality(classOfWay(w), flags), learned[osm]).toFloat()
+        for (w in 0 until wayCount) wayQ[w] = tables.prior[w].toFloat()
+        for ((osm, l) in learned) {
+            val ways = tables.waysOf(osm) ?: continue
+            val bad = badWay(osm)
+            for (w in ways) {
+                wayBad[w] = bad
+                wayQ[w] = Quality.blendQuality(tables.prior[w], l).toFloat()
+            }
         }
+        for ((osm, ratio) in wwRatio) tables.waysOf(osm)?.forEach { wayRatio[it] = ratio }
+        for ((osm, h) in reverseHours) tables.waysOf(osm)?.forEach { wayHours[it] = h }
         for (e in 0 until g.edgeCount) quality[e] = wayQ[g.edgeWay[e]]
         // Kötü noktalar yalnız kendi ±25 m aralığını etkiler (segmentCost/allowedAt).
-        for (span in BadSpots.spans(g, marks)) spots.getOrPut(span.edge) { ArrayList() }.add(span)
+        for (span in BadSpots.spans(g, marks)) (spots[span.edge] ?: ArrayList<SpotSpan>().also { spots[span.edge] = it }).add(span)
         for (e in 0 until g.edgeCount) {
             eval(e, 0)
             eval(e, 1)
         }
         // E13: bisiklet yolu kenarı metre başına en ucuz maliyetin altına inebilir; A* alt sınırı aynı oranda küçülür ki rota en
         // iyi kalsın. Bisiklet yolu yoksa sezgi eskisiyle aynı.
-        var anyBike = bikeways.isNotEmpty()
-        var w = 0
-        while (!anyBike && w < wayCount) {
-            anyBike = ((g.wayFlags[w].toInt() and 0xFFFF) and WayFlag.BIKEWAY) != 0
-            w++
-        }
+        val anyBike = bikeways.isNotEmpty() || tables.anyBikeway
         heuristicScale = if (anyBike) min(1.0, params.bikewayFactor) else 1.0
         junctionCost = params.combine(mode, 2.0, 0.0)
         turnCost = params.combine(mode, params.turnPenaltyS, 0.0)
-        for (e in 0 until g.edgeCount) {
-            val s = g.edgeGeomStart[e]
-            val n = g.edgeGeomCount[e]
-            if (n < 2) continue
-            val a = s
-            val b = s + 1
-            val y = s + n - 2
-            val z = s + n - 1
-            startB[e * 2] = Geo.bearing(g.geomLat[a], g.geomLon[a], g.geomLat[b], g.geomLon[b]).toFloat()
-            endB[e * 2] = Geo.bearing(g.geomLat[y], g.geomLon[y], g.geomLat[z], g.geomLon[z]).toFloat()
-            startB[e * 2 + 1] = Geo.bearing(g.geomLat[z], g.geomLon[z], g.geomLat[y], g.geomLon[y]).toFloat()
-            endB[e * 2 + 1] = Geo.bearing(g.geomLat[b], g.geomLon[b], g.geomLat[a], g.geomLon[a]).toFloat()
-        }
     }
+
+    private fun wayMask(osmIds: Set<Long>): BooleanArray =
+        BooleanArray(wayCount).also { m -> for (osm in osmIds) tables.waysOf(osm)?.forEach { m[it] = true } }
+
+    private fun spotsOf(e: Int): List<SpotSpan>? = if (spots.isEmpty()) null else spots[e]
 
     private fun classOfWay(w: Int): RoadClass = RoadClass.entries[g.wayClass[w].toInt() and 0xFF]
 
@@ -137,7 +120,7 @@ class CostModel(
 
     /** [inE]/[inDir] ile gelip [outE]/[outDir] ile çıkarken dönüş açısı (işaretli: + sağa, − sola). */
     fun turnAngle(inE: Int, inDir: Int, outE: Int, outDir: Int): Double =
-        (startB[outE * 2 + outDir].toDouble() - endB[inE * 2 + inDir].toDouble() + 540) % 360 - 180
+        (tables.startB[outE * 2 + outDir].toDouble() - tables.endB[inE * 2 + inDir].toDouble() + 540) % 360 - 180
 
     /** Az dönüş tercihi: belirgin dönüşün ek maliyeti. */
     fun turnExtra(inE: Int, inDir: Int, outE: Int, outDir: Int): Double {
@@ -184,7 +167,7 @@ class CostModel(
         if (!allowed(e, dir)) return false
         // Farklı günlerde doğrulanmış kötü nokta: yalnız o kesim dışlanır.
         if (avoidBad) {
-            val list = spots[e]
+            val list = spotsOf(e)
             if (list != null && list.any { it.confirmed && it.overlap(f0, f1) > 0 }) return false
         }
         if (portion <= 0 || wrong[e * 2 + dir].toInt() == 0) return true
@@ -198,7 +181,7 @@ class CostModel(
         val portion = abs(f1 - f0)
         if (!base.isFinite()) return Double.POSITIVE_INFINITY
         var total = base * portion
-        val list = spots[e] ?: return total
+        val list = spotsOf(e) ?: return total
         for (s in list) total += base * s.overlap(f0, f1) * (if (s.confirmed) 6 else 3)
         return total
     }
