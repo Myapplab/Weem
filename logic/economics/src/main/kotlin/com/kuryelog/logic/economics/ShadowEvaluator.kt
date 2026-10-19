@@ -44,7 +44,9 @@ object ShadowEvaluator {
         val hereZone: String = OfferGeo.UNKNOWN,
         val speedKmh: Double? = null,
         val repositioning: Boolean = false,
-        val appMode: String? = SHADOW
+        val appMode: String? = SHADOW,
+        /** WEEM N5 (MAP.md 10.6): batarya ve eve rota girdileri `:map` `RangePort`'tan; null iken Rawstats'taki gibi `BATTERY_UNKNOWN`. */
+        val range: RangeInputs? = null
     ) {
         companion object {
             /** From a feed v2 `courierState` ([EconomicsRecorder.courierState]) and the prefs values. */
@@ -105,6 +107,18 @@ object ShadowEvaluator {
         c.boltAcceptanceRate?.takeIf { it.isFinite() && it >= 0 && it <= 1 }?.let { st.put("boltAR", it) }
         val trig = c.woltTriggerCounts.filter { it >= 1 }
         if (trig.isNotEmpty()) st.put("woltPenaltyHistory", JSONObject().put("triggerCounts", JSONArray(trig)))
+        c.range?.let { r ->
+            r.destToChargerKm?.takeIf { it.isFinite() && it >= 0 }?.let { offer.put("destToChargerKm", it) }
+            r.destToHomeMin?.takeIf { it.isFinite() && it >= 0 }?.let { offer.put("destToHomeMin", it) }
+            r.hereToHomeMin?.takeIf { it.isFinite() && it >= 0 }?.let { st.put("hereToHomeMin", it) }
+            if (r.hasScooter) {
+                val sc = JSONObject()
+                r.blePct?.takeIf { it.isFinite() }?.let { sc.put("blePct", it) }
+                r.bleAtMs?.let { sc.put("bleAtMs", it) }
+                r.estimatorWh?.takeIf { it.isFinite() && it >= 0 }?.let { sc.put("estimatorWh", it) }
+                st.put("scooter", sc)
+            }
+        }
         return JSONObject().put("nowMs", nowMs).put("appMode", SHADOW).put("offer", offer).put("state", st)
             .put("payout", payout(c.commissionPct)).put("g", EconomicsV2Estimators.resolveG())
             .put("vehicle", JSONObject().put("profile", vehicleProfile(c.vehicle)))

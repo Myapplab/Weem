@@ -174,3 +174,15 @@ class BatteryEstimator(private val prefs: MapPrefs, private val capacityWh: Doub
         const val SAVE_EVERY_MS = 30_000L
     }
 }
+
+/** Barometrik yükseklik (`SensorHub.baroAltitude`): mutlak değer kaba, FARKLAR hassas (~0,3 m); örnek 3 sn'den eskiyse yok. */
+object BaroAltitude {
+    const val MAX_AGE_MS = 3_000L
+
+    fun meters(hPa: Double): Double = 44330.0 * (1 - Math.pow(hPa / 1013.25, 0.1903))
+
+    fun sample(hPa: Double?, atMs: Long?, nowMs: Long): AltitudeSample? {
+        if (hPa == null || atMs == null || nowMs - atMs > MAX_AGE_MS) return null
+        return AltitudeSample(meters(hPa), AltitudeSource.BARO)
+    }
+}

@@ -25,6 +25,8 @@ dependencies {
     implementation(libs.maplibre.android)
     implementation(libs.play.services.maps)
     implementation(libs.okhttp)
+    // Hava bildirimi için periyodik iş (A6.7; MAP.md 10.8).
+    implementation(libs.work.runtime)
     testImplementation(libs.junit)
     testImplementation(platform(libs.compose.bom))
     debugImplementation(platform(libs.compose.bom))

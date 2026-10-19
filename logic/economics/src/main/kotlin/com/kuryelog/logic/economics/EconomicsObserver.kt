@@ -5,6 +5,8 @@ import com.kuryelog.logic.core.Clock
 import com.kuryelog.logic.core.KuryelogPrefs
 import com.kuryelog.logic.core.LogStore
 import com.kuryelog.logic.core.OfferSummary
+import com.kuryelog.logic.core.RangeInputs
+import com.kuryelog.logic.core.RangePort
 import com.kuryelog.logic.core.ScooterBridge
 import com.kuryelog.logic.core.WeatherPort
 import com.kuryelog.logic.orders.CoreEvent
@@ -40,6 +42,10 @@ class EconomicsObserver(private val env: Env) : OrderObserver, OfferAnnotator {
         val clock: Clock
         val scooter: ScooterBridge get() = ScooterBridge.NONE
         val weather: WeatherPort get() = WeatherPort.NONE
+        /** N5 (MAP.md 10.6): batarya ve eve rota girdileri; `NONE` iken motor bugünkü gibi `BATTERY_UNKNOWN` der. */
+        val range: RangePort get() = RangePort.NONE
+        /** Şarj yeri = ev (`lat to lon`); yoksa null. */
+        fun home(): Pair<Double, Double>? = null
         /** `SystemClock.elapsedRealtimeNanos` (Android); JVM'de `System.nanoTime`. */
         fun monoNs(): Long = System.nanoTime()
     }
@@ -209,7 +215,20 @@ class EconomicsObserver(private val env: Env) : OrderObserver, OfferAnnotator {
     /** Engine context of an offer of [pkg]: `commission:<pkg>` (else the global `commission`), vehicle, mode, courier state. */
     private fun shadowContext(pkg: String, now: Long, core: DeliveryCore, open: List<OnlineSessions.Session>): ShadowEvaluator.Context =
         ShadowEvaluator.Context.of(courierState(now, core, open), commissionSet(pkg), env.prefs.getString(PREF_VEHICLE, null),
-            env.prefs.getString(ShadowEvaluator.APP_MODE_KEY, ShadowEvaluator.SHADOW))
+            env.prefs.getString(ShadowEvaluator.APP_MODE_KEY, ShadowEvaluator.SHADOW)).copy(range = rangeInputs(now))
+
+    /**
+     * N5 (A6.7): batarya ve ev rotası girdileri. Rota hesabı bekleten kancada olduğundan süreli ([RANGE_TIMEOUT_MS]); hata ya da zaman aşımı girdiyi boş bırakır.
+     * Bırakış noktası (`OfferSummary.dropoffLat/Lon`) bu kancada henüz yok → `destToChargerKm` yazılmaz (MAP.md 10.14 "bırakış yoksa N5 sessiz").
+     */
+    private fun rangeInputs(now: Long): RangeInputs? {
+        val range = env.range
+        if (range === RangePort.NONE) return null
+        val here = env.log.lastLocation?.takeIf { now - it.atMs in 0..FRESH_FIX_MS }?.let { it.lat to it.lon }
+        return runCatching {
+            runBlocking { kotlinx.coroutines.withTimeoutOrNull(RANGE_TIMEOUT_MS) { RangeInputs.of(range, env.home(), null, here) } }
+        }.getOrNull()
+    }
     private fun courierState(now: Long, core: DeliveryCore, open: List<OnlineSessions.Session>): JSONObject {
         val l = env.log.lastLocation?.takeIf { now - it.atMs in 0..FRESH_FIX_MS }
         return econ.courierState(now, core, open.map { it.pkg }, hereZone(now), l?.speedMs?.let { it * 3.6 })
@@ -258,5 +277,7 @@ class EconomicsObserver(private val env: Env) : OrderObserver, OfferAnnotator {
         const val PREF_VEHICLE = "economics.vehicle"
         const val EXPOSURE = "economics-exposure.jsonl"
         const val FRESH_FIX_MS = 120_000L
+        /** N5 rota hesabı için bekleme üst sınırı (kanca bloke olur). */
+        const val RANGE_TIMEOUT_MS = 800L
     }
 }

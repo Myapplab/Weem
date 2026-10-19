@@ -19,6 +19,8 @@ maplibre = "13.6.1"
 play-services-maps = "20.0.0"
 # MapLibre'nin kendi HTTP istemcisi (çalışma zamanında zaten var): OSM karo politikası için User-Agent.
 okhttp = "4.12.0"
+# Hava bildirimi (MAP.md 10.8): 2 saatlik periyodik iş `duzyol_weather_v1`.
+work = "2.10.1"
 
 [libraries]
 junit = { module = "junit:junit", version.ref = "junit" }
@@ -35,6 +37,7 @@ compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 maplibre-android = { module = "org.maplibre.gl:android-sdk", version.ref = "maplibre" }
 play-services-maps = { module = "com.google.android.gms:play-services-maps", version.ref = "play-services-maps" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+work-runtime = { module = "androidx.work:work-runtime", version.ref = "work" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 
 [plugins]

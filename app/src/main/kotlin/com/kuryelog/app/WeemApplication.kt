@@ -8,6 +8,8 @@ import com.kuryelog.app.core.LogImport
 import com.kuryelog.app.core.ShiftHub
 import com.kuryelog.app.core.Store
 import com.kuryelog.app.economics.Economics
+import com.kuryelog.app.map.RideRuntime
+import com.kuryelog.app.map.WeatherRuntime
 import com.kuryelog.app.orders.Orders
 import com.kuryelog.app.scooter.Scooter
 import com.kuryelog.app.scooter.ScooterShiftLink
@@ -31,6 +33,14 @@ class WeemApplication : Application() {
         Store.guarded(this, "start") { Orders.bind(this) }
         // Scooter dikişi: teklif anı pili ve sipariş başına enerji (R14); `:orders` `:scooter`'ı tanımaz, bağı burada kurulur.
         Store.guarded(this, "start") { Orders.bindScooter(this, Scooter.bridge) }
+        // Harita çalışma zamanı (A6.7): hava (Y10), hız/batarya tahmini (Y9) ve menzil (N5). Hava ve menzil köprüleri `:orders` üzerinden `:economics`'e gider
+        // (R15, N5); `:orders` ve `:economics` `:map`'i tanımaz, bağ burada kurulur. `Economics.bind`/`Orders.bind`'dan sonra: yalnız köprü alanları atanır.
+        Store.guarded(this, "start") {
+            WeatherRuntime.bind(this)
+            RideRuntime.bind(this, Scooter.bridge)
+            Orders.bindWeather(WeatherRuntime.port)
+            Orders.bindRange(RideRuntime.range)
+        }
         LogImport.afterImport = Orders::reloadImportedStats
         // Vardiya dinleyicileri, Rawstats `GpsService` sırasıyla (ORDERS.md 4.2): cep nakdi + CASH PENDING → günlük paket (R17) → şifreli
         // yedek (N3) → siparişler → scooter (A5.3). `onEnd`'de CASH PENDING sonu günlük paketten, o da siparişlerin kapanmasından önce yazılır.

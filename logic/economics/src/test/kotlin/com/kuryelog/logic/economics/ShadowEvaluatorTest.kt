@@ -240,6 +240,36 @@ class ShadowEvaluatorTest {
         dump("P01:live-label", inp, res, ShadowEvaluator.verdictShadow(res, inp, t0 + 1_000))
     }
 
+    /** WEEM N5 (MAP.md 10.6, A6.7): `RangePort` girdileri v2'nin var olan batarya kaçışı kuralını besler; girdi yoksa Rawstats'taki gibi BATTERY_UNKNOWN. */
+    @Test fun n5RangeInputsFeedTheBatteryEscapeRule() {
+        val o = offer(card("FP01", t0))
+        val ctx = ShadowEvaluator.Context(commissionPct = 20.0)
+        val (none, resNone) = eval(o, t0 + 1_500, ctx)
+        assertFalse(none.getJSONObject("state").has("scooter")); assertFalse(none.getJSONObject("state").has("hereToHomeMin")); assertFalse(none.getJSONObject("offer").has("destToChargerKm"))
+        assertTrue("BATTERY_UNKNOWN" in list(resNone.getJSONArray("flags")))
+        // Boş girdi nesnesi de aynı: hiçbir alan yazılmaz.
+        val (empty, _) = eval(o, t0 + 1_500, ctx.copy(range = RangeInputs()))
+        assertEquals(none.getJSONObject("state").toString(), empty.getJSONObject("state").toString())
+        // Taze BLE %3 ve bırakıştan eve 12 km: kaçış için yetmez → engel.
+        val low = RangeInputs(blePct = 3.0, bleAtMs = t0 + 1_000, destToChargerKm = 12.0, destToHomeMin = 40.0, hereToHomeMin = 10.0)
+        val (inpLow, resLow) = eval(o, t0 + 1_500, ctx.copy(range = low))
+        val sc = inpLow.getJSONObject("state").getJSONObject("scooter")
+        assertEquals(3.0, sc.getDouble("blePct"), 0.0); assertEquals(t0 + 1_000, sc.getLong("bleAtMs")); assertFalse(sc.has("estimatorWh"))
+        assertEquals(12.0, inpLow.getJSONObject("offer").getDouble("destToChargerKm"), 0.0); assertEquals(40.0, inpLow.getJSONObject("offer").getDouble("destToHomeMin"), 0.0)
+        assertEquals(10.0, inpLow.getJSONObject("state").getDouble("hereToHomeMin"), 0.0)
+        assertTrue("BATTERY_ESCAPE_NOT_MET" in list(resLow.getJSONArray("blocks")))
+        assertFalse("BATTERY_UNKNOWN" in list(resLow.getJSONArray("flags")))
+        // Dolu batarya ve yakın ev: engel yok.
+        val (_, resFull) = eval(o, t0 + 1_500, ctx.copy(range = RangeInputs(blePct = 100.0, bleAtMs = t0 + 1_000, destToChargerKm = 2.0, destToHomeMin = 8.0)))
+        assertFalse("BATTERY_ESCAPE_NOT_MET" in list(resFull.getJSONArray("blocks"))); assertFalse("BATTERY_UNKNOWN" in list(resFull.getJSONArray("flags")))
+        // Yalnız Y9 tahmini (Wh): aynı kural estimatorWh ile; eve mesafe yoksa CHARGER_DISTANCE_UNKNOWN.
+        val (inpEst, resEst) = eval(o, t0 + 1_500, ctx.copy(range = RangeInputs(estimatorWh = 400.0)))
+        assertEquals(400.0, inpEst.getJSONObject("state").getJSONObject("scooter").getDouble("estimatorWh"), 0.0)
+        assertTrue("CHARGER_DISTANCE_UNKNOWN" in list(resEst.getJSONArray("flags")))
+        // Konum motora girmez (yalnız km ve dakika).
+        for (secret in listOf("\"lat\"", "\"lon\"")) assertFalse(inpLow.toString().contains(secret))
+    }
+
     @Test fun unknownZonesAreLeftOutOfTheEngineInput() {
         // Bolt card: street names only, and no fresh GPS zone.
         val b = offer(card("P02", t0))
