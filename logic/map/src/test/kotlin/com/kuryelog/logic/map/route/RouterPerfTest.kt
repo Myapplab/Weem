@@ -1,9 +1,6 @@
 package com.kuryelog.logic.map.route
 
 import com.kuryelog.logic.map.geo.GeoPoint
-import com.kuryelog.logic.map.graph.GraphBuilder
-import com.kuryelog.logic.map.graph.OsmRaw
-import com.kuryelog.logic.map.graph.OsmWay
 import com.kuryelog.logic.map.graph.RoadGraph
 import java.io.File
 import java.time.Instant
@@ -24,7 +21,7 @@ class RouterPerfTest {
     @Test
     fun `sentetik ızgarada 3–8 km bacaklar süre raporu ve çekiş üst sınırı`() {
         val t0 = System.nanoTime()
-        val g = city(n, seed = 7)
+        val g = TestGraphs.gridCity(n, seed = 7)
         val buildMs = (System.nanoTime() - t0) / 1e6
         val r = Random(11)
         val legs = ArrayList<Pair<GeoPoint, GeoPoint>>()
@@ -71,7 +68,7 @@ class RouterPerfTest {
         }
         report.appendLine("en çok çekiş / düğüm: ${fmt(maxPopShare)}")
         // En kötü durumlar: kopuk adaya bacak (bağlı bileşen baştan sona taranır) ve dört duraktan biri adada plan.
-        val island = GeoPoint(LAT0 + (n * 100.0 / 2) / KY, LON0 + (n * 100.0 + 350) / KX)
+        val island = TestGraphs.gridIsland(n)
         val far = legs[1].first
         val probe = RouteProbe()
         var s = System.nanoTime()
@@ -100,64 +97,4 @@ class RouterPerfTest {
         g, mode = mode, params = RideParams(), approved = emptySet(), blocked = emptySet(), departure = Instant.EPOCH,
     )
 
-    /** Izgara şehir: satır/sütun boyunca 1–5 parçalık yollar, blok çaprazları yaya yolu, tepeler (yalnız + − × ÷). */
-    private fun city(n: Int, seed: Int): RoadGraph {
-        val r = Random(seed)
-        val raw = OsmRaw()
-        val spacing = 100.0
-        fun id(i: Int, j: Int) = (j * n + i + 1).toLong()
-        for (j in 0 until n) for (i in 0 until n) {
-            raw.addNode(id(i, j), LAT0 + (j * spacing + (r.nextDouble() - 0.5) * 30) / KY, LON0 + (i * spacing + (r.nextDouble() - 0.5) * 30) / KX)
-        }
-        var way = 1L
-        val classes = listOf("residential", "residential", "residential", "tertiary", "tertiary", "secondary", "primary", "trunk")
-        fun street(line: List<Long>) {
-            var k = 0
-            while (k < line.size - 1) {
-                if (r.nextDouble() < 0.05) {
-                    k++
-                    continue
-                }
-                val end = minOf(line.size - 1, k + 1 + r.nextInt(5))
-                val tags = HashMap<String, String>()
-                tags["highway"] = if (r.nextDouble() < 0.3) "footway" else classes[r.nextInt(classes.size)]
-                if (r.nextDouble() < 0.15) tags["oneway"] = "yes"
-                raw.addWay(OsmWay(way++, line.subList(k, end + 1).toList(), tags))
-                k = end
-            }
-        }
-        for (j in 0 until n) street((0 until n).map { id(it, j) })
-        for (i in 0 until n) street((0 until n).map { id(i, it) })
-        var extra = (n * n + 1).toLong()
-        for (j in 0 until n - 1) for (i in 0 until n - 1) {
-            if (r.nextDouble() >= 0.2) continue
-            val mid = extra++
-            raw.addNode(mid, LAT0 + ((j + 0.5) * spacing) / KY, LON0 + ((i + 0.5) * spacing) / KX)
-            raw.addWay(OsmWay(way++, listOf(id(i, j), mid, id(i + 1, j + 1)), mapOf("highway" to "footway")))
-        }
-        val size = n * spacing
-        // Kopuk ada (en kötü durum): ızgaranın 300 m doğusunda, hiçbir yola bağlı değil.
-        raw.addNode(extra, LAT0 + (size / 2) / KY, LON0 + (size + 300) / KX)
-        raw.addNode(extra + 1, LAT0 + (size / 2) / KY, LON0 + (size + 400) / KX)
-        raw.addWay(OsmWay(way++, listOf(extra, extra + 1), mapOf("highway" to "residential")))
-        val bumps = List(maxOf(4, n / 10)) { doubleArrayOf(r.nextDouble() * size, r.nextDouble() * size, r.nextDouble() * 60 - 15, 200 + r.nextDouble() * 600) }
-        return GraphBuilder.buildRoadGraph(raw) { la, lo ->
-            val x = (lo - LON0) * KX
-            val y = (la - LAT0) * KY
-            var e = 0.0
-            for (b in bumps) {
-                val dx = x - b[0]
-                val dy = y - b[1]
-                e += b[2] / (1 + (dx * dx + dy * dy) / (b[3] * b[3]))
-            }
-            e
-        }
-    }
-
-    private companion object {
-        const val LAT0 = 40.30
-        const val LON0 = 49.60
-        const val KX = 84822.0
-        const val KY = 111320.0
-    }
 }

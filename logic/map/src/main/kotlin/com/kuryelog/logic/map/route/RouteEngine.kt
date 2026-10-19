@@ -5,13 +5,12 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.job
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Arka plan rota motoru — YolGo `RouteWorker` (izole işçi) karşılığı (MAP.md 3.11). Graf paylaşılan değişmez nesnedir (kopya yok);
@@ -52,10 +51,11 @@ class RouteEngine(val timeoutMs: Long = 25_000, dispatcher: CoroutineDispatcher 
             Planner.computePlans(request, RouteProbe { job.ensureActive() })
         }
         try {
-            return withTimeout(timeoutMs) { task.await() }
-        } catch (e: TimeoutCancellationException) {
-            task.cancel()
-            throw RouteTimeout()
+            // Yalnız bu motorun süresi RouteTimeout olur; çağıranın kendi zaman aşımı ya da iptali olduğu gibi geçer.
+            return withTimeoutOrNull(timeoutMs) { task.await() } ?: run {
+                task.cancel()
+                throw RouteTimeout()
+            }
         } catch (e: CancellationException) {
             task.cancel()
             // Çağıran iptal edilmediyse işçi durduruldu: çökme ya da kapatma.

@@ -245,4 +245,73 @@ object TestGraphs {
         raw.addWay(OsmWay(102, listOf(1, 4), mapOf("highway" to "residential", "name" to "Yan küçə")))
         return flat(raw)
     }
+
+    // ---- Büyük ızgara şehir (A6.4: RouterPerfTest, RouteEngineTest zaman aşımı) ----
+
+    private const val GRID_LAT0 = 40.30
+    private const val GRID_LON0 = 49.60
+    private const val GRID_KX = 84822.0
+    private const val GRID_KY = 111320.0
+    private const val GRID_M = 100.0
+
+    /** [gridCity]'nin kopuk adası: ızgaranın 300–400 m doğusunda, hiçbir yola bağlı değil (erişilemeyen hedef). */
+    fun gridIsland(n: Int) = GeoPoint(GRID_LAT0 + (n * GRID_M / 2) / GRID_KY, GRID_LON0 + (n * GRID_M + 350) / GRID_KX)
+
+    /**
+     * Izgara şehir (n × n düğüm, 100 m, ±15 m sapma): satır/sütun boyunca 1–5 parçalık yollar (%30 yaya, %15 tek yön, sınıflar
+     * residential…trunk), blok çaprazları yaya yolu, kopuk ada ([gridIsland]), tepeler (yalnız + − × ÷).
+     */
+    fun gridCity(n: Int, seed: Int): RoadGraph {
+        val r = kotlin.random.Random(seed)
+        val raw = OsmRaw()
+        fun id(i: Int, j: Int) = (j * n + i + 1).toLong()
+        for (j in 0 until n) for (i in 0 until n) {
+            raw.addNode(
+                id(i, j), GRID_LAT0 + (j * GRID_M + (r.nextDouble() - 0.5) * 30) / GRID_KY,
+                GRID_LON0 + (i * GRID_M + (r.nextDouble() - 0.5) * 30) / GRID_KX,
+            )
+        }
+        var way = 1L
+        val classes = listOf("residential", "residential", "residential", "tertiary", "tertiary", "secondary", "primary", "trunk")
+        fun street(line: List<Long>) {
+            var k = 0
+            while (k < line.size - 1) {
+                if (r.nextDouble() < 0.05) {
+                    k++
+                    continue
+                }
+                val end = minOf(line.size - 1, k + 1 + r.nextInt(5))
+                val tags = HashMap<String, String>()
+                tags["highway"] = if (r.nextDouble() < 0.3) "footway" else classes[r.nextInt(classes.size)]
+                if (r.nextDouble() < 0.15) tags["oneway"] = "yes"
+                raw.addWay(OsmWay(way++, line.subList(k, end + 1).toList(), tags))
+                k = end
+            }
+        }
+        for (j in 0 until n) street((0 until n).map { id(it, j) })
+        for (i in 0 until n) street((0 until n).map { id(i, it) })
+        var extra = (n * n + 1).toLong()
+        for (j in 0 until n - 1) for (i in 0 until n - 1) {
+            if (r.nextDouble() >= 0.2) continue
+            val mid = extra++
+            raw.addNode(mid, GRID_LAT0 + ((j + 0.5) * GRID_M) / GRID_KY, GRID_LON0 + ((i + 0.5) * GRID_M) / GRID_KX)
+            raw.addWay(OsmWay(way++, listOf(id(i, j), mid, id(i + 1, j + 1)), mapOf("highway" to "footway")))
+        }
+        val size = n * GRID_M
+        raw.addNode(extra, GRID_LAT0 + (size / 2) / GRID_KY, GRID_LON0 + (size + 300) / GRID_KX)
+        raw.addNode(extra + 1, GRID_LAT0 + (size / 2) / GRID_KY, GRID_LON0 + (size + 400) / GRID_KX)
+        raw.addWay(OsmWay(way++, listOf(extra, extra + 1), mapOf("highway" to "residential")))
+        val bumps = List(maxOf(4, n / 10)) { doubleArrayOf(r.nextDouble() * size, r.nextDouble() * size, r.nextDouble() * 60 - 15, 200 + r.nextDouble() * 600) }
+        return GraphBuilder.buildRoadGraph(raw) { la, lo ->
+            val x = (lo - GRID_LON0) * GRID_KX
+            val y = (la - GRID_LAT0) * GRID_KY
+            var e = 0.0
+            for (b in bumps) {
+                val dx = x - b[0]
+                val dy = y - b[1]
+                e += b[2] / (1 + (dx * dx + dy * dy) / (b[3] * b[3]))
+            }
+            e
+        }
+    }
 }
