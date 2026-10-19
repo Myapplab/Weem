@@ -154,8 +154,8 @@ class AddressParserTest {
         assertEquals("Nizami küçəsi 5, а, Bakı", (parse("Nizami küçəsi 5, а0501234567") as Address).query)
         assertEquals("Mənzil 45", (parse("Nizami küçəsi 5, MƏNZİL 45") as Address).unitNote)
         assertEquals("Mənzil 12", (parse("Nizami küçəsi 5, КВ. 12") as Address).unitNote)
-        // Kotlin `İ`'yi `i` sayar (Azerice doğru): "BAKİ" şehir sayılır, ", Bakı" eklenmez
-        assertEquals("Nizami küçəsi 5, BAKİ", (parse("Nizami küçəsi 5, BAKİ") as Address).query)
+        // `İ → i` bütün metne uygulandığından "BAKİ" → "BAKi" şehir sayılır, ", Bakı" eklenmez (Dart'la aynı; MAP.md 8.13 F-N2 notu düzeltildi)
+        assertEquals("Nizami küçəsi 5, BAKi", (parse("Nizami küçəsi 5, BAKİ") as Address).query)
         // Bozuk yüzde kodlaması istisna atmaz
         assertNull(AddressParser.coordsFromUri(LinkUri.tryParse("https://www.google.com/maps?q=%E0%A4")!!))
     }
