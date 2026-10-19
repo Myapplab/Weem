@@ -28,7 +28,7 @@ class PushSegmentsTest {
         val walked = leg.segs.filter { it.walk }
         assertEquals(1, walked.size)
         assertEquals(300.0, walked.single().startM, 3.0)
-        assertTrue(leg.warnings.any { it.startsWith("Rotada yaklaşık 60 m yaya yolu") })
+        assertTrue(leg.warnings.any { it.tr.startsWith("Rotada yaklaşık 60 m yaya yolu") })
         assertTrue(leg.energyWh > 0)
     }
 

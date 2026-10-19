@@ -21,7 +21,7 @@ class StartWalkOutTest {
         assertEquals(400.0, leg.rideM, 5.0)
         assertEquals(TestGraphs.lat(0.0), leg.startWalk.first().lat, 1e-9)
         assertEquals(TestGraphs.lat(250.0), leg.startWalk.last().lat, 1e-6)
-        assertEquals("Önce yaya yolundan en yakın sürülebilir yola yürü", leg.warnings.first())
+        assertEquals("Önce yaya yolundan en yakın sürülebilir yola yürü", leg.warnings.first().tr)
     }
 
     @Test
