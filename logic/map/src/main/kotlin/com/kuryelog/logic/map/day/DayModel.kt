@@ -89,11 +89,20 @@ class OrderRec(val n: Int, val startedAtMs: Long) {
     var customerTarget: GeoPoint? = null
     var restName = ""
 
-    val phase: OrderPhase get() = TODO("A6.8")
+    val phase: OrderPhase
+        get() = when {
+            custArrivedAtMs != null -> OrderPhase.AT_CUSTOMER
+            restLeftAtMs != null -> if (customerDepartedAtMs == null) OrderPhase.READY_FOR_CUSTOMER else OrderPhase.TO_CUSTOMER
+            restArrivedAtMs != null -> OrderPhase.AT_RESTAURANT
+            else -> OrderPhase.TO_RESTAURANT
+        }
 
     /** Bekleme süreleri (sn): varış ya da çıkış görülmediyse null (uydurulmaz). */
-    val restWaitS: Int? get() = TODO("A6.8")
-    val custWaitS: Int? get() = TODO("A6.8")
+    val restWaitS: Int? get() = secs(restArrivedAtMs, restLeftAtMs)
+    val custWaitS: Int? get() = secs(custArrivedAtMs, deliveredAtMs)
+    val totalS: Int? get() = secs(startedAtMs, deliveredAtMs ?: endedAtMs)
+
+    private fun secs(from: Long?, to: Long?): Int? = if (from == null || to == null) null else ((to - from) / 1000).toInt()
 
     fun toJson(): JSONObject = TODO("A6.8")
 
@@ -117,6 +126,8 @@ class DayState {
     var movingS = 0.0
     val stops = ArrayList<StopRec>()
     val orders = ArrayList<OrderRec>()
+    /** 1.10.0 öncesi ikinci sipariş (MAP.md 11.5): motor üretmez, yalnız okur. */
+    val queuedOrders = ArrayList<OrderRec>()
     var current: OrderRec? = null
     var phase = OrderPhase.NONE
     var delivered = 0
@@ -126,6 +137,13 @@ class DayState {
     var homeTimeS = 0.0
     var startReason: String? = null
     var endReason: String? = null
+
+    /** Yeni gün için boş durum (Dart `startDay` yeni `ShiftState` kurar; burada nesne korunur). */
+    fun reset() {
+        active = false; startedAtMs = null; endedAtMs = null; distM = 0.0; movingS = 0.0
+        stops.clear(); orders.clear(); queuedOrders.clear(); current = null; phase = OrderPhase.NONE; delivered = 0
+        homeReturnAtMs = null; homeStartM = 0.0; homeDistM = 0.0; homeTimeS = 0.0; startReason = null; endReason = null
+    }
 
     /** Gün sonunda sorulacak adaylar (`light?` ve cevapsız) ve ışık sayılanlar. */
     val lightCandidates: List<StopRec> get() = TODO("A6.8")
