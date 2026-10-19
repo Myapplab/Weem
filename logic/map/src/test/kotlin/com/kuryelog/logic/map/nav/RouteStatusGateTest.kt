@@ -45,9 +45,10 @@ class RouteStatusGateTest {
         val raw = status.toJson().toString()
         assertTrue(raw.length <= RouteStatus.FEED_MAX_CHARS)
         val j = status.toJson()
-        assertEquals(listOf("schemaVersion", "target", "route", "updatedAtMs"), j.keys().asSequence().toList())
-        assertEquals(listOf("lat", "lon", "kind", "origin", "requestedAtMs", "sourcePackage"), j.getJSONObject("target").keys().asSequence().toList())
-        assertEquals(listOf("remainingM", "remainingTurns", "measuredAtMs"), j.getJSONObject("route").keys().asSequence().toList())
+        // Anahtar kümesi (sıra değil): JVM `org.json` sırayı tutmaz (HashMap), Android'inki tutar; okuyucular ada göre okur.
+        assertEquals(setOf("schemaVersion", "target", "route", "updatedAtMs"), j.keys().asSequence().toSet())
+        assertEquals(setOf("lat", "lon", "kind", "origin", "requestedAtMs", "sourcePackage"), j.getJSONObject("target").keys().asSequence().toSet())
+        assertEquals(setOf("remainingM", "remainingTurns", "measuredAtMs"), j.getJSONObject("route").keys().asSequence().toSet())
         assertEquals(t0 + 9_000, j.getLong("updatedAtMs"))
         val none = RouteStatusBuilder.status(null, null, t0).toJson()
         assertTrue(none.isNull("target"))
