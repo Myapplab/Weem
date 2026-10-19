@@ -22,6 +22,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.SaveableStateHolder
@@ -39,6 +40,7 @@ import com.kuryelog.app.map.MapScreen
 import com.kuryelog.app.map.MapSettingsScreen
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.app.Tab
+import com.kuryelog.app.map.NavRuntime
 import com.kuryelog.logic.app.Text as Str
 import com.kuryelog.logic.app.ThemeMode
 import com.kuryelog.logic.app.label
@@ -69,6 +71,9 @@ fun WeemApp(
     // A5.4: yüzen panelden açma isteği Scooter sekmesine götürür; PiP penceresinde yalnız küçük ızgara; tam ekranda alt menü yok.
     val openScooter = ScooterNav.open
     LaunchedEffect(openScooter) { if (openScooter != null) selectedKey = Tab.SCOOTER.key }
+    // Gelen navigasyon bağlantısı harita sekmesini açar (Y5).
+    val openMap by NavRuntime.get(ctx).openMap.collectAsState()
+    LaunchedEffect(openMap) { if (openMap > 0) selectedKey = Tab.MAP.key }
     var scooterImmersive by remember { mutableStateOf(false) }
     if (ScooterNav.pip) {
         GuardedPage("scooter_pip", lang, build = {}) { ScooterPip(lang, dark) }

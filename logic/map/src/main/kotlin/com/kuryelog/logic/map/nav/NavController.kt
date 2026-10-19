@@ -201,6 +201,9 @@ class NavController(
         publish()
     }
 
+    /** Son taze konum (≤30 sn, doğruluk ≤65 m): arama yakınlığı, geokod yönü. */
+    fun here(): GeoPoint? = synchronized(lock) { lastPoint() }
+
     /** Son oturtulan kenar (uzun basış, Ses± sokak kararları). */
     val match: MatchInfo? get() = synchronized(lock) { matcher?.current }
 
