@@ -1,6 +1,6 @@
 # Veri sözleşmesi — WEEM'in koruyacağı adlar ve biçimler
 
-Durum: A0.1, 17 Ekim 2026; A3.1 notları 7.1'de; A5.1 (scooter) notları 5.2, 5.3, 7.2'de. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c04` (kısaltma **RS** = `app/src/main/java/com/kuryelog/app/`, **NB** = `ninebot-logger/app/src/main/java/az/ninebot/logger/`) ve `yolgo-test` @ `870ab6e` (**YG**). Kural: plan Bölüm 2. Bu belgedeki bir adı değiştirmek kullanıcı kararıdır.
+Durum: A0.1, 17 Ekim 2026; A3.1 notları 7.1'de; A5.1 (scooter) notları 5.2, 5.3, 7.2'de; A6.1 (harita) notları 5.4, 5.5, 7.3, 7.5, 8.2'de (`MAP.md` 14). Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c04` (kısaltma **RS** = `app/src/main/java/com/kuryelog/app/`, **NB** = `ninebot-logger/app/src/main/java/az/ninebot/logger/`) ve `yolgo-test` @ `870ab6e` (**YG**). Kural: plan Bölüm 2. Bu belgedeki bir adı değiştirmek kullanıcı kararıdır.
 
 Sütun **WEEM**: `aynı` = harfiyen korunur · `oku` = WEEM eski veriyi okur (ilk açılış/içe aktarma), yeni yazım aynı biçimde · `içe aktar` = YolGo'dan dışa aktarma → WEEM'e alma (Aşama 7) · `kalkar` = tek uygulamada gereksiz (S7, plan Bölüm 8) · `yeni` = WEEM'de eklenir.
 
@@ -164,9 +164,15 @@ Anahtarların anlamı WEEM `:map` ayarları için başvurudur; değerler WEEM'de
 | `map.bundled.<region>`, `map.bundledAt`, `clipboard.lastHash` | önbellek | hayır |
 | `roads.ways.v1`, `roads.ww.v1`, `roads.ghost.v1`, `roads.wwseg.v1`, `roads.rate.v1`, `roads.names.v1`, `roads.days.v2`, `roads.days.damaged.v2`, `surface.*` | Y12/Y13 verisi | aktarılmaz; Y12 WEEM'de sıfırdan öğrenir (S3, A6.11); Y13 sonra |
 
-YG native: `duzyol_weather` (enabled, az, key, report, fetched, lat, lon, locationAt), `offer_dataset_v1` (region, active), `road_calibration_overlay_v1` — WEEM'de karşılığı `:map` ayarları.
+YG native: `duzyol_weather` (enabled, az, key, report, fetched, lat, lon, locationAt), `offer_dataset_v1` (region, active), `yolgo_runtime_v2` (`TelemetryService` durumu: day, leg, eligible, paused, rawDebug, calibrationLabel, profile, boot), `road_calibration_overlay_v1`. WEEM: `duzyol_weather`'ın karşılığı `map` dosyası + `files/map/weather.json` (`MAP.md` 10.11); `offer_dataset_v1` ve `yolgo_runtime_v2` yazılmaz (servisleri yok, `MAP.md` 12.11, 13.11); `road_calibration_overlay_v1` Y14 ile sonra; ayrı yerel tercih dosyası açılmaz.
+
+YolGo göç işaretleri (`settings.v1` alanları `lightMaxMv2`, `lightMaxMv3`, `mapDesignV1`; anahtarlar `streets.blocked.legacy.v1`, `streets.blocked.migrated.v2`) WEEM'de yazılmaz (S1: göç edilecek eski veri yok; `MAP.md` 14.2–14.3).
 
 **Önemli:** YolGo'da bu tercihleri ve `lights.v1`, POI düzeltmeleri, görevler, Y12 verisi için **dışa aktarma yolu yok** (`RideLogStore.export` yalnız `logs/` dosyalarını `duzyol-journal-v1` biçiminde paylaşır). Karar (S1, 17 Ekim): eski YolGo'ya ek yapılmaz; bunlar WEEM'de yeniden girilir ya da yeniden öğrenilir.
+
+### 5.5 WEEM harita — dosya **`map`** — WEEM: **yeni** (Aşama 6; `MAP.md` 14.1–14.3)
+
+5.4'teki YolGo anahtarlarının WEEM'deki yeri: aynı ad ve biçim, **`flutter.` öneki olmadan** (`settings.v1` alan tablosu `MAP.md` 14.2, öteki anahtarlar 14.3); tip eşlemesi `MAP.md` 14.1 (double → `putString`, `List<String>` → JSON dizi dizgesi, int → `putLong`). Boş başlar (S1). İstisnalar: dil, tema ve ev `kuryelog`'da (5.1: `lang`, `theme`, `home.lat`/`home.lon`); `day.home.v1` ve `rawstats.*` yazılmaz (ev kuralı `:core`'da; `rawstats.*` yerine yeni `day.shift.handled.v1`); Y12 `roads.*` tercihlerde değil, `files/map/roads/`'ta (7.5); göç işaretleri yazılmaz (5.4). Sırlar (`googleKey`, `orsKey`, `cartoKey`, `weather.key.v1`) hiçbir kayda, dışa aktarmaya ve yedeğe yazılmaz (`MAP.md` 14.10). Haftalık şifreli yedeğe (S22) bugün girmez (soru `MAP.md` 17.1 #15).
 
 ## 6. Veritabanları
 
@@ -215,10 +221,10 @@ Dışa aktarma ZIP'i `NinebotLogger-<ms>.zip`: `manifest.json` (`schema` 1, `app
 
 | Yol | İçerik | WEEM |
 |---|---|---|
-| `app_flutter/logs/YYYY-MM-DD.jsonl`, `…_ride_<ms>.jsonl`, `…[_HHMM].gun.json`, `…_route_<ms>.json` | gün günlüğü, sürüş, gün raporu, rota kaydı (Y17, Y18) | içe aktar (dışa aktarma biçimi `duzyol-journal-v1` var) |
-| `files/mapdata/graph_<region>.bin`, `pois_<region>.json`, `dem/N40E049.hgt`, `dem/N40E050.hgt`, `parts_graph_<region>/` | harita verisi (Y7) | yeniden üret (CI `ci/osm_extract.py` + Overpass) |
-| `files/telemetry-v2.jsonl` (≤3000 satır) | yerel telemetri | hayır |
-| `app_flutter/TeklifVeriSeti/<gün>/…` | veri seti (Y19) | hayır (S1: dışa aktarma yolu yok); WEEM'de yeni veri seti |
+| `app_flutter/logs/YYYY-MM-DD.jsonl`, `…_ride_<ms>.jsonl`, `…[_HHMM].gun.json`, `…_route_<ms>.json` | gün günlüğü, sürüş, gün raporu, rota kaydı (Y17, Y18) | içe aktar (A7.1; dışa aktarma biçimi `duzyol-journal-v1` var); WEEM yolu `files/map/logs/`, aynı adlar ve biçimler (7.5) |
+| `files/mapdata/graph_<region>.bin`, `pois_<region>.json`, `dem/N40E049.hgt`, `dem/N40E050.hgt`, `parts_graph_<region>/` | harita verisi (Y7) | yeniden üret (CI `ci/osm_extract.py` + Overpass); WEEM'de aynı yol ve biçim (`MAP.md` 2.12) |
+| `files/telemetry-v2.jsonl` (≤3000 satır) | yerel telemetri | hayır (Y13 ile gelir; `MAP.md` 12.11) |
+| `app_flutter/TeklifVeriSeti/<gün>/…` | veri seti (Y19) | hayır (S1: dışa aktarma yolu yok); WEEM'de yeni veri seti `files/TeklifVeriSeti/` (7.5) |
 | `files/surface-v2/…`, `files/surface-raw-v2/…`, `files/road-calibration-v1/<id>.json` | Y13/Y14 | sonra |
 
 ### 7.4 WEEM 2 telefon kuyruğu `files/link/` — WEEM: **yeni** (A8.2, `LINK.md` 3.7–3.8, 3.12)
@@ -230,6 +236,18 @@ Dışa aktarma ZIP'i `NinebotLogger-<ms>.zip`: `manifest.json` (`schema` 1, `app
 | `files/link/seen` | işlenmiş teslim zorunlu `id`'ler (ikili: `id` 16 · tutulma sonu ms i64; en çok 4 096) |
 
 Uygulamanın özel deposunda, ek şifresiz (öteki kayıtlar gibi); yedeğe ve dışa aktarmaya girmez; eşleşme değişince ya da kaldırılınca silinir.
+
+### 7.5 WEEM harita dosyaları `files/map/` ve teklif veri seti `files/TeklifVeriSeti/` — WEEM: **yeni** (Aşama 6; `MAP.md` 14.1, 14.4)
+
+| Yol | İçerik | Ayrıntı |
+|---|---|---|
+| `files/map/roads/<anahtar>.json` | Y12 yol bilgisi (YolGo'da `roads.*` tercihleri; birebir JSON, sıfırdan öğrenilir, S3) | `MAP.md` 9.10 |
+| `files/map/manual-marks.json` | elle kötü noktalar (YolGo `files/surface-v2/manual-marks.json` biçimi; SORU-Q1) | `MAP.md` 9.10 |
+| `files/map/weather.json` | hava önbelleği (öneri; YolGo `duzyol_weather` → `report`) | `MAP.md` 10.11 |
+| `files/map/logs/` | sürüş günlüğü `YYYY-MM-DD.jsonl`, sürüşler `…_ride_<ms>.jsonl`, gün raporu `…_HHMM.gun.json` (eski `….gun.json` okunur), rota kaydı `…_route_<ms>.json` (`duzyol-route-v1`); adlar ve biçimler 7.3 ile aynı; dışa aktarma `duzyol-journal-v1` | `MAP.md` 12.2–12.6 |
+| `files/TeklifVeriSeti/<gün>/…`, ZIP `WEEM_teklif_<klasör>.zip` | teklif veri seti (`:orders`; `yolgo-poll.jsonl` hariç YolGo ile aynı dosyalar; ZIP adı metin onayı M-13-1) | `MAP.md` 13.2, 13.7, 13.11 |
+
+Tam dosya yazımı `.tmp` + `rename`, ekleme dosyaları ekleme kipinde; okunamayan JSON silinmez, `<ad>.damaged-<ms>` olarak saklanır (`MAP.md` 14.4). Android yedeğine (1) ve haftalık şifreli yedeğe (S22) bugün girmez (soru `MAP.md` 17.1 #15).
 
 ## 8. Bildirim kanalları ve numaraları
 
@@ -253,7 +271,7 @@ Uygulamanın özel deposunda, ek şifresiz (öteki kayıtlar gibi); yedeğe ve d
 
 ### 8.2 WEEM kuralı (A2.4)
 
-Tek tablo `:core` `NotificationIds` (tam tablo `CORE.md` 3.3): her bildirim sabit numara ya da ayrılmış, çakışmayan aralık; test çakışmayı reddeder. Eski numaralar korunur; iki değişiklik: ekran okuma uyarısı **5103 → 5104** (5103 H4 vardiya kesintisinde kalır), nakit bahşiş **4000 + (h & 0xFFF) → 10000 + (h & 0xFFF)** (10000–14095). 7400 (YolGo gün kaydı servisi) kullanılmaz: vardiya servisiyle (1) birleşir. Gün sonu iptali aralık değil açık liste. Kanal kimlikleri aynı kalır (kullanıcının kanal ayarları kanal kimliğine bağlı); yeni kanallar `yeni`.
+Tek tablo `:core` `NotificationIds` (tam tablo `CORE.md` 3.3): her bildirim sabit numara ya da ayrılmış, çakışmayan aralık; test çakışmayı reddeder. Eski numaralar korunur; iki değişiklik: ekran okuma uyarısı **5103 → 5104** (5103 H4 vardiya kesintisinde kalır), nakit bahşiş **4000 + (h & 0xFFF) → 10000 + (h & 0xFFF)** (10000–14095). 7400 (YolGo gün kaydı servisi) kullanılmaz: vardiya servisiyle (1) birleşir. 7401 (YolGo veri seti servisi, `DATASET_FGS`) de kullanılmaz: veri seti `:orders`'ın teklif akışında, servissiz (A6.1; `MAP.md` 13.11). Aşama 6 numaraları ve kanalları `MAP.md` 14.6 (öneri: 7402 `NAV_ONLY_FGS`, kanal `navigation`, SORU-N4). Gün sonu iptali aralık değil açık liste. Kanal kimlikleri aynı kalır (kullanıcının kanal ayarları kanal kimliğine bağlı); yeni kanallar `yeni`.
 
 ## 9. Gizlilik sınırı (WEEM'de korunur)
 

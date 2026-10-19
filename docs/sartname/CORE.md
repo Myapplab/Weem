@@ -240,11 +240,13 @@ YolGo evi Rawstats'tan okur (`SHARE_HOME`, istek 703, 20 sn zaman aşımı, 6 sa
 | 7100–7102 | `REMINDER(kind)` = 7100 + `water/check/food` sırası | `hatirlatici` | HIGH, titreşim | 30 sn | `:map`/Y20 · A6 |
 | 7201 | `TASK_NEARBY` | `hatirlatici` | HIGH | 30 sn | `:map`/Y20 · A6 |
 | 7301 | `WEATHER` | `duzyol_weather` | DEFAULT | 30 sn; günde bir | `:map`/Y10 · A6 |
-| 7401 | `DATASET_FGS` | `yolgo_offer_dataset` | LOW | ongoing | `:map`/Y19 · A6 |
+| 7401 | `DATASET_FGS` (**kullanılmaz**, A6.1) | `yolgo_offer_dataset` | — | — | yok (aşağıda) |
 | 7435 | `CALIBRATION_FGS` | `yolgo_calibration` | LOW | ongoing | Y14 · sonra |
 | **10000–14095** | `CASH_TIP(tripId)` = 10000 + (`tripId.hashCode() and 0xFFF`) (**eskiden 4000+**) | `cash_tips` | HIGH | onay 15 sn | `:orders` · A3 |
 
 - **7400 kullanılmaz:** YolGo'nun gün kaydı servisi (`yolgo_recording`) vardiya servisiyle birleşir (1 numara). `SHIFT_END_CANCEL = {12, 7100, 7101, 7102, 7201, 7301}`.
+- **7401 kullanılmaz** (A6.1; `MAP.md` 13.11, 14.6): YolGo'nun ayrı veri seti servisi yazılmaz; teklif veri seti `:orders`'ın teklif akışında kaydedilir, süreci vardiya servisi (1) ayakta tutar. `DATASET_FGS` sabiti A6.9'da `NotificationIds`'ten kalkar; numara başka bildirime verilmez.
+- **7402 öneri** (SORU-N4; `MAP.md` 7.12, 7.17): gün bitince rota açıksa yalnız-navigasyon için `NAV_ONLY_FGS` + yeni kanal `navigation` ("WEEM navigasyon" / "WEEM naviqasiya"); kullanıcı onaylarsa A6.6'da eklenir, vardiya sonu iptal listesine girmez.
 - Numara değişiklikleri (5103→5104, 4000+→10000+) kullanıcıya görünmez: bildirim numarası yalnız sürecin çalışma anında anlamlı; kanal kimlikleri ve ayarları değişmez.
 - Test (`NotificationIdsTest`, yeni): her sabit ve aralık ayrık; aralık formülünün her girdi için aralık içinde kalması (`and 0xFFF`); `SHIFT_END_CANCEL` tabloda; kaynakta (`app/`, modüller) `notify(`/`cancel(` çağrısına düz sayı yazılmaz (yalnız `NotificationIds`).
 - Kanal adları iki dilli (`Text` tablosu, A1.3); YolGo'da kanal adı yalnız Türkçe olanlar ("Hatırlatıcılar", veri seti) WEEM'de TR/AZ olur.
@@ -357,7 +359,7 @@ Aşama 2 toplamı: 79 test (+ yeni `guarded`, `NotificationIdsTest`, `ShiftMachi
 | `shift_engine_test` (9) | **`:map`'e** (YolGo gün motoru: km, duruş, ışık, sipariş aşaması; Y11/Y17/Y18) | A6 |
 | `native_telemetry_test` (1) | **çevrilmez** (Flutter kanal yarışı); ilkesi `ShiftMachine` testinde: kapanmış vardiyaya geç gelen eski başlatma/yapılandırma isteği vardiyayı açmaz | A2.4 |
 | `NotifyPolicyTest` (2, Kotlin) | saf aynen | A2.2 → A2.4 |
-| `TelemetryJournalTest` (8, Kotlin) | **`:map`'e** (YolGo yerel servis → Flutter tamponu; WEEM'de köprü yok; Y18 kayıt yazıcısı aynı sınırlı günlüğü kullanırsa çevrilir, A6.1 karar verir) | A6 |
+| `TelemetryJournalTest` (8, Kotlin) | **sonra (Y13)** — A6.1 kararı (`MAP.md` 12.11): `telemetry-v2.jsonl`'ın tek kullanıcısı Y13; Y18 sürüş kayıtları bu günlüğü kullanmaz; WEEM'de yerel telemetri servisi ve köprü yok | Y13 |
 | `rawstats_home_sync_test` (13), `rawstats_home_stale_test` (6) | **çevrilmez** (tek ev, S7; korunacak tek ilke "başarısız okuma evi silmez" `HomeRepositoryTest.invalidSaveDoesNotEraseAValidHome`'da) | — |
 | `HomePickContractTest` (6, Rawstats, uyarlanır) | saf `HomePickResult.parse(ok, lat: Any?, lon: Any?)`: yalnız `Double`, sayıya/dizgiye zorlama yok, sonlu ve aralıkta, 0 ve sınırlar geçerli, iptal hiçbir şey seçmez; sonuç doğruluğu bilinmeyen taslak. `:map` seçicisi (A6) bunu kullanır | A2.2 → A2.4 |
 

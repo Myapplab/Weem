@@ -573,7 +573,7 @@ Her kalıcı değişiklikten sonra rota açıksa `replan(reason: 'prefs')` (Böl
 | YT `street_prefs_migration_test` | 1 | eski bütün-cadde yasakları bir kez yedeğe taşınır, yeni kapatmalar kalır, diğer listelere dokunulmaz | — | **çevrilmez** (öneri) | S1: WEEM'de eski Ses− kara listesi olamaz, göç yazılmaz; koordinatör onayı (4.8) |
 | YT `router_test` (onay, ana cadde, kara liste, aşırı eğim ×2, saat izni) | 6 | Bölüm 3.14 | `route.RouterTest` | A6.2a → A6.4 | — |
 | YT `ww_clean_run_test`, `ww_no_problem_green_test` | 5 + 5 | "Sorun yok"/Ses− geçiş kararları → onay | Bölüm 9 | A6.2a → A6.11 | ajan Q |
-| **Yeni** | — | `StreetPrefsTest`: işlem tablosu (4.2) satır satır; kodek: bozuk id, `|` konumu 0, 2 alanlı saat, geçersiz saat atlanır; yazma sırası; geri al öncesi durumu aynen kurar | `route.StreetPrefsTest` | A6.2a → A6.4 | eski testi olmayan davranış (karakterizasyon) |
+| **Yeni** | — | `StreetPrefsTest`: işlem tablosu (4.2) satır satır; kodek: bozuk id, `\|` konumu 0, 2 alanlı saat, geçersiz saat atlanır; yazma sırası; geri al öncesi durumu aynen kurar | `route.StreetPrefsTest` | A6.2a → A6.4 | eski testi olmayan davranış (karakterizasyon) |
 
 ### 4.7 WEEM yerleşimi
 
@@ -615,10 +615,10 @@ Kaynak: Y15 `lib/routing/bikeways.dart` 1–67, `lib/ui/bikeway_layer.dart` 1–
 
 | Grup | Sayı | Neyi doğrular | WEEM hedefi | Görev |
 |---|---:|---|---|---|
-| E13 etiketler | 3 | 12 etiket bileşimi (döngüyle) bayrak yazar; 8 bileşim yazmaz; `footway+bicycle=designated+oneway=yes` → `bikeOk|onewayFwd|bikeway`; Overpass sorgusu `cycleway` içerir + `out body`, ham JSON etiketi grafa ulaşır | `graph.BikewayTagsTest` | A6.2a → A6.3 |
+| E13 etiketler | 3 | 12 etiket bileşimi (döngüyle) bayrak yazar; 8 bileşim yazmaz; `footway+bicycle=designated+oneway=yes` → `bikeOk\|onewayFwd\|bikeway`; Overpass sorgusu `cycleway` içerir + `out body`, ham JSON etiketi grafa ulaşır | `graph.BikewayTagsTest` | A6.2a → A6.3 |
 | E13 harita dosyası | 2 | yeni graf bisiklet bilgisini taşır, kaydet/oku aynı, uyarı yok; başlık ofset 36 = 0 → okunur, `hasBikewayData` false, uyarı TR "İndir / güncelle" ve AZ "Yüklə / yenilə" içerir; sürüm (ofset 4) 1 → `FormatException` | `graph.RoadGraphFileTest` | A6.2a → A6.3 |
 | E13 rota | 6 | `cycleway:right=lane` kenarı maliyet ×0.85, süre/Wh aynı; `cycleway=right` bisiklet değil; çarpan 1.0 etkisiz, 0.6 ×0.6; elle işaret (`{500}`) ×0.85, başka way etkisiz; bisiklet şeridi ve elle işaret ters yönü açmaz, onaylı ters yön indirimsiz, ana caddede onay açmaz; 40 m uzun bisiklet yolu ×0.85'te seçilir (480), ×0.95 ve ×1.00'da seçilmez (440), elle işaretle seçilir; motor elle işareti taşır; `heuristicScale` 1.0 / 0.85 / elle 0.85 / çarpan 1.0 iken 1.0 | `route.BikewayCostTest`, `route.RouteEngineTest` | A6.2a → A6.4 |
-| E13 ayarlar, elle işaret | 2 | varsayılan 85 ve katman açık; eski ayar dosyası (`qualityTolerancePct 12`, `turnPenaltyS 8`) okunur ve yeni alanlar varsayılan; gidiş-dönüş 70/false; 20 → 0.5, 140 → 1.0; `withMaxGrade` çarpanı korur; işaret kalıcı (`"401|Test küçəsi"`, `"402|"`), yeniden açılışta okunur, kaldırma yazılır, `streets.approved` değişmez | `settings.MapSettingsTest`, `route.BikewayMarksTest` | A6.2a → A6.8 |
+| E13 ayarlar, elle işaret | 2 | varsayılan 85 ve katman açık; eski ayar dosyası (`qualityTolerancePct 12`, `turnPenaltyS 8`) okunur ve yeni alanlar varsayılan; gidiş-dönüş 70/false; 20 → 0.5, 140 → 1.0; `withMaxGrade` çarpanı korur; işaret kalıcı (`"401\|Test küçəsi"`, `"402\|"`), yeniden açılışta okunur, kaldırma yazılır, `streets.approved` değişmez | `settings.MapSettingsTest`, `route.BikewayMarksTest` | A6.2a → A6.8 |
 | uygulamada (yeniden rota) | 2 | işaret açık rotayı değiştirir ve geri alınca eski rota (440 → 480 → 440); ağırlık 100 yapılınca rota yeniden (480 → 440) | saf `nav` denetleyici testi (Bölüm 7.15) | A6.2a → A6.6 |
 | uygulamada (menü, katman) | 2 | menü eylemi `mark`/`alreadyOsm`/`unmark`, toast metinleri ("Bisiklet yolu işaretlendi: Batı küçəsi", "… işareti kaldırıldı: …") ve "Geri al"; katman: OSM çizgi sayısı = kenar sayısı, renk %85, elle işaret kesikli, katman kapatılınca boş | saf `route.BikewayMenuTest`, `ui.BikewayLayerRulesTest` | A6.2a → A6.8 |
 | uygulamada (ekran) | 1 | Bisiklet sekmesi: not, anahtar, `×0.85`, "OSM: 3 ", liste, çöp kutusu, anahtar kapatma, AZ not | `:app` Robolectric `BikewayTabTest` | A6.2b → A6.8 |
@@ -2354,7 +2354,7 @@ Bulgu doğrulaması: Y19 için ham bulgu yok; davranış kaynaktan çıkarıldı
 ### 13.11 Y19: WEEM kayıt düzeni (servis, satır kaynağı, tetikler, 2 telefon)
 
 - **Kayıt yeri:** veri seti, teklif verisinin olduğu `:orders`'ta (`logic/orders` `dataset`, Android `:orders` `DatasetRuntime`); kök `files/TeklifVeriSeti/` (YolGo `app_flutter/TeklifVeriSeti/`; klasör ve dosya adları aynı). Rota ve yükseklik ölçümü `:map`'ten **`RouteMeasurePort`** (yeni `:core` portu, öneri: `measure(courier, pickup, dropoff, atMs): RouteMeasure?` = 13.4'teki altı değer ve bayrakları; `:map` uygular, `NONE` null döner).
-- **Servis yok:** YolGo'nun ayrı ön plan servisi (7401, kanal `yolgo_offer_dataset`, `specialUse`, uyanık kilidi, `offer_dataset_v1`) **yazılmaz**: kayıt `:orders`'ın teklif akışının içindedir ve vardiya boyunca süreci `:core` `ShiftService` (1) ayakta tutar. `NotificationIds.DATASET_FGS` (7401), kanal `yolgo_offer_dataset`, `FOREGROUND_SERVICE_SPECIAL_USE` izni ve `offer_dataset_v1` tercih dosyası gerekmez (CORE.md 3.3 ve 14.6, 14.8 bu karara göre düzeltilir).
+- **Servis yok:** YolGo'nun ayrı ön plan servisi (7401, kanal `yolgo_offer_dataset`, `specialUse`, uyanık kilidi, `offer_dataset_v1`) **yazılmaz**: kayıt `:orders`'ın teklif akışının içindedir ve vardiya boyunca süreci `:core` `ShiftService` (1) ayakta tutar. `NotificationIds.DATASET_FGS` (7401), kanal `yolgo_offer_dataset`, `FOREGROUND_SERVICE_SPECIAL_USE` izni ve `offer_dataset_v1` tercih dosyası gerekmez (CORE.md 3.3, 14.6 ve 14.8 bu karara göre düzeltildi).
 - **Satır kaynağı (13.1 düzeltmesi):** `OrderEvents.offers`'ın `OfferSummary`'si yetmez (alış adresi, gözlem kaynağı, ayrıştırma güveni, ücret tabanı yok). `DatasetRecorder` feed v2 teklif nesnesinin karşılığını (RS `OfferFeedContract.offer` + `EconomicsLogs.feedOfferV2`, `OfferFeed.kt:80-112`) aynı süreçte, `OfferSummaries`'ın girdisi olan iç teklif durumundan kurar ve 13.3'teki `DatasetContract.offer` kuralıyla satıra çevirir; adres metinleri yalnız koordinat / Plus Code çıkarmak için okunur, satıra yazılmaz.
 - **Okuma yok:** satır teklif durumu her değiştiğinde üretilir (`OfferRowGate` ile seyreltilir, 13.3); yoklama, `ReadGate`, `PollRowGate` ve `yolgo-poll.jsonl` **yok** (okuma satırının ölçtüğü gecikme ve pil etkisi tek uygulamada anlamsız; `kontrol.py` dosyayı zorunlu tutmaz). Ölçü alanları korunur: `receivedAtMs` = satır anı, `rawstatsChangedAtMs` = `:orders`'ın teklif değişim anı (bayrak dizgisi `rawstats_feed_v2` aynen), `feedDelayMs` = fark, `readTrigger` = `observer`.
 - **Kurye noktası:** `NavLocation`'ın son fix'i (yaş −5…+30 sn, doğruluk 0–65 m) → `point` (3 ondalık); 2 telefonda Provider'ın kendi GPS'i.
@@ -2614,7 +2614,7 @@ Tek tablo `:core` `NotificationIds` (`CORE.md` 3.3); kanal kimlikleri eski adlar
 | 7100–7102 | `REMINDER` (`reminder(kind)`: `WATER`, `CHECK`, `FOOD`) | `hatirlatici` | 13 | vardiya sonu iptal |
 | 7201 | `TASK_NEARBY` | `hatirlatici` | 13 | vardiya sonu iptal |
 | 7301 | `WEATHER` | `duzyol_weather` | 10.8 | günde bir; vardiya sonu iptal |
-| 7401 | `DATASET_FGS` | `yolgo_offer_dataset` | 13.11 | **kullanılmaz:** veri seti servisi yok (kayıt `:orders` akışında; CORE.md 3.3 tablosundan çıkar) |
+| 7401 | `DATASET_FGS` | `yolgo_offer_dataset` | 13.11 | **kullanılmaz:** veri seti servisi yok (kayıt `:orders` akışında; CORE.md 3.3'te işaretlendi, sabit A6.9'da kalkar) |
 | 7402 | `NAV_ONLY_FGS` (**öneri**, SORU-N4) | `navigation` (yeni) | 7.12, 7.17 | vardiya bitince yalnız-nav ≤ 90 dk |
 | 7400 | — | `yolgo_recording` | 12 | **kullanılmaz:** YolGo gün kaydı servisi vardiya servisine (1, `shift`) birleşti (`VERI_SOZLESMESI` 8.2) |
 | 7435 | `CALIBRATION_FGS` | `yolgo_calibration` | — | Y14, sonra |
@@ -2662,14 +2662,13 @@ Arka plan: WorkManager `duzyol_weather_v1` (periyodik 2 sa, ağ gerekli; 10.8). 
 - **Koordinat:** ev koordinatı `:core`'da kalır; `:map` olaylarına, gün raporuna, sürüş kaydına yazılmaz (YolGo `home_day.dart:8-10` ilkesi). Olaylardaki koordinatlar hane sınırlı (`arrive` 4, `light_answer` 5). Hava özeti konum taşımaz (10.10).
 - **Müşteri verisi:** `:map` müşteri adı/telefonu tutmaz; navigasyon hedefi adres metni ve koordinatı (S5) yalnız rota için; dışa aktarmada `Redactor` kuralları (`VERI_SOZLESMESI` 9). Gün raporu ve rota kaydı restoran ve müşteri hedef noktalarını (yuvarlanmadan) ve tam izi taşır; telefondan yalnız kullanıcı "kaydet/paylaş" deyince çıkar (YolGo davranışı, 12.12). Teklif veri setinde adres metni yok, noktalar 3 ondalık (13.17).
 
-### 14.11 `VERI_SOZLESMESI.md`'ye işlenecek düzeltmeler
+### 14.11 `VERI_SOZLESMESI.md`'ye işlenen düzeltmeler (A6.1 sonunda yapıldı)
 
-- 5.4 "YG native" satırına `yolgo_runtime_v2` (`TelemetryService` durumu) eklenir.
+- 5.4 "YG native" satırına `yolgo_runtime_v2` (`TelemetryService` durumu) eklendi; `yolgo_runtime_v2` ve `offer_dataset_v1` WEEM'de yazılmaz (12.11, 13.11).
 - 5.4 notu: YolGo göç işaretleri (`lightMaxMv2`, `lightMaxMv3`, `mapDesignV1`, `streets.blocked.legacy.v1`, `streets.blocked.migrated.v2`) WEEM'de yazılmaz (S1).
-- `map` tercih dosyası ve `files/map/` WEEM'in yeni yerleri olarak 5 ve 7'ye (`yeni`) eklenir; tip eşlemesi 14.1.
-- 5.4 "YG native" satırı: `yolgo_runtime_v2` ve `offer_dataset_v1` WEEM'de yazılmaz (12.11, 13.11).
-- 7.3: sürüş kayıtları satırına WEEM yolu `files/map/logs/` ve içe aktarma işi A7.1 (12.15); veri seti satırına WEEM yolu `files/TeklifVeriSeti/` (`:orders`, yeni veri seti) ve ZIP adı (M-13-1).
-- 8.2 ve CORE.md 3.3: 7401 `DATASET_FGS` kullanılmaz (13.11).
+- Yeni 5.5 (`map` tercih dosyası) ve 7.5 (`files/map/`, `files/TeklifVeriSeti/`, ZIP adı M-13-1), ikisi de `yeni`; tip eşlemesi 14.1.
+- 7.3: sürüş kayıtları satırına içe aktarma işi A7.1 ve WEEM yolu `files/map/logs/`; harita verisi, telemetri ve veri seti satırlarına WEEM karşılığı.
+- 8.2 ve CORE.md 3.3: 7401 `DATASET_FGS` kullanılmaz (13.11); 7402 öneri (SORU-N4).
 <!-- END sec:14 -->
 
 <!-- BEGIN sec:15 -->
@@ -2957,6 +2956,7 @@ SORU-12-2 (YolGo sürüş kayıtlarını içe aktarma) A6.1 sonundaki tutarlıl�
 | — | `TelemetryJournalTest` (8) Y18'e çevrilmez, Y13 ile gelir (CORE.md 6.2'nin "A6.1 karar verir" maddesi) | 12.11 |
 | — | `LogFeedV3Test` (10) `logic/orders` `dataset`'te uyarlanır (A6.9) | 13.6, 13.18 |
 | — | YolGo `TelemetryService`, `DatasetRecordingService` ve `MotionReceiver` WEEM 1.0'da yazılmaz; 7401 kullanılmaz | 12.11, 13.11, 14.6 |
+| — | Y19 veri seti `:orders`'ta yazılır (`logic/orders` `dataset`; teklif verisi orada), `:map` yalnız `RouteMeasurePort` ile rota ölçer. Plan Bölüm 3 modül tablosunun `:map` satırı "veri seti" der: plan belgesi olduğu için kullanıcı onayıyla düzeltilir (itiraz yoksa A6.9'da) | 13.11, 15 |
 
 ### 17.3 Metin onayları (S19 gibi; kullanıcı onaylayınca kesinleşir)
 
@@ -2991,9 +2991,11 @@ Metin değişikliği olmayan eski çeviri hataları (2.15 arka plan mesajların�
 
 ### 17.5 Belge tutarlılığı (A6.1 sonunda yapıldı)
 
-- `OZELLIK_HARITASI.md` Y15 ve Y16 "Veri" satırları: "(içe aktar)" → "yeniden girilir" (S1; 5.8).
-- `TEST_ENVANTERI.md`: `:map` hedefli satırlar Bölüm 16'daki görev ve kararlarla (`street_prefs_migration` çevrilmez, Y12'nin 23 testi sonra, `offer_engine`/`route_costing` SORU-T1-2, `TelemetryJournalTest` sonra, `LogFeedV3Test` `logic/orders`).
+- `OZELLIK_HARITASI.md`: Aşama 6 satırlarının (Y1–Y12, Y15–Y21, N5) Ayrıntı bağlantıları bu belgeye; Y8, Y11, Y15, Y16, Y20 "Veri" satırlarında "(içe aktar)" → "yeniden girilir" (S1; 5.8); Y19 `:orders` + `:map` (13.11), N5 `:economics` + `:map` (`RangePort`, 10.6); R4 ve N5'in eski testlerinin durumu (SORU-T1-2).
+- `TEST_ENVANTERI.md`: YolGo satırlarının hedefleri Bölüm 16'ya göre (ilk hedefi değişen 11 dosya, karışık dosyalarda paylar, `LogFeedV3Test` `:orders`); özet tablo (`:map` 57 dosya / 375, `:orders` 54 / 338, sonra 16 / 125, çevrilmez 12 / 64) ve çevrilmeyenler listesi.
 - `VERI_SOZLESMESI.md`: 14.11'deki düzeltmeler.
-- `CORE.md` 3.3: 7401 `DATASET_FGS` kullanılmaz; 6.2 `TelemetryJournalTest` satırı karara bağlandı.
+- `CORE.md` 3.3: 7401 `DATASET_FGS` kullanılmaz (sabit A6.9'da `NotificationIds`'ten kalkar, numara boş kalır), 7402 öneri; 6.2 `TelemetryJournalTest` → sonra (Y13).
 - `WEEM_ISLER.md`: A6.8'in bağımlılığına A6.2a (16.5).
+- Bu belge: SORU-12-2 soru listesinden çıktı (plan Bölüm 1 ve A7.1 içe aktarmaya karar vermiş; 12.15, 17.1).
+- Açık kalan (kullanıcı onayı): plan Bölüm 3 modül tablosunda veri seti `:map` satırında (17.2).
 <!-- END sec:17 -->

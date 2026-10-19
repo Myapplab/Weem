@@ -16,19 +16,19 @@ Durum: A0.1, 17 Ekim 2026. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c0
 
 | Hedef | Dosya | Test/denetim |
 |---|---:|---:|
-| :app | 4 | 10 |
+| :app | 5 | 15 |
 | :capture | 15 | 202 |
 | :core | 24 | 149 |
-| :economics | 12 | 106 |
+| :economics | 10 | 93 |
 | :link | 1 | 8 |
-| :map | 64 | 414 |
-| :orders | 50 | 320 |
+| :map | 57 | 375 |
+| :orders | 54 | 338 |
 | :scooter | 18 | 344 |
-| sonra | 13 | 100 |
+| sonra | 16 | 125 |
 | uyarlanır | 6 | 48 |
-| çevrilmez | 11 | 60 |
+| çevrilmez | 12 | 64 |
 
-Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **1.601** (sonra 100 ve çevrilmez 60 hariç; uyarlanır 48 dahil). A2.1 (17 Ekim) `:core` satırlarını test gövdelerine göre kesinleştirdi: 4 dosya başka modüle, 3 dosya çevrilmeze (`CORE.md` Bölüm 6). A3.1 (17 Ekim) `:capture` ve `:orders` satırlarını kesinleştirdi (`CAPTURE.md` 8, `ORDERS.md` 15): ilk hedefi değişen 5 dosya (`CashScreenM16Test` → `:orders`, `NoteFieldsF71Test` → `:capture`, `WaitObservationProcessDeathTest` → `:economics`, `AutoStartNoticeTest` → `:core`, `offer_feed_versions_test` → çevrilmez); karışık dosyalar test başına bölünür (sayılar hedef sütununda), dosya içinde çevrilmeyen 9 test (`MotionGate` 4, `OfferIdentity` 2, feed/sağlayıcı 3) şartnamelerde. Satır tahmini plan Bölüm 6'da.
+Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **1.572** (sonra 125 ve çevrilmez 64 hariç; uyarlanır 48 dahil; dosya düzeyinde, dosya içi paylar aşağıda). A2.1 (17 Ekim) `:core` satırlarını test gövdelerine göre kesinleştirdi: 4 dosya başka modüle, 3 dosya çevrilmeze (`CORE.md` Bölüm 6). A3.1 (17 Ekim) `:capture` ve `:orders` satırlarını kesinleştirdi (`CAPTURE.md` 8, `ORDERS.md` 15): ilk hedefi değişen 5 dosya (`CashScreenM16Test` → `:orders`, `NoteFieldsF71Test` → `:capture`, `WaitObservationProcessDeathTest` → `:economics`, `AutoStartNoticeTest` → `:core`, `offer_feed_versions_test` → çevrilmez); karışık dosyalar test başına bölünür (sayılar hedef sütununda), dosya içinde çevrilmeyen 9 test (`MotionGate` 4, `OfferIdentity` 2, feed/sağlayıcı 3) şartnamelerde. A6.1 (19 Ekim) YolGo satırlarını ve `LogFeedV3Test`'i kesinleştirdi (`MAP.md` 16): ilk hedefi değişen 11 dosya (`offer_engine_test`, `street_prefs_migration_test` → çevrilmez; `route_costing_test`, `road_score_ui_test`, `TelemetryJournalTest` → sonra; `dataset_days_test`, `DatasetContractTest`, `DatasetMatchingTest`, `DatasetReadsTest` → `:orders` (`logic/orders` `dataset`); `dataset_screen_test` → `:app`; `offer_navigation_removed_test` çevrilmezden `:map`'e), `LogFeedV3Test` uyarlanır `:core` → `:orders`; karışık dosyalarda çevrilmeyen 21, sonraya kalan 20 ve başka görevde karşılanmış 4 test hedef sütununda. Aşama 6'nın kesin çeviri sayısı `MAP.md` 16.5: A6.2a 110 + A6.2b 246 (+ `LogFeedV3Test` 10). Satır tahmini plan Bölüm 6'da.
 
 ## Test listesi
 
@@ -139,7 +139,7 @@ Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **
 | `ScooterReconnectM23Test` | 4 | M23 veri kesildi/geldi bildirimi | S6 | :scooter |
 | `ScooterSamplesTest` | 5 | economics-scooter.jsonl 1 Hz | S3 R14 | :scooter |
 | `HomePickContractTest` | 6 | haritadan ev seçme sonucu doğrulama (iki uygulama sözleşmesi → WEEM içi) | G2 | uyarlanır :core |
-| `LogFeedV3Test` | 10 | gün kayıtları v3: allowlist, maskeleme, sayfalama | Y19 R18 | uyarlanır :core |
+| `LogFeedV3Test` | 10 | gün kayıtları v3: allowlist, maskeleme, sayfalama | Y19 R18 | uyarlanır :orders (A6.1: `logic/orders` `dataset.DayLogSnapshotTest`, A6.9; `MAP.md` 13.6, 13.18) |
 | `FeedSignerTest` | 2 | iki uygulama arası imza kapısı (tek uygulamada yok; 2 telefon eşleştirmesi A8'de) | — | çevrilmez |
 | `OfferFeedAccessTest` | 7 | sağlayıcı erişim kapısı (2 telefon izni A8'de yeniden) | — | çevrilmez |
 | `YolGoButtonE5Test` | 2 | kaldırılmış YolGo düğmesi | — | çevrilmez |
@@ -170,31 +170,31 @@ Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **
 | Test dosyası | Sayı | Neyi doğrular | Özellik | Hedef |
 |---|---:|---|---|---|
 | `scooter_language_section_test` | 3 | scooter/dil bölümü | G3 S2 | :app |
-| `home_day_controller_test` | 5 | gün denetleyicisi (1–3 `:core`; 4–5 `:map` A6; `CORE.md` 6.2) | G1 | :core |
+| `home_day_controller_test` | 5 | gün denetleyicisi (1–3 `:core`; 4–5 `:map` A6; `CORE.md` 6.2) | G1 | :core (A6.1: 4–5 `:map` A6.8/A6.9; `MAP.md` 11.16, 12.13) |
 | `home_day_e6_test` | 10 | E6 çıkış bölgesi 200 m | G1 | :core |
 | `home_day_end_rule_test` | 5 | ev bitişi 50 m / 30 sn | G1 | :core |
 | `home_day_rules_test` | 19 | ev günü kuralları | G1 | :core |
 | `native_telemetry_test` | 1 | yerel telemetri günlüğü (Flutter kanal yarışı; ilkesi `ShiftMachine` testinde) | G1 | çevrilmez |
 | `shift_engine_test` | 9 | YolGo gün motoru: km, duruş, ışık, sipariş aşaması | G1 Y11 | :map (A2.1) |
-| `offer_engine_test` | 7 | ek teklif fırsat maliyeti | R4 N5 | :economics |
-| `route_costing_test` | 6 | rota maliyeti (teklif) | R4 N5 | :economics |
+| `offer_engine_test` | 7 | ek teklif fırsat maliyeti | R4 N5 | çevrilmez (A6.1: v1 teklif motoru ölü kod, ekonomi v2 `:economics`'te; SORU-T1-2, `MAP.md` 10.14, 16.4) |
+| `route_costing_test` | 6 | rota maliyeti (teklif) | R4 N5 | sonra (Y13) (A6.1: 5 Y13 yüzeyine bağlı; `planLeavesBox` 1 çevrilmez, SORU-T1-2; `MAP.md` 10.14, 16.4) |
 | `address_parser_test` | 17 | bağlantı ve adres ayrıştırma | Y5 Y6 | :map |
 | `api_settings_test` | 1 | API anahtarı ayarları | Y6 Y10 | :map |
 | `approach_zoom_test` | 4 | yaklaşma yakınlaştırması, 10 sn sonra takip | Y4 | :map |
 | `arrival_focus_test` | 4 | varış odağı 100/150 m | Y4 | :map |
 | `arrival_pin_test` | 3 | varış iğnesi | Y4 | :map |
-| `assistant_test` | 14 | görev girişi, saat/gün, 1 km sınırı, bölge histerezisi | Y20 | :map |
+| `assistant_test` | 14 | görev girişi, saat/gün, 1 km sınırı, bölge histerezisi | Y20 | :map (A6.1: `day` 6 A6.8, `tasks` 5 A6.9, `input`/`nav` 2 A6.6, `weather` 1 A6.7; `MAP.md` 16.3) |
 | `battery_estimator_test` | 5 | batarya tahmini, enerji sayacı | Y9 | :map |
 | `bikeway_e13_test` | 18 | E13 bisiklet yolu işaretleme ve rota etkisi | Y15 Y3 | :map |
-| `courier_stage_follow_test` | 14 | sipariş aşaması izleyici | G1 Y20 N1 | :map |
-| `courier_stages_e8_test` | 13 | E8 aşama yükü tüketimi | N1 R5 | :map |
-| `dataset_days_test` | 2 | veri seti günleri | Y19 | :map |
-| `dataset_screen_test` | 5 | veri seti ekranı | Y19 | :map |
+| `courier_stage_follow_test` | 14 | sipariş aşaması izleyici | G1 Y20 N1 | :map (A6.1: 13; 1 çevrilmez, feed v2 zarfı; `MAP.md` 11.16) |
+| `courier_stages_e8_test` | 13 | E8 aşama yükü tüketimi | N1 R5 | :map (A6.1: 12; 1 çevrilmez, feed v2 zarfı; `MAP.md` 11.16) |
+| `dataset_days_test` | 2 | veri seti günleri | Y19 | :orders (A6.1: `logic/orders` `dataset`; `MAP.md` 13.18) |
+| `dataset_screen_test` | 5 | veri seti ekranı | Y19 | :app (A6.1: Robolectric `DatasetScreenTest`; `MAP.md` 13.18) |
 | `geocoder_scope_test` | 1 | geokod kapsamı | Y6 | :map |
 | `home_picker_test` | 5 | haritadan ev seçme | G2 | :map |
 | `hud_layout_test` | 2 | HUD yerleşimi | Y1 | :map |
 | `light_leaks_f52_test` | 3 | F5.2 ışık karakterizasyonu | Y11 | :map |
-| `light_rule_m14_test` | 14 | M14 ışık kuralı (≤5 m, yaya yoluna ≤1 m), lightMaxM göçü | Y11 | :map |
+| `light_rule_m14_test` | 14 | M14 ışık kuralı (≤5 m, yaya yoluna ≤1 m), lightMaxM göçü | Y11 | :map (A6.1: 12; 2 çevrilmez, S1 göç; `MAP.md` 11.16) |
 | `light_tracker_test` | 4 | canlı ışık ölçer | Y11 | :map |
 | `locate_button_test` | 3 | konum düğmesi | Y1 | :map |
 | `log_store_test` | 7 | günlük/sürüş kayıtları, silme, dışa aktarma | Y18 | :map |
@@ -216,26 +216,26 @@ Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **
 | `ride_log_status_test` | 2 | sürüş kaydı durumu | Y18 | :map |
 | `route_hours_test` | 3 | ters yön saat izni | Y8 Y3 | :map |
 | `route_warnings_h2_h3_test` | 3 | H2/H3 rota uyarısı, başarısızlıkta eski rota | Y4 | :map |
-| `router_test` | 38 | rota motoru | Y3 | :map |
-| `street_prefs_migration_test` | 1 | sokak kararları göçü | Y8 | :map |
+| `router_test` | 38 | rota motoru | Y3 | :map (A6.1: 31; 7 sonra, Y13 ölçülmüş yüzey; `MAP.md` 3.14) |
+| `street_prefs_migration_test` | 1 | sokak kararları göçü | Y8 | çevrilmez (A6.1: S1, göç yazılmaz; `MAP.md` 4.8) |
 | `task_controller_test` | 1 | görev denetleyicisi | Y20 | :map |
 | `v140_features_test` | 14 | 1.4.0: ışık kuralları, hız seçenekleri | Y11 Y9 | :map |
-| `v150_features_test` | 15 | 1.5.0: rota başlangıç konumu, özel hızlar | Y4 Y9 | :map |
+| `v150_features_test` | 15 | 1.5.0: rota başlangıç konumu, özel hızlar | Y4 Y9 | :map (A6.1: 10; 5 çevrilmez, `HomeDepartureDetector` ölü kod; `MAP.md` 7.15) |
 | `v160_y1_y2_test` | 5 | 1.6.0: hava şeridi/önbellek | Y10 | :map |
-| `v170_features_test` | 13 | 1.7.0: Rawstats canlı scooter yükü, batarya | S2 Y9 N1 | :map |
+| `v170_features_test` | 13 | 1.7.0: Rawstats canlı scooter yükü, batarya | S2 Y9 N1 | :map (A6.1: 6; 2 A2.5/A5.3'te karşılandı, 4 çevrilmez (S7), 1 sonra (Y13); `MAP.md` 10.12) |
 | `weather_section_test` | 4 | hava bölümü | Y10 | :map |
 | `ww_clean_run_test` | 5 | ters yön temiz geçiş/onay (Y12 sorusuyla ilişkili) | Y8 Y12 | :map |
 | `ww_green_two_way_test` | 4 | onaylı temiz sokak iki yönlü | Y8 Y3 | :map |
 | `ww_no_problem_green_test` | 5 | "Evet, sorun"/Ses− geçiş kararları | Y8 Y12 | :map |
 | `yolgo_rules_test` | 4 | sapma 8 sn, sipariş JSON, yüzey/ışık, hava | Y4 Y11 Y10 | :map |
-| `yolgo_sade_2_test` | 10 | gün kartı düğmeleri | G1 Y1 | :map |
+| `yolgo_sade_2_test` | 10 | gün kartı düğmeleri | G1 Y1 | :map (A6.1: 9; 1 çevrilmez, S1; `MAP.md` 6.14) |
 | `offer_feed_versions_test` | 6 | teklif feed sürüm uyumu | N1 R3 | çevrilmez (A3.1: uygulamalar arası okuyucu, S7; sürüm/boyut denetimi `:link` A8; `ORDERS.md` 15.3) |
-| `day_contributions_test` | 3 | gün katkıları defteri | Y12 | :map |
+| `day_contributions_test` | 3 | gün katkıları defteri | Y12 | :map (A6.1: 2; 1 sonra (Y13/Y14), SORU-Q2; `MAP.md` 9.11) |
 | `quality_test` | 9 | yol kalitesi ön tahmin/öğrenilen skor (rota seçimini etkiler) | Y12 Y3 | :map |
 | `road_learner_test` | 9 | yol öğrenme | Y12 | :map |
 | `road_save_test` | 1 | yol kaydı | Y12 | :map |
-| `road_score_ui_test` | 11 | yol puanı ekranı | Y12 | :map |
-| `street_scores_test` | 12 | sokak puanları | Y12 | :map |
+| `road_score_ui_test` | 11 | yol puanı ekranı | Y12 | sonra (Y13/Y14) (A6.1: SORU-Q2; `MAP.md` 9.11, 16.4) |
+| `street_scores_test` | 12 | sokak puanları | Y12 | :map (A6.1: 1; 11 sonra (Y13/Y14), SORU-Q2; `MAP.md` 9.11) |
 | `road_surface_score_test` | 4 | yüzey skoru | Y13 | sonra (Y13) |
 | `surface_gate_test` | 11 | yüzey kapısı | Y13 | sonra (Y13) |
 | `surface_single_flight_test` | 2 | yüzey tek uçuş | Y13 | sonra (Y13) |
@@ -251,18 +251,18 @@ Toplam 1.761 test/denetim (785 + 324 + 564 + 88). WEEM 1.0 için çevrilecek: **
 | `rawstats_signals_test` | 10 | değişiklik sinyalleri | N1 | uyarlanır :link |
 | `app_version_test` | 1 | Flutter sürüm dosyası | — | çevrilmez |
 | `ci_apk_workflow_test` | 15 | Flutter CI iş akışı | — | çevrilmez |
-| `offer_navigation_removed_test` | 4 | kaldırılmış teklif navigasyonu | — | çevrilmez |
+| `offer_navigation_removed_test` | 4 | kaldırılmış teklif navigasyonu | — | :map (A6.1: 2 A6.5/A6.6; 2 çevrilmez, kaldırılmış teklif sayfası; `MAP.md` 7.15) |
 
 ### YolGo Kotlin — `android_overlay/test/` (JUnit, `@Test`) — 14 dosya, 88
 
 | Test dosyası | Sayı | Neyi doğrular | Özellik | Hedef |
 |---|---:|---|---|---|
 | `NotifyPolicyTest` | 2 | bildirim politikası | G4 | :core |
-| `TelemetryJournalTest` | 8 | telemetri günlüğü 3000 satır (YolGo servis → Flutter tamponu; A6.1 karar verir) | G1 Y18 | :map (A2.1) |
-| `DatasetContractTest` | 6 | veri seti sözleşmesi | Y19 | :map |
-| `DatasetMatchingTest` | 4 | veri seti eşleştirme | Y19 | :map |
-| `DatasetReadsTest` | 6 | veri seti okuma | Y19 | :map |
-| `NavFeedContractTest` | 6 | nav yükü + IncomingLink | Y4 Y5 N1 | :map |
+| `TelemetryJournalTest` | 8 | telemetri günlüğü 3000 satır (YolGo servis → Flutter tamponu) | G1 Y18 | sonra (Y13) (A6.1: Y18 bu günlüğü kullanmaz; `MAP.md` 12.11, `CORE.md` 6.2) |
+| `DatasetContractTest` | 6 | veri seti sözleşmesi | Y19 | :orders (A6.1: `logic/orders` `dataset`; `MAP.md` 13.18) |
+| `DatasetMatchingTest` | 4 | veri seti eşleştirme | Y19 | :orders (A6.1: `logic/orders` `dataset`; `MAP.md` 13.18) |
+| `DatasetReadsTest` | 6 | veri seti okuma | Y19 | :orders (A6.1: 4; 2 çevrilmez, yoklama yok; `MAP.md` 13.18) |
+| `NavFeedContractTest` | 6 | nav yükü + IncomingLink | Y4 Y5 N1 | :map (A6.1: 2; 2 A2.5 `MessagesTest`'te karşılandı, 2 çevrilmez (S7); `MAP.md` 7.15) |
 | `WeatherFeedTest` | 2 | hava yükü | Y10 R15 | :map |
 | `SurfaceSignalTest` | 11 | yüzey sinyali | Y13 | sonra (Y13) |
 | `RoadCalibrationCountdownTest` | 5 | 3-2-1 sayım | Y14 | sonra (Y14) |
@@ -290,9 +290,9 @@ Eksik: Sürüş Paneli ve YolGo için saha kaydı tabanlı altın test yok (YolG
 
 ## Çevrilmeyenler ve bekleyenler
 
-- **Çevrilmez (10 dosya, 54):** `FeedSignerTest`, `OfferFeedAccessTest`, `YolGoButtonE5Test`, `HomeShareTest`, `app_version_test`, `ci_apk_workflow_test`, `offer_navigation_removed_test`, `native_telemetry_test`, `rawstats_home_sync_test`, `rawstats_home_stale_test` — davranışları WEEM'de yok; 2 telefon eşleştirme/izin testleri A8'de yeniden yazılır.
-- **Sonra (13 dosya, 100):** Y13/Y14 testleri. Y12 testleri (6 dosya, 45; `ww_clean_run_test` ve `ww_no_problem_green_test` zaten `:map`) 17 Ekim'de `:map`'e alındı (S3; A6.2a, A6.11).
-- **Uyarlanır (6 dosya, 48):** Rawstats ↔ YolGo eşitleme testleri (`rawstats_shift_end_test`, `rawstats_signals_test`, `RawstatsObserverTest`, `CourierFeedPayloadTest`, `LogFeedV3Test`, `HomePickContractTest`): tek uygulamada iç arayüz, 2 telefon modunda `:link` mesajı olarak yeniden yazılır.
+- **Çevrilmez (12 dosya, 64):** `FeedSignerTest`, `OfferFeedAccessTest`, `YolGoButtonE5Test`, `HomeShareTest`, `app_version_test`, `ci_apk_workflow_test`, `native_telemetry_test`, `rawstats_home_sync_test`, `rawstats_home_stale_test`, `offer_feed_versions_test` (A3.1), `street_prefs_migration_test` ve `offer_engine_test` (A6.1) — davranışları WEEM'de yok; 2 telefon eşleştirme/izin testleri A8'de yeniden yazılır. `offer_navigation_removed_test`'in 2 testi A6.1'de `:map`'e alındı (2'si çevrilmez). Dosya içinde çevrilmeyenler: A3.1'de 9, A6.1'de 21 (`MAP.md` 16.4).
+- **Sonra (16 dosya, 125):** Y13/Y14 testleri (13 dosya, 100) ve A6.1'de eklenen `route_costing_test` (Y13 yüzeyi), `road_score_ui_test` (SORU-Q2), `TelemetryJournalTest` (Y13 kanıt günlüğü; `MAP.md` 12.11). Y12 testleri (6 dosya, 45; `ww_clean_run_test` ve `ww_no_problem_green_test` zaten `:map`) 17 Ekim'de `:map`'e alındı (S3; A6.2a, A6.11); A6.1'e göre bunların 23'ü Y13/Y14'e aittir ve sonraya kalır (SORU-Q2; `MAP.md` 9.11). Dosya içinde sonraya kalan 20 test `MAP.md` 16.4'te.
+- **Uyarlanır (6 dosya, 48):** Rawstats ↔ YolGo eşitleme testleri (`rawstats_shift_end_test`, `rawstats_signals_test`, `RawstatsObserverTest`, `CourierFeedPayloadTest`, `LogFeedV3Test`, `HomePickContractTest`): tek uygulamada iç arayüz, 2 telefon modunda `:link` mesajı olarak yeniden yazılır; `LogFeedV3Test` `logic/orders` `dataset`'te uyarlanır (A6.1, A6.9).
 
 ## A3.2 çeviri durumu (17 Ekim 2026)
 
