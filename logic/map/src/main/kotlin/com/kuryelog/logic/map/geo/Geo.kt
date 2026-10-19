@@ -1,5 +1,6 @@
 package com.kuryelog.logic.map.geo
 
+import java.util.Locale
 import kotlin.math.asin
 import kotlin.math.atan2
 import kotlin.math.ceil
@@ -7,8 +8,9 @@ import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
 import kotlin.math.sqrt
+import org.json.JSONObject
 
-/** `lib/core/geo.dart` (MAP.md 2.2). Saf formüller: A6.2a testleri girdi kurarken kullanır, A6.3 sınar ve tamamlar. */
+/** `lib/core/geo.dart` (MAP.md 2.2). Saf formüller. */
 object Geo {
     const val EARTH_R = 6371000.0
 
@@ -40,11 +42,45 @@ object Geo {
 
     fun clampInt(v: Int, lo: Int, hi: Int) = if (v < lo) lo else if (v > hi) hi else v
     fun clampD(v: Double, lo: Double, hi: Double) = if (v < lo) lo else if (v > hi) hi else v
+
+    /** P noktasının AB doğru parçasına uzaklığı ve parça üzerindeki oran (0–1); sıfır boylu parçada `t = 0`. */
+    fun pointToSegment(px: Double, py: Double, ax: Double, ay: Double, bx: Double, by: Double): SegmentHit {
+        val dx = bx - ax
+        val dy = by - ay
+        val len2 = dx * dx + dy * dy
+        var t = if (len2 == 0.0) 0.0 else ((px - ax) * dx + (py - ay) * dy) / len2
+        if (t < 0) t = 0.0
+        if (t > 1) t = 1.0
+        val ex = px - (ax + t * dx)
+        val ey = py - (ay + t * dy)
+        return SegmentHit(sqrt(ex * ex + ey * ey), t)
+    }
 }
+
+class SegmentHit(val dist: Double, val t: Double)
 
 data class GeoPoint(val lat: Double, val lon: Double) {
     fun distanceTo(o: GeoPoint) = Geo.haversine(lat, lon, o.lat, o.lon)
     fun bearingTo(o: GeoPoint) = Geo.bearing(lat, lon, o.lat, o.lon)
+
+    /** Azerbaycan kaba sınırı (Y5/Y6). Enlem ve boylam aralıkları çakışmadığından ters yazılmış (lon,lat) çiftler de ayırt edilir. */
+    val isInAzerbaijan: Boolean get() = lat >= 38.3 && lat <= 42.0 && lon >= 44.7 && lon <= 51.0
+
+    fun toJson(): JSONObject = JSONObject().put("lat", lat).put("lon", lon)
+
+    /** Dart `toString`: 6 ondalık `lat,lon`. */
+    override fun toString() = String.format(Locale.ROOT, "%.6f,%.6f", lat, lon)
+
+    companion object {
+        /** Yalnız sayısal `lat`/`lon` kabul edilir; değilse null. */
+        fun fromJson(j: Any?): GeoPoint? {
+            if (j !is JSONObject) return null
+            val la = j.opt("lat")
+            val lo = j.opt("lon")
+            if (la !is Number || lo !is Number) return null
+            return GeoPoint(la.toDouble(), lo.toDouble())
+        }
+    }
 }
 
 data class BBox(val south: Double, val west: Double, val north: Double, val east: Double) {

@@ -24,7 +24,23 @@ class OsmRaw {
     }
 
     /** Overpass JSON cevabını ekler. Karo sınırında tekrar eden yol/düğümler atlanır. */
-    fun addOverpassJson(json: JSONObject): Unit = TODO("A6.3")
+    fun addOverpassJson(json: JSONObject) {
+        val elements = json.optJSONArray("elements") ?: return
+        for (k in 0 until elements.length()) {
+            val e = elements.opt(k) as? JSONObject ?: continue
+            when (e.opt("type")) {
+                "node" -> addNode(e.getLong("id"), e.getDouble("lat"), e.getDouble("lon"))
+                "way" -> {
+                    val arr = e.optJSONArray("nodes") ?: continue
+                    if (arr.length() < 2) continue
+                    val nodes = List(arr.length()) { arr.getLong(it) }
+                    val tags = HashMap<String, String>()
+                    (e.opt("tags") as? JSONObject)?.let { t -> for (key in t.keys()) tags[key] = t.get(key).toString() }
+                    addWay(OsmWay(e.getLong("id"), nodes, tags))
+                }
+            }
+        }
+    }
 }
 
 class OsmWay(val id: Long, val nodes: List<Long>, val tags: Map<String, String>)
