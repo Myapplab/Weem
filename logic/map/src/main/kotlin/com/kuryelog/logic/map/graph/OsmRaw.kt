@@ -15,3 +15,6 @@ class OsmRaw {
 
     fun addWay(way: OsmWay): OsmRaw = apply { ways.add(way) }
 }
+
+/** Overpass JSON `elements` (düğüm/yol) → ham depo; `MAP.md` 2.3. İskelet (A6.2a). */
+fun OsmRaw.addOverpassJson(json: String): OsmRaw = TODO("A6.3")
