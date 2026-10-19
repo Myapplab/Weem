@@ -28,6 +28,9 @@ jobs:
       - name: Gömülü harita (Geofabrik → graf, SRTM, yerler; MAP.md 2.11)
         run: WEEM_VERSION=$(sed -n 's/^weem.versionName=//p' gradle.properties) bash ci/build_map.sh
       - name: Android birim testleri ve .dev APK
+        # Google Maps anahtarı (MAP.md 6.10): gizli değişken yoksa Google altlığı kapalı derlenir.
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         run: ./gradlew test assembleDebug --console=plain
       - name: Kimlik denetimi (.dev)
         run: ci/check_identity.sh app/build/outputs/apk/debug/app-debug.apk com.kuryelog.app.dev

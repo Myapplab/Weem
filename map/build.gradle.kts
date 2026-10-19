@@ -21,6 +21,10 @@ dependencies {
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
     implementation(libs.activity.compose)
+    // Harita yüzeyleri (MAP.md 6.15): MapLibre (OSM raster, vektör) ve Google Maps SDK; Compose'a AndroidView ile (maps-compose eklenmez).
+    implementation(libs.maplibre.android)
+    implementation(libs.play.services.maps)
+    implementation(libs.okhttp)
     testImplementation(libs.junit)
     testImplementation(platform(libs.compose.bom))
     debugImplementation(platform(libs.compose.bom))

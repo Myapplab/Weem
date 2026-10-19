@@ -44,6 +44,9 @@
         android:label="${appLabel}"
         android:theme="@style/Theme.Weem">
 
+        <!-- Google Maps anahtarı (MAP.md 6.10): Gradle resValue; boşsa Google altlığı seçilemez. -->
+        <meta-data android:name="com.google.android.geo.API_KEY" android:value="@string/google_maps_key" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
