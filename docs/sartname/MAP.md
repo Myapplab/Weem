@@ -1,6 +1,6 @@
 # MAP — Aşama 6 şartnamesi (`:map`: Y1–Y12, Y15–Y21, N5)
 
-Durum: A6.1, 18 Ekim 2026 (Claude Opus · xhigh + ultracode; en çok 3 paralel ajan, S13; 23:12 UTC'den beri tek oturum, alt ajansız) — **yazılıyor**, bölüm durumu 0.3'te. Kaynak: `Myapplab/kurye_nav` — `yolgo-test` @ `870ab6e` (YolGo `1.11.0+6006`; Dart paketi `kurye_nav`, uygulama kimliği `az.duzyol.app`, Kotlin paketi `az.kurye.kurye_nav`) ve gerektiğinde `rawstats` @ `6388c04`. Satır numaraları bu commit'te açılıp doğrulanır; ham bulgular (`bulgular/Y_routing.md`, `Y_nav.md`, `Y_tracking.md`, `Y_contract.md`) kaynakla karşılaştırılır, düzeltmeler "(bulgu düzeltmesi)" diye işaretlidir.
+Durum: A6.1 **bitti** (18–19 Ekim 2026; Claude Opus · xhigh + ultracode, en çok 3 paralel ajan (S13); 11.9–17 ve 0 tek oturumda, alt ajansız). Kullanıcı soruları 17.1'de varsayılanlarıyla; cevaplar plan Bölüm 8'e yazılınca ilgili bölüm güncellenir. Kaynak: `Myapplab/kurye_nav` — `yolgo-test` @ `870ab6e` (YolGo `1.11.0+6006`; Dart paketi `kurye_nav`, uygulama kimliği `az.duzyol.app`, Kotlin paketi `az.kurye.kurye_nav`) ve gerektiğinde `rawstats` @ `6388c04`. Satır numaraları bu commit'te açılıp doğrulanır; ham bulgular (`bulgular/Y_routing.md`, `Y_nav.md`, `Y_tracking.md`, `Y_contract.md`) kaynakla karşılaştırılır, düzeltmeler "(bulgu düzeltmesi)" diye işaretlidir.
 
 Kısaltmalar: **YG** = `yolgo-test` kökü (`lib/…`, `android_overlay/…`, `tool/…`, `ci/…`, `assets/…`); **YT** = `test/` (Dart testleri), **YK** = `android_overlay/test/` (Kotlin testleri); **RS** = `rawstats` `app/src/main/java/com/kuryelog/app/`, **RT** = `rawstats` `app/src/test/java/com/kuryelog/app/`. Davranış metni kodun söylediğidir; "WEEM" satırları bu şartnamenin kararıdır. Kapsam ya da plan kararı gerektiren noktalar karar verilmeden Bölüm 17'ye soru olarak yazılır.
 
@@ -9,40 +9,50 @@ Kısaltmalar: **YG** = `yolgo-test` kökü (`lib/…`, `android_overlay/…`, `t
 <!-- BEGIN sec:0 -->
 ## 0. Özet: WEEM kuralları ve görev dizini
 
-_Yazılıyor (koordinatör; ajan bölümleri bitince)._
+### 0.1 WEEM kuralları
+
+| Konu | WEEM kuralı | Bölüm |
+|---|---|---|
+| Kapsam | Y1–Y12, Y15–Y21, N5 WEEM 1.0'da; Y13 (yüzey ve titreşim) ve Y14 (kalibrasyon) sonra — 1.0'da yalnız sınır noktaları (Ses− elle kötü nokta alt kümesi, SORU-Q1) | 1, 3.16, 9.13 |
+| Modül | saf mantık `logic/map` (`geo` … `reminders`; yön kuralı 15.1), Android `:map` ince (sensör, dosya, ağ, harita yüzeyi, zamanlayıcılar), ekranlar `:app`; `:map` yalnız `:core`'u görür, öteki modüllerle portlar ve `WeemApplication` dikişleri üstünden; Y19 teklif veri seti `logic/orders` `dataset` + `RouteMeasurePort` | 15 |
+| Veri (S1) | YolGo'dan tercih ya da dosya kendiliğinden gelmez; adlar ve biçimler aynı (`map` tercih dosyası, `flutter.` öneksiz; `files/mapdata/`, `files/map/`); YolGo göç kuralları ve işaretleri yazılmaz; tek içe aktarma adayı sürüş günlüğü (SORU-12-2) | 14 |
+| Harita verisi (Y7) | KNG1 v2 ikili biçimi değişmez; Overpass dört ayna; SRTM yükseklik; gömülü harita CI'da; hazır veri sunucusu zinciri (SORU, 2.15) | 2 |
+| Rota motoru (Y3, Y8) | A* ve maliyet modeli birebir (eşit maliyetli sıralar dahil); zaman ve batarya iki ayrı plan; sokak kararları, saatli ters yön, bisiklet yolu ×0,85, Y12 kalite ve ters yön oranı girdileri; işçi coroutine | 3, 4, 5.1, 9.9 |
+| Harita ekranı (Y1, Y2; S4) | Google Maps + MapLibre (OSM raster + vektör; SORU-N5); HUD ve dokunma kuralı; uzun basış menüsü (Y13 satırı yok); gün kartı = `ShiftCard` + harita eylemleri (SORU-N7) | 6 |
+| Navigasyon (Y4–Y6) | konum tek kaynak `NavLocation` (Fused 500 ms; gün açıkken `:core` `ShiftService` ön planda); bağlantı filtreleri `:app` `MainActivity`'de; ayrıştırma ve Plus Code ağsız; Google Maps'te rota açma yok (S9); yalnız-nav bildirimi 7402 (SORU-N4) | 7, 8 |
+| Gün (G1) | gün = vardiya: gün motoru açılış ve kapanışı `ShiftPort.state`'ten (`ShiftFollower`); `dayId` = `yolgo-<startedAtMs>`; takvim günü `LogTime` (telefon saat dilimi; Bakü'de aynı); süreç ölüyken yeni vardiya başladıysa eski gün kapanır | 11.2, 11.14 |
+| Sipariş aşamaları | yalnız `:orders`'tan (`OrderEvents.stages` → `CourierStageFollower`, saatli zaman çizelgesi); GPS duruşu aşama değiştirmez; olay verisinde `source: "kuryeplus"` kayıt dizgisi korunur | 11.6, 11.7 |
+| Işıklar (Y11) | motor + canlı ölçer; kural madde 14 (≤ 5 m; 2 dk üstü `light?`); gün sonu Onayla/Reddet; `lights.v1`'de son cevap kazanır | 11 |
+| Kayıtlar (Y17, Y18) | sürüş günlüğü JSONL, ayrı sürüş dosyaları, gün raporu `.gun.json`, rota kaydı `duzyol-route-v1`, dışa aktarma `duzyol-journal-v1` — biçimler aynı, klasör `files/map/logs/`; YolGo telemetri servisi yok; gün silme yalnız harita verisini siler | 12 |
+| Veri seti (Y19) | `:orders`'ta, servissiz ve okumasız; v1 biçimi aynı (`kontrol.py` uyumlu); gün kayıtları `DayLogSnapshot` (R18 anonimleştirmesi) | 13.2–13.11 |
+| Görevler, hatırlatıcılar (Y20) | 1000/1200 m tetik, yalnız teslimatta ya da yeniden girişte; "Rota Oluştur" WEEM navigasyonu (S9), görev hedefi siparişe bağlanmaz; kartlar uygulama kabuğunda | 13.12–13.16 |
+| Y12 | sıfırdan öğrenir (S3), Ses+/Ses− yakalama dahil (Harita sekmesi öndeyken, SORU-Q4); öğrenme ve sorular yalnız Receiver'da | 9 |
+| Batarya, hava, menzil | Y9 tahmini (barometre, DEM) ve canlı scooter `ScooterBridge.live`; hava Open-Meteo, her telefon kendi (S6), `WeatherPort` → R15; N5 görünümü SORU-T1-1 | 10 |
+| Metinler | TR/AZ birebir (`Bilingual`, `TextCoverageTest`); YolGo'da AZ'si eksik ya da bozuk metinler iki dilli yazılır; değişiklik önerileri 17.3 | 17.3 |
+| Bildirimler (G4) | yalnız `NotificationIds`: 7100–7102, 7201, 7301, (7402); 7400 ve 7401 kullanılmaz; YolGo kökenliler 30 sn ve gün bağlı; WEEM öndeyken yalnız uygulama içi kart | 14.6; CORE.md 3 |
+| Gizlilik | ev koordinatı `:core`'da, `:map` kayıtlarına girmez; sırlar (`googleKey`, `orsKey`, `cartoKey`, `weather.key.v1`) hiçbir kayda ve yedeğe yazılmaz; veri setinde adres metni yok, noktalar 3 ondalık | 14.10 |
+| 2 telefon | harita, navigasyon, gün motoru, Y11, Y12, Y17, Y18, Y20 Receiver'da; Wolt/Bolt bağlantı yakalama ve Y19 Provider'da; mesajlar `NavTarget`, `RouteStatus`, `TripStages`, `ShiftState`, `BatterySummary` (plan 4.4) | 15.5 |
+| Testler | YolGo 564 + 88 testin 356'sı çevrilir (A6.2a 110, A6.2b 246) + Rawstats `LogFeedV3Test` 10; çeviri "derlenir, kırmızı", uygulama görevi yeşil yapar | 16 |
+| Açık sorular | 20 kullanıcı sorusu varsayılanlarıyla, koordinatör kararları, metin onayları, riskler | 17 |
+
+### 0.2 Görev dizini
+
+| Görev | İş | Bölüm | Eski kod (YG, ana dosyalar) | Test (çevrilen) | Veri adları | WEEM yeri | Sorular |
+|---|---|---|---|---|---|---|---|
+| **A6.2a** | Dart testlerini çevir: rota, harita verisi, Y12 (+ Y15/Y16 payı) | 16.1, 16.2 (ayrıntı 2.13, 3.14, 4.6, 5.2, 5.6, 9.11, 10.12) | `test/` 17 dosya | **110** | — | `logic/map/src/test/…` (`graph`, `route`, `settings`, `roads`) + en küçük API iskeleti | SORU 1, Q1, Q2 |
+| **A6.2b** | Dart/Kotlin testlerini çevir: ekran, navigasyon, adres, batarya, hava, gün motoru ve ışık, kayıtlar, veri seti, görevler | 16.1, 16.3 (ayrıntı 6.14, 7.15, 8.11, 10.12, 11.16, 12.13, 13.18) | `test/` 43 dosya, `android_overlay/test/` 5 dosya, RS `LogFeedV3Test` | **246** + 10 | — | `logic/map` (`ui`, `nav`, `input`, `ride`, `weather`, `day`, `logs`, `stats`, `tasks`, `reminders`), `logic/orders` `dataset`, `:app`/`:map` Robolectric | — |
+| **A6.3** | Y7 harita verisi | 2 (+ 5.3 POI dosyası) | `lib/data/*`, `lib/core/geo.dart`, `tool/build_map.dart`, `ci/osm_extract.py` | 13 | `files/mapdata/*`, `map.bundled.*`, `assets/map/` | `geo`, `net`, `graph`; Android `MapData`, `AndroidHttp` | SORU (2.15) |
+| **A6.4** | Y3 rota motoru, Y8 sokak kararları | 3, 4 (+ 5.1, 9.9, 14.2) | `lib/routing/*`, `lib/core/physics.dart` | 63 | `streets.*`, `settings.v1` | `route`, `settings`, `surface` (alt küme) | SORU 1, Q1 |
+| **A6.5** | Y1, Y2 harita ekranı | 6 | `lib/ui/` map_view, google_map_surface, map_hud*, puck_style, locate_button, nav_screen, home_picker, setup/settings yapısı; `lib/main.dart`, `theme.dart` | 24 | `mapStyle`, `passive.pausedAt.v2` | `ui`; Android `MapSurface`, `GoogleMapSurface`, `MapLibreSurface`, `HomePickScreen`; `:app` `MapTab` | N5, N6, N7 |
+| **A6.6** | Y4 navigasyon, Y5 bağlantılar, Y6 adres | 7, 8 | `lib/nav/*`, `lib/input/*`, `lib/tracking/location_service.dart` …, manifest filtreleri | 75 | `clipboard.lastHash`, `search.recents.v2`, `googleKey`, `orsKey` | `input`, `nav`; Android `NavLocation`, `NavPortImpl`, `LinkIntake`, `ClipboardWatch`, `NavOnlyService` | N1, N2, N4 |
+| **A6.7** | Y9 batarya, N5 menzil, Y10 hava | 10 | `speed_options`, `battery_estimator`, `scooter_live`, `weather.dart`, `Weather*.kt` | 29 | `battery.*`, `weather.*`, `duzyol_weather_v1`, 7301 | `ride`, `weather`; Android `BatteryRuntime`, `WeatherRuntime`, `WeatherWork`, `WeatherPortImpl`, `RangePortImpl` | T1-1, T1-2 |
+| **A6.8** | Y11 ve gün motoru, Y15 bisiklet, Y16 POI, Y21 bölge | 11, 5 | `shift_engine`, `shift_controller`, `light_tracker`, `stop_semantics`, `courier_stages`; `bikeways`, `bikeway_layer`, `pois`, `poi_corrections`, `poi_editor`, `region_info` | 80 | `shift.v1`, `shift.last`, `courier.follow.v1`, `day.shift.handled.v1`, `lights.v1`, `sidewalk.zones.v1`, `streets.bikeway.v1`, `places.local.v1` | `day`, `route.BikewayMarks`, `graph.PoiCorrections`, `ui.*LayerRules`; Android `DayRuntime` | 11-1, 11-2, N7 |
+| **A6.9** | Y17 istatistik, Y18 kayıtlar, Y19 veri seti, Y20 görevler ve hatırlatıcılar | 12, 13 | `stats_screen`, `shift_widgets` (içerik), `day_deletion`, `ride_logger`, `log_store`, `route_recorder`, `ride_logs_screen`; `dataset_*`, `Dataset*.kt`, RS `LogFeedV3*`, `tools/veri_seti/`; `lib/tasks/*`, `lib/reminders/*`, `tasks_screen`, `reminder_widgets` | 48 + 10 | `files/map/logs/*`, `ride.active.v1`, `shift.deleted.days.v2`, `files/TeklifVeriSeti/*`, `daily.tasks.*`, `reminders.*`, 7100–7102, 7201 | `logs`, `stats`, `tasks`, `reminders`, `logic/orders` `dataset`; Android `RideLogRuntime`, `DayReportWriter`, `DayDeletionRuntime`, `TaskRuntime`, `ReminderRuntime`, `RouteMeasurePortImpl`, `:orders` `DatasetRuntime`; `:app` ekranları | 12-1, 12-2, 12-3/Q5, 13-1, 13-2, 13-3; M-12, M-13 |
+| **A6.11** | Y12 yol kalitesi öğrenme | 9 | `lib/roads/*`, `lib/routing/quality.dart`, `roads_screen`, `road_score`, ses tuşu (`MainActivity`) | 24 | `files/map/roads/*`, `manual-marks.json`, `volumeKeys`, `wwMaxProblemPct`, `wwAskAlways` | `roads` (+ `surface` alt küme); Android `RoadsRuntime`, `VolumeKeys`, `RoadFilesAndroid` | Q1–Q7 |
+| **A6.10** | (K) eski YolGo ile yan yana sürüş | 17.4 | — | — | — | — | — |
+
+Bağımlılıklar `WEEM_ISLER.md` Aşama 6 tablosundadır; A6.8'e A6.2a eklendi (Y15/Y16 testleri orada, 16.5).
 <!-- END sec:0 -->
-
-### 0.3 Yazım durumu (A6.1 sürerken; A6.1 bitince silinir)
-
-Her bölüm `<!-- BEGIN sec:N -->` … `<!-- END sec:N -->` arasındadır; ajanlar bölümü yalnız bu işaretler arasında yazar. Yarıda kalırsa: dalı çek, aşağıda "bitti" olmayan bölümü aynı dosya listesiyle sürdür.
-
-| Bölüm | Konu | Görev | Yazan | Durum |
-|---|---|---|---|---|
-| 0 | özet, WEEM kuralları, görev dizini | tümü | koordinatör | yazılıyor (ajanlardan sonra) (17:18 UTC) <!-- st:0 --> |
-| 1 | kaynak haritası | tümü | koordinatör | bitti (12:23 UTC) <!-- st:1 --> |
-| 2 | Y7 harita verisi | A6.3 | ajan R | bitti (17:15 UTC) <!-- st:2 --> |
-| 3 | Y3 rota motoru | A6.4 | ajan R | bitti (17:15 UTC) <!-- st:3 --> |
-| 4 | Y8 sokak kararları | A6.4 | ajan R | bitti (17:15 UTC) <!-- st:4 --> |
-| 5 | Y15, Y16, Y21 | A6.8 | ajan R | bitti (17:15 UTC) <!-- st:5 --> |
-| 6 | Y1, Y2 harita ekranı | A6.5 | ajan N | bitti (17:25 UTC) <!-- st:6 --> |
-| 7 | Y4 navigasyon | A6.6 | ajan N | bitti (12:40 UTC) <!-- st:7 --> |
-| 8 | Y5, Y6 bağlantılar ve adres | A6.6 | ajan N | bitti (12:34 UTC) <!-- st:8 --> |
-| 9 | Y12 yol kalitesi öğrenme | A6.11 | ajan Q | bitti (17:16 UTC) <!-- st:9 --> |
-| 10 | Y9, N5, Y10 | A6.7 | ajan T | bitti (17:29 UTC) <!-- st:10 --> |
-| 11 | Y11 ve YolGo gün motoru | A6.8 | koordinatör (T1'den devir) | bitti (23:25 UTC) <!-- st:11 --> |
-| 12 | Y17, Y18 | A6.9 | koordinatör | bitti (23:36 UTC) <!-- st:12 --> |
-| 13 | Y19, Y20 | A6.9 | koordinatör (T2'den devir) | bitti (23:49 UTC) <!-- st:13 --> |
-| 14 | veri sözleşmesi | tümü | koordinatör | bitti (23:55 UTC) <!-- st:14 --> |
-| 15 | WEEM yerleşimi | tümü | koordinatör | bitti (23:55 UTC) <!-- st:15 --> |
-| 16 | test eşlemesi A6.2a/A6.2b | A6.2a, A6.2b | koordinatör | bitti (23:55 UTC) <!-- st:16 --> |
-| 17 | açık noktalar ve sorular | tümü | koordinatör | bitti (23:58 UTC) <!-- st:17 --> |
-
-Dosya dağılımı (YG; her dosyanın tek sahibi var, başkası yalnız başvurur):
-- **Ajan R (2–5):** `lib/data/*` (road_graph, graph_builder, overpass, elevation, map_data_service, pois, poi_corrections), `lib/routing/` router, planner, route, route_worker, route_hours, street_prefs, bikeways; `lib/core/physics.dart`, `geo.dart`; `lib/ui/bikeway_layer.dart`, `poi_editor.dart`, `region_info.dart`, `road_hours.dart`; `tool/build_map.dart`, `ci/osm_extract.py`, `ci/build.sh` harita kısmı, `assets/map/`, `assets/baku/`. Testler: `router`, `park_paths`, `push_segments`, `bikeway_e13`, `route_hours`, `ww_green_two_way`, `street_prefs_migration`, `overpass`, `map_data_update`, `pois`.
-- **Ajan N (6–8):** `lib/ui/` map_view, google_map_surface, map_hud, map_hud_layout, puck_style, locate_button, brand, maps_help, nav_screen, home_picker, settings_screen (yapı), setup_screen, api_settings, widgets (150–289 hariç); `lib/core/theme.dart`, `app_info.dart`; `lib/main.dart`; `lib/nav/*` (route_recorder hariç); `lib/tracking/location_service.dart`, `map_matcher.dart`, `nav_only.dart`, `compass.dart`, `heading_filter.dart`; `lib/input/*`; `android_overlay/MainActivity.kt` (bağlantı, ekran, pusula, dosya, ayarlar yöntemleri), `NavFeedProvider.kt`, `AndroidManifest.xml` intent filtreleri. Testler: `hud_layout`, `locate_button`, `map_hud_gesture`, `puck_arrow`, `yolgo_sade_2`, `home_picker`, `approach_zoom`, `arrival_focus`, `arrival_pin`, `native_fast_fix`, `nav_assistant`, `nav_feed`, `nav_only_location`, `remaining_km_e12`, `route_warnings_h2_h3`, `v150_features`, `yolgo_rules`, `address_parser`, `api_settings`, `geocoder_scope`, `place_search`, YK `NavFeedContractTest`.
-- **Ajan Q (9):** `lib/roads/*`, `lib/routing/quality.dart`, `lib/ui/roads_screen.dart`, `road_score.dart`; ses tuşu yakalama (`MainActivity.kt` `setVolumeCapture`, `onVolume`, `onVolumeDownHold`); router'daki öğrenme girdileri (`learned`, `wwRatio`, `wwAvoid`, `wrongWayEdges`, `ghost`) — maliyet formülünün kendisi Bölüm 3'te. Testler: `quality`, `road_learner`, `road_save`, `road_score_ui`, `street_scores`, `day_contributions`, `ww_clean_run`, `ww_no_problem_green`.
-- **Ajan T (10–13; 18 Ekim 17:50 UTC devir: T1 = 11–12, T2 = 13):** `lib/routing/speed_options.dart`; `lib/tracking/` battery_estimator, shift_engine, shift_controller, light_tracker, stop_semantics, ride_logger, log_store, day_deletion, native_telemetry, home_day/rawstats_shift (yalnız başvuru); `lib/nav/route_recorder.dart`; `lib/core/day_scope.dart`; `lib/economics/*` (offer_engine, route_costing, courier_stages, dataset_*; offer_feed/rawstats_signals başvuru); `lib/scooter/scooter_live.dart`; `lib/weather/weather.dart`; `lib/tasks/*`, `lib/reminders/*`; `lib/ui/` stats_screen, shift_widgets, ride_logs_screen, dataset_screen, dataset_manual, tasks_screen, reminder_widgets, weather_section, weather_widget, scooter_sheet, widgets 150–289; `android_overlay/` Weather*, Dataset*, Telemetry*, MotionReceiver, NotifyPolicy (başvuru); `tools/veri_seti/`. Testler: `battery_estimator`, `v140_features`, `v160_y1_y2`, `v170_features`, `weather_section`, `offer_engine`, `route_costing`, `shift_engine`, `light_leaks_f52`, `light_rule_m14`, `light_tracker`, `courier_stage_follow`, `courier_stages_e8`, `home_day_controller` (4–5), `log_store`, `ride_log_status`, `dataset_days`, `dataset_screen`, `assistant`, `reminder_card`, `reminders`, `task_controller`; YK `WeatherFeedTest`, `TelemetryJournalTest`, `DatasetContractTest`, `DatasetMatchingTest`, `DatasetReadsTest`.
-- **Koordinatör (0, 1, 14–17):** `lib/core/settings.dart` (`settings.v1` alan tablosu), `i18n.dart`, manifest ve kimlik, `CHANGELOG.md`; Y13/Y14 (`lib/surface/`, `lib/calibration/`) yalnız sınır notu.
 
 <!-- BEGIN sec:1 -->
 ## 1. Kaynak haritası
