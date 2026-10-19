@@ -21,6 +21,9 @@ data class ReminderItem(
     fun message(lang: Lang): String = TODO("A6.9")
 }
 
+/** Ekranda gösterilen hatırlatıcı (kart ya da bildirim): [atMs] gösterildiği an. */
+data class ActiveReminder(val item: ReminderItem, val atMs: Long)
+
 /** Üç hatırlatıcının ayarı: su (45 dk, açık), kontrol (kapalı), yemek (15:15, kapalı). Eksik alan varsayılan. */
 data class ReminderSettings(val items: List<ReminderItem>) {
     fun of(kind: ReminderKind): ReminderItem = TODO("A6.9")
