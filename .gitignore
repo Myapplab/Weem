@@ -20,3 +20,7 @@ captures/
 
 # Claude Code yerel ayarları (paylaşılan .claude/settings.json ve hooks depoda kalır)
 .claude/settings.local.json
+
+# Gömülü harita (ci/build_map.sh üretir; repoda yalnız boş sürümlü yer tutucu manifest)
+map/src/main/assets/map/*
+!map/src/main/assets/map/manifest.json
