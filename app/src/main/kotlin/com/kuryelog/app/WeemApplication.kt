@@ -8,6 +8,7 @@ import com.kuryelog.app.core.LogImport
 import com.kuryelog.app.core.ShiftHub
 import com.kuryelog.app.core.Store
 import com.kuryelog.app.economics.Economics
+import com.kuryelog.app.map.DayRuntime
 import com.kuryelog.app.orders.Orders
 import com.kuryelog.app.scooter.Scooter
 import com.kuryelog.app.scooter.ScooterShiftLink
@@ -31,6 +32,13 @@ class WeemApplication : Application() {
         Store.guarded(this, "start") { Orders.bind(this) }
         // Scooter dikişi: teklif anı pili ve sipariş başına enerji (R14); `:orders` `:scooter`'ı tanımaz, bağı burada kurulur.
         Store.guarded(this, "start") { Orders.bindScooter(this, Scooter.bridge) }
+        // Gün motoru (MAP.md 11.14): vardiyayı, konumu ve sipariş aşamalarını izler. `Orders.bind` geri yüklemesinden sonra: aşama köprüsünün ilk görüntüsü gerçek olur,
+        // süreç başındaki boş `TripStages` eksik okuma sayılmaz.
+        Store.guarded(this, "start") {
+            OrderStagesBridge.start(this)
+            DayRuntime.start(this)
+            DayRuntime.bindOrders(OrderStagesBridge)
+        }
         LogImport.afterImport = Orders::reloadImportedStats
         // Vardiya dinleyicileri, Rawstats `GpsService` sırasıyla (ORDERS.md 4.2): cep nakdi + CASH PENDING → günlük paket (R17) → şifreli
         // yedek (N3) → siparişler → scooter (A5.3). `onEnd`'de CASH PENDING sonu günlük paketten, o da siparişlerin kapanmasından önce yazılır.

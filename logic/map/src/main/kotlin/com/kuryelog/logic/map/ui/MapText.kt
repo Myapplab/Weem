@@ -39,6 +39,7 @@ enum class MapText(override val tr: String, override val az: String) : Bilingual
     MAPS_SHA_COPY("SHA-1 kopyala", "SHA-1-i kopyala"),
     MIN("dk", "dəq"),
     NO("yok", "yoxdur"),
+    LIGHT_WAITING("Trafik ışığında bekliyorsun", "İşıqforda gözləyirsən"),
     NO_ORDER("Sipariş yok · Wolt/Bolt'ta sipariş başlayınca burada görünür", "Sifariş yoxdur · Wolt/Bolt-da sifariş başlayanda burada görünəcək"),
     PHASE_AT_CUSTOMER("Müşteriye vardın", "Müştəriyə çatdın"),
     PHASE_AT_RESTAURANT("Restorana vardın", "Restorana çatdın"),

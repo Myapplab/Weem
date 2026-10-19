@@ -206,6 +206,7 @@ private fun ShiftCardBody(day: DayView, compact: Boolean, lang: Lang, buttons: @
                 )
                 buttons(false)
             }
+            day.lightSinceMs?.let { LightWaitRow(it, lang, palette) }
             if (!compact) {
                 val lo = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(end = 8.dp)) {
@@ -225,6 +226,23 @@ private fun ShiftCardBody(day: DayView, compact: Boolean, lang: Lang, buttons: @
                 }
             }
         }
+    }
+}
+
+/** Işıkta bekleme sayacı (YolGo `LightWaitChip`, MAP.md 11.9): turuncu, `m:ss`, 1 sn'de bir; katlı kartta da görünür. */
+@Composable
+private fun LightWaitRow(sinceMs: Long, lang: Lang, palette: MapPalette) {
+    var now by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(sinceMs) {
+        while (true) {
+            now = System.currentTimeMillis()
+            delay(1_000)
+        }
+    }
+    val s = ((now - sinceMs) / 1000).coerceAtLeast(0)
+    Row(Modifier.padding(top = 4.dp).testTag("light-wait"), verticalAlignment = Alignment.CenterVertically) {
+        Text("🚦 ${MapText.LIGHT_WAITING.get(lang)}", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(palette.orange), modifier = Modifier.weight(1f))
+        Text("${s / 60}:${(s % 60).toString().padStart(2, '0')}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(palette.orange))
     }
 }
 

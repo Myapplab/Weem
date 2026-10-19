@@ -132,9 +132,9 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, mapStyle: Str
         camera = MapCameraCommand(cameraSeq, p.point, zoom = if (autoZoom && camera == null) MapCamera.STANDARD_ZOOM else null, bearing = bearing)
     }
     val mode = LocateButtonRules.cameraModeOf(follow, headingUp)
-    val day = remember(active, startedAtMs) {
-        DayView(DayState().apply { this.active = active; this.startedAtMs = startedAtMs }, null)
-    }
+    // Gün görünümü gün motorundan (`DayRuntime`, MAP.md 11.14); motor henüz başlamadıysa vardiyadan türetilen boş görünüm.
+    val live by DayRuntime.view.collectAsState()
+    val day = live ?: remember(active, startedAtMs) { DayView(DayState().apply { this.active = active; this.startedAtMs = startedAtMs }, null) }
     val model = MapSurfaceModel(
         base = base, dark = dark, camera = camera,
         puck = puck?.let { MapPuck(it.point, it.course, it.beam, arrow = false, accuracyM = it.accuracyM) },
@@ -173,6 +173,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, mapStyle: Str
             },
             onShowPanels = { mapOnly = false },
         ),
+        toast = { DayToastHost() },
         // Sol göstergeler A6.7'de (MapMetrics); vardiya kapalıyken ya da yarıda kalmışken başlat/bitir kartı üstte.
         metrics = {},
         topCard = { if (!active || interrupted) ShiftCard(lang) },
