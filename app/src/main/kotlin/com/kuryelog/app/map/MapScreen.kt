@@ -30,6 +30,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalView
@@ -49,7 +50,12 @@ import com.kuryelog.logic.map.graph.MapDataState
 import com.kuryelog.logic.map.ui.LocateAction
 import com.kuryelog.logic.map.ui.LocateButtonRules
 import com.kuryelog.logic.map.ui.MapCamera
+import com.kuryelog.logic.map.geo.GeoPoint
+import com.kuryelog.logic.map.graph.Poi
+import com.kuryelog.logic.map.ui.BaseMap
+import com.kuryelog.logic.map.ui.BikewayLayerRules
 import com.kuryelog.logic.map.ui.MapStyles
+import com.kuryelog.logic.map.ui.PoiLayerRules
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -88,7 +94,7 @@ fun MapScreen(lang: Lang, dark: Boolean) {
         }
         return
     }
-    LiveMap(lang, dark, data, settings.mapStyle, shift.active, shift.startedAtMs, shift.interrupted)
+    LiveMap(lang, dark, data, settings.mapStyle, shift.active, shift.startedAtMs, shift.interrupted, settings.showBikewayLayer)
 }
 
 private object MapScreenLoad {
@@ -96,7 +102,7 @@ private object MapScreenLoad {
 }
 
 @Composable
-private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, mapStyle: String, active: Boolean, startedAtMs: Long?, interrupted: Boolean) {
+private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, mapStyle: String, active: Boolean, startedAtMs: Long?, interrupted: Boolean, showBikeway: Boolean) {
     val ctx = LocalContext.current
     val uri = LocalUriHandler.current
     val base = MapStyles.resolve(mapStyle, BuildConfig.MAPS_ENABLED)
@@ -111,6 +117,11 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, mapStyle: Str
     var mapOnly by remember { mutableStateOf(false) }
     var askHome by remember { mutableStateOf(false) }
     var askEnd by remember { mutableStateOf(false) }
+    // Yer katmanı kamerası: merkez 50 m ya da yakınlık 0,2 değişince yeniden seçilir (her hareket karesinde değil).
+    var layerCam by remember { mutableStateOf<LayerCamera?>(null) }
+    val cfg = LocalConfiguration.current
+    val screenW = cfg.screenWidthDp.toDouble()
+    val screenH = cfg.screenHeightDp.toDouble()
     val moveEveryMs = if (base == com.kuryelog.logic.map.ui.BaseMap.GOOGLE) MapCamera.GOOGLE_MOVE_MS else MapCamera.MAPLIBRE_MOVE_MS
 
     fun recenter(resetZoom: Boolean = true, bearingNow: Double? = null) {
@@ -135,14 +146,23 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, mapStyle: Str
     // Gün görünümü gün motorundan (`DayRuntime`, MAP.md 11.14); motor henüz başlamadıysa vardiyadan türetilen boş görünüm.
     val live by DayRuntime.view.collectAsState()
     val day = live ?: remember(active, startedAtMs) { DayView(DayState().apply { this.active = active; this.startedAtMs = startedAtMs }, null) }
+    val layerRev by MapLayers.rev.collectAsState()
+    val bikeLines = remember(data.graph, layerRev, showBikeway, dark) { bikewayLines(ctx, data, showBikeway, dark) }
+    val poiMarkers = remember(data.pois, layerRev, day.lightsRev, layerCam, base) { poiMarkers(ctx, data, day.lightsRev, layerCam, base, screenW, screenH) }
+    val lightMark = day.lightAt?.let { listOf(MapMarker("light-wait", it, MarkerKind.LIGHT_WAIT)) } ?: emptyList()
     val model = MapSurfaceModel(
         base = base, dark = dark, camera = camera,
+        lines = bikeLines, markers = poiMarkers + lightMark,
         puck = puck?.let { MapPuck(it.point, it.course, it.beam, arrow = false, accuracyM = it.accuracyM) },
     )
     val events = MapSurfaceEvents(
         onTap = { mapOnly = !mapOnly },
         onGesture = { follow = false },
-        onCameraIdle = { _, z, _ -> if (abs(z - zoom) > 0.01) { zoom = z; if (abs(z - MapCamera.STANDARD_ZOOM) > 0.05) autoZoom = false } },
+        onCameraIdle = { c, z, b ->
+            if (abs(z - zoom) > 0.01) { zoom = z; if (abs(z - MapCamera.STANDARD_ZOOM) > 0.05) autoZoom = false }
+            val last = layerCam
+            if (last == null || abs(last.zoom - z) >= 0.2 || last.center.distanceTo(c) > 50.0) layerCam = LayerCamera(c, z, b)
+        },
     )
     MapTab(
         state = MapTabState(day = day, cameraMode = mode, mapOnly = mapOnly, weatherStrip = false, nowMs = System.currentTimeMillis()),
@@ -202,6 +222,40 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, mapStyle: Str
             confirmButton = { Button(onClick = { askEnd = false; ctx.safely { ShiftHub.stop() } }) { Text(MapText.END_CONFIRM.get(lang)) } },
             dismissButton = { TextButton(onClick = { askEnd = false }) { Text(MapText.CANCEL.get(lang)) } },
         )
+    }
+}
+
+/** Yer katmanının son seçildiği kamera. */
+private class LayerCamera(val center: GeoPoint, val zoom: Double, val bearing: Double)
+
+/** Bisiklet yolu çizgileri (Y15, MAP.md 5.1): OSM düz, elle işaretli kesikli; iki yüzeyde de en altta. */
+private fun bikewayLines(ctx: android.content.Context, data: MapDataState, show: Boolean, dark: Boolean): List<MapLine> {
+    val g = data.graph ?: return emptyList()
+    val marks = MapLayers.bikeway(ctx).marks
+    return BikewayLayerRules.lines(g, marks, show, dark).map { l ->
+        MapLine(
+            "bike-${l.edge}", g.geometry(l.edge).map { GeoPoint(it.lat, it.lon) },
+            color = ((l.alpha * 255).toInt() shl 24) or l.rgb, widthDp = l.width.toFloat(), pattern = if (l.dashed) LinePattern.DASH else LinePattern.SOLID, z = 1,
+        )
+    }
+}
+
+/**
+ * Yer işaretleri (Y16, MAP.md 5.3): düzeltilmiş POI'ler + yerel ışık işaretleri; kamera çevresinden `PoiLayerRules` seçer. MapLibre 512 piksellik dünya kullandığından
+ * yakınlık kurallarına `zoom + 1` (256 piksellik YolGo ölçeği) verilir.
+ */
+private fun poiMarkers(ctx: android.content.Context, data: MapDataState, lightsRev: Int, cam: LayerCamera?, base: BaseMap, w: Double, h: Double): List<MapMarker> {
+    cam ?: return emptyList()
+    val lights = DayRuntime.lightSpots(ctx)
+    val shown = PoiLayerRules.displayPois(MapLayers.corrections(ctx).corrected(data.pois), lights) ?: return emptyList()
+    val ez = if (base == BaseMap.GOOGLE) cam.zoom else cam.zoom + 1
+    val box = PoiLayerRules.visibleBox(cam.center, ez, w, h)
+    val sel = PoiLayerRules.select(shown.within(box.south, box.west, box.north, box.east), ez, -cam.bearing)
+    val named = sel.labels.map { it.poi }.toHashSet<Poi>()
+    return sel.markers.mapIndexed { i, m ->
+        val p = m.poi
+        val kind = when (p.kind) { 's' -> MarkerKind.POI_METRO; 'm' -> MarkerKind.POI_MALL; 'l' -> MarkerKind.POI_LIGHT; else -> MarkerKind.POI_FOOD }
+        MapMarker("poi-$i-${p.lat}-${p.lon}", GeoPoint(p.lat, p.lon), kind, label = if (kind == MarkerKind.POI_FOOD) p.kind.toString() else "", name = if (p in named) p.name else "")
     }
 }
 

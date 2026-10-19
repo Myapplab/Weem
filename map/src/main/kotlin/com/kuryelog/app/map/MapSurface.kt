@@ -14,10 +14,14 @@ enum class LinePattern { SOLID, DASH, DOT }
 /** Haritadaki bir çizgi; [z] büyük olan üstte. Renk ARGB. */
 data class MapLine(val id: String, val points: List<GeoPoint>, val color: Int, val widthDp: Float, val pattern: LinePattern = LinePattern.SOLID, val z: Int = 0)
 
-enum class MarkerKind { STOP_FIRST, STOP, REACHED }
+/** Durak, varılan hedef ve Y16 yer katmanı simgeleri (MAP.md 5.3, 6.6): [POI_FOOD]'un harfi `label`'da (r/f/c/t), diğerlerinde ad `name`'dedir. */
+enum class MarkerKind { STOP_FIRST, STOP, REACHED, POI_METRO, POI_MALL, POI_LIGHT, POI_FOOD, LIGHT_WAIT }
 
-/** İşaret: duraklar (mor, numaralı; ilk tam, diğerleri %60) ve varılan hedef (yeşil). */
-data class MapMarker(val id: String, val point: GeoPoint, val kind: MarkerKind, val label: String = "")
+/**
+ * İşaret: duraklar (mor, numaralı; ilk tam, diğerleri %60) ve varılan hedef (yeşil); yer simgeleri [name] ile (ad simgenin altında; boşsa yok). [label]: durak numarası ya da
+ * yemek noktasının tür harfi.
+ */
+data class MapMarker(val id: String, val point: GeoPoint, val kind: MarkerKind, val label: String = "", val name: String = "")
 
 /** Konum işareti: [course] ok yönü, [beam] koni yönü (pusula dahil), [arrow] rota açık; doğruluk dairesi 8 < [accuracyM] < 80 m. */
 data class MapPuck(val point: GeoPoint, val course: Double?, val beam: Double?, val arrow: Boolean, val accuracyM: Double?)

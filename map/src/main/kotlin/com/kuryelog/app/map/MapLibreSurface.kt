@@ -192,14 +192,8 @@ internal class MapLibreHolder(private val app: Context, private val userAgent: S
             ))
         }))
         val markerFeatures = model.markers.map { mk ->
-            val icon = when (mk.kind) {
-                MarkerKind.REACHED -> "reached-${model.dark}"
-                MarkerKind.STOP_FIRST -> "stop1-${mk.label}-${model.dark}"
-                MarkerKind.STOP -> "stop-${mk.label}-${model.dark}"
-            }
-            if (s.getImage(icon) == null) {
-                s.addImage(icon, if (mk.kind == MarkerKind.REACHED) MarkerBitmaps.reached(density, model.dark) else MarkerBitmaps.stop(density, mk.label, mk.kind == MarkerKind.STOP_FIRST, model.dark))
-            }
+            val icon = MarkerBitmaps.key(mk, model.dark)
+            if (s.getImage(icon) == null) s.addImage(icon, MarkerBitmaps.bitmap(mk, density, model.dark))
             GeoJson.point(mk.point, mapOf("icon" to icon))
         }
         s.getSourceAs<GeoJsonSource>(SRC_MARKERS)?.setGeoJson(GeoJson.collection(markerFeatures))

@@ -58,4 +58,15 @@ class PoiLayerRulesTest {
         val rows = (0 until 400).map { i -> Poi(lat + (i / 20) * 0.01, lon + (i % 20) * 0.01, 'm', "AVM $i") }
         assertEquals(PoiZoomRules.MAX_LABELS, PoiLayerRules.select(rows, 17.0, 0.0).labels.size)
     }
+
+    @Test
+    fun `görünür kutu yakınlaştıkça küçülür ve ekranın uzun kenarını kapsar`() {
+        val c = com.kuryelog.logic.map.geo.GeoPoint(lat, lon)
+        val z17 = PoiLayerRules.visibleBox(c, 17.0, 360.0, 800.0)
+        val z16 = PoiLayerRules.visibleBox(c, 16.0, 360.0, 800.0)
+        assertEquals("zoom 17'de 400 dp · 1,13 m/dp ≈ 450 m yarı kenar", 450.0, (z17.north - c.lat) * 111320.0, 10.0)
+        assertEquals("bir zoom aşağı: kutu iki kat", 2.0, (z16.north - c.lat) / (z17.north - c.lat), 1e-6)
+        assertTrue(z17.contains(lat + 0.001, lon + 0.001))
+        assertTrue(!z17.contains(lat + 0.01, lon))
+    }
 }

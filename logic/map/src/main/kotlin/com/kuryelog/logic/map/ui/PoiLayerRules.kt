@@ -1,7 +1,9 @@
 package com.kuryelog.logic.map.ui
 
 import com.kuryelog.logic.map.day.LightSpot
+import com.kuryelog.logic.map.geo.BBox
 import com.kuryelog.logic.map.geo.Geo
+import com.kuryelog.logic.map.geo.GeoPoint
 import com.kuryelog.logic.map.graph.Poi
 import com.kuryelog.logic.map.graph.PoiSet
 import kotlin.math.PI
@@ -50,6 +52,18 @@ object PoiLayerRules {
         val y = (1 - ln(tan(phi) + 1 / cos(phi)) / PI) / 2 * scale
         val r = rotationDeg * PI / 180
         return Pair(x * cos(r) - y * sin(r), x * sin(r) + y * cos(r))
+    }
+
+    /**
+     * Kamera çevresinde görünür olabilecek kutu (dönüşü kapsar: yarı kenar = ekranın uzun kenarının yarısı). [zoom] 256 piksellik karo ölçeğindedir (YolGo/Google); MapLibre
+     * 512 piksellik dünya kullandığından çağıran `zoom + 1` verir. Piksel = dp.
+     */
+    fun visibleBox(center: GeoPoint, zoom: Double, widthDp: Double, heightDp: Double): BBox {
+        val mpp = 156543.03392 * cos(center.lat * PI / 180) / 2.0.pow(zoom)
+        val halfM = maxOf(widthDp, heightDp) / 2 * mpp
+        val dLat = halfM / 111320.0
+        val dLon = halfM / (111320.0 * cos(center.lat * PI / 180))
+        return BBox(center.lat - dLat, center.lon - dLon, center.lat + dLat, center.lon + dLon)
     }
 
     /** Görünür alandaki noktalardan simge ve etiket seçimi. [visible] kamera kutusundaki noktalar; yakınlık < 12'de boş. */
