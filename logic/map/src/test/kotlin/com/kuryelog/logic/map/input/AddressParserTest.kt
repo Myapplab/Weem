@@ -11,7 +11,7 @@ import org.junit.Test
 /**
  * YolGo `address_parser_test.dart` "AddressParser" 15 test + `assistant_test.dart` açık görev girişi 1 test (A6.2b, MAP.md 8.4, 8.11, 16.3;
  * "Plus Code" 2 test `PlusCodeTest`'te).
- * Girdi ve beklentiler birebir; Dart `isA<T>` → Kotlin `as`/`is`. WEEM ek vektörleri (NBSP, Kiril'e bitişik telefon, büyük harf, `BAKİ`; 8.13 F-N2) A6.6'da eklenir.
+ * Girdi ve beklentiler birebir; Dart `isA<T>` → Kotlin `as`/`is`. WEEM ek vektörleri (NBSP, Kiril'e bitişik telefon, büyük harf, `BAKİ`; 8.13 F-N2) son testte (A6.6).
  */
 class AddressParserTest {
     private fun parse(s: String) = AddressParser.parse(s)
@@ -143,5 +143,20 @@ class AddressParserTest {
         assertTrue(AddressParser.parseExplicit("Birbank") is Address)
         assertNull(AddressParser.parse("ASAN Xidmət"))
         assertNull(AddressParser.parseExplicit("https://instagram.com/example"))
+    }
+
+    @Test
+    fun `WEEM desen taşınabilirliği - NBSP, Kiril harfe bitişik telefon, büyük harf, noktalı İ`() {
+        val nbsp = parse("Mehdi Hüseyn\u00A099") as Address
+        assertTrue(nbsp.strong)
+        assertEquals("Mehdi Hüseyn 99, Bakı", nbsp.query)
+        // Dart `\b` ASCII: Kiril harfe bitişik 0 telefonun başı sayılır, telefon silinir
+        assertEquals("Nizami küçəsi 5, а, Bakı", (parse("Nizami küçəsi 5, а0501234567") as Address).query)
+        assertEquals("Mənzil 45", (parse("Nizami küçəsi 5, MƏNZİL 45") as Address).unitNote)
+        assertEquals("Mənzil 12", (parse("Nizami küçəsi 5, КВ. 12") as Address).unitNote)
+        // Kotlin `İ`'yi `i` sayar (Azerice doğru): "BAKİ" şehir sayılır, ", Bakı" eklenmez
+        assertEquals("Nizami küçəsi 5, BAKİ", (parse("Nizami küçəsi 5, BAKİ") as Address).query)
+        // Bozuk yüzde kodlaması istisna atmaz
+        assertNull(AddressParser.coordsFromUri(LinkUri.tryParse("https://www.google.com/maps?q=%E0%A4")!!))
     }
 }
