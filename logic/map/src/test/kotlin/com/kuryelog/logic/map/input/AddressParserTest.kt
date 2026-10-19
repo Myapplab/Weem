@@ -9,7 +9,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * YolGo `address_parser_test.dart` "AddressParser" 15 test (A6.2b, MAP.md 8.4, 8.11; "Plus Code" 2 test `PlusCodeTest`'te).
+ * YolGo `address_parser_test.dart` "AddressParser" 15 test + `assistant_test.dart` açık görev girişi 1 test (A6.2b, MAP.md 8.4, 8.11, 16.3;
+ * "Plus Code" 2 test `PlusCodeTest`'te).
  * Girdi ve beklentiler birebir; Dart `isA<T>` → Kotlin `as`/`is`. WEEM ek vektörleri (NBSP, Kiril'e bitişik telefon, büyük harf, `BAKİ`; 8.13 F-N2) A6.6'da eklenir.
  */
 class AddressParserTest {
@@ -134,5 +135,13 @@ class AddressParserTest {
         assertNull(parse("#CCUV5"))
         assertNull(parse("https://instagram.com/xyz"))
         assertNull(parse("Toplam 12.50, 3.20 AZN"))
+    }
+
+    @Test
+    fun `açık görev girişi ASAN ve banka mekân adını kabul eder, pano filtresi korunur`() {
+        assertTrue(AddressParser.parseExplicit("ASAN Xidmət") is Address)
+        assertTrue(AddressParser.parseExplicit("Birbank") is Address)
+        assertNull(AddressParser.parse("ASAN Xidmət"))
+        assertNull(AddressParser.parseExplicit("https://instagram.com/example"))
     }
 }
