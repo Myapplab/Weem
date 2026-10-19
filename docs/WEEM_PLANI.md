@@ -209,6 +209,7 @@ Toplam 48 oturumluk görev (`docs/WEEM_ISLER.md`; aksamalarla kabaca 50–55 otu
 | S25 Gölge mod farklarında doğru kaynak | Rawstats'ın kaydı da hatalı olabilir (istatistik ekranında bazen hata var): sert farkta doğruyu **Wolt/Bolt'un kendi kazanç ekranı** belirler; WEEM doğru çıkarsa fark "Rawstats hatası" diye kapanır — 19 Ekim |
 | S16 Gölge modda çift soru/pencere | (a) `.dev`'de "gölge mod" anahtarı: açıkken WEEM soru sormaz, rozet/balon çizmez, yalnız kayıt tutar (görev A3.11, A3.10'dan önce) — 19 Ekim |
 | S26 Yol kalitesi (A6.11) | Scooter'a yeni koltuk geldi, önemi azaldı; sistem tam yazılır ve geliştirmeye açık kalır ama Ayarlarda tek anahtarla açılıp kapanır, **varsayılan kapalı**. Kapalıyken sensörler, arka plan hesabı, Ses± yakalama ve puan soruları hiç çalışmaz; önceden öğrenilmiş puanlar rotada kullanılmaya devam eder. A6.11, A6.6–A6.9'dan sonraya alınabilir — 19 Ekim |
+| S27 Aşama 10 sırası | Önce kalan özellikler → optimizasyon → **geçiş öncesi kısa güvenlik kontrolü** (müşteri verisi, izinler) → geri yükleme provası → iş telefonlarına geçiş → gerçek kullanım dönemi (kullanıcı gereksiz/birleşecek özellikleri seçer) → sadeleştirme (özellik çıkarma/birleştirme dahil) → **en son** büyük denetim (ultracode, A10.7) — 20 Ekim |
 
 ## 9. İlerleme
 

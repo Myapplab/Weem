@@ -2,7 +2,7 @@
 
 Kurallar: `AGENTS.md` → "Birden çok Claude hesabı". Durumlar: `bekliyor` · `sürüyor (<tarih saat>)` · `bitti (<commit>)` · `engel (<neden>)`. Her görev bir oturuma sığar; "Bağımlı" sütunundakiler bitmeden başlanmaz. Özellik kodları (Y/R/S/G/N) `WEEM_PLANI.md` Bölüm 3'te; her özelliğin eski kodu, testleri ve verisi `docs/sartname/OZELLIK_HARITASI.md`'de, korunacak adlar `VERI_SOZLESMESI.md`'de, test listesi `TEST_ENVANTERI.md`'de. (K) = kullanıcının telefonda yapacağı deneme.
 
-**Usage kuralı (S13, S14; ayrıntı `AGENTS.md`):** ultracode yalnız A6.1 (şartname) ve A10.3 (büyük denetim); paralel ajan en çok 2–3, her ajan çıktısını bölüm bölüm repoya yazar ve her bölümde commit + push. Diğer şartname görevleri (A2.1, A3.1, A5.1) tek ajanla (A3.1: Opus · max, S14); önce `docs/sartname/bulgular/` ve özellik haritası okunur, yalnız eksikler kaynak koddan çıkarılır.
+**Usage kuralı (S13, S14; ayrıntı `AGENTS.md`):** ultracode yalnız A6.1 (şartname) ve A10.7 (büyük denetim); paralel ajan en çok 2–3, her ajan çıktısını bölüm bölüm repoya yazar ve her bölümde commit + push. Diğer şartname görevleri (A2.1, A3.1, A5.1) tek ajanla (A3.1: Opus · max, S14); önce `docs/sartname/bulgular/` ve özellik haritası okunur, yalnız eksikler kaynak koddan çıkarılır.
 
 ## Şu an
 
@@ -127,10 +127,12 @@ Kurallar: `AGENTS.md` → "Birden çok Claude hesabı". Durumlar: `bekliyor` · 
 | No | İş | Bitti sayılır | Model · effort | Bağımlı | Durum |
 |---|---|---|---|---|---|
 | A10.1 | Optimizasyon: pil, bellek, APK boyutu, arka planda kalma | Ölçümler belgede | Opus · high | A9.3 | bekliyor |
-| A10.2 | Kod sadeleştirme: tekrar eden kod, gereksiz katman, ölü kod (`/simplify`); davranış aynı, testler yeşil | Testler yeşil, satır sayısı belgede | Opus · high | A10.1 | bekliyor |
-| A10.3 | Büyük denetim: güvenlik, izinler, `/code-review xhigh` | Bulgular kapandı | Opus · xhigh + ultracode (S13) | A10.2 | bekliyor |
-| A10.4 | Geri yükleme provası, geçiş rehberi | Belge + deneme | Sonnet · high | A10.3 | bekliyor |
-| A10.5 | (K) Geçiş: ZIP yedek → WEEM Rawstats'ın üstüne → YolGo içe aktar | İş telefonlarında WEEM | — | A10.4 | bekliyor |
+| A10.2 | Geçiş öncesi kısa güvenlik kontrolü (S27): müşteri adı/telefonu/adresi yanlış yere gidiyor mu (dışa aktarma, scooter telefonu, ağ, günlükler), izinler gereğinden fazla mı; `/code-review high`, ultracode yok | Bulgular kapandı | Opus · high | A10.1 | bekliyor |
+| A10.3 | Geri yükleme provası, geçiş rehberi | Belge + deneme | Sonnet · high | A10.2 | bekliyor |
+| A10.4 | (K) Geçiş: ZIP yedek → WEEM Rawstats'ın üstüne → YolGo içe aktar | İş telefonlarında WEEM | — | A10.3 | bekliyor |
+| A10.5 | (K) Gerçek kullanım dönemi: kullanıcı gereksiz özellikleri ve aynı motora birleşebilecekleri yazar | Kullanıcının listesi | — | A10.4 | bekliyor |
+| A10.6 | Sadeleştirme: A10.5 listesine göre özellik çıkarma/birleştirme (kararlar Bölüm 8'e) + tekrar eden kod, gereksiz katman, ölü kod (`/simplify`); testler yeşil | Testler yeşil, satır sayısı belgede | Opus · high | A10.5 | bekliyor |
+| A10.7 | Büyük denetim: güvenlik, izinler, `/code-review xhigh` (son kod üzerinde) | Bulgular kapandı | Opus · xhigh + ultracode (S13) | A10.6 | bekliyor |
 
 ## Aşama 11 — Sonrası
 
