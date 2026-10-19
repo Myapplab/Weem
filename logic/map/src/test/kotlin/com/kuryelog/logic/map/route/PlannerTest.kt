@@ -35,7 +35,7 @@ class PlannerTest {
         val result = computePlans(
             PlanRequest(
                 g, a, listOf(b), RideParams(), approved = emptySet(), blocked = emptySet(),
-                learned = mapOf(100L to LearnedQuality(q = 0.2, c = 1.0, r = 25.0)),
+                learned = mapOf(100L to LearnedQuality(q = 0.2, c = 1.0, r = 25)),
             ),
         )
         assertTrue(result.plans.isNotEmpty())

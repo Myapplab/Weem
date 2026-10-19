@@ -8,7 +8,7 @@ import com.kuryelog.logic.map.surface.SurfaceMark
 class RoutingException(override val message: String) : Exception(message)
 
 /** Rota kesimi: kenar, itilen (yürünen) mi, çizgi üzerinde başlangıç metresi. */
-class RouteSeg(val edge: Int, val walk: Boolean, val startM: Double)
+class RouteSeg(val edge: Int, val walk: Boolean, val startM: Double, val lenM: Double)
 
 class RouteTurn(val right: Boolean)
 
@@ -29,6 +29,12 @@ class RouteLeg(
     val segs: List<RouteSeg>,
     val turns: List<RouteTurn>,
     val warnings: List<String>,
+    /** Rotadaki sokak adları sırayla (`MAP.md` 9.2). */
+    val streets: List<String>,
+    /** Rotanın ortalama kalitesi 0–1. */
+    val quality: Double,
+    /** Ters yönde geçilen kesimlerin ağırlıklı sorun riski. */
+    val wrongWayRisk: Double,
 )
 
 class Plan(val rideM: Double, val legs: List<RouteLeg>, val order: List<Int>)
@@ -81,9 +87,7 @@ class PlanRequest(
     val bikeways: Set<Long> = emptySet(),
     val marks: List<SurfaceMark> = emptyList(),
     val wrongWayEdges: Set<Int> = emptySet(),
+    val ghost: Set<Int> = emptySet(),
 )
-
-/** Elle ya da öğrenilmiş yol kalitesi girdisi: `q` kalite, `c` güven, `r` ters yön oranı (`MAP.md` 9.3). */
-data class LearnedQuality(val q: Double, val c: Double, val r: Double)
 
 fun computePlans(request: PlanRequest): PlanResult = TODO("A6.4")
