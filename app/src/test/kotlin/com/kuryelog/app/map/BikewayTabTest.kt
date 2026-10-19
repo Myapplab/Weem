@@ -11,6 +11,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.kuryelog.app.WeemTheme
 import com.kuryelog.logic.core.Lang
 import org.junit.Assert.assertEquals
@@ -45,7 +46,7 @@ class BikewayTabTest {
         compose.onAllNodes(hasText("×0.85")).assertCountEquals(1)
         compose.onAllNodes(hasText("OSM: 3 ", substring = true)).assertCountEquals(1)
         compose.onAllNodes(hasText("Batı küçəsi")).assertCountEquals(1)
-        compose.onNodeWithContentDescription("İşareti kaldır").performClick()
+        compose.onNodeWithContentDescription("İşareti kaldır").performScrollTo().performClick() // sekme kayar: işaret listesi ekranın altında
         compose.waitForIdle()
         assertTrue(state.marks.isEmpty())
         compose.onAllNodes(hasText("Batı küçəsi")).assertCountEquals(0)
