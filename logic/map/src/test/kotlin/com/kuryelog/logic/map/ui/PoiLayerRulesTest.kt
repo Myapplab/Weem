@@ -64,7 +64,7 @@ class PoiLayerRulesTest {
         val c = com.kuryelog.logic.map.geo.GeoPoint(lat, lon)
         val z17 = PoiLayerRules.visibleBox(c, 17.0, 360.0, 800.0)
         val z16 = PoiLayerRules.visibleBox(c, 16.0, 360.0, 800.0)
-        assertEquals("zoom 17'de 400 dp · 1,13 m/dp ≈ 450 m yarı kenar", 450.0, (z17.north - c.lat) * 111320.0, 10.0)
+        assertEquals("zoom 17: 400 dp · 0,91 m/dp ≈ 364 m yarı kenar (enlem 40,4)", 364.0, (z17.north - c.lat) * 111320.0, 5.0)
         assertEquals("bir zoom aşağı: kutu iki kat", 2.0, (z16.north - c.lat) / (z17.north - c.lat), 1e-6)
         assertTrue(z17.contains(lat + 0.001, lon + 0.001))
         assertTrue(!z17.contains(lat + 0.01, lon))
