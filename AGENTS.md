@@ -65,6 +65,7 @@ Kullanıcı bu prompta görev ya da yanıt ekleyebilir; ek yoksa ajan "Şu an"da
 
 - `dl.google.com` = Google'ın Android dosya sunucusu (Android SDK ve Google Maven: AGP, AndroidX, Compose). Bulut ortamının ağ ayarı onu kapatırsa Android modülleri burada derlenmez; `logic/` (saf Kotlin, Maven Central) yine derlenir ve test edilir, Android katmanını CI derler. Oturum başlangıç kancası durumu yazar.
 - Açmak (kullanıcı, her hesap için bir kez): oturum başlığındaki bulut ortamı menüsü → **Edit** → **Network access** → "Allowed domains"e `dl.google.com` ekle ("Allow package managers" işaretli kalsın). Adımlar: <https://code.claude.com/docs/en/cloud-environments#network-access>.
+- Android Gradle (`:app`, `:map`) ilk indirmede Maven Central'dan 429 ("Too Many Requests") verebilir: `./gradlew … --max-workers=1` ile yeniden dene (ikinci denemede önbellek dolar). Robolectric testleri bu ortamda koşar: `./gradlew :app:testDebugUnitTest --tests '…'`.
 - Bulut kabuğunun yerel ayarı `POSIX`: Türkçe adlı test işlevlerinden üretilen sınıf dosyaları derleyicide kırılır (`InvalidPathException`). Gradle'ı `LC_ALL=C.UTF-8 ./gradlew …` ile çalıştır (daemon eski ortamla açıksa önce `./gradlew --stop`). Test işlevi adında `. ; : / [ ] < >` kullanma.
 
 ## Usage tasarrufu
