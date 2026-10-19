@@ -80,6 +80,9 @@ dependencies {
     implementation("com.kuryelog.logic:scooter")
     // Siparişler → "Teklif puanı" (E4, A4.1): logic/economics OfferScorePage, OfferScoreBook.
     implementation("com.kuryelog.logic:economics")
+    // Harita ekranlarının durum tipleri (A6.2b iskeleti, A6.5–A6.9 doldurur): logic/map gün, nav, ride, weather, logs, tasks, reminders.
+    implementation("com.kuryelog.logic:map")
+    implementation("com.kuryelog.logic:core")
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
