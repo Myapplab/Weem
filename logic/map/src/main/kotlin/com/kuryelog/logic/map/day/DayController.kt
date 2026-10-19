@@ -22,6 +22,9 @@ class DayController(private val prefs: MapPrefs, private val lang: () -> Lang) {
 
     fun startDay(atMs: Long, reason: String = "manual"): DayStep = TODO("A6.8")
 
+    /** Konum okuması: fix yaşı −5…+30 sn dışındaysa yok sayılır; motor + ışık ölçer (MAP.md 11.14). */
+    fun onFix(fix: DayFix, nowMs: Long): DayStep = TODO("A6.8")
+
     /** Aşama okuması ([feed] null = okuma yok); [lastPoint] son konum. Aşama izleyicinin durumu `courier.follow.v1`'e yazılır (restoran adı yok). */
     fun onStages(feed: FollowerFeed?, nowMs: Long, lastPoint: GeoPoint?): DayStep = TODO("A6.8")
 }
