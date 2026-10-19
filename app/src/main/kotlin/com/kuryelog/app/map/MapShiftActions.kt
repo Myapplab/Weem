@@ -13,7 +13,7 @@ object MapShiftActionsDefaults {
 /**
  * Harita sekmesinin gün eylemleri (YolGo `ShiftBar`; MAP.md 6.12, SORU-N7): katlı hâlde (`shift-collapsed`) tek sıra, sol kenarda üç simge — Eve dön (`shift-home`),
  * İstatistik (`shift-stats`), Günü bitir (`shift-end`); soldan sağa kaydırınca açık kart (`shift-card`: aşama metni, rota varken "#N"); yeni sipariş ya da dışarı dokunuş
- * kartı katlar. Gün kapalıyken Eve dön ve Günü bitir pasif. Sipariş düğmeleri yok (aşamayı yalnız ekran okuması ilerletir). İskelet (A6.2b): gövde A6.5'te.
+ * kartı katlar ([collapseSignal] değişince — ana ekran dışarı dokunuşta artırır). Gün kapalıyken Eve dön ve Günü bitir pasif. Sipariş düğmeleri yok (aşamayı yalnız ekran okuması ilerletir). İskelet (A6.2b): gövde A6.5'te.
  */
 @Composable
 fun MapShiftActions(
@@ -24,6 +24,7 @@ fun MapShiftActions(
     onStats: () -> Unit,
     onEnd: () -> Unit,
     modifier: Modifier = Modifier,
+    collapseSignal: Int = 0,
 ) {
     TODO("A6.5")
 }
