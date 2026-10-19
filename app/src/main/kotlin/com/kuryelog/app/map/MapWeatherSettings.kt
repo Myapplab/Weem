@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kuryelog.logic.core.Lang
+import com.kuryelog.logic.map.ui.MapText
 
 /**
  * Harita ayarları → "Hava durumu" bölümü (MAP.md 10.9): "Günde bir hava bildirimi" (M-S19), bilgi düğmesi (`weather-info`: pencere "Son bilinen konuma göre; konum yoksa Bakı. …"),
@@ -33,7 +34,7 @@ fun MapSettingsScreen(lang: Lang, weatherStrip: Boolean, onWeatherStripChange: (
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (onBack != null) TextButton(onClick = onBack) { Text("←") }
-            Text(tl(lang, "Harita ayarları", "Xəritə tənzimləmələri"), style = MaterialTheme.typography.headlineMedium)
+            Text(MapText.SETTINGS_TITLE.get(lang), style = MaterialTheme.typography.headlineMedium)
         }
         MapBaseSection(lang)
         // A6.7: MapWeatherSettings(weatherStrip, onWeatherStripChange, lang) burada ("Hava durumu").

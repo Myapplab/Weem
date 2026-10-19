@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import com.kuryelog.app.LocalWeemPalette
 import com.kuryelog.logic.app.Palette
 import com.kuryelog.logic.core.Lang
+import com.kuryelog.logic.map.ui.MapText
 import com.kuryelog.logic.map.day.DayState
 import com.kuryelog.logic.map.day.DayView
 import com.kuryelog.logic.map.day.OrderPhase
@@ -130,9 +131,9 @@ private fun Modifier.swipe(minDp: Float, onSwipe: (Float) -> Unit): Modifier = p
 @Composable
 private fun DayButtons(active: Boolean, lang: Lang, cell: Boolean, onHome: () -> Unit, onStats: () -> Unit, onEnd: () -> Unit) {
     Row {
-        DayButton("shift-home", "⌂", tl(lang, "Eve dön", "Evə qayıt"), active, cell, onHome)
-        DayButton("shift-stats", "▥", tl(lang, "İstatistik", "Statistika"), true, cell, onStats)
-        DayButton("shift-end", "⏹", tl(lang, "Günü bitir", "Günü tamamla"), active, cell, onEnd)
+        DayButton("shift-home", "⌂", MapText.HOME.get(lang), active, cell, onHome)
+        DayButton("shift-stats", "▥", MapText.STATS.get(lang), true, cell, onStats)
+        DayButton("shift-end", "⏹", MapText.END.get(lang), active, cell, onEnd)
     }
 }
 
@@ -149,12 +150,12 @@ private fun DayButton(tag: String, glyph: String, label: String, enabled: Boolea
 
 /** Aşamanın metni ve rengi (YolGo `_phaseInfo`; metinler `:orders` ile aynı). */
 private fun phaseText(phase: OrderPhase, lang: Lang): String = when (phase) {
-    OrderPhase.TO_RESTAURANT -> tl(lang, "Restorana gidiyorsun", "Restorana gedirsən")
-    OrderPhase.AT_RESTAURANT -> tl(lang, "Restorana vardın", "Restorana çatdın")
-    OrderPhase.READY_FOR_CUSTOMER -> tl(lang, "Sipariş alındı", "Sifariş götürüldü")
-    OrderPhase.TO_CUSTOMER -> tl(lang, "Müşteriye gidiyorsun", "Müştəriyə gedirsən")
-    OrderPhase.AT_CUSTOMER -> tl(lang, "Müşteriye vardın", "Müştəriyə çatdın")
-    OrderPhase.NONE -> tl(lang, "Sipariş", "Sifariş")
+    OrderPhase.TO_RESTAURANT -> MapText.PHASE_TO_RESTAURANT.get(lang)
+    OrderPhase.AT_RESTAURANT -> MapText.PHASE_AT_RESTAURANT.get(lang)
+    OrderPhase.READY_FOR_CUSTOMER -> MapText.PHASE_READY.get(lang)
+    OrderPhase.TO_CUSTOMER -> MapText.PHASE_TO_CUSTOMER.get(lang)
+    OrderPhase.AT_CUSTOMER -> MapText.PHASE_AT_CUSTOMER.get(lang)
+    OrderPhase.NONE -> MapText.PHASE_NONE.get(lang)
 }
 
 private fun phaseColor(phase: OrderPhase, p: MapPalette): Color = Color(
@@ -170,10 +171,10 @@ private fun phaseColor(phase: OrderPhase, p: MapPalette): Color = Color(
 /** Süre metni (YolGo `fmtDur`): "45 sn", "12 dk", "1 sa 5 dk". */
 internal fun fmtDur(seconds: Long, lang: Lang): String {
     val s = seconds.coerceAtLeast(0)
-    if (s < 60) return "$s ${tl(lang, "sn", "san")}"
+    if (s < 60) return "$s ${MapText.SEC.get(lang)}"
     val h = s / 3600
     val m = (s % 3600) / 60
-    return if (h > 0) "$h ${tl(lang, "sa", "saat")} $m ${tl(lang, "dk", "dəq")}" else "$m ${tl(lang, "dk", "dəq")}"
+    return if (h > 0) "$h ${MapText.HOUR.get(lang)} $m ${MapText.MIN.get(lang)}" else "$m ${MapText.MIN.get(lang)}"
 }
 
 @Composable
@@ -184,7 +185,7 @@ private fun ShiftCardBody(day: DayView, compact: Boolean, lang: Lang, buttons: @
     val now = System.currentTimeMillis()
     val total = s.startedAtMs?.let { (now - it) / 1000 } ?: 0
     val line = when {
-        !s.active -> tl(lang, "Gün kapalı · evden çıkınca otomatik başlar", "Gün bağlıdır · evdən çıxanda avtomatik başlayır")
+        !s.active -> MapText.DAY_OFF.get(lang)
         compact && o != null -> "#${o.n} ${phaseText(s.phase, lang)}" + if (s.queuedOrders.isEmpty()) "" else " · +${s.queuedOrders.size}"
         else -> "${fmtDur(total, lang)} · ${String.format(Locale.US, "%.1f", s.distM / 1000)} km" + if (compact && s.delivered > 0) " · 📦${s.delivered}" else ""
     }
@@ -210,15 +211,15 @@ private fun ShiftCardBody(day: DayView, compact: Boolean, lang: Lang, buttons: @
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(end = 8.dp)) {
                     if (s.active) {
                         val done = s.orders.filter { it.deliveredAtMs != null && !it.cancelled }.map { it.n }.toSet().size
-                        Text("${tl(lang, "Tamamlanan sipariş", "Tamamlanan sifariş")}: $done", style = lo, modifier = Modifier.testTag("completed-orders"))
+                        Text("${MapText.COMPLETED_ORDERS.get(lang)}: $done", style = lo, modifier = Modifier.testTag("completed-orders"))
                     }
                     if (s.active && o == null) {
-                        Text(tl(lang, "Sipariş yok · Wolt/Bolt'ta sipariş başlayınca burada görünür", "Sifariş yoxdur · Wolt/Bolt-da sifariş başlayanda burada görünəcək"), style = lo)
+                        Text(MapText.NO_ORDER.get(lang), style = lo)
                     }
                     if (o != null) {
                         OrderRow(o, s.phase, lang, palette, now)
                         for (other in s.queuedOrders) {
-                            Text("#${other.n} · " + if (other.restLeftAtMs != null) tl(lang, "Alındı", "Götürüldü") else tl(lang, "Alış bekliyor", "Götürülmə gözləyir"), style = lo)
+                            Text("#${other.n} · " + if (other.restLeftAtMs != null) MapText.QUEUED_PICKED.get(lang) else MapText.QUEUED_WAITING.get(lang), style = lo)
                         }
                     }
                 }

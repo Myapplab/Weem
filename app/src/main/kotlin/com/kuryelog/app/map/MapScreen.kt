@@ -41,6 +41,7 @@ import com.kuryelog.app.core.Home
 import com.kuryelog.app.core.ShiftHub
 import com.kuryelog.app.safely
 import com.kuryelog.logic.core.Lang
+import com.kuryelog.logic.map.ui.MapText
 import com.kuryelog.logic.map.day.DayState
 import com.kuryelog.logic.map.day.DayView
 import com.kuryelog.logic.map.graph.MapDataPhase
@@ -180,25 +181,25 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, mapStyle: Str
         val hasHome = remember { Home.point(ctx) != null }
         AlertDialog(
             onDismissRequest = { askHome = false },
-            title = { Text(tl(lang, "Eve dön", "Evə qayıt")) },
+            title = { Text(MapText.HOME.get(lang)) },
             text = {
                 Text(
-                    if (hasHome) tl(lang, "Evine rota çizilsin mi? Aktif gün devam eder.", "Evə marşrut çəkilsin? Aktiv gün davam edir.")
-                    else tl(lang, "Ev konumu ayarlanmamış — Daha fazla → Ev konumu", "Ev məkanı təyin edilməyib — Daha çox → Ev məkanı"),
+                    if (hasHome) MapText.HOME_ASK.get(lang)
+                    else MapText.HOME_MISSING.get(lang),
                 )
             },
             // Eve rota (goHome) navigasyonla gelir (A6.6); onay şimdilik yalnız pencereyi kapatır.
-            confirmButton = { if (hasHome) Button(onClick = { askHome = false }) { Text(tl(lang, "Eve dön", "Evə qayıt")) } },
-            dismissButton = { TextButton(onClick = { askHome = false }) { Text(tl(lang, "Vazgeç", "Ləğv et")) } },
+            confirmButton = { if (hasHome) Button(onClick = { askHome = false }) { Text(MapText.HOME.get(lang)) } },
+            dismissButton = { TextButton(onClick = { askHome = false }) { Text(MapText.CANCEL.get(lang)) } },
         )
     }
     if (askEnd) {
         AlertDialog(
             onDismissRequest = { askEnd = false },
-            title = { Text(tl(lang, "Günü bitir?", "Günü tamamlamaq istəyirsən?")) },
-            text = { Text(tl(lang, "Kayıt durur ve günün istatistiği açılır.", "Günün qeydi tamamlanır və statistika açılır.")) },
-            confirmButton = { Button(onClick = { askEnd = false; ctx.safely { ShiftHub.stop() } }) { Text(tl(lang, "Bitir", "Tamamla")) } },
-            dismissButton = { TextButton(onClick = { askEnd = false }) { Text(tl(lang, "Vazgeç", "Ləğv et")) } },
+            title = { Text(MapText.END_ASK.get(lang)) },
+            text = { Text(MapText.END_TEXT.get(lang)) },
+            confirmButton = { Button(onClick = { askEnd = false; ctx.safely { ShiftHub.stop() } }) { Text(MapText.END_CONFIRM.get(lang)) } },
+            dismissButton = { TextButton(onClick = { askEnd = false }) { Text(MapText.CANCEL.get(lang)) } },
         )
     }
 }
@@ -216,17 +217,17 @@ fun MapSetupCard(state: MapDataState, region: String, lang: Lang, onRegion: (Str
     Card(Modifier.fillMaxWidth().padding(12.dp)) {
         Column(Modifier.padding(16.dp)) {
             if (state.phase == MapDataPhase.CHECKING || state.phase == MapDataPhase.UNPACKING) {
-                Text(tl(lang, "Bakü haritası hazırlanıyor…", "Bakı xəritəsi hazırlanır…"), style = MaterialTheme.typography.titleMedium)
+                Text(MapText.SETUP_PREPARING.get(lang), style = MaterialTheme.typography.titleMedium)
                 LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 12.dp))
                 return@Column
             }
-            Text(tl(lang, "Bakü yol haritası", "Bakı yol xəritəsi"), style = MaterialTheme.typography.titleMedium)
+            Text(MapText.SETUP_TITLE.get(lang), style = MaterialTheme.typography.titleMedium)
             Text(
-                tl(lang, "Rota, yokuş ve batarya tahmini için Bakü yolları bir kez indirilir.", "Marşrut, yoxuş və batareya hesabı üçün Bakı yolları bir dəfə yüklənir."),
+                MapText.SETUP_TEXT.get(lang),
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             val building = state.phase == MapDataPhase.BUILDING
-            for ((key, label) in listOf("central" to tl(lang, "Merkez Bakü", "Mərkəzi Bakı"), "wide" to tl(lang, "Geniş Bakü", "Böyük Bakı"))) {
+            for ((key, label) in listOf("central" to MapText.REGION_CENTRAL.get(lang), "wide" to MapText.REGION_WIDE.get(lang))) {
                 androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable(enabled = !building) { onRegion(key) }) {
                     RadioButton(selected = region == key, onClick = { onRegion(key) }, enabled = !building)
                     Text(label)
@@ -235,13 +236,13 @@ fun MapSetupCard(state: MapDataState, region: String, lang: Lang, onRegion: (Str
             if (building) {
                 LinearProgressIndicator(progress = { state.progress.toFloat() }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
                 Text("%${(state.progress * 100).roundToInt()} · ${state.stage}", style = MaterialTheme.typography.bodySmall)
-                Text(tl(lang, "Ekranı açık tut. Uygulamayı kapatma.", "Ekranı açıq saxla. Tətbiqi bağlama."), style = MaterialTheme.typography.bodySmall)
+                Text(MapText.SETUP_KEEP_ON.get(lang), style = MaterialTheme.typography.bodySmall)
             } else {
-                Button(onClick = onDownload, modifier = Modifier.padding(top = 8.dp)) { Text(tl(lang, "İndir ve başla", "Yüklə və başla")) }
+                Button(onClick = onDownload, modifier = Modifier.padding(top = 8.dp)) { Text(MapText.SETUP_DOWNLOAD.get(lang)) }
             }
             state.error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp)) }
             Text(
-                tl(lang, "Harita © OpenStreetMap katkıcıları · Yükseklik: SRTM", "Xəritə © OpenStreetMap iştirakçıları · Hündürlük: SRTM"),
+                MapText.SETUP_ATTRIBUTION.get(lang),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 12.dp),
             )
         }

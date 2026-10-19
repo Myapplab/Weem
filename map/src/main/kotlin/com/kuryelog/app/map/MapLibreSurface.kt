@@ -63,7 +63,7 @@ fun MapLibreSurface(model: MapSurfaceModel, events: MapSurfaceEvents, modifier: 
     }
     AndroidView(
         modifier = modifier,
-        factory = { ctx -> holder.create(ctx, lifecycle.currentState) { currentEvents.value } },
+        factory = { ctx -> holder.create(ctx) { currentEvents.value } },
         update = { holder.apply(model) },
     )
 }
@@ -79,7 +79,7 @@ internal class MapLibreHolder(private val app: Context, private val userAgent: S
     private var appliedCameraSeq = -1
     private val density = app.resources.displayMetrics.density
 
-    fun create(ctx: Context, state: Lifecycle.State, events: () -> MapSurfaceEvents): MapView {
+    fun create(ctx: Context, events: () -> MapSurfaceEvents): MapView {
         MapLibre.getInstance(app)
         if (userAgent.isNotEmpty() && !uaInstalled) {
             uaInstalled = true
@@ -88,9 +88,8 @@ internal class MapLibreHolder(private val app: Context, private val userAgent: S
             )
         }
         val v = MapView(ctx)
+        // onStart/onResume yaşam döngüsü gözlemcisinden gelir (eklenince o anki duruma kadar olaylar yeniden gönderilir).
         v.onCreate(null)
-        if (state.isAtLeast(Lifecycle.State.STARTED)) v.onStart()
-        if (state.isAtLeast(Lifecycle.State.RESUMED)) v.onResume()
         v.getMapAsync { m ->
             map = m
             m.uiSettings.apply {

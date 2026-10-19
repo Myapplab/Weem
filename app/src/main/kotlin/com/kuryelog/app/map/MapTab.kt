@@ -17,6 +17,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kuryelog.logic.core.Lang
+import com.kuryelog.logic.map.ui.MapText
 import com.kuryelog.logic.map.day.DayView
 import com.kuryelog.logic.map.nav.NavState
 import com.kuryelog.logic.map.ui.CameraMode
@@ -90,13 +93,16 @@ fun MapTab(
     metrics: @Composable () -> Unit = { MapMetrics(state.metrics, lang) },
     topCard: @Composable () -> Unit = {},
 ) {
+    // Harita görünümü kipler arasında taşınır, yeniden kurulmaz (MapView/Google haritası pahalı; kamera korunur).
+    val surface by rememberUpdatedState(mapSurface)
+    val map = remember { movableContentOf { surface() } }
     val alerts = @Composable { Box(Modifier.fillMaxSize().testTag("task-alerts")) { taskAlerts() } }
     val toastSlot = @Composable { Box(Modifier.fillMaxWidth().testTag("toast-banner")) { toast() } }
     val reminderSlot = @Composable { Box(Modifier.fillMaxWidth().testTag("reminder-slot")) { reminder() } }
     val keyboard = state.keyboard
     if (state.arrivalFocus && !keyboard) {
         MapHudLayout(
-            keyboard = false, map = mapSurface, modifier = modifier, alerts = alerts,
+            keyboard = false, map = map, modifier = modifier, alerts = alerts,
             header = { Column(Modifier.fillMaxWidth()) { toastSlot(); reminderSlot() } },
             footer = {
                 Column(Modifier.fillMaxWidth()) {
@@ -109,10 +115,10 @@ fun MapTab(
     }
     if (state.mapOnly) {
         MapHudLayout(
-            keyboard = keyboard, map = mapSurface, modifier = modifier, alerts = alerts,
+            keyboard = keyboard, map = map, modifier = modifier, alerts = alerts,
             header = {
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopEnd) {
-                    FilledTonalButton(onClick = actions.onShowPanels, modifier = Modifier.testTag("show-panels")) { Text(tl(lang, "Panelleri göster", "Panelləri göstər")) }
+                    FilledTonalButton(onClick = actions.onShowPanels, modifier = Modifier.testTag("show-panels")) { Text(MapText.SHOW_PANELS.get(lang)) }
                 }
             },
             footer = {
@@ -149,7 +155,7 @@ fun MapTab(
         },
     ) {
         MapHudLayout(
-            keyboard = keyboard, map = mapSurface, alerts = alerts,
+            keyboard = keyboard, map = map, alerts = alerts,
             header = {
                 Column(Modifier.fillMaxWidth()) {
                     topCard()
@@ -205,7 +211,7 @@ private fun SearchBar(lang: Lang, onClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth().height(52.dp).testTag("map-search"),
     ) {
         Box(Modifier.padding(horizontal = 16.dp), contentAlignment = Alignment.CenterStart) {
-            Text("⌕  " + tl(lang, "Adres veya mekân ara", "Ünvan və ya obyekt axtar"), color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+            Text("⌕  " + MapText.SEARCH_HINT.get(lang), color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
         }
     }
 }

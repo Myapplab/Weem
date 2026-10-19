@@ -30,6 +30,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kuryelog.logic.core.Lang
+import com.kuryelog.logic.map.ui.MapText
 import com.kuryelog.logic.map.ui.CameraMode
 import com.kuryelog.logic.map.ui.HudLayout
 
@@ -45,9 +46,9 @@ internal val CameraMode.key: String
 @Composable
 fun SmartLocateButton(mode: CameraMode, onTap: () -> Unit, modifier: Modifier = Modifier, lang: Lang = Lang.TR) {
     val (glyph, hint) = when (mode) {
-        CameraMode.FREE -> "◎" to tl(lang, "Konumuma dön", "Mövqeyimə qayıt")
-        CameraMode.FOLLOW_NORTH -> "⌖" to tl(lang, "Gidiş yönüne çevir", "Hərəkət istiqamətinə çevir")
-        CameraMode.FOLLOW_HEADING -> "➤" to tl(lang, "Kuzey yukarı", "Şimal yuxarı")
+        CameraMode.FREE -> "◎" to MapText.LOCATE_FREE.get(lang)
+        CameraMode.FOLLOW_NORTH -> "⌖" to MapText.LOCATE_HEADING.get(lang)
+        CameraMode.FOLLOW_HEADING -> "➤" to MapText.LOCATE_NORTH.get(lang)
     }
     RoundHudButton(glyph, hint, "smart-locate", onTap, modifier, glyphTag = "locate-${mode.key}")
 }
@@ -55,7 +56,7 @@ fun SmartLocateButton(mode: CameraMode, onTap: () -> Unit, modifier: Modifier = 
 /** Alt yer düğmesi (`route-fab`): rota panelini açar; boyu konum düğmesiyle aynı. */
 @Composable
 fun RouteFab(onClick: () -> Unit, modifier: Modifier = Modifier, lang: Lang = Lang.TR) {
-    RoundHudButton("⇅", tl(lang, "Rota", "Marşrut"), "route-fab", onClick, modifier)
+    RoundHudButton("⇅", MapText.ROUTE.get(lang), "route-fab", onClick, modifier)
 }
 
 @Composable
@@ -131,4 +132,3 @@ private fun HudPanel(maxHeightDp: Double, tag: String, reverse: Boolean, modifie
     }
 }
 
-internal fun tl(lang: Lang, tr: String, az: String) = if (lang == Lang.AZ) az else tr

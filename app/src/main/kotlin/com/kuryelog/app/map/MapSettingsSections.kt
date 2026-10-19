@@ -30,6 +30,7 @@ import com.kuryelog.app.BuildConfig
 import com.kuryelog.app.R
 import com.kuryelog.app.safely
 import com.kuryelog.logic.core.Lang
+import com.kuryelog.logic.map.ui.MapText
 import com.kuryelog.logic.map.graph.MapDataPhase
 import com.kuryelog.logic.map.ui.MapStyles
 import kotlinx.coroutines.launch
@@ -54,7 +55,7 @@ fun MapBaseSection(lang: Lang) {
     val ctx = LocalContext.current
     val settings by MapSettingsRepo.settings(ctx).collectAsState()
     val current = MapStyles.resolve(settings.mapStyle, BuildConfig.MAPS_ENABLED)
-    SectionCard(tl(lang, "Harita görünümü", "Xəritənin görünüşü")) {
+    SectionCard(MapText.BASE_TITLE.get(lang)) {
         for (b in MapStyles.choices(BuildConfig.MAPS_ENABLED)) {
             Row(
                 Modifier.fillMaxWidth().selectable(selected = b == current, role = Role.RadioButton) { ctx.safely { MapSettingsRepo.update(ctx) { it.copy(mapStyle = b.key) } } }
@@ -66,7 +67,7 @@ fun MapBaseSection(lang: Lang) {
             }
         }
         Text(
-            tl(lang, "Rota ve sokak kararlarını her altlıkta WEEM hesaplar; Google Maps yalnız görüntüdür.", "Marşrutu və küçə qaydalarını hər altlıqda WEEM hesablayır; Google Maps yalnız görüntüdür."),
+            MapText.BASE_INFO.get(lang),
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
@@ -80,21 +81,21 @@ fun MapDataSection(lang: Lang) {
     val state by controller.state.collectAsState()
     val settings by MapSettingsRepo.settings(ctx).collectAsState()
     val scope = rememberCoroutineScope()
-    SectionCard(tl(lang, "Harita verisi", "Xəritə məlumatları")) {
+    SectionCard(MapText.DATA_TITLE.get(lang)) {
         val g = state.graph
         Text(
-            if (g != null) String.format(Locale.US, "%.1f MB · %d %s", state.sizeBytes / 1_048_576.0, g.edgeCount, tl(lang, "yol parçası", "yol hissəsi"))
-            else tl(lang, "Hazır değil", "Hazır deyil"),
+            if (g != null) String.format(Locale.US, "%.1f MB · %d %s", state.sizeBytes / 1_048_576.0, g.edgeCount, MapText.DATA_EDGES.get(lang))
+            else MapText.DATA_NOT_READY.get(lang),
         )
         val elev = state.elevation != null
-        val has = if (elev) tl(lang, "var", "var") else tl(lang, "yok", "yoxdur")
+        val has = if (elev) MapText.YES.get(lang) else MapText.NO.get(lang)
         Text(
-            state.builtAtMs?.let { tl(lang, "Güncelleme: ", "Yenilənib: ") + SimpleDateFormat("dd.MM.yyyy", Locale.US).format(Date(it)) + " · " + tl(lang, "yükseklik ", "hündürlük ") + has }
-                ?: (tl(lang, "Yükseklik: ", "Hündürlük: ") + has),
+            state.builtAtMs?.let { MapText.DATA_UPDATED.get(lang) + SimpleDateFormat("dd.MM.yyyy", Locale.US).format(Date(it)) + " · " + MapText.DATA_ELEVATION_LO.get(lang) + has }
+                ?: (MapText.DATA_ELEVATION.get(lang) + has),
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         val building = state.phase == MapDataPhase.BUILDING
-        for ((key, label) in listOf("central" to tl(lang, "Merkez Bakü", "Mərkəzi Bakı"), "wide" to tl(lang, "Geniş Bakü", "Böyük Bakı"))) {
+        for ((key, label) in listOf("central" to MapText.REGION_CENTRAL.get(lang), "wide" to MapText.REGION_WIDE.get(lang))) {
             Row(
                 Modifier.fillMaxWidth().selectable(selected = settings.region == key, enabled = !building, role = Role.RadioButton) {
                     ctx.safely { MapSettingsRepo.update(ctx) { it.copy(region = key) } }
@@ -111,11 +112,11 @@ fun MapDataSection(lang: Lang) {
             Text("%${(state.progress * 100).roundToInt()} · ${state.stage}", style = MaterialTheme.typography.bodySmall)
         }
         OutlinedButton(onClick = { scope.launch { runCatching { controller.download(settings.region) } } }, enabled = !building, modifier = Modifier.padding(top = 8.dp)) {
-            Text(tl(lang, "İndir / güncelle", "Yüklə / yenilə"))
+            Text(MapText.DATA_DOWNLOAD.get(lang))
         }
         state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         Text(
-            tl(lang, "OSM yolları ayda bir güncellemek yeterli. Geniş bölge daha büyük indirme demek.", "Xəritə tətbiqin içində gəlir; burdan yalnız yeniləmək olar. Böyük Bakı daha çox yer tutur."),
+            MapText.DATA_INFO.get(lang),
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
@@ -130,26 +131,24 @@ fun MapsKeySection(lang: Lang) {
     val key = stringResource(R.string.google_maps_key)
     val status = remember(key) { MapsKeyStatus.read(ctx, key) }
     SectionCard("Google Maps") {
-        Text(tl(lang, "APK harita anahtarı", "APK xəritə açarı") + ": " + if (status.hasKey) "••••${status.last4}" else tl(lang, "Anahtar eklenmemiş", "Açar əlavə edilməyib"))
+        Text(MapText.MAPS_KEY_APK.get(lang) + ": " + if (status.hasKey) "••••${status.last4}" else MapText.MAPS_KEY_NONE.get(lang))
         Text(
             "Google Play Services: " + when (status.playServices) {
-                MapsKeyStatus.PLAY_SERVICES_OK -> tl(lang, "Hazır", "Hazırdır")
-                -1 -> tl(lang, "Kontrol edilemedi", "Yoxlama tamamlanmadı")
-                else -> tl(lang, "Güncelleme veya etkinleştirme gerekiyor (kod ${status.playServices})", "Yeniləmək və ya aktivləşdirmək lazımdır (kod ${status.playServices})")
+                MapsKeyStatus.PLAY_SERVICES_OK -> MapText.PLAY_OK.get(lang)
+                -1 -> MapText.PLAY_UNKNOWN.get(lang)
+                else -> MapText.PLAY_UPDATE.get(lang).format(status.playServices)
             },
         )
         Text(
-            tl(lang,
-                "Google Cloud’da bu anahtarın projesinde Maps SDK for Android ve faturalandırma açık olmalı. Anahtar kısıtlaması Android uygulamaları olmalı; paket ve SHA-1 aşağıdaki değerlerle eşleşmeli.",
-                "Google Cloud-da bu açarın layihəsində Maps SDK for Android və ödəniş hesabı aktiv olmalıdır. Açar Android tətbiqləri üçün olmalı, paket və SHA-1 aşağıdakı məlumatlarla uyğun gəlməlidir."),
+            MapText.MAPS_HELP.get(lang),
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 6.dp),
         )
         Text("Paket: ${status.packageName}", style = MaterialTheme.typography.bodySmall)
         Text("SHA-1: ${status.sha1}", style = MaterialTheme.typography.bodySmall)
-        TextButton(onClick = { clipboard.setText(AnnotatedString(status.sha1)) }) { Text(tl(lang, "SHA-1 kopyala", "SHA-1-i kopyala")) }
-        TextButton(onClick = { runCatching { uri.openUri("https://console.cloud.google.com/apis/credentials") } }) { Text(tl(lang, "Anahtar ayarlarını aç", "Açar parametrlərini aç")) }
+        TextButton(onClick = { clipboard.setText(AnnotatedString(status.sha1)) }) { Text(MapText.MAPS_SHA_COPY.get(lang)) }
+        TextButton(onClick = { runCatching { uri.openUri("https://console.cloud.google.com/apis/credentials") } }) { Text(MapText.MAPS_KEY_OPEN.get(lang)) }
         TextButton(onClick = { runCatching { uri.openUri("https://console.cloud.google.com/apis/library/maps-android-backend.googleapis.com") } }) {
-            Text(tl(lang, "Maps SDK ayarlarını aç", "Maps SDK parametrlərini aç"))
+            Text(MapText.MAPS_SDK_OPEN.get(lang))
         }
     }
 }

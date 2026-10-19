@@ -62,7 +62,7 @@ fun GoogleMapSurface(model: MapSurfaceModel, events: MapSurfaceEvents, modifier:
             holder.destroy()
         }
     }
-    AndroidView(modifier = modifier, factory = { ctx -> holder.create(ctx, lifecycle.currentState) { currentEvents.value } }, update = { holder.apply(model) })
+    AndroidView(modifier = modifier, factory = { ctx -> holder.create(ctx) { currentEvents.value } }, update = { holder.apply(model) })
 }
 
 internal class GoogleHolder(private val app: Context) {
@@ -83,12 +83,11 @@ internal class GoogleHolder(private val app: Context) {
     private val icons = HashMap<String, BitmapDescriptor>()
     private val density = app.resources.displayMetrics.density
 
-    fun create(ctx: Context, state: Lifecycle.State, events: () -> MapSurfaceEvents): MapView {
+    fun create(ctx: Context, events: () -> MapSurfaceEvents): MapView {
         MapsInitializer.initialize(app)
         val v = MapView(ctx, GoogleMapOptions().compassEnabled(false).mapToolbarEnabled(false).tiltGesturesEnabled(false).zoomControlsEnabled(false))
+        // onStart/onResume yaşam döngüsü gözlemcisinden gelir (eklenince o anki duruma kadar olaylar yeniden gönderilir).
         v.onCreate(null)
-        if (state.isAtLeast(Lifecycle.State.STARTED)) v.onStart()
-        if (state.isAtLeast(Lifecycle.State.RESUMED)) v.onResume()
         v.getMapAsync { m ->
             map = m
             m.uiSettings.isMyLocationButtonEnabled = false
