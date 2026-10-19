@@ -1,6 +1,6 @@
 # Özellik haritası — 63 özellik → eski kod, testler, veri, bağımlılık, WEEM modülü
 
-Durum: A0.1, 17 Ekim 2026; Aşama 3 satırlarının (R1–R3, R5–R13, R15, R16, R19) Ayrıntı bağlantıları A3.1'de `CAPTURE.md`/`ORDERS.md`'ye çevrildi; Aşama 5 satırları (S1–S8, R14) A5.1'de `SCOOTER.md`'ye bağlandı. Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c04` (**RS** = `app/src/main/java/com/kuryelog/app/`, **NB** = `ninebot-logger/app/src/main/java/az/ninebot/logger/`) ve `yolgo-test` @ `870ab6e` (**YG**). Kapsam ve kararlar: `docs/WEEM_PLANI.md` Bölüm 3 ve 8. Test adları ve sayıları `TEST_ENVANTERI.md` ile aynı betikten (elle yazılmadı). Veri adları: `VERI_SOZLESMESI.md`.
+Durum: A0.1, 17 Ekim 2026; Aşama 3 satırlarının (R1–R3, R5–R13, R15, R16, R19) Ayrıntı bağlantıları A3.1'de `CAPTURE.md`/`ORDERS.md`'ye çevrildi; Aşama 5 satırları (S1–S8, R14) A5.1'de `SCOOTER.md`'ye bağlandı; Aşama 6 satırları (Y1–Y12, Y15–Y21, N5) A6.1'de `MAP.md`'ye bağlandı (test sütunu ad eşlemesi olarak kalır; çeviri kararları `MAP.md` 16). Kaynak: `Myapplab/kurye_nav` — `rawstats` @ `6388c04` (**RS** = `app/src/main/java/com/kuryelog/app/`, **NB** = `ninebot-logger/app/src/main/java/az/ninebot/logger/`) ve `yolgo-test` @ `870ab6e` (**YG**). Kapsam ve kararlar: `docs/WEEM_PLANI.md` Bölüm 3 ve 8. Test adları ve sayıları `TEST_ENVANTERI.md` ile aynı betikten (elle yazılmadı). Veri adları: `VERI_SOZLESMESI.md`.
 
 **Nasıl kullanılır:** bir modüle başlamadan önce o modülün satırlarındaki eski dosyalar ve testler o aşamanın şartname görevinde (A2.1, A3.1, A5.1, A6.1) okunur; davranış ayrıntısı (eşikler, durum geçişleri) varsa `bulgular/` dosyasındadır. `bulgular/` ham ve kısmidir (çok ajanlı okuma usage nedeniyle yarıda durduruldu); boş kalan özelliklerin ayrıntısı şartname görevinde çıkarılır.
 
@@ -26,7 +26,7 @@ Durum: A0.1, 17 Ekim 2026; Aşama 3 satırlarının (R1–R3, R5–R13, R15, R16
 | Y16 | Restoran noktaları | `:map` · 6 (A6.8) | 4 |
 | Y17 | İstatistik ekranı | `:map` · 6 (A6.9) | 0 |
 | Y18 | Sürüş kayıtları | `:map` · 6 (A6.9) | 17 |
-| Y19 | Teklif veri seti ekranı | `:map` + `:core` · 6 (A6.9) | 33 |
+| Y19 | Teklif veri seti ekranı | `:orders` + `:map` · 6 (A6.9) | 33 |
 | Y20 | Görev kartları ve hatırlatıcılar | `:map` · 6 (A6.9) | 38 |
 | Y21 | Bölge bilgisi | `:map` · 6 (A6.8) | 0 |
 | R1 | Wolt ve Bolt ekranını okuma | `:capture` `logic/` + servis · 3 (A3.4) | 186 |
@@ -66,11 +66,11 @@ Durum: A0.1, 17 Ekim 2026; Aşama 3 satırlarının (R1–R3, R5–R13, R15, R16
 | N2 | Uzaktan kullanım | `:remote` · 9 | 0 |
 | N3 | Otomatik şifreli yedek | `:core` · 4 (A4.3) | 0 |
 | N4 | Gün sonu raporu ve net kazanç | `:economics` · 4 (A4.2) | 6 |
-| N5 | Menzil uyarısı | `:economics` · 6 (A6.7) | 13 |
+| N5 | Menzil uyarısı | `:economics` + `:map` · 6 (A6.7) | 13 |
 | N6 | Hırsızlık koruması | `:link` + `:scooter` · 8 (A8.4) | 0 |
 | N8 | Günlük kazanç hedefi | `:economics` · 4 (A4.2) | 0 |
 
-Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R15 R19 · `:economics` R4 N4 N5 N8 · `:core` G1 G2 G4 R17 R18 R20 N3 · `:scooter` S1–S8 R14 · `:map` Y1–Y12 Y15–Y21 · `:link` N1 N6 · `:remote` N2 · `:app` G3 G5.
+Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R15 R19 Y19 (veri seti) · `:economics` R4 N4 N5 N8 · `:core` G1 G2 G4 R17 R18 R20 N3 · `:scooter` S1–S8 R14 · `:map` Y1–Y12 Y15–Y21 (Y19'da rota ölçümü, N5'te batarya) · `:link` N1 N6 · `:remote` N2 · `:app` G3 G5.
 
 ## Ayrıntı
 
@@ -80,6 +80,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `settings.v1` (tema)
 - **Bağımlı:** Y3, Y4, G3
 - **WEEM:** `:map` · 6 (A6.5)
+- **Ayrıntı:** `MAP.md` 6 (6.2 kabuk, 6.3 yerleşim, 6.4 yüzeyler, 6.5–6.7 konum işareti, katmanlar, uzun basış, 6.8 tema, 6.9 kurulum ve ayarlar, 6.12 gün kartı sınırı, 6.14 testler)
 
 ### Y2 İkinci harita görünümü (OSM)
 - **Eski kod:** YG `lib/ui/map_view.dart` (flutter_map yüzeyi), `pubspec.yaml` (`flutter_map`, `latlong2`)
@@ -87,6 +88,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** OSM karoları (ağ)
 - **Bağımlı:** Y1
 - **WEEM:** `:map` · 6 (A6.5; MapLibre Native, iki stil: bugünkü OSM raster karoları ve vektör — S4)
+- **Ayrıntı:** `MAP.md` 6.4 (yüzeyler, altlıklar, karo kuralları; SORU-N5), 6.16
 
 ### Y3 Kendi rota motoru
 - **Eski kod:** YG `lib/routing/router.dart` (CostModel, A*), `planner.dart`, `route.dart`, `route_worker.dart`, `quality.dart`, `speed_options.dart`, `route_hours.dart`, `lib/core/physics.dart`, `lib/core/geo.dart`
@@ -94,7 +96,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `graph_<region>.bin`, DEM `.hgt`, `streets.*`, yol kalitesi verisi (Y12, WEEM'de sıfırdan)
 - **Bağımlı:** Y7, Y8, Y15, Y12 (A6.11), Y9
 - **WEEM:** `:map` `logic/` · 6 (A6.4)
-- **Ayrıntı:** `bulgular/Y_routing.md` §Y3
+- **Ayrıntı:** `MAP.md` 3 (3.2 fizik, 3.4 kenar maliyeti, 3.6 A*, 3.10 planlayıcı, 3.14 testler); ham: `bulgular/Y_routing.md` §Y3
 
 ### Y4 Navigasyon
 - **Eski kod:** YG `lib/nav/nav_controller.dart`, `reroute_gate.dart`, `approach_zoom.dart`, `arrival_focus.dart`, `route_line.dart`, `toast.dart`, `nav_feed.dart`, `lib/ui/nav_screen.dart`, `lib/tracking/location_service.dart`, `map_matcher.dart`, `nav_only.dart`
@@ -102,6 +104,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `nav/v1/current` (R5 tüketir)
 - **Bağımlı:** Y3, Y1, Y6, G1
 - **WEEM:** `:map` · 6 (A6.6)
+- **Ayrıntı:** `MAP.md` 7 (7.4 rota hesabı, 7.7 takip, 7.8 varış, 7.9 `RouteStatus`, 7.10 kamera, 7.12 yalnız-nav, 7.15 testler)
 
 ### Y5 Wolt/Bolt navigasyon bağlantıları
 - **Eski kod:** YG `android_overlay/AndroidManifest.xml:27-120`, `MainActivity.kt` (`linkOf`, `extractLink`), `NavFeedProvider.kt` (`IncomingLink`), `lib/input/address_parser.dart`
@@ -109,7 +112,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** intent filtreleri (veri sözleşmesi §2)
 - **Bağımlı:** Y6, Y4, N1 (Provider'da yakalanır)
 - **WEEM:** `:map` `logic/` + `:app` · 6 (A6.6)
-- **Ayrıntı:** `bulgular/Y_nav.md` §Y5
+- **Ayrıntı:** `MAP.md` 8.2 (bağlantının gelişi), 8.7 (hedefin kabulü), 8.11 (testler); ham: `bulgular/Y_nav.md` §Y5
 
 ### Y6 Adres bulma
 - **Eski kod:** YG `lib/input/clipboard_sniffer.dart`, `address_parser.dart`, `plus_code.dart`, `destination_resolver.dart`, `geocoder.dart`, `place_search.dart`, `places_rest.dart`, `lib/ui/api_settings.dart`
@@ -117,7 +120,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `search.recents.v2`, `clipboard.lastHash`, Google anahtarı ayarı
 - **Bağımlı:** Y5, Y16, Y7, Y4
 - **WEEM:** `:map` `logic/` · 6 (A6.6)
-- **Ayrıntı:** `bulgular/Y_nav.md` §Y6
+- **Ayrıntı:** `MAP.md` 8.3–8.9 (pano, ayrıştırma, Plus Code, geokod, yer arama, API ekranı), 8.11; ham: `bulgular/Y_nav.md` §Y6
 
 ### Y7 Harita verisi
 - **Eski kod:** YG `lib/data/road_graph.dart`, `graph_builder.dart`, `map_data_service.dart`, `overpass.dart`, `elevation.dart`, `tool/build_map.dart`, `ci/osm_extract.py`, `assets/map/manifest.json`
@@ -125,14 +128,15 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `files/mapdata/*` (graf ikili biçimi, POI, DEM)
 - **Bağımlı:** Y3, Y16, Y15, Y21
 - **WEEM:** `:map` `logic/` · 6 (A6.3)
-- **Ayrıntı:** `bulgular/Y_routing.md` §Y7
+- **Ayrıntı:** `MAP.md` 2 (2.4 graf kurma, 2.5 KNG1 biçimi, 2.8 Overpass, 2.9 güncelleme, 2.11 CI, 2.13 testler); ham: `bulgular/Y_routing.md` §Y7
 
 ### Y8 Sokak kararları
 - **Eski kod:** YG `lib/routing/street_prefs.dart`, `route_hours.dart`, `lib/ui/road_hours.dart`
 - **Testler:** `route_hours_test` (3); `street_prefs_migration_test` (1); `ww_clean_run_test` (5); `ww_green_two_way_test` (4); `ww_no_problem_green_test` (5) — **18**
-- **Veri:** `streets.approved/blocked/steep/names/hours.v1` (içe aktar)
+- **Veri:** `streets.approved/blocked/steep/names/hours.v1` (yeniden girilir, S1)
 - **Bağımlı:** Y3, Y12 (ww soruları)
 - **WEEM:** `:map` · 6 (A6.4)
+- **Ayrıntı:** `MAP.md` 4 (4.2 model ve kalıcılık, 4.3 saatli izin, 4.4 karar yerleri, 4.6 testler; `street_prefs_migration_test` çevrilmez, S1)
 
 ### Y9 Hız ve batarya tahmini
 - **Eski kod:** YG `lib/routing/speed_options.dart`, `lib/core/physics.dart`, `lib/tracking/battery_estimator.dart`, `lib/ui/widgets.dart:150-289`
@@ -140,7 +144,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `battery.*`, `settings.v1` katsayıları
 - **Bağımlı:** Y3, S2 (canlı %), N5
 - **WEEM:** `:map` `logic/` · 6 (A6.7)
-- **Ayrıntı:** `bulgular/Y_tracking.md` §Y9
+- **Ayrıntı:** `MAP.md` 10.2–10.5 (hız seçenekleri, batarya durumu, canlı scooter değeri, sol kutu), 10.12; ham: `bulgular/Y_tracking.md` §Y9
 
 ### Y10 Hava durumu
 - **Eski kod:** YG `lib/weather/weather.dart`, `lib/ui/weather_section.dart`, `weather_widget.dart`, `android_overlay/WeatherWorker.kt`, `WeatherFeed*.kt`
@@ -148,14 +152,15 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** Open-Meteo (ağ), `weather.*`, `duzyol_weather`; yük `weather/current`
 - **Bağımlı:** R15 (tüketir), N1 (R→P)
 - **WEEM:** `:map` · 6 (A6.7)
+- **Ayrıntı:** `MAP.md` 10.7–10.10 (Open-Meteo, bildirim 7301, ekranlar, `WeatherPort`), 10.12
 
 ### Y11 Trafik ışığı duruşları
 - **Eski kod:** YG `lib/tracking/shift_engine.dart:198-237,383-507`, `light_tracker.dart`, `stop_semantics.dart`
 - **Testler:** `shift_engine_test` (9); `light_leaks_f52_test` (3); `light_rule_m14_test` (14); `light_tracker_test` (4); `v140_features_test` (14); `yolgo_rules_test` (4) — **48**
-- **Veri:** `lights.v1` (içe aktar), `lightMaxM`
+- **Veri:** `lights.v1` (yeniden girilir ve öğrenilir, S1), `lightMaxM`
 - **Bağımlı:** G1, Y7, Y17
 - **WEEM:** `:map` `logic/` · 6 (A6.8)
-- **Ayrıntı:** `bulgular/Y_tracking.md` §Y11
+- **Ayrıntı:** `MAP.md` 11 (11.2 gün = vardiya, 11.4 duruş tespiti, 11.8 ışık kuralı, 11.9–11.12 canlı ölçer, birleşme, gün sonu cevabı, elle işaretler, 11.16 testler); ham: `bulgular/Y_tracking.md` §Y11
 
 ### Y12 Yol kalitesi öğrenme (17 Ekim'de 1.0'a alındı, S3)
 - **Eski kod:** YG `lib/roads/`, `lib/ui/roads_screen.dart`, `road_score.dart`, `lib/routing/quality.dart`; ses tuşu `setVolumeCapture` (Ses+/Ses−)
@@ -163,50 +168,55 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** YolGo `roads.*` aktarılmaz (S1); WEEM aynı anlamda yeni veri tutar, sıfırdan öğrenir
 - **Bağımlı:** Y3 (rota maliyeti: öğrenilen kalite, ters yön oranı), Y7, Y8
 - **WEEM:** `:map` `logic/` · 6 (A6.11)
-- **Ayrıntı:** `bulgular/Y_contract.md` (Y12–Y14 başvurusu), `Y_routing.md` §Y3 (`learned`, `wwRatio`)
+- **Ayrıntı:** `MAP.md` 9 (9.3 öğrenme, 9.4 puan soruları, 9.5 Ses+/Ses−, 9.6 ters yön, 9.8 ekranlar, 9.9 rota maliyeti, 9.11 testler; Y13/Y14'e ait 23 test sonra, SORU-Q2); ham: `bulgular/Y_contract.md` (Y12–Y14 başvurusu)
 
 ### Y15 Bisiklet yolu katmanı
 - **Eski kod:** YG `lib/routing/bikeways.dart`, `lib/ui/bikeway_layer.dart`, `graph_builder.dart` (`isBikewayTags`)
 - **Testler:** `bikeway_e13_test` (18) — **18**
-- **Veri:** `streets.bikeway.v1` (içe aktar)
+- **Veri:** `streets.bikeway.v1` (yeniden girilir, S1)
 - **Bağımlı:** Y3, Y7
 - **WEEM:** `:map` · 6 (A6.8)
+- **Ayrıntı:** `MAP.md` 5.1–5.2
 
 ### Y16 Restoran noktaları
 - **Eski kod:** YG `lib/data/pois.dart`, `poi_corrections.dart`, `lib/ui/poi_editor.dart`
 - **Testler:** `pois_test` (4) — **4**
-- **Veri:** `pois_<region>.json`, `places.local.v1` (içe aktar)
-- **Bağımlı:** Y7, Y6
+- **Veri:** `pois_<region>.json`, `places.local.v1` (yeniden girilir, S1)
+- **Bağımlı:** Y7, Y6, Y11 (AVM ve ışık kuralı) ve YolGo gün motoru
 - **WEEM:** `:map` · 6 (A6.8)
+- **Ayrıntı:** `MAP.md` 5.3, 5.6 (POI dosyası 2.10)
 
 ### Y17 İstatistik ekranı
 - **Eski kod:** YG `lib/ui/stats_screen.dart`, `shift_widgets.dart`, `ShiftController` gün raporu
 - **Testler:** **yok**
-- **Veri:** `app_flutter/logs/*.gun.json`
+- **Veri:** `app_flutter/logs/*.gun.json` → WEEM `files/map/logs/`
 - **Bağımlı:** G1, Y11, Y18, R12
 - **WEEM:** `:map` · 6 (A6.9)
+- **Ayrıntı:** `MAP.md` 12.6–12.9 (gün raporu ve geçmiş, İstatistik, gün kartı satırları, gün silme)
 
 ### Y18 Sürüş kayıtları
 - **Eski kod:** YG `lib/tracking/ride_logger.dart`, `log_store.dart`, `lib/nav/route_recorder.dart`, `lib/ui/ride_logs_screen.dart`, `android_overlay/TelemetryJournal.kt`
 - **Testler:** `log_store_test` (7); `ride_log_status_test` (2); `TelemetryJournalTest` (8) — **17**
-- **Veri:** `app_flutter/logs/*_ride_*.jsonl`, `*_route_*.json`; dışa aktarma `duzyol-journal-v1`
+- **Veri:** `app_flutter/logs/*_ride_*.jsonl`, `*_route_*.json` → WEEM `files/map/logs/`; dışa aktarma `duzyol-journal-v1`
 - **Bağımlı:** G1, Y4
 - **WEEM:** `:map` · 6 (A6.9)
+- **Ayrıntı:** `MAP.md` 12.2–12.5, 12.10 (sürüş günlüğü, sürüşler, kayıt deposu, rota kaydı, ekran), 12.13; `TelemetryJournalTest` (8) Y13 ile gelir (12.11); YolGo kayıtlarını içe aktarma A7.1 (12.15)
 
 ### Y19 Teklif veri seti ekranı
 - **Eski kod:** YG `lib/ui/dataset_screen.dart`, `dataset_manual.dart`, `lib/economics/dataset_runtime.dart`, `dataset_days.dart`, `android_overlay/Dataset*.kt`; RS `LogFeedV3*.kt`
 - **Testler:** `LogFeedV3Test` (10); `dataset_days_test` (2); `dataset_screen_test` (5); `DatasetContractTest` (6); `DatasetMatchingTest` (4); `DatasetReadsTest` (6) — **33**
-- **Veri:** `app_flutter/TeklifVeriSeti/…`; RS gün klasörü
+- **Veri:** `app_flutter/TeklifVeriSeti/…` → WEEM `files/TeklifVeriSeti/`; RS gün klasörü
 - **Bağımlı:** R1–R18 kayıtları, G1
-- **WEEM:** `:map` + `:core` · 6 (A6.9)
+- **WEEM:** `:orders` (`logic/orders` `dataset`) + `:map` (`RouteMeasurePort`) · 6 (A6.9)
+- **Ayrıntı:** `MAP.md` 13.2–13.11 (akış, satırlar, zenginleştirme, gün toplama, mühür ve ZIP, ekran, elle ekleme, `kontrol.py`, WEEM kayıt düzeni), 13.18 (`LogFeedV3Test` `logic/orders` `dataset`'te uyarlanır)
 
 ### Y20 Görev kartları ve hatırlatıcılar
 - **Eski kod:** YG `lib/tasks/daily_task.dart`, `task_controller.dart`, `lib/ui/tasks_screen.dart`, `lib/reminders/reminders.dart`, `lib/ui/reminder_widgets.dart`
 - **Testler:** `assistant_test` (14); `courier_stage_follow_test` (14); `nav_assistant_test` (1); `reminder_card_test` (3); `reminders_test` (5); `task_controller_test` (1) — **38**
-- **Veri:** `daily.tasks.*`, `reminders.*` (içe aktar); kanal `hatirlatici`
+- **Veri:** `daily.tasks.*`, `reminders.*` (yeniden girilir, S1); kanal `hatirlatici`
 - **Bağımlı:** G1, R5 (aşamalar), Y6, G4
 - **WEEM:** `:map` · 6 (A6.9)
-- **Ayrıntı:** `bulgular/Y_tracking.md` §Y20
+- **Ayrıntı:** `MAP.md` 13.12–13.16 (görev modeli, denetleyici, ekran, hatırlatıcılar), 13.18 (`courier_stage_follow_test` gün motorunda 11.16, `nav_assistant_test` Y4'te 7.15, `assistant_test` paylara bölünür 16.3); ham: `bulgular/Y_tracking.md` §Y20
 
 ### Y21 Bölge bilgisi
 - **Eski kod:** YG `lib/ui/region_info.dart`, `assets/baku/`
@@ -245,7 +255,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `economics-*.jsonl`, `economics-offer-scores/ratings.jsonl`
 - **Bağımlı:** R3, R10, R14, R15, Y3/Y9 (rota maliyeti)
 - **WEEM:** `:economics` `logic/` · 4 (A4.1)
-- **Ayrıntı:** `ECONOMICS.md` (A4.1 bitti: Rawstats 77 + ekonomi payı 19 test yeşil, saha uçtan uca, E4 ekranı; YolGo `offer_engine_test`/`route_costing_test` 13 → A6.7, N5)
+- **Ayrıntı:** `ECONOMICS.md` (A4.1 bitti: Rawstats 77 + ekonomi payı 19 test yeşil, saha uçtan uca, E4 ekranı; YolGo `offer_engine_test`/`route_costing_test` 13: çevrilmez ya da Y13 ile sonra, `MAP.md` 10.14, 16.4)
 
 ### R5 Sipariş takibi
 - **Eski kod:** RS `DeliveryCore.kt`, `OrderTracker.kt`, `TripStages.kt`, `VenueArrival.kt`, `ArrivalDistance.kt`, `WaitObservation.kt`, `DeliveryDeadline.kt`, `Readiness.kt`
@@ -444,7 +454,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** `shift*` (RS), `shift.v1`, `day.home.v1` (YG); kanal `shift` 1
 - **Bağımlı:** G2, R5 (açık sipariş bitişi engeller), R9, Y11, Y17
 - **WEEM:** `:core` `logic/` · 2 (A2.4) + 7
-- **Ayrıntı:** `CORE.md` Bölüm 1 (şartname, A2.1: tek kural, YolGo farkları); ham: `bulgular/R_core_contract.md` §G1, Y_tracking
+- **Ayrıntı:** `CORE.md` Bölüm 1 (şartname, A2.1: tek kural, YolGo farkları); YolGo gün motorunun vardiyaya bağlanması `MAP.md` 11.2, 11.14; ham: `bulgular/R_core_contract.md` §G1, Y_tracking
 
 ### G2 Ev konumu
 - **Eski kod:** RS `HomeRepository.kt`, `HomePreferences.kt`, `HomeDraft.kt`, `HomeFixes.kt`, `HomeFixSampler.kt`; YG `lib/ui/home_picker.dart`, `lib/core/rawstats_home.dart`
@@ -468,7 +478,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** bildirim tablosu (veri sözleşmesi §8)
 - **Bağımlı:** R19, Y20
 - **WEEM:** `:core` · 2 (A2.4)
-- **Ayrıntı:** `CORE.md` Bölüm 3 (şartname, A2.1: `NotificationIds` tablosu); ham: `bulgular/Y_tracking.md` §G4
+- **Ayrıntı:** `CORE.md` Bölüm 3 (şartname, A2.1: `NotificationIds` tablosu); Aşama 6 numaraları ve kanalları `MAP.md` 14.6; ham: `bulgular/Y_tracking.md` §G4
 
 ### G5 İlk açılış kurulumu
 - **Eski kod:** YG `lib/ui/setup_screen.dart`, `settings_screen.dart`, `maps_help.dart`; RS `MainActivity` izin akışı, `Readiness`
@@ -512,7 +522,8 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Testler:** `offer_engine_test` (7); `route_costing_test` (6) — **13**
 - **Veri:** teklif özeti + canlı batarya
 - **Bağımlı:** Y9, S2, R4, G2
-- **WEEM:** `:economics` · 6 (A6.7)
+- **WEEM:** `:economics` + `:map` (`RangePort`) · 6 (A6.7)
+- **Ayrıntı:** `MAP.md` 10.6 (öneri, SORU-T1-1), 10.14; eski testler çevrilmez (`offer_engine_test`, `planLeavesBox`; SORU-T1-2) ya da Y13 ile sonra (`route_costing_test` 5); N5 testleri ekonomi v2 girdileriyle yeni yazılır
 
 ### N6 Hırsızlık koruması
 - **Eski kod:** yeni
