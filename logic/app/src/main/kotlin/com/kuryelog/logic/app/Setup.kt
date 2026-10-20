@@ -149,6 +149,8 @@ enum class SetupText(override val tr: String, override val az: String) : Bilingu
         "İstəyə bağlı. Növbə ön plan xidməti ilə işləyir; Android avtomatik başlatmanı rədd etsə, bir toxunuşla açılan bildiriş gəlir."),
 
     PERMS_TITLE("İzinler", "İcazələr"),
+    PERMS_OPEN("İzinler ve pil ayarları", "İcazələr və batareya ayarları"),
+    SETUP_AGAIN("İlk açılış kurulumunu yeniden göster", "İlk açılış quraşdırmasını yenidən göstər"),
     PERM_ACC("Ekran okuma (Erişilebilirlik)", "Ekran oxuma (Əlçatanlıq)"),
     PERM_NOTIF("Bildirim okuma", "Bildiriş oxuma"),
     PERM_NOTIF_NOTE("Bildirim okuma izni, navigasyon bildirimindeki kalan rota mesafesini okumak için de kullanılır (kaydedilmez).",

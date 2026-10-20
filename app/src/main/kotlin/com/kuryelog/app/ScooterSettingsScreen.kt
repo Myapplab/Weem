@@ -63,6 +63,7 @@ import com.kuryelog.logic.scooter.LogExport
 import com.kuryelog.logic.scooter.NinebotMode
 import com.kuryelog.logic.scooter.PanelField
 import com.kuryelog.logic.scooter.ScooterSettings
+import com.kuryelog.logic.scooter.ScooterStatusText
 import com.kuryelog.logic.scooter.ScooterUiText as T
 import kotlinx.coroutines.delay
 
@@ -121,7 +122,7 @@ fun ScooterSettingsScreen(lang: Lang, onBack: () -> Unit) {
                     Info(T.STATUS_VERSION.get(lang).format(LogExport.VERSION))
                     Info(T.SELECTED.get(lang).format(name.ifEmpty { T.NONE.get(lang) }))
                     Text(
-                        remember(tick) { Scooter.summary },
+                        remember(tick, lang) { ScooterStatusText.localize(Scooter.summary, lang) },
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(14.dp)).padding(horizontal = 14.dp, vertical = 12.dp),
                     )
                     Info(T.PROTOCOL.get(lang))
