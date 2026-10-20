@@ -2,6 +2,13 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-20 — A6.6 bitti: Android katmanı + harita ekranı navigasyonu (Claude Opus · high; dal `ccr-56fdfbc1-p00o8e`, son kod `70e4d61`)
+- Yapılan: `NavRuntime` derlendi (konum ↔ denetleyici tür çıkarımı); saf `ui.RouteLayer` (çizgiler, rozetler, `fit`) + `nav.NavPanelText` + `SpeedOptions.arrivalClock`; `:app` `MapScreen` rota çizimi/sığdırma/yaklaşma zoom'u/varış odağı/takibe dönüş, `MapNav.kt` (`RoutePanel`, `NavToastBanner`, `SearchOverlay`, `LongPressSheet`), Eve dön, ekran açık = gün || durak; `MapApiSettingsScreen` (Harita ayarları → API ve bağlantılar); `NavOnlyService` 7402 / kanal `navigation` (`NotificationIds`, CORE.md 3.3). Ayrıntı `MAP.md` 7.18; BAKİ notu (8.13 F-N2) düzeltildi.
+- Doğrulama: `-p logic test` 1.617 test, 163 kırmızı (hepsi A6.7–A6.11 iskeleti); `:app:compileDebugKotlin` + `:app:lintDebug` (0 hata) yeşil; `RoutePanelTest` 4/4; `RouteEngineTest` zaman aşımı testi yük altında 3/3 (süre 150 ms). Telefonda denenmedi.
+- Ertelenen (sahip görevde): BATARYA/ZAMAN mod seçimi ve sol göstergeler (A6.7), ortalama hız satırı (A6.9), "Yol yok" seçicisi ve yol satırları (A6.11), POI/ışık/görev satırları ve aramada vardiya aşamasıyla restoran (A6.8), ilk durak halkası (Ripple) yok.
+- Riskler: `NavOnlyService` arka plandan başlatılırken Android 12+ reddedebilir (sessiz düşer); MapLibre zoom ölçeği 256-dp varsayımıyla sığdırma (A6.5'teki standart zoom gibi) cihazda kontrol edilmeli.
+- Sıradaki: A6.7 (Sonnet · high) bu daldan; A8.3 başlayabilir.
+
 ## 2026-10-19 — A6.6 navigasyon (Y4), bağlantılar (Y5), adres bulma (Y6) — YARIM (Claude Opus · high; dal `ccr-1547f688-0aa3iw`, son kod `dce8ada`)
 - Yapılan (saf, testli): `logic/map` `input` tamam — `AddressParser` (YolGo birebir, desenler JVM/ICU taşınabilir), `LinkUri`, `PlusCode`, `IncomingLink`, `ClipboardHash`, `PlacesRest`, Google/ORS/Nominatim geokod + `FallbackGeocoder` (Nominatim ≥1 sn), `DestinationResolver`, `PlaceSearch`, `ApiChecks`. `nav` tamam — `ApproachZoom`, `ArrivalFocus`(+Tracker), `FixGate`, `NavOnly`(+Controller), `RerouteGate`, `RouteOrigin`, `RouteLine`, `RouteProgress`/`LegLine`/Tracker, `RouteStatusBuilder`/`Gate`, `MapMatcher`, `NavText`, `NavController` (hedef kabulü, <60 m, bekleyen kart, sipariş bağı `NavShift`, rota/H2/H3, takip, varış, sapma, saatli izin, batarya, `RouteStatus` yayını; `NavRecording`/`RoadInputs`/`restaurantNear`/`onMatchedFix` kancaları A6.8–A6.11 için).
 - Yapılan (Android, **derlenmedi**): `:map` `NavRuntime`, `NavLocation`, `LinkIntake`, `ApkGoogleConfig`; manifest 12 filtre + `singleTop` (YolGo'daki `taskAffinity=""` bilerek alınmadı); `MainActivity` bağlantı/pano; `WeemApp` bağlantıda harita sekmesi.
@@ -136,12 +143,3 @@ Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 
 - Doğrulama: `./gradlew -p logic compileTestKotlin` yeşil; `-p logic test` capture 100 (97 kırmızı), orders 374 (371 kırmızı), core 216 yeşil; kök Android `:orders`/`:capture` `compileDebugKotlin` yeşil. CI/telefon yok (`[skip ci]`).
 - **`main`'e birleşmedi** (testler bilerek kırmızı). Dal `ccr-e90bca59-fxabvl` (kod `cd9a845`); `main`'e yalnız `WEEM_ISLER.md` + bu not gider.
 - Açık kalan: A3.4 (Opus · high) sırada. A3.6 "A3.3 testleri yeşil" = balon/rozet/gün sayfası kodu dahil. S15–S17 açık (engel değil).
-
-## 2026-10-17 — A3.2 testleri çevir: capture + orders sipariş akışı (Claude Sonnet · high; dal `ccr-e90bca59-fxabvl`)
-- Yapılan: 335 Rawstats testi çevrildi — `logic/capture` 93, `logic/orders` 238, `logic/core` 4 (yeşil). Testler derlenir, `:capture`/`:orders` kırmızı. Ortak yardımcılar `logic/capture` `testFixtures` (`SahaFrames`, `RepoSource`, saha kareleri). İskelet imzalar `TODO("A3.4"/"A3.5")` (`stubber.py` ile Rawstats'tan; gövde yok). Betikler `tools/test-translate/` (README; A3.3 için aynı hat).
-- Yeni adlar (A3.5 uygular): `OrderStages.of/trip` (`TripRecord` → `logic/core` `TripStages`), `NavBinding.pickupOf/preferred` + `ScreenTrail` (`RouteStatus.Target`), `NameMatch` (capture), `OwnLines`.
-- Sapmalar (`TEST_ENVANTERI` "A3.2 çeviri durumu"): `ArrivalDistanceM20Test` 4 test orders'ta (belge 2); kaynak taramaları A3.7'de; `CustomerStageK34LateDeliveryTest`'teki 6 `legs` ifadesi A4.1'e; `olcumRaporu` orders'ta.
-- Doğrulama: `./gradlew -p logic compileTestKotlin` yeşil; `-p logic test` yalnız capture (91/94) ve orders (238/239) kırmızı, geri kalan yeşil; kök Android `:capture`/`:orders` derlemesi yeşil. CI/telefon yok (`[skip ci]`).
-- **`main`'e birleşmedi:** testler bilerek kırmızı (CI `logic/ testleri` kırar; `AGENTS.md` madde 4). Dal `ccr-e90bca59-fxabvl` (kod `f78cf22`); A3.3 ve sonrası aynı dalda. `main`'de yalnız `WEEM_ISLER.md` + bu not var.
-- Açık kalan: A3.3 (Sonnet · high). S15–S17 hâlâ açık (engel değil). Kaynak taraması testleri (E2 `cardAndListShowIt`, E15 bildirim, A3.3'tekiler) Android adları belli olunca A3.7/A3.8'de.
-
