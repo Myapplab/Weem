@@ -2,6 +2,12 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-20 — A6.8 bitti: gün motoru, POI, bisiklet yolu, bölge bilgisi (Claude Sonnet · high; dal `ccr-e899edd4-bztcog`)
+- Yapılan: `logic/map` `day` (motor `feed`/`endDay`, `LightTracker`, `LightsDb`, `SidewalkMarks`, `StopReconciler`, `RoadInfoBuilder`, `CourierStageFollower`/`StageFeed`, `DayController`, `DayText`), `graph` (`Pois`/`PoiSet`, `PoiCorrections`, güncelleme sonrası POI indirme), bisiklet (`BikewayMarksStore`, `BikewayMenu`, `BikewayLayerRules`), `ui.PoiLayerRules`/`PlaceText`; Android `DayRuntime`, `MapPois`, `MarkerKind.POI_*`, `MapScreen` (gün kartı gerçek durum, toast/titreşim, yer+ışık işaretleri, bisiklet çizgileri, uzun basış satırları, işletme penceresi), `BikewayTab`, bölge bilgisi ⓘ. `:core` `ShiftFollower.handled()`. Ayrıntı `MAP.md` 5.9, 11.19.
+- Doğrulama: `-p logic test` 1.653 test, 90 kırmızı (A6.7 15, A6.9 51, A6.11 24 iskeleti); `:map`/`:app` derleniyor; yeni Robolectric testleri yeşil; `lintDebug` koşmadı (Maven 429). Telefonda denenmedi.
+- Açık kalan: `OrderEvents` Android uygulayıcısı yok → `DayRuntime.bindOrders` çağrılmıyor, aşama izleyici cihazda çalışmaz; yer adı etiketleri ve bölge önizleme haritası yok; `BikewayTab` Yollarım ekranı (A6.11) gelince takılır; sürüş günlüğü/gün raporu A6.9 (`DayRuntime.onStep`).
+- Sıradaki: A6.7 (Sonnet · high) bu daldan; sonra A6.9.
+
 ## 2026-10-20 — A6.6 bitti: Android katmanı + harita ekranı navigasyonu (Claude Opus · high; dal `ccr-56fdfbc1-p00o8e`, son kod `70e4d61`)
 - Yapılan: `NavRuntime` derlendi (konum ↔ denetleyici tür çıkarımı); saf `ui.RouteLayer` (çizgiler, rozetler, `fit`) + `nav.NavPanelText` + `SpeedOptions.arrivalClock`; `:app` `MapScreen` rota çizimi/sığdırma/yaklaşma zoom'u/varış odağı/takibe dönüş, `MapNav.kt` (`RoutePanel`, `NavToastBanner`, `SearchOverlay`, `LongPressSheet`), Eve dön, ekran açık = gün || durak; `MapApiSettingsScreen` (Harita ayarları → API ve bağlantılar); `NavOnlyService` 7402 / kanal `navigation` (`NotificationIds`, CORE.md 3.3). Ayrıntı `MAP.md` 7.18; BAKİ notu (8.13 F-N2) düzeltildi.
 - Doğrulama: `-p logic test` 1.617 test, 163 kırmızı (hepsi A6.7–A6.11 iskeleti); `:app:compileDebugKotlin` + `:app:lintDebug` (0 hata) yeşil; `RoutePanelTest` 4/4; `RouteEngineTest` zaman aşımı testi yük altında 3/3 (süre 150 ms). Telefonda denenmedi.

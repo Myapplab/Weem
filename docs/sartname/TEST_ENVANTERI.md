@@ -468,3 +468,13 @@ Y1 harita ekranı ve Y2 ikinci görünüm uygulandı (`MAP.md` 6; uygulama notla
 
 **Doğrulama:** `LC_ALL=C.UTF-8 ./gradlew -p logic test --continue` → **1.617 test, 163 kırmızı** (hepsi A6.7–A6.11 iskeleti `NotImplementedError`); `:app:compileDebugKotlin`, `:app:lintDebug` (0 hata) yeşil; `:app` harita Robolectric: kırmızılar yalnız A6.7/A6.9 iskeleti ve bir Robolectric indirme hatası (`BikewayTabTest`, ağ). Telefonda denenmedi.
 
+## A6.8 kod durumu (20 Ekim 2026)
+
+Gün motoru (Y11), POI (Y16), bisiklet yolu (Y15) ve bölge bilgisi (Y21) uygulandı (`MAP.md` 5.9, 11.19); dal `ccr-e899edd4-bztcog`. A6.2b/A6.2a testlerinden A6.8'inkiler yeşil: `day` (`ShiftEngineTest` 12, `ShiftEngineStagesTest` 8, `LightTrackerTest` 7, `LightLeaksTest` 3, `LightRuleTest` 8, `LongLightTest` 5, `StopSemanticsTest` 1, `DayStateJsonTest` 1, `CourierStageFollowerTest` 11, `CourierStageTimelineTest` 11, `StageFeedTest` 3, `DayControllerTest` 1), `PoiSetTest` 4, `BikewayMarksTest` 1, `BikewayMenuTest` 1, `BikewayLayerRulesTest` 1, `:app` `BikewayTabTest` 1.
+
+**Yeni testler (karakterizasyon):** `LightsDbTest` 5, `SidewalkMarksTest` 2, `StopReconcilerTest` 3, `DayTextTest` 3, `DayShiftSyncTest` 6, `RoadInfoBuilderTest` 4, `PoiCorrectionsTest` 4, `PoiLayerRulesTest` 5, `PlaceTextTest` 3, `BBoxSizeTest` 1, `:app` Robolectric `RegionInfoSheetTest` 2, `PoiEditDialogTest` 2. `MapBuildTest` yer dosyasıyla genişledi; `MapDownloadTest` bir beklenti +1 (güncelleme sonrası yer sorgusu). `HomeReturn` ayrı sınıf değil, `DayShiftSyncTest`/`DayController` içinde (eve varış 35 m/1,3 m/sn/20 m için ayrı test yok).
+
+**Sapmalar:** `CourierStageTimelineTest` iki beklentisi `listOf<Any?>` (Long/Int); `NavAssistantTest` hâlâ kırmızı — `TODO("A6.9")` (görev denetleyicisi), A6.8'in değil.
+
+**Doğrulama:** `LC_ALL=C.UTF-8 ./gradlew -p logic test --continue` → **1.653 test, 90 kırmızı** (A6.7 15, A6.9 51, A6.11 24; hepsi `NotImplementedError` iskeleti ya da onlara bağlı; önceki 163'ten 73 az); `:map`/`:app` `compileDebugKotlin` yeşil; `:app` harita Robolectric kırmızıları yalnız A6.7/A6.9 iskeleti. `lintDebug` koşmadı (Maven Central 429). Telefonda denenmedi.
+
