@@ -58,8 +58,8 @@ class NavRuntime private constructor(private val app: Context) {
         }
     }
 
-    private val location = NavLocation(app) { controller.onFix(it) }
-    val controller = NavController(RouteEngine(), scope, Clock.Jvm, DestinationResolver(AndroidHttp, geocoder), lang, location)
+    private val location: NavLocation = NavLocation(app) { controller.onFix(it) }
+    val controller: NavController = NavController(RouteEngine(), scope, Clock.Jvm, DestinationResolver(AndroidHttp, geocoder), lang, location)
 
     val search = PlaceSearch(
         scope = scope,
