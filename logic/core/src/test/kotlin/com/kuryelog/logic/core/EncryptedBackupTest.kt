@@ -86,7 +86,7 @@ class EncryptedBackupTest {
         assertFalse(EncryptedBackup.decodePrefs(j).containsKey("home.lat")); assertFalse(EncryptedBackup.decodePrefs(j).containsKey("odd"))
         // Restore never overwrites a setting the phone already has.
         assertEquals(mapOf("dailyPack" to false, "manualPolicy" to 1), EncryptedBackup.missingPrefs(back, setOf("lang", "commission.com.wolt.courierapp", "crashSeenAt", "targets")))
-        for (k in listOf(KuryelogPrefs.HOME_LAT, KuryelogPrefs.HOME_LON, KuryelogPrefs.HOME_UPDATED_AT, KuryelogPrefs.SHIFT, KuryelogPrefs.DEVICE_ID))
+        for (k in listOf(KuryelogPrefs.HOME_LAT, KuryelogPrefs.HOME_LON, KuryelogPrefs.HOME_UPDATED_AT, KuryelogPrefs.SHIFT, KuryelogPrefs.DEVICE_ID, KuryelogPrefs.SETUP_DONE))
             assertTrue(k, EncryptedBackup.excludedPref(k))
     }
 
