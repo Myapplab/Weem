@@ -2,12 +2,15 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+<<<<<<< HEAD
 ## 2026-10-20 — A6.8 bitti: gün motoru, POI, bisiklet yolu, bölge bilgisi (Claude Sonnet · high; dal `ccr-e899edd4-bztcog`)
 - Yapılan: `logic/map` `day` (motor `feed`/`endDay`, `LightTracker`, `LightsDb`, `SidewalkMarks`, `StopReconciler`, `RoadInfoBuilder`, `CourierStageFollower`/`StageFeed`, `DayController`, `DayText`), `graph` (`Pois`/`PoiSet`, `PoiCorrections`, güncelleme sonrası POI indirme), bisiklet (`BikewayMarksStore`, `BikewayMenu`, `BikewayLayerRules`), `ui.PoiLayerRules`/`PlaceText`; Android `DayRuntime`, `MapPois`, `MarkerKind.POI_*`, `MapScreen` (gün kartı gerçek durum, toast/titreşim, yer+ışık işaretleri, bisiklet çizgileri, uzun basış satırları, işletme penceresi), `BikewayTab`, bölge bilgisi ⓘ. `:core` `ShiftFollower.handled()`. Ayrıntı `MAP.md` 5.9, 11.19.
 - Doğrulama: `-p logic test` 1.688 test, 75 kırmızı (A6.9 51, A6.11 24 iskeleti; A6.7 dalıyla birleşik); `:map`/`:app` derleniyor; yeni Robolectric testleri yeşil; `lintDebug` koşmadı (Maven 429). Telefonda denenmedi.
 - Açık kalan: `OrderEvents` Android uygulayıcısı yok → `DayRuntime.bindOrders` çağrılmıyor, aşama izleyici cihazda çalışmaz; yer adı etiketleri ve bölge önizleme haritası yok; `BikewayTab` Yollarım ekranı (A6.11) gelince takılır; sürüş günlüğü/gün raporu A6.9 (`DayRuntime.onStep`).
 - Sıradaki: A6.9 (Sonnet · high) bu daldan, sonra A6.11. (A6.7 başka hesapta bitti, dala birleşti.)
 
+=======
+>>>>>>> origin/main
 ## 2026-10-20 — A6.7 hız ve batarya (Y9), hava (Y10), menzil girdileri (N5) (Claude Sonnet · high; dal `ccr-9f8c8f6c-07ubij` ← A6.6 dalı `ccr-56fdfbc1-p00o8e`, kod `5e63562`)
 - Yapılan: `logic/map` `ride` (`SpeedOptions`, `EnergyOdometer`, `BatteryState`/`BatteryEstimator`, `RangeInputs`), `weather` (`WeatherReport`, `WeatherSummary`, `WeatherIcons`, `WeatherRequest`, `WeatherNotifyText`, `WeatherPrefs`, `WeatherFetcher`, `WeatherNotifier`, `LiveWeather`), `ui` `RideText`/`WeatherUiText`; `:core` `RangePort`; `:map` `BatteryRuntime` (+`range`), `WeatherRuntime`, `FileReportStore`; `:app` `MapMetrics`/`SpeedSheet`/`ScooterValuesSheet`, `WeatherChip`/`WeatherDetailSheet`, Hava ayarları; `Orders.bindWeather` (R15). Bildirim WorkManager değil süreç içi döngü (`MAP.md` 10.15). A6.6 dalıyla (`ccr-56fdfbc1-p00o8e`) birleştirildi: `NavRuntime` fix akışı `WeatherRuntime`/`BatteryRuntime`'a da gider, `MapScreen` sol göstergeleri/hava şeridini bağlar, `MapSettingsScreen` hem "API ve bağlantılar" hem "Hava durumu" taşır.
 - Düzeltilen A6.5 hatası: `MapTab` gün kartı açılınca durumunu kaybediyordu → `movableContentOf`. Test uyarlamaları `TEST_ENVANTERI` "A6.7 kod durumu".
