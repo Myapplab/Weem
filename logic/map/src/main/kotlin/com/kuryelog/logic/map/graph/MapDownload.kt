@@ -88,6 +88,45 @@ class MapDownload(
         }
     }
 
+    /**
+     * Bölgenin yer dosyası (`pois_<region>.json` sıkı biçimi): önce hazır veri sunucusu manifestinde aynı kutunun `pois` dosyası (60 sn; gzip açılır; çözülemezse düşülür),
+     * yoksa Overpass sorgusu. Hata → null (sessiz; harita yine çalışır).
+     */
+    suspend fun downloadPois(box: BBox): ByteArray? {
+        try {
+            val res = get("$prebuiltBase/manifest.json", 20_000)
+            if (res.status == 200) {
+                val manifest = runCatching { JSONObject(String(res.raw, Charsets.UTF_8)) }.getOrNull()
+                val regions = manifest?.optJSONObject("regions")
+                if (manifest != null && manifest.opt("format") == 1 && regions != null) {
+                    for (key in regions.keys()) {
+                        val r = regions.opt(key) as? JSONObject ?: continue
+                        val b = r.opt("box") as? JSONArray ?: continue
+                        val file = r.optString("pois", "")
+                        if (b.length() != 4 || !sameBox(b, box) || file.isEmpty()) continue
+                        val got = get("$prebuiltBase/$file", 60_000)
+                        if (got.status != 200) break
+                        val bytes = if (isGzip(got.raw)) gunzip(got.raw) else got.raw
+                        if (runCatching { PoiSet.decode(bytes) }.isSuccess) return bytes
+                        break
+                    }
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // hazır sunucu yok: Overpass'a düş
+        }
+        return try {
+            val fetcher = OverpassFetcher(http, userAgent, delay)
+            PoiSet(Pois.fromOverpass(decodeJson(fetcher.fetch(box, query = Pois.query(box))))).encode()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     /** true: bölgenin tamamı hazır veri sunucusundan geldi. [progress] 0..1 alır. */
     private suspend fun loadPrebuilt(box: BBox, raw: OsmRaw, progress: (Double, MapMsg) -> Unit): Boolean {
         progress(0.0, MapMsg.PREBUILT_SEARCH)

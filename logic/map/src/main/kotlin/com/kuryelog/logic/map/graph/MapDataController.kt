@@ -107,7 +107,7 @@ class MapDataController(
             current = MapDataState.updateFailed(t(err), old.graph, old.elevation, old.pois)
         }
         load(region)
-        // POI'ler güncellemede tazelenir (`_fetchPoisLater`): A6.8.
+        if (err == null && current.ready) fetchPoisLater(region)
         if (err != null) {
             val cur = current
             current = if (cur.ready) {
@@ -124,6 +124,13 @@ class MapDataController(
                 MapDataState(MapDataPhase.ERROR, error = t(err))
             }
         }
+    }
+
+    /** POI'ler güncellemede tazelenir (`_fetchPoisLater`): yol grafı hazır olduktan sonra, hata sessiz (harita eski yerlerle çalışır). */
+    private suspend fun fetchPoisLater(region: String) {
+        val bytes = download.downloadPois(Baku.wideBox) ?: return
+        val set = runCatching { withContext(work) { AtomicFile.write(File(dir, poiName(region)), bytes); PoiSet.decode(bytes) } }.getOrNull() ?: return
+        current = current.withPois(set)
     }
 
     /** `mapdata/` klasörünü siler; faz `missing` (adına rağmen yeniden yüklemez; YolGo davranışı). */
@@ -169,7 +176,6 @@ class MapDataController(
     private fun readPois(region: String): PoiSet? {
         val f = File(dir, poiName(region))
         if (!f.exists()) return null
-        // PoiSet A6.8'e dek gövdesiz (NotImplementedError): Throwable yakalanır.
         return runCatching { PoiSet.decode(f.readBytes()) }.getOrNull()
     }
 

@@ -305,7 +305,7 @@ class MapDownloadTest {
         assertEquals(MapDataPhase.BUILDING, during.single().phase)
         assertSame(old, during.single().graph)
         assertEquals("Yol verisi 1/91", during.single().stage)
-        assertEquals(91, http.requests.count { isOverpass(it) })
+        assertEquals(91 + 1, http.requests.count { isOverpass(it) }) // 91 yol parçası + güncelleme sonrası yer sorgusu (`_fetchPoisLater`)
         assertTrue(c.state.value.ready)
         assertEquals(1, c.state.value.graph!!.edgeCount)
         assertNull(c.state.value.error)
