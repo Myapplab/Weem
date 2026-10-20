@@ -15,6 +15,8 @@ import androidx.compose.runtime.setValue
 import com.kuryelog.app.core.HomeWatch
 import com.kuryelog.app.core.Shift
 import com.kuryelog.app.core.Store
+import com.kuryelog.app.map.LinkIntake
+import com.kuryelog.app.map.NavRuntime
 import com.kuryelog.app.scooter.FloatingPanel
 import com.kuryelog.app.scooter.Scooter
 import com.kuryelog.logic.core.Lang
@@ -30,6 +32,8 @@ class MainActivity : ComponentActivity() {
         // Wolt/Bolt kurye uygulamaları izlenenlere kendiliğinden eklenir (elle seçilmediyse; RS `autoDetectTargets`).
         safely("targets") { TargetPicker.autoDetect(this) }
         openFrom(intent)
+        // Wolt/Bolt navigasyon bağlantısı ya da paylaşılan metin (Y5, MAP.md 8.2); yeniden kurulan Activity aynı intent'i ikinci kez işlemez.
+        if (savedInstanceState == null) safely("link") { LinkIntake.handle(this, intent) }
         val prefs = ShellPrefs(this)
         setContent {
             var langSetting by remember { mutableStateOf(prefs.langSetting) }
@@ -50,7 +54,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        setIntent(intent)
         openFrom(intent)
+        safely("link") { LinkIntake.handle(this, intent) }
+    }
+
+    /** Pano (Y6, MAP.md 8.3): Android 10+ panoyu yalnız odaktaki uygulamaya verir; öne gelişte ve odakta denetlenir. */
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) safely("clipboard") { NavRuntime.get(this).checkClipboard(this) }
     }
 
     /** Yüzen panel: uzun basma canlı paneli, çift dokunma Scooter ayarlarını açar (A5.4). */

@@ -17,6 +17,8 @@ class PortsTest {
         assertEquals(0, ScooterBridge.NONE.steps.replayCache.size) // adım üretmez (SCOOTER.md 12.2)
         assertNull(NavPort.NONE.route.value)
         assertNull(WeatherPort.NONE.current())
+        assertNull(RangePort.NONE.battery())
+        assertNull(kotlinx.coroutines.runBlocking { RangePort.NONE.rideTo(40.4, 49.8, 40.5, 49.9) })
     }
 
     @Test fun anOpenTripMakesTheShiftBusy() {
