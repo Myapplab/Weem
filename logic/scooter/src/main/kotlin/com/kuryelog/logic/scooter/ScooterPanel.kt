@@ -43,7 +43,7 @@ object ScooterPanel {
 
     /** Durum satırı: uyarı varsa o; bağlantıda kip + bağlı/bekleniyor (+ ikinci batarya); boşta "MAX G3 • hazır". */
     fun status(s: State, lang: Lang): String {
-        if (s.warning.isNotEmpty()) return s.warning
+        if (s.warning.isNotEmpty()) return ScooterStatusText.localize(s.warning, lang)
         if (!s.active) return T.READY.get(lang)
         val mode = (if (s.recording) T.MODE_RECORDING else if (s.hostLogging) T.MODE_HOST else T.MODE_LIVE).get(lang)
         return mode + if (s.linked) T.LINKED.get(lang) + secondPack(s, lang) else T.WAITING.get(lang)

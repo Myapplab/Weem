@@ -34,6 +34,8 @@ object KuryelogPrefs {
     const val CRASH_SEEN_AT = CrashFile.SEEN_KEY
     /** String: WEEM'in yeni cihaz kimliği (CORE.md 1.10). */
     const val DEVICE_ID = "weem.deviceId"
+    /** Bool (false): ilk açılış kurulumu bitti ya da atlandı (G5, A7.2; `logic/app` `SetupStep.PREF_KEY`). Yedeğe girmez. */
+    const val SETUP_DONE = "weem.setupDone"
     /** Bool (true): vardiya bitince günün anonim analiz ZIP'i (R17, [DailyPack]; RS `DailyPack.PREF`). */
     const val DAILY_PACK = "dailyPack"
 

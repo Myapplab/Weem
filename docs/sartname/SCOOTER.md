@@ -564,7 +564,7 @@ Bağımlılık: `:scooter` → yalnız `:core` (plan 4.2). `:orders` ve `:econom
 
 ### 12.4 Metinler
 
-TR/AZ ikili metinler (`ScooterLink`, `ScooterReconnect` bildirimleri) aynen; Sürüş Paneli metinleri yalnız TR (bugün) → AZ karşılıkları A5.4'te eklenir (G3 dil kuralı, `scooter_language_section_test`). Ekranda "Rawstats" → "WEEM" (A3.1 kuralı); "Sürüş Paneli" adı Scooter sekmesinin başlığında kalabilir (A5.4 kararı); kayıt içi dizgiler (`app: "Sürüş Paneli"`, `source: "surus_paneli"`, `NinebotLogger-<ms>.zip`) değişmez.
+**A7.2 (G3):** bağlantı/kayıt durum metinleri (`NinebotSession`, `BleLink`, `ScooterService`, `ScooterTelemetry`; kayda Türkçe yazılır) ekrana giderken `logic/scooter` `ScooterStatusText.localize` ile AZ olur: servis bildirimi, Scooter sekmesinin uyarı satırı (`ScooterPanel.status`), Scooter ayarları → Durum; `ScooterStatusTextTest` kaynak taramasıyla yeni Türkçe metnin çevrilmeden kalmasını yakalar. TR/AZ ikili metinler (`ScooterLink`, `ScooterReconnect` bildirimleri) aynen; Sürüş Paneli metinleri yalnız TR (bugün) → AZ karşılıkları A5.4'te eklenir (G3 dil kuralı, `scooter_language_section_test`). Ekranda "Rawstats" → "WEEM" (A3.1 kuralı); "Sürüş Paneli" adı Scooter sekmesinin başlığında kalabilir (A5.4 kararı); kayıt içi dizgiler (`app: "Sürüş Paneli"`, `source: "surus_paneli"`, `NinebotLogger-<ms>.zip`) değişmez.
 
 ### 12.5 Kesişen kurallar
 

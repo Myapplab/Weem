@@ -78,8 +78,8 @@ object EncryptedBackup {
     // ---- tercihler
     private val excluded = setOf(KuryelogPrefs.SHIFT, KuryelogPrefs.MANUAL_SESSION, KuryelogPrefs.AUTO_STARTED, KuryelogPrefs.SHIFT_START,
         KuryelogPrefs.SHIFT_START_REASON, KuryelogPrefs.SHIFT_ENDED_AT, KuryelogPrefs.SHIFT_END_REASON, KuryelogPrefs.SHIFT_INTERRUPTED_AT,
-        KuryelogPrefs.DIST, KuryelogPrefs.DEVICE_ID)
-    /** Yedeğe girmeyen tercih: kullanıcının evi (`home.` önekli her anahtar, S22), vardiyanın o anki durumu, cihaz kimliği. */
+        KuryelogPrefs.DIST, KuryelogPrefs.DEVICE_ID, KuryelogPrefs.SETUP_DONE)
+    /** Yedeğe girmeyen tercih: kullanıcının evi (`home.` önekli her anahtar, S22), vardiyanın o anki durumu, cihaz kimliği, kurulum işareti (yeni telefonda izinler yeniden verilir). */
     fun excludedPref(key: String): Boolean = key.startsWith("home.") || key in excluded
 
     /** `SharedPreferences.getAll()` → [PREFS] JSON: `{anahtar: {"type": bool|int|long|float|string|set, "value": …}}`; [excludedPref] atlanır. */

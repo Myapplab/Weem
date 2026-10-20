@@ -29,6 +29,7 @@ import com.kuryelog.logic.scooter.NinebotDashboard
 import com.kuryelog.logic.scooter.NinebotEventQueue
 import com.kuryelog.logic.scooter.NinebotGpsPolicy
 import com.kuryelog.logic.scooter.NinebotLogPolicy
+import com.kuryelog.logic.scooter.ScooterStatusText
 import com.kuryelog.logic.scooter.NinebotMetrics
 import com.kuryelog.logic.scooter.NinebotMode
 import com.kuryelog.logic.scooter.PackPresence
@@ -498,7 +499,7 @@ class ScooterService : Service() {
     private var stopIntent: PendingIntent? = null
     private var recordIntent: PendingIntent? = null
 
-    private fun notification(text: String, live: Boolean): Notification {
+    private fun notification(raw: String, live: Boolean): Notification {
         if (stopIntent == null) {
             openIntent = packageManager.getLaunchIntentForPackage(packageName)?.let {
                 PendingIntent.getActivity(this, 0, it.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
@@ -507,6 +508,8 @@ class ScooterService : Service() {
             recordIntent = PendingIntent.getService(this, 3, Intent(this, ScooterService::class.java).setAction(RECORD), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         }
         val lang = Store.lang(this)
+        // Durum metni kayıtta Türkçe kalır; bildirimde dil ayarına göre (G3, `ScooterStatusText`).
+        val text = ScooterStatusText.localize(raw, lang)
         val title = (if (!live) ScooterUiText.N_RECORDING else if (Scooter.hostLogging) ScooterUiText.N_HOST else ScooterUiText.N_LIVE).get(lang)
         val b = Notification.Builder(this, CHANNEL).setSmallIcon(android.R.drawable.stat_sys_data_bluetooth).setContentTitle(title).setContentText(text)
             .setStyle(Notification.BigTextStyle().bigText(text)).setContentIntent(openIntent).setOngoing(true).setOnlyAlertOnce(true).setShowWhen(false)
