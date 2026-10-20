@@ -76,13 +76,17 @@ class DayReportWriter private constructor(private val app: Context) {
         runCatching { io.submit {}.get() }
     }
 
-    /** Gün kayıtları (süren gün + en yeni 60 rapor + son gün), en yenisi önce. */
-    fun history(): List<DayState> {
+    /** `logs/`'taki en yeni 60 rapor (ada göre azalan; okunamayan atlanır). */
+    fun files(): List<DayState> {
         waitIdle()
         val files = dir.listFiles { f -> f.isFile && f.name.endsWith(".gun.json") }.orEmpty().sortedByDescending { it.name }.take(DayHistory.MAX_FILES)
-        val parsed = files.mapNotNull { f -> runCatching { DayReportFile.decode(f.readText()) }.getOrNull() }
+        return files.mapNotNull { f -> runCatching { DayReportFile.decode(f.readText()) }.getOrNull() }
+    }
+
+    /** Gün kayıtları (süren gün + en yeni 60 rapor + son gün), en yenisi önce. */
+    fun history(): List<DayState> {
         val day = DayRuntime.get(app)
-        return DayHistory.merge(day.activeDay(), parsed, day.lastDay())
+        return DayHistory.merge(day.activeDay(), files(), day.lastDay())
     }
 
     companion object {

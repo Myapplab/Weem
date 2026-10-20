@@ -33,7 +33,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.size
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.map.input.ApiText
+import com.kuryelog.logic.map.ui.DatasetText
 import com.kuryelog.logic.map.ui.MapText
+import com.kuryelog.logic.map.ui.ReminderText
+import com.kuryelog.logic.map.ui.RideLogText
+import com.kuryelog.logic.map.ui.TaskText
 import com.kuryelog.logic.map.ui.WeatherUiText
 import com.kuryelog.logic.map.weather.WeatherReport
 import java.time.Instant
@@ -145,10 +149,18 @@ fun MapSettingsScreen(
 ) {
     var weatherOpen by remember { mutableStateOf(false) }
     var api by remember { mutableStateOf(false) }
+    var sub by remember { mutableStateOf<String?>(null) }
     if (api) {
         BackHandler { api = false }
         MapApiSettingsScreen(lang, onBack = { api = false })
         return
+    }
+    // A6.9: Sürüş kayıtları, Teklif veri seti, Günlük işler, Hatırlatıcılar (MAP.md 6.9, 12.10, 13.8, 13.14, 13.16).
+    when (sub) {
+        "ridelogs" -> { RideLogsHost(lang) { sub = null }; return }
+        "dataset" -> { DatasetHost(lang, shiftDay = null) { sub = null }; return }
+        "tasks" -> { TasksHost(lang) { sub = null }; return }
+        "reminders" -> { ReminderSettingsHost(lang) { sub = null }; return }
     }
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -167,6 +179,13 @@ fun MapSettingsScreen(
         }
         MapDataSection(lang)
         MapsKeySection(lang)
+        for ((key, title) in listOf(
+            "ridelogs" to RideLogText.TITLE.get(lang), "dataset" to DatasetText.TITLE.get(lang), "tasks" to TaskText.TITLE.get(lang), "reminders" to ReminderText.SECTION.get(lang),
+        )) {
+            Card(Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable { sub = key }.testTag("open-$key")) {
+                Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(16.dp))
+            }
+        }
         // A6.6: "API ve bağlantılar" (MAP.md 8.9).
         Card(Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable { api = true }.testTag("open-api-settings")) {
             Text(ApiText.OPEN.get(lang), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(16.dp))

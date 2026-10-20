@@ -200,6 +200,9 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
     var mapOnly by remember { mutableStateOf(false) }
     var askHome by remember { mutableStateOf(false) }
     var askEnd by remember { mutableStateOf(false) }
+    var statsOpen by remember { mutableStateOf(false) }
+    var taskAt by remember { mutableStateOf<GeoPoint?>(null) }
+    val routeSpeed by RideLogRuntime.get(ctx).routeSpeed.collectAsState()
     var panelOpen by remember { mutableStateOf(false) }
     var searching by remember { mutableStateOf(false) }
     var pressed by remember { mutableStateOf<GeoPoint?>(null) }
@@ -351,7 +354,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
             }
         },
         onHome = { askHome = true },
-        onStats = {},
+        onStats = { statsOpen = true },
         onEnd = { askEnd = true },
         actions = MapTabActions(
             onLocate = {
@@ -374,7 +377,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
         metrics = {
             MapMetrics(
                 MapMetricsState(
-                    plan = nav.plan, mode = nav.mode, measure = progress, battery = battery, scooter = scooter, speeds = speeds, nowMs = nowMs,
+                    plan = nav.plan, mode = nav.mode, measure = progress, battery = battery, scooter = scooter, speeds = speeds, avgKmh = routeSpeed.first, nowMs = nowMs,
                     speedChoices = settings.speedChoices, lowBatteryPct = settings.lowBatteryPct,
                 ),
                 lang,
@@ -448,6 +451,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
                     }
                 }
                 LongPressAction.POI_EDIT -> poiEdit = PoiEditTarget(p, place)
+                LongPressAction.ADD_TASK -> taskAt = p
                 else -> Unit
             }
         })
@@ -461,6 +465,20 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
                 poiRev++
                 poiEdit = null
             },
+        )
+    }
+    if (statsOpen) {
+        // İstatistik (A6.9): tam ekran; elle günü bitirince o güne odaklı açılır.
+        StatsHost(lang, focusStartMs = dayRt.activeDay()?.startedAtMs ?: dayRt.lastDay()?.startedAtMs, onBack = { statsOpen = false })
+    }
+    taskAt?.let { p ->
+        // Uzun basış satırı 4 (MAP.md 6.7): düzeltilmiş nokta ile günlük iş düzenleyicisi.
+        val rt = remember { TaskRuntime.get(ctx) }
+        val label = String.format(java.util.Locale.US, "%.5f, %.5f", p.lat, p.lon)
+        TaskEditorSheet(
+            lang, java.time.ZoneId.systemDefault(), System.currentTimeMillis(),
+            TaskActions(onAdd = rt::add, onDelete = rt::delete, resolve = { text -> runtime.resolvePlace(text)?.let { FoundPlace(it.label, it.point) } }),
+            FoundPlace(label, p), onDismiss = { taskAt = null },
         )
     }
     if (askHome) {
@@ -497,6 +515,7 @@ private const val FOCUS_EASE = 0.25
 private val DAY_ROWS = setOf(
     LongPressAction.GO_TO, LongPressAction.ADD_STOP, LongPressAction.GO_TO_RESTAURANT, LongPressAction.PICK_AS_RESTAURANT, LongPressAction.CURB_WAIT,
     LongPressAction.CURB_REMOVE, LongPressAction.BIKEWAY, LongPressAction.LIGHT_HERE, LongPressAction.NO_LIGHT, LongPressAction.POI_EDIT,
+    LongPressAction.ADD_TASK,
 )
 
 /** Yer düzeltme penceresinin hedefi: basılan nokta ve (varsa) düzeltilen yer. */

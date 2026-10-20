@@ -2,6 +2,7 @@ package com.kuryelog.app
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,6 +38,10 @@ import androidx.compose.ui.unit.dp
 import com.kuryelog.app.core.CrashLog
 import com.kuryelog.app.core.Store
 import com.kuryelog.app.map.MapScreen
+import com.kuryelog.app.map.ReminderCard
+import com.kuryelog.app.map.ReminderRuntime
+import com.kuryelog.app.map.TaskAlertCard
+import com.kuryelog.app.map.TaskRuntime
 import com.kuryelog.app.map.MapSettingsScreen
 import com.kuryelog.app.map.WeatherRuntime
 import com.kuryelog.logic.core.Lang
@@ -94,8 +99,15 @@ fun WeemApp(
             }
         },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
+        // A6.9: hatırlatıcı kartı ve görev uyarısı uygulama kabuğunda, her sekmenin üstünde (CORE.md 3.1: WEEM öndeyken sistem bildirimi yok).
+        val reminders = remember { ReminderRuntime.get(ctx) }
+        val taskRt = remember { TaskRuntime.get(ctx) }
+        val reminder by reminders.active.collectAsState()
+        val tasks by taskRt.view.collectAsState()
+        Box(Modifier.fillMaxSize().padding(padding)) {
+        Column(Modifier.fillMaxSize()) {
             crash?.let { j -> CrashCard(j, lang) { CrashLog.hide(ctx, j); crash = null } }
+            ReminderCard(reminder, lang, onDone = reminders::done)
             holder.SaveableStateProvider(selected.key) {
                 GuardedPage(selected.key, lang, build = {}) {
                     when (selected) {
@@ -110,6 +122,8 @@ fun WeemApp(
                     }
                 }
             }
+        }
+        TaskAlertCard(tasks.alerts, tasks.lastPoint, lang, onRoute = { t -> taskRt.openRoute(t) }, onDismiss = { t -> taskRt.dismiss(t.id) })
         }
     }
 }

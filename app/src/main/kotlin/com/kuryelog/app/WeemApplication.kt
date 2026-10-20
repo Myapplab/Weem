@@ -9,6 +9,7 @@ import com.kuryelog.app.core.ShiftHub
 import com.kuryelog.app.core.Store
 import com.kuryelog.app.economics.Economics
 import com.kuryelog.app.map.BatteryRuntime
+import com.kuryelog.app.map.NavRuntime
 import com.kuryelog.app.map.WeatherRuntime
 import com.kuryelog.app.orders.Orders
 import com.kuryelog.app.scooter.Scooter
@@ -38,6 +39,8 @@ class WeemApplication : Application() {
             Orders.bindWeather(WeatherRuntime.get(this).port)
             BatteryRuntime.get(this).bind(Scooter.bridge)
         }
+        // A6.9: gün motoru, sürüş günlüğü, gün raporu, görev ve hatırlatıcı çalışma zamanları süreçle birlikte kalkar (vardiya arka planda sürerken ekran kapalı olabilir).
+        Store.guarded(this, "start") { NavRuntime.get(this) }
         LogImport.afterImport = Orders::reloadImportedStats
         // Vardiya dinleyicileri, Rawstats `GpsService` sırasıyla (ORDERS.md 4.2): cep nakdi + CASH PENDING → günlük paket (R17) → şifreli
         // yedek (N3) → siparişler → scooter (A5.3). `onEnd`'de CASH PENDING sonu günlük paketten, o da siparişlerin kapanmasından önce yazılır.

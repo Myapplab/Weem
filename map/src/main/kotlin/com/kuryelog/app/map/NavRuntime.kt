@@ -13,7 +13,9 @@ import com.kuryelog.logic.core.NavTarget
 import com.kuryelog.logic.core.RouteStatus
 import com.kuryelog.logic.map.geo.GeoPoint
 import com.kuryelog.logic.map.input.ClipboardHash
+import com.kuryelog.logic.map.input.AddressParser
 import com.kuryelog.logic.map.input.DestinationResolver
+import com.kuryelog.logic.map.input.ResolvedDestination
 import com.kuryelog.logic.map.input.FallbackGeocoder
 import com.kuryelog.logic.map.input.GeocodeHit
 import com.kuryelog.logic.map.input.Geocoder
@@ -76,7 +78,14 @@ class NavRuntime private constructor(private val app: Context) {
     /** Son fix'in hızı (km/s; yaklaşma zoom'u, MAP.md 7.10). */
     @Volatile var speedKmh = 0.0
         private set
-    val controller: NavController = NavController(RouteEngine(), scope, Clock.Jvm, DestinationResolver(AndroidHttp, geocoder), lang, location)
+    private val resolver = DestinationResolver(AndroidHttp, geocoder)
+    val controller: NavController = NavController(RouteEngine(), scope, Clock.Jvm, resolver, lang, location)
+
+    /** Mekân adı, koordinat ya da Maps bağlantısı → nokta (görev düzenleyici, MAP.md 13.14); çözülemezse null. */
+    suspend fun resolvePlace(text: String): ResolvedDestination? {
+        val parsed = AddressParser.parseExplicit(text) ?: return null
+        return runCatching { resolver.resolve(parsed, controller.here()) }.getOrNull()
+    }
 
     val search = PlaceSearch(
         scope = scope,
@@ -131,6 +140,7 @@ class NavRuntime private constructor(private val app: Context) {
             controller.log = { name, data -> log.writer.event(name, data) }
             controller.recording = log.recording
         }
+        DayReportWriter.get(app)
         TaskRuntime.get(app)
         ReminderRuntime.get(app)
         controller.restaurantNear = { MapPois.foodNear(app, it) }
