@@ -468,6 +468,16 @@ Y1 harita ekranı ve Y2 ikinci görünüm uygulandı (`MAP.md` 6; uygulama notla
 
 **Doğrulama:** `LC_ALL=C.UTF-8 ./gradlew -p logic test --continue` → **1.617 test, 163 kırmızı** (hepsi A6.7–A6.11 iskeleti `NotImplementedError`); `:app:compileDebugKotlin`, `:app:lintDebug` (0 hata) yeşil; `:app` harita Robolectric: kırmızılar yalnız A6.7/A6.9 iskeleti ve bir Robolectric indirme hatası (`BikewayTabTest`, ağ). Telefonda denenmedi.
 
+## A6.11 kod durumu (20 Ekim 2026)
+
+Y12 yol kalitesi öğrenme uygulandı (`MAP.md` 9.14); dal `ccr-81cb765e-vxs3px` (Aşama 6 dalı `ccr-1736f30d-of4a0s` + `main`). A6.2a'nın Y12 iskeletlerinin **24'ü de yeşil**: `roads` 23 (`RoadLearnerTest` 9, `RoadBookTest` 1, `DayContributionsTest` 2, `WwCleanRunTest` 5, `WwAnswerFlowTest` 5, `RoadNamesTest` 1) + `roads.StreetRatioTest` 1. YolGo kodu `yolgo-test` @ `870ab6e`'den birebir çevrildi; ilk koşuda 24/24 geçti.
+
+**Yeni testler (WEEM ekleri, `MAP.md` 9.11):** `logic/map` 24 — `VolumeDispatchTest` 7 (450 ms çift basış, öneri onayı, ana cadde reddi, eşleşmesiz, Ses− ×2 eğim, kötü nokta ekle/uzun basışla sil/kötü puan kaldır, uzun basış tek Ses−'yi iptal, konum yok), `QualityPromptTest` 4 (başlangıç 80 ve yuvarlama, 10/100 sınırı, 6 sn otomatik kayıt ve sayaç yenileme, vazgeç), `RoadFilesTest` 4 (30 sn kısıtı, aynıysa yazma, `damaged` kopyaları, eski 1/−1 göçü, gün kapalıyken öğrenme yok, gün sonu zorla kayıt), `BadSpotAndPlanTest` 4 (`MarkStore` ekle/sil/geri al/kalıcılık/gün silmede kalır, rota girdileri, sokağın tamamı yok, "Sorun yaşadım"), `LearnFixesTest` 2, `RoadsTextTest` 2, `MapSettingsTest` +1 (S26 varsayılan kapalı); `:app` Robolectric 2 — `WrongWayCardTest` (YolGo `ww_no_problem_green_test` son testi, TR/AZ "Hayır"/"Xeyr" dokunuşu, onay + toast), `RoadsScreenTest` (sekmeler, kalite sayfası 👍, eşik, satır menüsü, "Tümünü sil").
+
+**Sapmalar:** `MapSettings.roadLearning` (S26) WEEM alanı; testlerdeki `RoadBook` bunu okumaz (anahtar Android `RoadsRuntime`'da uygulanır, saf akış anahtardan bağımsız sınanır). `RoadBookTest`'te ilk kayıtta boş `roads.*.json` dosyaları da yazılır (YolGo'daki gibi `{}`), sonraki kayıtta değişmeyen dosya yazılmaz.
+
+**Doğrulama:** `LC_ALL=C.UTF-8 ./gradlew -p logic test --continue` → **1.755 test, 0 kırmızı** (Aşama 6 iskeletlerinin hepsi yeşil). ANDROID_SONUC Telefonda denenmedi.
+
 ## A6.9 kod durumu (20 Ekim 2026)
 
 Sürüş günlüğü (Y18), İstatistik (Y17), teklif veri seti (Y19), görevler ve hatırlatıcılar (Y20) uygulandı (`MAP.md` 12.16, 13.21); dal `ccr-1736f30d-of4a0s` (Aşama 6 dalı + A6.9). A6.2b'nin iskelet testlerinden **51 saf + 8 Robolectric** yeşil: `logs` (`RideLogStoreTest` 5, `RideLogWriterTest` 3, `RouteRecorderTest` 2, `RideLogStatusTest` 1), `stats.DayReasonsTest` 1, `tasks` (`TaskTriggerTest` 5, `TaskControllerTest` 1), `reminders` (`ReminderDueTest` 4, `ReminderSettingsTest` 1, `ReminderTimingTest` 1), `nav.NavAssistantTest` 1, `logic/orders` `dataset` 26 (`DatasetContractTest` 6, `DatasetPackTest` 4, `DatasetMeasureTest` 1, `OfferRowGateTest` 3, `DatasetDaysTest` 2, `DayLogSnapshotTest` 10); `:app` `DatasetScreenTest` 5, `ReminderCardTest` 2, `RideLogStatusTextTest` 1.

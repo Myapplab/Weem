@@ -2,6 +2,12 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-20 — A6.11 bitti: Y12 yol kalitesi öğrenme; Aşama 6 `main`'de (Claude Opus · high; dal `ccr-81cb765e-vxs3px`)
+- Yapılan: saf `roads` (YolGo `road_knowledge`/`road_controller`/`day_contributions`/`quality_prompt`/`street_ratio` birebir; `RoadBook`, `VolumeDispatch`, `QualityPrompt`, `LearnFixes`, `RoadsText`), `surface.MarkStore`; S26 `MapSettings.roadLearning` (varsayılan kapalı); `:map` `RoadsRuntime` (+ `MainActivity.dispatchKeyEvent`, gün silme kancası, rota girdileri); `:app` kartlar, Yollarım, uzun basış satırları, Harita ayarları → Yollarım, katman. Ayrıntı `MAP.md` 9.14.
+- Doğrulama: `-p logic test` 1.755 test, 0 kırmızı; ANDROID_SONUC Telefonda denenmedi; CI koşmadı.
+- Açık kalan: rota sırasında "Yol yok" seçicisi, Y8 saat düzenleyicisi + onay/kara liste katmanı, `OrderEvents` (aşama ile `excludeStops`), AZ metin onayları (9.14), 2 telefon rolü (A8.3).
+- Sıradaki: Aşama sonu `/code-review high` önerilir; A6.10 (K) için APK derlet; A8.3.
+
 ## 2026-10-20 — A6.9 bitti: sürüş günlüğü, İstatistik, Sürüş kayıtları, veri seti, görevler, hatırlatıcılar (Claude Sonnet · high; dal `ccr-1736f30d-of4a0s`)
 - Yapılan: `logic/map` `logs` (`RideLogWriter/Store`, `RouteRecorder`, `RouteRecording`, `DayLogBridge`), `stats` (`DayStats`, `DayReportFile`, `DayHistory`, `StatsTabs`, `LightStats`, `DayDeletionPlan`…), `tasks`, `reminders` (+`ReminderController`); `logic/orders` `dataset` (`DatasetContract/Pack/DayLogSnapshot/OfferRowGate/Recorder/Shifts/Manual`); `:map` `RideLogRuntime`, `DayReportWriter`, `DayDeletionRuntime`, `TaskRuntime`, `ReminderRuntime`; `:app` `StatsScreen`, `RideLogsScreen`, `TasksScreen`+düzenleyici+`TaskAlertCard`, `ReminderSettingsSection`, `ReminderCard` (kabukta), `DatasetScreen`/`AppDatasetRuntime`/`DatasetManualSheet`; `tools/veri_seti`. Ayrıntı `MAP.md` 12.16, 13.21.
 - Doğrulama: `-p logic test` 1.723 test, 24 kırmızı (yalnız A6.11 `roads` iskeleti); `:app` 72 + `:map` 8 test yeşil; `lintDebug` 0 hata; `kontrol.py` WEEM ZIP'ini geçirir. Telefonda denenmedi; CI koşmadı.
@@ -133,16 +139,3 @@ Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 
 - Doğrulama: `./gradlew -p logic test` core 216 / capture 139 / orders 402 yeşil (`ScreenReadingE7Test` dahil; yeni `NoGestureTest`, `CaptureCrashGuardTest`, F73, F46, E14/E15/E16/K35 taramaları, `OrdersWiringTest`); kök `test lintDebug assembleDebug assembleRelease` yerelde yeşil, `.dev` kimliği doğru. CI koşusu yok (`main`'e doğrudan birleşti); **telefonda denenmedi**.
 - Açık kalan: A3.8 başka hesapta (dal `claude/a3-8-orders-tab-vfg3r9`; `main`'i almalı) — ayarlar (`overlay`, `customerCard`, boyutlar, `ocr`, izlenen uygulamalar) ve sipariş kartı bahşiş girişi orada; A3.8'e kalan taramalar `TEST_ENVANTERI` "A3.7 durumu". Riskler: OCR'ın CCT arka ucu kaldırılmış hâlde çalışması, `isChecked` uyarısı (API 36, Rawstats'ta da), bildirim simgeleri sistem simgesi (WEEM simgesi bekleniyor). Sıradaki A3.9 (başka oturumda sürüyor).
 
-## 2026-10-17 — A3.6 `:orders` para ve platform (Claude Sonnet · high; dal `ccr-e90bca59-fxabvl`, `9f892d2`)
-- Yapılan: `PlatformTotals`, `CashPending`, `PocketCash`, `RecordPages`, `RestaurantBubble`, `CustomerBubble`, `CustomerCard` Rawstats'tan satır satır (`CustomerCard` `RouteStatus`, "(WEEM)"; `PlatformTotals` "WEEM:"); `OrderFlow` bağlandı: resmî toplamlar, CASH PENDING/offload, `cashPendingHooks` (cep nakdi + başı/sonu satırı), E14/E16 açılışı, restoran adres çözümü, okuyucular; `Env.askPocketCash`/`notifyReminder`. Farklar `ORDERS.md` 16.2.
-- Doğrulama: `logic/orders` 387/387 yeşil (47 A3.6 testi + `OrderFlowTest` +4: saha ekranlarından toplamlar/CASH PENDING, kancalar, E14, E16); `logic/capture` 128/129 (kalan `ScreenReadingE7Test` = A3.7), core yeşil. CI yok (`[skip ci]`), telefonda denenmedi.
-- **`main`'e birleşmedi** (E7 testi kırmızı); `main`'e yalnız `WEEM_ISLER.md` + bu not (S19 dalda `WEEM_PLANI.md`'de).
-- Karar: AZ hava metni "hava məlumatı gəlmədi" kullanıcıca onaylandı → plan S19.
-- Açık kalan: A3.7 (Opus · high): Android katmanı (servisler, OCR, rozet/balon/kart pencereleri, `PocketCashPrompt`, bildirim 12, uyarılar, tarama testleri, `ScreenReadingE7Test`). Konum doğruluğu: `LogStore.Loc.accM <= 0` "bilinmiyor" sayılıyor (ORDERS.md 16.2).
-
-## 2026-10-17 — A5.1 Aşama 5 şartnamesi `SCOOTER.md` (Claude Opus · high, tek ajan; dal `ccr-3deb3b22-ikpcye`, doğrudan `main`)
-- Yapılan: `docs/sartname/SCOOTER.md` Bölüm 0–14 (~640 satır), Sürüş Paneli 0.4.3 + Rawstats scooter kodu (`rawstats` @ `6388c04`) satır satır: UUID'ler ve GATT sırası, çerçeve, Encryption2 şifreleme, PRE_COMM/PAIR/AUTH, oturum sabitleri (tek bekleyen istek, 1,2 sn, 5/20 ms, hız 150/400 ms, 12 zaman aşımı), register/ölçek tablosu, `pairing-v1`/Keystore biçimi, S2–S8, R14, veri sözleşmesi, WEEM yerleşimi, test eşlemesi, riskler.
-- Güncellendi: `OZELLIK_HARITASI` (S1–S8, R14 Ayrıntı → `SCOOTER.md`), `VERI_SOZLESMESI` (5.2: `export_*`/`immersive` tercih değil, örnek durum paketi; 5.3 değer biçimi; 7.2 ZIP), `TEST_ENVANTERI` (A5.1 notu: 324 satır / 336 çağrı / çalışma sayıları; yeşil görevleri), `WEEM_PLANI` (şartname eksikleri durumu).
-- Doğrulama: `bash ninebot-logger/tests/run.sh` (JDK 21) 14 suit yeşil; kaynak repoya yazılmadı. Kod, test ve CI yok (`[skip ci]`); telefonda denenecek bir şey yok.
-- Kararlar (şartname): `ScooterBridge.steps` (sipariş enerjisi adımları) A5.3'te `logic/core`'a eklenir; Provider rolünde BLE yok, `skip role_provider` (S11); `nb_crypto.py` yalnız test referansı, LICENSE/NOTICE ile.
-- Açık kalan: kullanıcı sorusu **S18** (bağlantı `fail()` sonrası boşta kalıyor; yeniden deneme?). Riskler R-S5/R-S6 (2 telefonda sipariş enerjisi ve vardiya durumu) A8.1'e. Sıradaki scooter işi A5.2 (Opus · xhigh).

@@ -1,5 +1,6 @@
 package com.kuryelog.app.map
 
+import kotlinx.coroutines.flow.drop
 import com.kuryelog.logic.map.route.QualityRating
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -239,7 +240,8 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
     val qualityAsk by roads.prompt.state.collectAsState()
     var roadsOpen by remember { mutableStateOf(false) }
     LaunchedEffect(roads) {
-        roads.toast.collect { t -> banner = t?.let { DayBanner(++bannerSeq, it.text, it.tone, it.seconds, it.actionLabel, it.onAction) } }
+        // Açılışta son şerit yeniden gösterilmez (kaçan şerit sonradan gösterilmez; MAP.md 11.14 ile aynı).
+        roads.toast.drop(1).collect { t -> banner = t?.let { DayBanner(++bannerSeq, it.text, it.tone, it.seconds, it.actionLabel, it.onAction) } }
     }
     val wwView = run {
         val q = roadState.question
@@ -334,6 +336,14 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
     val routeMarkers = remember(nav.plans, nav.mode, nav.reached) { RouteLayer.pins(nav).map { it.toMarker() } }
     // Bisiklet yolu katmanı (MAP.md 5.1): OSM düz, elle işaretli kesikli; rota çizgilerinin altında.
     val graph = data.graph
+    // Y12 katmanı (MAP.md 9.8.7): "yol yok" gri kesikli (5 px), ana caddede ters yön izinli kesim yeşil kesikli (4 px); `ghostRev` değişince yeniden.
+    val ghostRev = roadState.ghostRev
+    val roadLines = remember(graph, ghostRev) {
+        val g = graph ?: return@remember emptyList<MapLine>()
+        val inputs = roads.book.forPlan(g)
+        inputs.ghost.map { e -> MapLine("ghost-$e", g.geometry(e).map { GeoPoint(it.lat, it.lon) }, 0xCC9E9E9E.toInt(), 5f, LinePattern.DASH, -1) } +
+            inputs.wrongWayEdges.map { e -> MapLine("wwseg-$e", g.geometry(e).map { GeoPoint(it.lat, it.lon) }, 0xE62EBD59.toInt(), 4f, LinePattern.DASH, -1) }
+    }
     val bikeLines = remember(graph, bikeRev, settings.showBikewayLayer, dark) {
         if (graph == null) emptyList()
         else BikewayLayerRules.lines(graph, runtime.bikeway.marks, settings.showBikewayLayer, dark).map { l ->
@@ -352,7 +362,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
     }
     val markers = routeMarkers + poiMarkers
     val model = MapSurfaceModel(
-        base = base, dark = dark, camera = camera, lines = bikeLines + lines, markers = markers,
+        base = base, dark = dark, camera = camera, lines = bikeLines + roadLines + lines, markers = markers,
         puck = puck?.let { MapPuck(it.point, it.course, it.beam, arrow = nav.hasRoute, accuracyM = it.accuracyM) },
     )
     val events = MapSurfaceEvents(
