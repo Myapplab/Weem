@@ -32,9 +32,11 @@ import com.kuryelog.app.core.Downloads
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.map.day.DayState
 import com.kuryelog.logic.map.logs.RideLogEntry
+import com.kuryelog.logic.map.logs.JournalFormatException
 import com.kuryelog.logic.map.stats.DayHistory
 import com.kuryelog.logic.map.ui.RideLogText
 import com.kuryelog.logic.map.ui.StatsText
+import com.kuryelog.logic.map.ui.importSummary
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -137,6 +139,16 @@ fun RideLogsHost(lang: Lang, onBack: () -> Unit) {
         }
     }
     fun fileOf(entry: RideLogEntry?, dayKey: String?): File = entry?.file ?: rt.writer.export(File(ctx.cacheDir, "exports"), dayKey)
+    val importPicker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) run {
+            try {
+                val r = checkNotNull(ctx.contentResolver.openInputStream(uri)).reader(Charsets.UTF_8).use { rt.writer.importJournal(it) }
+                message = importSummary(lang, r.added.size, r.existing, r.invalid)
+            } catch (_: JournalFormatException) {
+                error = RideLogText.IMPORT_FORMAT.get(lang)
+            }
+        }
+    }
     val actions = RideLogActions(
         onLoggingChange = { on -> MapSettingsRepo.update(ctx) { it.copy(logging = on) } },
         onRefresh = { rev++ },
@@ -156,6 +168,7 @@ fun RideLogsHost(lang: Lang, onBack: () -> Unit) {
         },
         onDeleteOne = { e -> run { rt.writer.delete(e) } },
         onDeleteDay = { dayKey -> run { DayDeletionRuntime.get(ctx).delete(dayKey) } },
+        onImport = { if (!busy) importPicker.launch(arrayOf("*/*")) },
     )
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         RideLogsScreen(

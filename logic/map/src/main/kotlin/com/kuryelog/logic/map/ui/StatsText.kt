@@ -93,6 +93,10 @@ enum class RideLogText(override val tr: String, override val az: String) : Bilin
     DELETE_ONE_TITLE("Bu kaydı sil?", "Bu qeydi silmək istəyirsən?"),
     DELETE_ONE_BODY("Yalnız bu kayıt silinir. Diğer sürüşler ve gün özeti korunur.", "Yalnız bu qeyd silinəcək. Digər sürüşlər və günün xülasəsi saxlanılacaq."),
     DELETE_ONE_CONFIRM("Sil", "Sil"),
+    IMPORT("YolGo kayıtlarını içe aktar", "YolGo qeydlərini köçür"),
+    IMPORT_DONE("%d kayıt eklendi · %d zaten vardı", "%d qeyd əlavə olundu · %d artıq var idi"),
+    IMPORT_INVALID(" · %d okunamadı", " · %d oxunmadı"),
+    IMPORT_FORMAT("Bu dosya YolGo kayıt dosyası değil", "Bu fayl YolGo qeyd faylı deyil"),
     CANCEL("Vazgeç", "Ləğv et"),
 }
 
@@ -236,3 +240,7 @@ enum class ReminderText(override val tr: String, override val az: String) : Bili
         "Yalnız təyin olunan vaxtda gəlir; ✓ ilə bağlanır, toxunulmasa 30 san sonra gedir və növbəti vaxtında yenidən gəlir. WEEM açıq olanda ekranda kart, olmayanda bildiriş gəlir (səs + titrəmə). \"Yalnız gün başladılanda\": gün bitəndə bütün xatırlatmalar susur; \"Yoxla\" ilə bu ekranda yoxlanıla bilər.",
     ),
 }
+
+/** İçe aktarma sonucu (A7.1): "N kayıt eklendi · M zaten vardı", okunamayan öğe varsa " · K okunamadı". */
+fun importSummary(lang: Lang, added: Int, existing: Int, invalid: Int): String =
+    RideLogText.IMPORT_DONE.fmt(lang, added, existing) + if (invalid > 0) RideLogText.IMPORT_INVALID.fmt(lang, invalid) else ""

@@ -512,3 +512,8 @@ Y9 hız ve batarya tahmini, Y10 hava, `WeatherPort` → R15 ve N5 girdileri uygu
 ## A6.6 + A6.7 birleşimi — doğrulama (20 Ekim 2026)
 
 Dal `ccr-9f8c8f6c-07ubij` = A6.6 dalı `ccr-56fdfbc1-p00o8e` (`70e4d61`) + A6.7. Çakışmalar: `MapScreen` (A6.6 sürümü + A6.7 hava/batarya/sol göstergeler), `NavRuntime` (fix akışı denetleyici + hız + `WeatherRuntime`/`BatteryRuntime`), `MapSettingsScreen` ("API ve bağlantılar" + "Hava durumu"), `SpeedOptions.arrivalClock` (iki sürüm aynı; A6.7 gövdeleri), belgeler. `LC_ALL=C.UTF-8 ./gradlew -p logic test --continue` → **1.652 test, 148 kırmızı** (A6.8: `day` 66, `graph.PoiSetTest` 4, `route.Bikeway*` 2, `ui.BikewayLayerRules` 1, `nav.NavAssistant` 1; A6.9: `logs` 11, `reminders` 6, `stats` 1, `tasks` 6, `orders.dataset` 26; A6.11: `roads` 24). `:app` Robolectric **54 test, 9 kırmızı** (A6.8 `BikewayTabTest` 1; A6.9 `DatasetScreenTest` 5, `ReminderCardTest` 2, `RideLogStatusTextTest` 1); `:map` Robolectric yeşil; `:app`/`:map` `lintDebug` 0 hata. Düzeltme: `:map` manifestine `ACCESS_FINE/COARSE_LOCATION` (A6.6'nın `NavOnlyService` `foregroundServiceType=location` lint hatası; birleşik manifestte yinelenmez).
+
+## A7.1 kod durumu (20 Ekim 2026)
+
+YolGo `duzyol-journal-v1` içe aktarma (`MAP.md` 12.17). YolGo'da içe aktarma yok, eski test yok; **yeni testler 13**: `logic/map` `JournalImportTest` 12 (YolGo biçimi ham metinle, kaçışlar ve vekil çiftler, var olan ezilmez, geçersiz ad/yol kaçışı/metin olmayan içerik, dosyada çift ad, yanlış biçim ve yarım dosyada hiçbir şey yazılmaz, alan sırası ve bilinmeyen alanlar, boş liste, eski geçici klasör, WEEM dışa aktarmasıyla gidiş-dönüş, büyük içerik, etkin gün ve sürüş atlanır); `:app` `RideLogsScreenTest` +1 (`yolgoIceAktarmaMenudeSonucMetniGorunur`).
+

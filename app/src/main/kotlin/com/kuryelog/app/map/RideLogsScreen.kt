@@ -42,7 +42,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.util.Locale
 
-/** Sürüş kayıtları ekranının dış bağları (testte sahte): kayıt silme/kaydet/paylaş ve ayar. */
+/** Sürüş kayıtları ekranının dış bağları (testte sahte): kayıt silme/kaydet/paylaş, YolGo içe aktarma (A7.1) ve ayar. */
 class RideLogActions(
     val onLoggingChange: (Boolean) -> Unit = {},
     val onRefresh: () -> Unit = {},
@@ -50,6 +50,7 @@ class RideLogActions(
     val onShare: (RideLogEntry?, day: String?, all: Boolean) -> Unit = { _, _, _ -> },
     val onDeleteOne: (RideLogEntry) -> Unit = {},
     val onDeleteDay: (String) -> Unit = {},
+    val onImport: () -> Unit = {},
 )
 
 /**
@@ -88,6 +89,7 @@ fun RideLogsScreen(
             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                 DropdownMenuItem(text = { Text(RideLogText.SAVE_ALL.get(lang)) }, onClick = { menu = false; actions.onSave(null, null, true) })
                 DropdownMenuItem(text = { Text(RideLogText.SHARE_ALL.get(lang)) }, onClick = { menu = false; actions.onShare(null, null, true) })
+                DropdownMenuItem(text = { Text(RideLogText.IMPORT.get(lang)) }, onClick = { menu = false; actions.onImport() }, modifier = Modifier.testTag("ridelogs-import"))
             }
         }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())

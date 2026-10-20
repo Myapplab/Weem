@@ -2,6 +2,12 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-20 — A7.1 bitti: YolGo kayıtlarını içe aktarma (Claude Opus · high; dal `ccr-1b2259ea-0dmgmm`)
+- Yapılan: saf `logs.JournalImport` + `JsonPull` (YolGo `duzyol-journal-v1` akışla okunur, `files/map/logs/.import-<ns>/`'e açılır, eksiksizse ezmeden taşınır; ad kalıbı 12.4, etkin gün/sürüş atlanır), `RideLogWriter.importJournal`, `RideLogStore.isLogName`; `:app` Sürüş kayıtları ⤓ menüsü → "YolGo kayıtlarını içe aktar" (`OpenDocument`), sonuç "N kayıt eklendi · M zaten vardı". `MAP.md` 12.17.
+- Doğrulama: `-p logic test` 1.767 test, 0 kırmızı (`JournalImportTest` 12); `:app` `RideLogsScreenTest` (+1) ve lint yerelde koşmadı (Maven Central 429), PR CI'ında. Telefonda denenmedi.
+- Açık kalan: AZ metin onayı M-12-4; YolGo paylaşım menüsünden doğrudan WEEM'e gönderme (ACTION_SEND) yok, dosya seçiciyle alınır.
+- Sıradaki: A7.2 ya da A8.3.
+
 ## 2026-10-20 — A6.11 bitti: Y12 yol kalitesi öğrenme; Aşama 6 `main`'de (Claude Opus · high; dal `ccr-81cb765e-vxs3px`)
 - Yapılan: saf `roads` (YolGo `road_knowledge`/`road_controller`/`day_contributions`/`quality_prompt`/`street_ratio` birebir; `RoadBook`, `VolumeDispatch`, `QualityPrompt`, `LearnFixes`, `RoadsText`), `surface.MarkStore`; S26 `MapSettings.roadLearning` (varsayılan kapalı); `:map` `RoadsRuntime` (+ `MainActivity.onKeyDown/onKeyUp`, gün silme kancası, rota girdileri); `:app` kartlar, Yollarım, uzun basış satırları, Harita ayarları → Yollarım, katman. Ayrıntı `MAP.md` 9.14.
 - Doğrulama: `-p logic test` 1.755 test, 0 kırmızı; `./gradlew :app:testDebugUnitTest :map:testDebugUnitTest :app:lintDebug :map:lintDebug` → `:app` 76 test, `:map` 8 test yeşil, lint 0 hata. Telefonda denenmedi; CI koşmadı.
