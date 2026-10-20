@@ -23,6 +23,7 @@ class QualityPrompt(private val book: RoadBook, private val clock: Clock) {
     @Volatile
     var onSaved: () -> Unit = {}
 
+    @Synchronized
     fun open(way: Long, name: String, pct: Int? = null) {
         val start = pct ?: ((book.qualityOf(way) * 10).roundToInt() * 10)
         flow.value = QualityAsk(way, name, start.coerceIn(10, 100), clock.monoMs())
@@ -30,6 +31,7 @@ class QualityPrompt(private val book: RoadBook, private val clock: Clock) {
     }
 
     /** Ses tuşları: true → işlendi (kart açık). */
+    @Synchronized
     fun onVolume(up: Boolean): Boolean {
         val p = flow.value ?: return false
         flow.value = p.copy(pct = (p.pct + if (up) 10 else -10).coerceIn(10, 100), touchedAtMs = clock.monoMs())
@@ -38,16 +40,19 @@ class QualityPrompt(private val book: RoadBook, private val clock: Clock) {
     }
 
     /** Çip dokunuşu (%20 · %40 · %60 · %80 · %100). */
+    @Synchronized
     fun set(pct: Int) {
         val p = flow.value ?: return
         flow.value = p.copy(pct = pct.coerceIn(10, 100), touchedAtMs = clock.monoMs())
     }
 
+    @Synchronized
     fun due() {
         val p = flow.value ?: return
         if (clock.monoMs() - p.touchedAtMs >= AUTO_SAVE_S * 1000L) save()
     }
 
+    @Synchronized
     fun save() {
         val p = flow.value ?: return
         flow.value = null
@@ -56,6 +61,7 @@ class QualityPrompt(private val book: RoadBook, private val clock: Clock) {
         onSaved()
     }
 
+    @Synchronized
     fun cancel() {
         flow.value = null
     }

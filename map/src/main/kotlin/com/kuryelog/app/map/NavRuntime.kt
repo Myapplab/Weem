@@ -30,6 +30,7 @@ import com.kuryelog.logic.map.net.UserAgent
 import com.kuryelog.logic.map.route.BikewayMarksStore
 import com.kuryelog.logic.map.route.RouteEngine
 import com.kuryelog.logic.map.route.StreetPrefsCodec
+import com.kuryelog.logic.map.route.StreetPrefsStore
 import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -45,7 +46,7 @@ import kotlinx.coroutines.launch
 /**
  * Navigasyonun Android çalışma zamanı (MAP.md 7.16, 8.12): tek [NavController] (rota, takip, yayın), yer arama [search], konum kaynağı, gelen bağlantılar ve pano,
  * `NavPort` ([port]). Harita verisi, Harita ayarları, sokak kararları ve vardiya akışlarını denetleyiciye bağlar; saati saniyede bir ilerletir.
- * Gün motoru ve POI (A6.8), sürüş günlüğü ve rota kaydı, görevler ve hatırlatıcılar (A6.9) bağlı; yol öğrenme (A6.11) kendi görevinde bağlanır.
+ * Gün motoru ve POI (A6.8), sürüş günlüğü ve rota kaydı, görevler ve hatırlatıcılar (A6.9), yol öğrenme ve ses tuşları ([roads], A6.11) bağlı.
  */
 class NavRuntime private constructor(private val app: Context) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -139,6 +140,12 @@ class NavRuntime private constructor(private val app: Context) {
     /** Elle bisiklet yolu işaretleri (`streets.bikeway.v1`); değişince açık rota yeniden hesaplanır (MAP.md 5.1). */
     val bikeway = BikewayMarksStore(mapPrefs)
 
+    /** Sokak kararları (Y8, `streets.*`): Ses± ve ters yön cevabı bu depoya yazar. */
+    val streets = StreetPrefsStore(mapPrefs)
+
+    /** Yol kalitesi öğrenme (Y12), kalite kartı, ses tuşları (MAP.md 9.12; S26 anahtarı). */
+    val roads = RoadsRuntime(app, controller, scope, settings, lang, streets) { reloadStreetPrefs() }
+
     init {
         controller.setBikewayMarks(bikeway.marks)
         controller.shift = day.navShift
@@ -184,6 +191,7 @@ class NavRuntime private constructor(private val app: Context) {
 
     fun setVisible(on: Boolean) {
         visible = on
+        roads.mapInFront = on
         WeatherRuntime.get(app).setVisible(on)
         refreshLocation()
     }

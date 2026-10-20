@@ -39,6 +39,11 @@ data class MapSettings(
     /** Ters yön sorun oranı eşiği (%): aşan onaylı sokakta (≥ 3 geçiş) ters yöne girilmez. */
     val wwMaxProblemPct: Double = 50.0,
     val wwAskAlways: Boolean = false,
+    /**
+     * Yol kalitesi öğrenme (Y12) ana anahtarı — WEEM, S26 (varsayılan kapalı): kapalıyken öğrenme, ters yön soruları, kalite kartı ve
+     * Ses± yakalama çalışmaz; önceden öğrenilmiş/elle girilmiş yol bilgisi rotada kullanılmaya devam eder.
+     */
+    val roadLearning: Boolean = false,
     val mapStyle: String = MapStyles.DEFAULT,
     /** Trafik ışığı sayımı: durma noktası ışığa en fazla bu kadar yakın (m). */
     val lightMaxM: Double = 5.0,
@@ -119,6 +124,7 @@ object MapSettingsCodec {
         .put("showQualityLayer", s.showQualityLayer)
         .put("wwMaxProblemPct", s.wwMaxProblemPct)
         .put("wwAskAlways", s.wwAskAlways)
+        .put("roadLearning", s.roadLearning)
         .put("mapStyle", s.mapStyle)
         .put("lightMaxM", s.lightMaxM)
         .put("turnPenaltyS", s.turnPenaltyS)
@@ -168,6 +174,7 @@ object MapSettingsCodec {
             showQualityLayer = bool("showQualityLayer", false),
             wwMaxProblemPct = n("wwMaxProblemPct", d.wwMaxProblemPct),
             wwAskAlways = bool("wwAskAlways", false),
+            roadLearning = bool("roadLearning", false),
             mapStyle = str("mapStyle", d.mapStyle),
             lightMaxM = n("lightMaxM", d.lightMaxM),
             turnPenaltyS = n("turnPenaltyS", d.turnPenaltyS),

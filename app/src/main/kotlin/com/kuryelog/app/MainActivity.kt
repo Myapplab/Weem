@@ -4,6 +4,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
+import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -66,6 +67,13 @@ class MainActivity : ComponentActivity() {
         if (hasFocus) safely("clipboard") { NavRuntime.get(this).checkClipboard(this) }
     }
 
+    /** Ses+ / Ses− (Y12, MAP.md 9.5): yol öğrenme açık ve Harita önde iken tüketilir; aksi sistem sesi. */
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        val consumed = event.keyCode.let { it == KeyEvent.KEYCODE_VOLUME_UP || it == KeyEvent.KEYCODE_VOLUME_DOWN } &&
+            runCatching { NavRuntime.get(this).roads.onKeyEvent(event) }.getOrDefault(false)
+        return consumed || super.dispatchKeyEvent(event)
+    }
+
     /** Yüzen panel: uzun basma canlı paneli, çift dokunma Scooter ayarlarını açar (A5.4). */
     private fun openFrom(intent: Intent?) {
         val target = intent?.getStringExtra(Scooter.OPEN_EXTRA) ?: return
@@ -83,6 +91,7 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         AppForeground.on = false
+        safely("roads") { NavRuntime.get(this).roads.onPause() }
         safely("floating") { FloatingPanel.screenStopped(this, !isInPictureInPictureMode) }
     }
 

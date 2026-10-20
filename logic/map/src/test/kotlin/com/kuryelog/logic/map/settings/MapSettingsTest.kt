@@ -61,4 +61,11 @@ class MapSettingsTest {
         assertEquals(listOf(0.02, 0.5, 1.46), listOf(p.flatWhPerM, p.climbWhPerM, p.climbSafety))
         assertEquals(listOf(24.0, 16.0, 1.7, 220.0, 8.0), listOf(p.flatKmh, p.climbKmh, p.mainRoadPenalty, p.walkRadius, p.turnPenaltyS))
     }
+
+    @Test
+    fun `yol öğrenme anahtarı varsayılan kapalı (S26), kayıtta korunur`() {
+        assertFalse(MapSettings().roadLearning)
+        assertFalse(MapSettingsCodec.decode("""{"volumeKeys":true}""").roadLearning)
+        assertTrue(roundTrip(MapSettings(roadLearning = true)).roadLearning)
+    }
 }

@@ -11,16 +11,21 @@ class MapToast(
     val onAction: (() -> Unit)? = null,
 )
 
-/** Tek bildirim şeridi: son gelen kalır. */
+/** Tek bildirim şeridi: son gelen kalır. [onChange] Android şeridini besler. */
 class Toasts {
     var current: MapToast? = null
         private set
 
+    @Volatile
+    var onChange: (MapToast?) -> Unit = {}
+
     fun show(toast: MapToast) {
         current = toast
+        onChange(toast)
     }
 
     fun hide() {
         current = null
+        onChange(null)
     }
 }

@@ -261,14 +261,25 @@ class NavController(
         if (replan) replan(ReplanReason.PREFS)
     }
 
-    /** Öğrenilmiş yol bilgisi; "yol yok" kümesi değişince açık rota yeniden hesaplanır. */
-    fun setRoadInputs(r: RoadInputs) {
-        val replan = synchronized(lock) {
-            val changed = r.ghost != road.ghost || r.wrongWayEdges != road.wrongWayEdges
+    /**
+     * Öğrenilmiş yol bilgisi; "yol yok" kümesi değişince ya da [replan] (elle puan, ww sayacı, kötü nokta, "Sorun yok" onayı; MAP.md 9.3.3)
+     * istenince açık rota yeniden hesaplanır. Otomatik öğrenme (geçiş sayaçları) yalnız sonraki plana girer.
+     */
+    fun setRoadInputs(r: RoadInputs, replan: Boolean = false) {
+        val again = synchronized(lock) {
+            val changed = replan || r.ghost != road.ghost || r.wrongWayEdges != road.wrongWayEdges
             road = r
             changed && stateFlow.value.hasRoute
         }
-        if (replan) replan(ReplanReason.PREFS)
+        if (again) replan(ReplanReason.PREFS)
+    }
+
+    /** Ters yön önerisi Ses+ ile onaylandı (MAP.md 9.5.2): öneri düşer. */
+    fun clearSuggestion() = synchronized(lock) { if (stateFlow.value.suggestion != null) set(stateFlow.value.copy(suggestion = null)) }
+
+    /** Açık rota varsa yeniden hesapla (`replan('prefs')`; Ses± sokak kararları, kalite kartı). */
+    fun replanIfRoute() {
+        if (stateFlow.value.hasRoute) replan(ReplanReason.PREFS)
     }
 
     /** Gün açık mı ve açık siparişin numarası (hedef bağı, MAP.md 7.3 `_bindShiftTarget`). */
