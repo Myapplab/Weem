@@ -41,8 +41,8 @@ object DayReportFile {
         return "${LogTime.day(t, zone)}_${DurationText.clock(t, zone).replace(":", "")}.gun.json"
     }
 
-    /** `DayState.toJson()` + `summary` + `lightsLearned` (onaylı ışıklar, ham JSON dizisi), bir boşluk girintili. */
-    fun encode(d: DayState, nowMs: Long, lightsLearned: org.json.JSONArray): String =
+    /** `DayState.toJson()` + `summary` + `lightsLearned` (onaylı ışık sayısı, `LightsDb.confirmed`), bir boşluk girintili. */
+    fun encode(d: DayState, nowMs: Long, lightsLearned: Int): String =
         d.toJson().put("summary", DayStats.summarize(d, nowMs)).put("lightsLearned", lightsLearned).toString(1)
 
     fun decode(text: String): DayState = DayState.fromJson(JSONObject(text))

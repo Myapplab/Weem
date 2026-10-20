@@ -8,6 +8,7 @@ import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.core.OrderEvents
 import com.kuryelog.logic.map.day.DayController
 import com.kuryelog.logic.map.day.DayFix
+import com.kuryelog.logic.map.day.DayState
 import com.kuryelog.logic.map.day.DayStep
 import com.kuryelog.logic.map.day.DayView
 import com.kuryelog.logic.map.day.RoadInfoBuilder
@@ -55,8 +56,10 @@ class DayRuntime private constructor(private val app: Context) {
     /** Her girdinin sonucu (toast ve titreşim için ekran; sürüş günlüğü A6.9). Toast yalnız Harita sekmesi görünürken gösterilir. */
     val steps: SharedFlow<DayStep> get() = stepFlow.asSharedFlow()
 
-    /** A6.9: sürüş günlüğü, gün raporu ve görev sinyalleri bu kancaya bağlanır (olaylar, gün durumu). */
-    @Volatile var onStep: ((DayStep) -> Unit)? = null
+    private val listeners = java.util.concurrent.CopyOnWriteArrayList<(DayStep) -> Unit>()
+
+    /** A6.9: sürüş günlüğü, gün raporu, görev ve hatırlatıcı sinyalleri bu kancaya bağlanır (olaylar, gün durumu); her adımda sırayla çağrılır. */
+    fun addStepListener(l: (DayStep) -> Unit) { listeners += l }
 
     /** Navigasyonun hedef bağı (`NavController.shift`): hedef restoran/müşteri olarak saklanır; eve dönüş ölçümü başlar. */
     val navShift: NavShift = object : NavShift {
@@ -138,10 +141,22 @@ class DayRuntime private constructor(private val app: Context) {
     /** Elle işaretlenmiş ışık yerleri (harita katmanı). */
     fun lightSpots() = synchronized(lock) { controller.lights.spots }
 
+    /** Biten son gün (`shift.last`); gün raporu ve İstatistik geçmişi için. */
+    fun lastDay() = synchronized(lock) { controller.lastDay }
+
+    /** Süren gün durumunun anlık kopyası (İstatistik, gün raporu); gün kapalıysa null. */
+    fun activeDay(): DayState? = synchronized(lock) { controller.view.state.takeIf { it.active }?.let { DayState.fromJson(it.toJson()) } }
+
+    /** Onaylanmış ışık sayısı (`LightsDb.confirmed`; gün raporunda `lightsLearned`). */
+    fun lightsConfirmed() = synchronized(lock) { controller.lights.confirmed }
+
+    /** Gün silme (MAP.md 12.9): son gün o tarihteyse unutulur. */
+    fun forgetLastDay() = synchronized(lock) { controller.forgetLastDay() }
+
     private fun publish(step: DayStep) {
         viewFlow.value = step.view
         if (step.events.isNotEmpty() || step.toasts.isNotEmpty()) stepFlow.tryEmit(step)
-        onStep?.invoke(step)
+        for (l in listeners) runCatching { l(step) }
     }
 
     companion object {

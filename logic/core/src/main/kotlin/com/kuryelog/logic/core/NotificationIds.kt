@@ -65,4 +65,6 @@ object NotificationIds {
     const val CHANNEL_AUTO_START = "auto_start"
     /** Yalnız-navigasyon servisi (yeni kanal, A6.6). */
     const val CHANNEL_NAVIGATION = "navigation"
+    /** Hatırlatıcılar ve yakındaki görev (Y20; eski YolGo kanalı, HIGH, titreşim 0-350-200-350). */
+    const val CHANNEL_REMINDER = "hatirlatici"
 }

@@ -17,6 +17,7 @@ import com.kuryelog.app.core.Shift
 import com.kuryelog.app.core.Store
 import com.kuryelog.app.map.LinkIntake
 import com.kuryelog.app.map.NavRuntime
+import com.kuryelog.app.map.AppForeground
 import com.kuryelog.app.scooter.FloatingPanel
 import com.kuryelog.app.scooter.Scooter
 import com.kuryelog.logic.core.Lang
@@ -75,11 +76,13 @@ class MainActivity : ComponentActivity() {
     // Yüzen top WEEM ekranı görünürken gizli; sonuncusu durunca 400 ms sonra çıkar (SCOOTER.md 6.3). PiP'ten çıkış top göstermez.
     override fun onStart() {
         super.onStart()
+        AppForeground.on = true
         safely("floating") { FloatingPanel.screenStarted() }
     }
 
     override fun onStop() {
         super.onStop()
+        AppForeground.on = false
         safely("floating") { FloatingPanel.screenStopped(this, !isInPictureInPictureMode) }
     }
 

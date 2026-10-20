@@ -3,7 +3,8 @@ package com.kuryelog.logic.map.nav
 import com.kuryelog.logic.core.NavOrigin
 import com.kuryelog.logic.map.geo.GeoPoint
 
-enum class StopPurpose { MANUAL, ORDER, HOME }
+/** [TASK]: günlük iş (Y20, S9); siparişin restoran/müşteri hedefi sayılmaz. */
+enum class StopPurpose { MANUAL, ORDER, HOME, TASK }
 
 enum class StopConfidence { HIGH, MEDIUM, LOW }
 

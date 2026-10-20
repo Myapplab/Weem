@@ -42,7 +42,7 @@ import kotlinx.coroutines.launch
 /**
  * Navigasyonun Android çalışma zamanı (MAP.md 7.16, 8.12): tek [NavController] (rota, takip, yayın), yer arama [search], konum kaynağı, gelen bağlantılar ve pano,
  * `NavPort` ([port]). Harita verisi, Harita ayarları, sokak kararları ve vardiya akışlarını denetleyiciye bağlar; saati saniyede bir ilerletir.
- * Gün motoru ve POI (A6.8) bağlı; sürüş günlüğü ve rota kaydı (A6.9), yol öğrenme (A6.11) kendi görevlerinde bağlanır.
+ * Gün motoru ve POI (A6.8), sürüş günlüğü ve rota kaydı, görevler ve hatırlatıcılar (A6.9) bağlı; yol öğrenme (A6.11) kendi görevinde bağlanır.
  */
 class NavRuntime private constructor(private val app: Context) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -64,6 +64,8 @@ class NavRuntime private constructor(private val app: Context) {
         speedKmh = (f.speedMps ?: 0.0).coerceAtLeast(0.0) * 3.6
         controller.onFix(f)
         day.onFix(f)
+        RideLogRuntime.get(app).onFix(f)
+        TaskRuntime.get(app).onFix(f)
         WeatherRuntime.get(app).onFix(f)
         BatteryRuntime.get(app).onFix(f)
     }
@@ -125,6 +127,12 @@ class NavRuntime private constructor(private val app: Context) {
     init {
         controller.setBikewayMarks(bikeway.marks)
         controller.shift = day.navShift
+        RideLogRuntime.get(app).let { log ->
+            controller.log = { name, data -> log.writer.event(name, data) }
+            controller.recording = log.recording
+        }
+        TaskRuntime.get(app)
+        ReminderRuntime.get(app)
         controller.restaurantNear = { MapPois.foodNear(app, it) }
         controller.setStreetPrefs(StreetPrefsCodec.load(mapPrefs))
         scope.launch { MapData.controller(app).state.map { it.graph }.distinctUntilChanged().collect { controller.setGraph(it) } }
@@ -208,6 +216,11 @@ class NavRuntime private constructor(private val app: Context) {
                 synchronized(this@NavRuntime) { clipboardBusy = false }
             }
         }
+    }
+
+    /** Harita sekmesine geçiş isteği (görev "Rota Oluştur", MAP.md 13.13). */
+    fun showMap() {
+        openMapFlow.value++
     }
 
     fun launch(block: suspend CoroutineScope.() -> Unit) = scope.launch(block = block)

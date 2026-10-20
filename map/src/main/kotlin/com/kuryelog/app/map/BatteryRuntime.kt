@@ -46,6 +46,7 @@ class BatteryRuntime private constructor(private val app: Context) : SensorEvent
     private var listening = false
 
     @Volatile private var baroHpa: Float? = null
+    @Volatile private var baroAtMs = 0L
 
     init {
         scope.launch { settings.map { it.vehicle.capacityWh }.collect { estimator.setCapacity(it) } }
@@ -87,9 +88,13 @@ class BatteryRuntime private constructor(private val app: Context) : SensorEvent
         val p = e.values.firstOrNull() ?: return
         // Gürültüyü bastır: üstel ortalama (YolGo `SensorHub` baro yumuşatması).
         baroHpa = baroHpa?.let { it + 0.2f * (p - it) } ?: p
+        baroAtMs = System.currentTimeMillis()
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+
+    /** Son barometre okuması (hPa, ms); sensör yoksa ya da dinlenmiyorsa null (sürüş günlüğü `env` satırı, MAP.md 12.2). */
+    fun pressureSample(): Pair<Double, Long>? = baroHpa?.let { it.toDouble() to baroAtMs }
 
     /** N5 (MAP.md 10.6): ekonomi v2'ye menzil girdileri; batarya canlıysa `ble_fresh`, değilse Y9 tahmini; rota `RideMode.BATTERY` ile. */
     val range: RangePort = object : RangePort {

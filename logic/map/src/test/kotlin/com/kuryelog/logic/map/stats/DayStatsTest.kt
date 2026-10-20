@@ -4,7 +4,6 @@ import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.map.day.DayState
 import com.kuryelog.logic.map.day.OrderRec
 import com.kuryelog.logic.map.day.StopRec
-import org.json.JSONArray
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -57,8 +56,9 @@ class DayStatsTest {
 
     @Test
     fun `rapor kodeği gün durumunu, özeti ve öğrenilen ışıkları taşır`() {
-        val text = DayReportFile.encode(day(), t0 + 8_000_000, JSONArray())
+        val text = DayReportFile.encode(day(), t0 + 8_000_000, 3)
         assertTrue(text.contains("\n \"summary\"")) // bir boşluk girinti
+        assertTrue(text.contains("\"lightsLearned\": 3"))
         val back = DayReportFile.decode(text)
         assertEquals(t0, back.startedAtMs); assertEquals(12_345.0, back.distM, 0.0); assertEquals(2, back.orders.size)
     }

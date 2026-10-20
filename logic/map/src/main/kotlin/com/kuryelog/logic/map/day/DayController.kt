@@ -43,6 +43,12 @@ class DayController(private val prefs: MapPrefs, private val lang: () -> Lang) {
     var lastDay: DayState? = prefs.getString(LAST_KEY)?.takeIf { it.isNotEmpty() }?.let { runCatching { DayState.fromJson(JSONObject(it)) }.getOrNull() }
         private set
 
+    /** Gün silme (MAP.md 12.9): son gün o tarihteyse unutulur (`shift.last` silinir). */
+    fun forgetLastDay() {
+        lastDay = null
+        prefs.remove(LAST_KEY)
+    }
+
     val view: DayView get() = DayView(engine.s, tracker.sinceMs, tracker.lightAt)
 
     private val road: (Double, Double) -> RoadInfo = { lat, lon -> roads(lat, lon, latestAccuracy) }

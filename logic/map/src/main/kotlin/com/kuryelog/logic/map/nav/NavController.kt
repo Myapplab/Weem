@@ -320,9 +320,9 @@ class NavController(
     // ---------------------------------------------------------------- Hedefler
 
     /** Hedefe rota ister; tek durak (`label` yoksa "Harita noktası"), `arrived`/`reached`/`pending` silinir. */
-    fun goTo(target: GeoPoint, label: String? = null, restaurant: Boolean? = null, origin: NavOrigin = NavOrigin.MAP) {
+    fun goTo(target: GeoPoint, label: String? = null, restaurant: Boolean? = null, origin: NavOrigin = NavOrigin.MAP, purpose: StopPurpose = StopPurpose.MANUAL) {
         synchronized(lock) {
-            val stop = Stop(target, label ?: NavText.MAP_POINT.get(lang()), restaurant = restaurant, origin = origin, requestedAtMs = clock.wallMs())
+            val stop = Stop(target, label ?: NavText.MAP_POINT.get(lang()), restaurant = restaurant, purpose = purpose, origin = origin, requestedAtMs = clock.wallMs())
             set(stateFlow.value.copy(stops = listOf(stop), arrived = null, reached = null, pending = null))
             bindShiftTarget(stop, restaurant)
         }
@@ -777,7 +777,7 @@ class NavController(
 
     /** Kilit altında: gün açıksa hedef gün motoruna bağlanır; açık sipariş varsa aynı durak sipariş hedefi olur. */
     private fun bindShiftTarget(stop: Stop, restaurant: Boolean?) {
-        if (!dayActive || stop.purpose == StopPurpose.HOME) return
+        if (!dayActive || stop.purpose == StopPurpose.HOME || stop.purpose == StopPurpose.TASK) return
         val rest = restaurantTarget(stop, restaurant)
         shift?.setDestination(stop.point, rest, stop.label)
         val order = currentOrder ?: return
