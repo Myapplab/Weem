@@ -40,15 +40,20 @@ class MainActivity : ComponentActivity() {
         setContent {
             var langSetting by remember { mutableStateOf(prefs.langSetting) }
             var theme by remember { mutableStateOf(prefs.theme) }
+            var setupDone by remember { mutableStateOf(prefs.setupDone) }
             val lang = Lang.resolve(langSetting, Locale.getDefault().language)
+            val onLangSetting: (String) -> Unit = { prefs.langSetting = it; langSetting = it }
             WeemTheme(dark = theme.isDark(isSystemInDarkTheme())) {
-                WeemApp(
+                // G5 (A7.2): ilk açılışta kurulum (dil, izinler, harita verisi, pil rehberi); bitince ya da atlanınca kabuk.
+                if (!setupDone) SetupScreen(lang, langSetting, onLangSetting) { prefs.setupDone = true; setupDone = true }
+                else WeemApp(
                     lang = lang,
                     langSetting = langSetting,
                     theme = theme,
                     versionName = BuildInfo.versionName(this),
-                    onLangSetting = { prefs.langSetting = it; langSetting = it },
+                    onLangSetting = onLangSetting,
                     onTheme = { prefs.theme = it; theme = it },
+                    onSetupAgain = { prefs.setupDone = false; setupDone = false },
                 )
             }
         }

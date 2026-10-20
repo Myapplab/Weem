@@ -95,6 +95,7 @@ Bugünkü mesajlar (alan alan: `bulgular/X_protocol.md` P1–P11; WEEM'deki kar�
 | `home.startBlocked`, `home.endArmed` | Bool (false) | `CORE` 1.6 | `:core` · A2.4 |
 | `crashSeenAt` | Long (0) | `CORE` 4.1 | `:core` · A2.3 |
 | `weem.deviceId` | String: küçük harfli UUID (36 karakter; `DeviceId`) | **yeni** (`CORE` 1.10) | `:core` · A2.4 |
+| `weem.setupDone` | Bool (false): ilk açılış kurulumu bitti/atlandı; şifreli yedeğe girmez | **yeni** (G5, A7.2) | `:app` · A7.2 |
 | `targets` | StringSet | izlenen uygulamalar | `:capture` · A3 |
 | `userPicked`, `structuredMigration07` | Bool (false) | `CORE` 5.4 | `:capture` / `:orders` · A3 |
 | `ocr`, `overlay` | Bool (**true**; `CAPTURE.md` 6.4, `ORDERS.md` 6.2) | OCR, rozet | `:capture` / `:orders` · A3 |

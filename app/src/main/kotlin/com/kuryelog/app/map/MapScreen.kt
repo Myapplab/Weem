@@ -134,6 +134,32 @@ private object MapScreenLoad {
     @Volatile var loadedRegion: String? = null
 }
 
+/**
+ * İlk açılış kurulumunun harita adımı (G5, A7.2): Harita sekmesiyle aynı yükleme (gömülü graf varsa kurar) ve aynı kurulum kartı;
+ * graf hazırsa [ready] metni. İndirme denetleyicide sürer, adım değişince durmaz.
+ */
+@Composable
+fun MapDataStep(lang: Lang, ready: String) {
+    val ctx = LocalContext.current
+    val controller = remember { MapData.controller(ctx) }
+    val data by controller.state.collectAsState()
+    val settings by MapSettingsRepo.settings(ctx).collectAsState()
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(settings.region) {
+        if (MapScreenLoad.loadedRegion != settings.region && data.phase != MapDataPhase.BUILDING) {
+            MapScreenLoad.loadedRegion = settings.region
+            runCatching { controller.load(settings.region) }
+        }
+    }
+    if (data.graph != null && data.phase != MapDataPhase.BUILDING) {
+        Text(ready, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(12.dp))
+        return
+    }
+    MapSetupCard(data, settings.region, lang,
+        onRegion = { r -> ctx.safely { MapSettingsRepo.update(ctx) { it.copy(region = r) } } },
+        onDownload = { scope.launch { runCatching { controller.download(settings.region) } } })
+}
+
 @Composable
 private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com.kuryelog.logic.map.settings.MapSettings, active: Boolean, startedAtMs: Long?, interrupted: Boolean) {
     val ctx = LocalContext.current

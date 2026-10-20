@@ -10,8 +10,13 @@ import java.io.File
  * Ekrana giden her metin `Text` girişi olmalı (iki dil birlikte); `:app` kaynağında düz metin olmamalı.
  */
 class TextCoverageTest {
+    /** Kabuk ve kurulum (G5, A7.2) tabloları. */
+    private val all: List<Enum<*>> = Text.entries + SetupText.entries
+    private val Enum<*>.tr: String get() = (this as com.kuryelog.logic.core.Bilingual).tr
+    private val Enum<*>.az: String get() = (this as com.kuryelog.logic.core.Bilingual).az
+
     @Test fun everyEntryHasBothLanguages() {
-        for (t in Text.entries) {
+        for (t in all) {
             assertTrue("${t.name} tr boş", t.tr.isNotBlank())
             assertTrue("${t.name} az boş", t.az.isNotBlank())
         }
@@ -19,15 +24,16 @@ class TextCoverageTest {
 
     @Test fun placeholdersMatchBetweenLanguages() {
         val spec = Regex("%[sd]")
-        for (t in Text.entries) {
+        for (t in all) {
             assertEquals("${t.name} biçim işaretleri", spec.findAll(t.tr).map { it.value }.toList(), spec.findAll(t.az).map { it.value }.toList())
         }
     }
 
     @Test fun azerbaijaniLettersAppearWhereTextIsTranslated() {
         // Çeviri unutulmuşsa (tr == az) yalnız bilinçli aynı olanlar geçer: marka/dil adları ve ortak kelimeler.
-        val same = setOf("TAB_SCOOTER", "SETTINGS_TITLE", "SETTINGS_LANGUAGE", "SETTINGS_THEME", "LANG_TR", "LANG_AZ", "THEME_LIGHT", "BACK", "HOME_DELETE")
-        val identical = Text.entries.filter { it.tr == it.az }.map { it.name }.toSet()
+        val same = setOf("TAB_SCOOTER", "SETTINGS_TITLE", "SETTINGS_LANGUAGE", "SETTINGS_THEME", "LANG_TR", "LANG_AZ", "THEME_LIGHT", "BACK", "HOME_DELETE",
+            "STEP_LANGUAGE", "PREV", "GUIDE_XIAOMI_TITLE", "GUIDE_PIXEL_TITLE")
+        val identical = all.filter { it.tr == it.az }.map { it.name }.toSet()
         assertEquals(emptySet<String>(), identical - same)
     }
 

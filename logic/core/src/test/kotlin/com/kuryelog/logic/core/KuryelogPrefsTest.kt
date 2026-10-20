@@ -32,8 +32,8 @@ class KuryelogPrefsTest {
     @Test fun keysAreRawstatsNames() {
         assertEquals("kuryelog", KuryelogPrefs.FILE)
         assertEquals(listOf("shift", "manualSession", "autoStarted", "autoShift", "manualPolicy", "shiftStart", "shiftStartReason", "shiftEndedAt",
-            "shiftEndReason", "shiftInterruptedAt", "dist", "home.lat", "home.lon", "home.updatedAt", "home.startBlocked", "home.endArmed", "crashSeenAt", "weem.deviceId"),
+            "shiftEndReason", "shiftInterruptedAt", "dist", "home.lat", "home.lon", "home.updatedAt", "home.startBlocked", "home.endArmed", "crashSeenAt", "weem.deviceId", "weem.setupDone"),
             with(KuryelogPrefs) { listOf(SHIFT, MANUAL_SESSION, AUTO_STARTED, AUTO_SHIFT, MANUAL_POLICY, SHIFT_START, SHIFT_START_REASON, SHIFT_ENDED_AT,
-                SHIFT_END_REASON, SHIFT_INTERRUPTED_AT, DIST, HOME_LAT, HOME_LON, HOME_UPDATED_AT, HOME_START_BLOCKED, HOME_END_ARMED, CRASH_SEEN_AT, DEVICE_ID) })
+                SHIFT_END_REASON, SHIFT_INTERRUPTED_AT, DIST, HOME_LAT, HOME_LON, HOME_UPDATED_AT, HOME_START_BLOCKED, HOME_END_ARMED, CRASH_SEEN_AT, DEVICE_ID, SETUP_DONE) })
     }
 }

@@ -252,6 +252,7 @@ YolGo evi Rawstats'tan okur (`SHARE_HOME`, istek 703, 20 sn zaman aşımı, 6 sa
 - Numara değişiklikleri (5103→5104, 4000+→10000+) kullanıcıya görünmez: bildirim numarası yalnız sürecin çalışma anında anlamlı; kanal kimlikleri ve ayarları değişmez.
 - Test (`NotificationIdsTest`, yeni): her sabit ve aralık ayrık; aralık formülünün her girdi için aralık içinde kalması (`and 0xFFF`); `SHIFT_END_CANCEL` tabloda; kaynakta (`app/`, modüller) `notify(`/`cancel(` çağrısına düz sayı yazılmaz (yalnız `NotificationIds`).
 - Kanal adları iki dilli (`Text` tablosu, A1.3); YolGo'da kanal adı yalnız Türkçe olanlar ("Hatırlatıcılar", veri seti) WEEM'de TR/AZ olur.
+- **A7.2 uçtan uca denetim** (`NotificationAuditTest`, kaynak taraması): her `NotificationChannel(` adı iki dilli; hatırlatıcı/görev/hava `setTimeoutAfter(NotifyPolicy.TIMEOUT_MS)`, hatırlatıcı ve görev `NotifyPolicy.inAppOnly`; Rawstats zaman aşımları (nakit bahşiş 15 sn, cep nakdi 10 sn, 5101/5102 15 dk, scooter bağlandı 15 sn, 5103 yok); vardiya sonu `SHIFT_END_CANCEL`; ilk açılış kurulumu ve izinler kartı bildirim atmaz. `DATASET_FGS` (7401) sabiti tabloda kalır (kullanılmaz; numara başkasına verilmez).
 
 ## 4. R20 — Çökme kaydı ve korumalı girişler
 

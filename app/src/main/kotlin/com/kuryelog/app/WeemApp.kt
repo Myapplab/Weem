@@ -45,6 +45,8 @@ import com.kuryelog.app.map.TaskRuntime
 import com.kuryelog.app.map.MapSettingsScreen
 import com.kuryelog.app.map.WeatherRuntime
 import com.kuryelog.logic.core.Lang
+import com.kuryelog.logic.app.Permissions
+import com.kuryelog.logic.app.SetupText
 import com.kuryelog.logic.app.Tab
 import com.kuryelog.app.map.NavRuntime
 import com.kuryelog.logic.app.Text as Str
@@ -68,6 +70,7 @@ fun WeemApp(
     versionName: String,
     onLangSetting: (String) -> Unit,
     onTheme: (ThemeMode) -> Unit,
+    onSetupAgain: () -> Unit = {},
 ) {
     var selectedKey by rememberSaveable { mutableStateOf(Tab.start.key) }
     val selected = Tab.fromKey(selectedKey)
@@ -118,7 +121,7 @@ fun WeemApp(
                             RemoteOrdersCard(lang)
                             OrdersTab(lang)
                         }
-                        Tab.MORE -> MoreScreen(lang, langSetting, theme, versionName, onLangSetting, onTheme)
+                        Tab.MORE -> MoreScreen(lang, langSetting, theme, versionName, onLangSetting, onTheme, onSetupAgain)
                         // A6.5: Harita sekmesi (graf yokken vardiya kartı + kurulum kartı; G1 vardiya düğmesi açılış sekmesinde).
                         Tab.MAP -> MapScreen(lang, dark)
                         // A5.4: Scooter sekmesi (canlı panel, tarama, eşleştirme, ayarlar, tanı, ZIP).
@@ -165,6 +168,7 @@ private fun MoreScreen(
     versionName: String,
     onLangSetting: (String) -> Unit,
     onTheme: (ThemeMode) -> Unit,
+    onSetupAgain: () -> Unit,
 ) {
     var records by rememberSaveable { mutableStateOf(false) }
     var home by rememberSaveable { mutableStateOf(false) }
@@ -173,6 +177,11 @@ private fun MoreScreen(
     var twoPhone by rememberSaveable { mutableStateOf(false) }
     if (twoPhone) {
         TwoPhoneScreen(lang, versionName) { twoPhone = false }
+        return
+    }
+    var permissions by rememberSaveable { mutableStateOf(false) }
+    if (permissions) {
+        PermissionsScreen(lang, onSetupAgain) { permissions = false }
         return
     }
     if (mapSettings) {
@@ -201,6 +210,14 @@ private fun MoreScreen(
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Text(Str.SETTINGS_TITLE.get(lang), style = MaterialTheme.typography.headlineMedium)
 
+        // G5 (A7.2): izinler kartı ve pil rehberi her zaman burada; eksik izin başlıkta "! n/m".
+        Section(SetupText.PERMS_TITLE.get(lang)) {
+            val perms = rememberPermissionState()
+            TextButton(onClick = { permissions = true }) {
+                Text(SetupText.PERMS_OPEN.get(lang) + "  " + Permissions.badge(perms),
+                    color = if (Permissions.allOk(perms)) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
+            }
+        }
         Section(Str.HOME_TITLE.get(lang)) {
             TextButton(onClick = { home = true }) { Text(Str.HOME_OPEN.get(lang)) }
         }
@@ -236,6 +253,20 @@ private fun MoreScreen(
     }
 }
 
+/** Daha fazla → İzinler (G5): izinler kartı, pil rehberi ve kurulumu yeniden gösterme. */
+@Composable
+private fun PermissionsScreen(lang: Lang, onSetupAgain: () -> Unit, onBack: () -> Unit) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = onBack) { Text(Str.BACK.get(lang)) }
+            Text(SetupText.PERMS_TITLE.get(lang), style = MaterialTheme.typography.headlineMedium)
+        }
+        PermissionsCard(lang, Modifier.padding(top = 12.dp))
+        BatteryGuideCard(lang, Modifier.padding(top = 12.dp))
+        TextButton(onClick = onSetupAgain, modifier = Modifier.padding(top = 12.dp)) { Text(SetupText.SETUP_AGAIN.get(lang)) }
+    }
+}
+
 @Composable
 private fun Section(title: String, content: @Composable () -> Unit) {
     Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 24.dp, bottom = 4.dp))
@@ -243,7 +274,7 @@ private fun Section(title: String, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun Choice(label: String, selected: Boolean, onClick: () -> Unit) {
+internal fun Choice(label: String, selected: Boolean, onClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().selectable(selected = selected, onClick = onClick, role = Role.RadioButton).padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,

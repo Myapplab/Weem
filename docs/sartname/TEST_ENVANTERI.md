@@ -517,3 +517,7 @@ Dal `ccr-9f8c8f6c-07ubij` = A6.6 dalı `ccr-56fdfbc1-p00o8e` (`70e4d61`) + A6.7.
 
 YolGo `duzyol-journal-v1` içe aktarma (`MAP.md` 12.17). YolGo'da içe aktarma yok, eski test yok; **yeni testler 13**: `logic/map` `JournalImportTest` 12 (YolGo biçimi ham metinle, kaçışlar ve vekil çiftler, var olan ezilmez, geçersiz ad/yol kaçışı/metin olmayan içerik, dosyada çift ad, yanlış biçim ve yarım dosyada hiçbir şey yazılmaz, alan sırası ve bilinmeyen alanlar, boş liste, eski geçici klasör, WEEM dışa aktarmasıyla gidiş-dönüş, büyük içerik, etkin gün ve sürüş atlanır); `:app` `RideLogsScreenTest` +1 (`yolgoIceAktarmaMenudeSonucMetniGorunur`).
 
+
+## A7.2 kod durumu (20 Ekim 2026)
+
+G5 ilk açılış kurulumu, G3 dil bütünlüğü, G4 az bildirim uçtan uca. Eski testler: `BrandingK26Test` 3 → 2 uyarlandı (`logic/core`, kaynak taraması: paket, `kuryelog` dosyası, başlatıcı adı "WEEM"), 1 çevrilmez (`homeHasNoTabBar…`: WEEM'de alt menü var); `I18nCoverageTest` karşılığı `TextCoverageTest` kurulum metinlerini de kapsar. **Yeni testler 19**: `logic/app` `SetupTest` 9 (adımlar, RS izin sırası ve "! n/m" sayacı, açık gelme, ev notu, pil satırı, `Vendor`, pil rehberi, eski ad yok), `logic/scooter` `ScooterStatusTextTest` 5 (TR değişmez, sayılı parçalar, uzun önce, özet + ölçüm metni AZ, kaynak taraması), `logic/core` `NotificationAuditTest` 5; `:app` `SetupScreenTest` 5 (Robolectric: dil anında, izin durumu okunur, geri/ileri, atla, pil rehberi Xiaomi/Pixel, `weem.setupDone`). `logic` toplam 1.786 + 2 (`BrandingK26Test`).
