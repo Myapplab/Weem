@@ -121,7 +121,7 @@ Az ve sabit sürümlü: Compose BOM, Play Services Location, Maps SDK, ML Kit te
 ## 5. Kurallar (ZORUNLU)
 
 - **Şartname testlerdir:** bir modül yazılmadan önce eski testleri (Rawstats ~800, YolGo ~640, Sürüş Paneli) Kotlin'e çevrilir: aynı girdi → aynı çıktı. Yeni kod bunları geçmeden birleşmez. Saha kayıtları (ekran kareleri, günlükler) varsa altın test olur.
-- **Gölge mod:** her aşamanın `.dev` sürümü eski uygulamaların yanında çalışır; gün sonunda iki kaydı karşılaştıran rapor. Fark sıfırlanmadan geçiş yok.
+- **Gölge mod:** ~~her aşamanın `.dev` sürümü eski uygulamaların yanında çalışır; fark sıfırlanmadan geçiş yok.~~ **S28 (20 Ekim):** ara saha denemesi ve gölge mod karşılaştırması yapılmaz; aşamalar testler yeşil olunca biter. Telefonda ilk kullanım WEEM 1.0 geçişinden (A10.4) sonra; çıkan sorunlar A10.5'te düzeltilir (eski uygulamalar geçişe kadar telefonda kalır). Gölge mod anahtarı ve `shadowReport` aracı `.dev`'de kalır (isteğe bağlı).
 - **Bilinen eski hatalar baştan doğru:** Android'de derlenmeyen desen (0.25.1, ICU) → tüm Regex desenleri ICU testinden geçer; bildirim numaraları tek tabloda (eski 5103 ve nakit bahşiş çakışması yok); ışık kuralı ≤1 m, A* performansı için test. Vardiya bitişi bugünkü Rawstats kuralıyla kalır (F4.5b; S2: ek GPS önlemi yok).
 - Ekran okuma kodu ağ kullanmaz (test denetler). **WEEM Wolt/Bolt'ta kendiliğinden hiçbir şeye basmaz**; uzaktan kullanım yalnız kullanıcının dokunuşunu iletir, okuma servisi dokunma yetkisi almaz.
 - `allowBackup=false` + `dataExtractionRules`; dışa aktarmada müşteri bilgisi gizlenir.
@@ -138,13 +138,13 @@ Her aşama: testler yeşil → `.dev` APK → telefonda gölge mod denemesi (kul
 | 0 | Kapsam seçimi (bitti); planın son hâli: şartname haritası, veri sözleşmesi, test envanteri, ayrıntılı iş listesi (bitti, A0.1); açık soruların yanıtı; kullanıcının kodsuz saha denemesi | `docs/sartname/` belgeleri + güncel iş listesi | 1 (bitti) |
 | 1 | Gradle iskeleti (`logic/` ayrı build) ve modüller; alt menü kabuğu, tema, dil; imza, sürüm, `.dev`; CI | Boş sekmeli `.dev` APK kurulur | 4 |
 | 2 | `:core`: depolama, eski Rawstats verisini okuma, vardiya/gün/ev tek kural, saat/cihaz kimliği, bildirim tablosu, çökme kaydı; modüller arası arayüzler (4.3) | Eski kayıtlar WEEM'de okunur | 5 |
-| 3 | `:capture` + `:orders` (R1–R3, R5–R13, R15–R16, R19) | Pixel'de gölge mod: WEEM ile Rawstats aynı günü aynı kaydeder | 9–11 |
-| 4 | `:economics` + yedek (R4, R17–R18, N3, N4, N8) | Altın vektörler geçer; gün sonu eski verilerle tutarlı | 3–4 |
-| 5 | `:scooter` (S1–S8, R14) | Yedek telefonda Sürüş Paneli ile aynı değerler | 4–5 |
-| 6 | `:map` (Y1–Y12, Y15–Y21, N5) | YolGo testleri geçer; yan yana sürüşte aynı rotalar | 10–12 |
-| 7 | YolGo kayıtlarını içe aktarma (eski YolGo'ya ek yok, S1; kalanı yeniden girilir/öğrenilir); G1–G5 bütünlüğü | Yedek telefonda YolGo kayıtları WEEM'de | 2–3 |
-| 8 | `:link` 2 telefon modu (N1) + hırsızlık koruması (N6) | İki telefonla gerçek vardiya | 4–5 |
-| 9 | `:remote` uzaktan kullanım (N2) | Yakınken öteki telefon kullanılır | 2–3 |
+| 3 | `:capture` + `:orders` (R1–R3, R5–R13, R15–R16, R19) | Rawstats testleri geçer (S28: gölge mod denemesi yok) | 9–11 |
+| 4 | `:economics` + yedek (R4, R17–R18, N3, N4, N8) | Altın vektörler geçer (S28) | 3–4 |
+| 5 | `:scooter` (S1–S8, R14) | Sürüş Paneli testleri geçer (S28) | 4–5 |
+| 6 | `:map` (Y1–Y12, Y15–Y21, N5) | YolGo testleri geçer (S28: yan yana sürüş yok) | 10–12 |
+| 7 | YolGo kayıtlarını içe aktarma (eski YolGo'ya ek yok, S1; kalanı yeniden girilir/öğrenilir); G1–G5 bütünlüğü | İçe aktarma testleri geçer (S28) | 2–3 |
+| 8 | `:link` 2 telefon modu (N1) + hırsızlık koruması (N6) | Testler yeşil (S28: gerçek vardiya A10.4 sonrası) | 4–5 |
+| 9 | `:remote` uzaktan kullanım (N2) | Testler yeşil (S28) | 2–3 |
 | 10 | Optimizasyon (pil, bellek, APK boyutu, arka planda kalma), kod sadeleştirme (`/simplify`), güvenlik ve büyük denetim, geri yükleme provası; **WEEM 1.0**; geçiş: ZIP yedek → WEEM Rawstats'ın üstüne → YolGo içe aktar | İş telefonlarında WEEM | 4 |
 | 11 | `BEKLEYEN_OZELLIKLER.md` kullanıcıya sorulur | Kullanıcı kararı | — |
 
@@ -210,6 +210,7 @@ Toplam 48 oturumluk görev (`docs/WEEM_ISLER.md`; aksamalarla kabaca 50–55 otu
 | S16 Gölge modda çift soru/pencere | (a) `.dev`'de "gölge mod" anahtarı: açıkken WEEM soru sormaz, rozet/balon çizmez, yalnız kayıt tutar (görev A3.11, A3.10'dan önce) — 19 Ekim |
 | S26 Yol kalitesi (A6.11) | Scooter'a yeni koltuk geldi, önemi azaldı; sistem tam yazılır ve geliştirmeye açık kalır ama Ayarlarda tek anahtarla açılıp kapanır, **varsayılan kapalı**. Kapalıyken sensörler, arka plan hesabı, Ses± yakalama ve puan soruları hiç çalışmaz; önceden öğrenilmiş puanlar rotada kullanılmaya devam eder. A6.11, A6.6–A6.9'dan sonraya alınabilir — 19 Ekim |
 | S27 Aşama 10 sırası | Önce kalan özellikler → optimizasyon → **geçiş öncesi kısa güvenlik kontrolü** (müşteri verisi, izinler) → geri yükleme provası → iş telefonlarına geçiş → gerçek kullanım dönemi (kullanıcı gereksiz/birleşecek özellikleri seçer) → sadeleştirme (özellik çıkarma/birleştirme dahil) → **en son** büyük denetim (ultracode, A10.7) — 20 Ekim |
+| S28 Saha denemeleri | Kullanıcı ara deneme yapmak istemiyor: (K) deneme görevleri (A3.10 gölge mod, A4.4, A5.5, A6.10 YolGo ile yan yana sürüş, A7.3, A8.5, A9.3) kaldırıldı; aşama bitişi = testler yeşil. Sorunlar son sürümden sonra gerçek kullanımda (A10.4–A10.5) düzeltilir. Risk: telefonda hiç denenmemiş kod geçişte ilk kez çalışır; geçişe kadar Rawstats/YolGo/Sürüş Paneli kurulu kalır — 20 Ekim |
 
 ## 9. İlerleme
 

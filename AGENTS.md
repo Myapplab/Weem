@@ -78,7 +78,7 @@ Kullanıcı bu prompta görev ya da yanıt ekleyebilir; ek yoksa ajan "Şu an"da
 
 ## Temel kurallar
 
-- **Davranış şartnamesi:** bir modül yazılmadan önce eski testleri Kotlin'e çevrilir (aynı girdi → aynı çıktı); yeni kod onları geçmeden `main`'e girmez. Gölge mod karşılaştırması yeşil olmadan geçiş yok (plan Bölüm 5).
+- **Davranış şartnamesi:** bir modül yazılmadan önce eski testleri Kotlin'e çevrilir (aynı girdi → aynı çıktı); yeni kod onları geçmeden `main`'e girmez. Ara saha denemesi ve gölge mod karşılaştırması yok (S28): sorunlar WEEM 1.0 sonrası gerçek kullanımda düzeltilir.
 - **Kimlik ve veri değişmez** (plan Bölüm 2): paket `com.kuryelog.app`, imza, `com.kuryelog.app.WatchService` / `NotifService` adları, kayıt dosya adları ve şemaları, tercih anahtarları.
 - WEEM Wolt/Bolt'ta kendiliğinden hiçbir şeye basmaz; ekran okuma kodu ağ kullanmaz; müşteri adı/telefonu dışa aktarmada gizlenir ve scooter telefonuna gitmez.
 - Saf mantık Android'siz Kotlin'de (yerelde test edilir); Android katmanı ince. Bu ortamda `dl.google.com` kapalı olabilir: o zaman Android modülleri yerelde derlenmez, CI derler (oturum başlangıç kancası durumu yazar).
