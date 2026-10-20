@@ -83,6 +83,8 @@ object LinkHub {
         apply(a)
     }
 
+    // `weem-link` yazımı eşzamanlı (LINK.md 3.12).
+    @SuppressLint("ApplySharedPref")
     fun setRole(ctx: Context, role: LinkRole) {
         val a = ctx.applicationContext
         prefs(a).edit().putString(LinkRole.PREF_KEY, role.key).commit()

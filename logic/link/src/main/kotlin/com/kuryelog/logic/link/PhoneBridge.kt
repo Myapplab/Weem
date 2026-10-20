@@ -73,6 +73,7 @@ class PhoneBridge(
     @Volatile private var up = false
 
     // --- Provider: giden ---
+    private var sentShift: ShiftState? = null
     private var sentOffers: List<OfferSummary>? = null
     private var sentOffersAt = Long.MIN_VALUE / 2
     private var pendingOffers: List<OfferSummary>? = null
@@ -92,6 +93,7 @@ class PhoneBridge(
 
     // --- Receiver: giden ---
     private var sentBattery: BatterySummary? = null
+    private var sentFresh = false
     private var sentRoute: RouteStatus? = null
     private var sentRouteAt = Long.MIN_VALUE / 2
     private var pendingRoute: RouteStatus? = null
@@ -169,13 +171,17 @@ class PhoneBridge(
 
     // ------------------------------------------------------------------ Provider girdileri
 
+    /** Vardiya: içerik değişince (yalnız `generatedAtMs` değişimi sayılmaz; RS E8 `FeedChanges`). */
     fun providerShift(s: ShiftState) {
-        if (role == LinkRole.PROVIDER) publish(LinkTopic.SHIFT, LinkPayloads.shift(s))
+        if (role != LinkRole.PROVIDER) return
+        val send = synchronized(lock) { if (sentShift?.copy(generatedAtMs = 0) == s.copy(generatedAtMs = 0)) false else { sentShift = s; true } }
+        if (send) publish(LinkTopic.SHIFT, LinkPayloads.shift(s))
     }
 
     /**
-     * Teklifler: liste değişince (yalnız `lastSeenAtMs` değişimi sayılmaz) ya da teklif varken [OFFERS_REFRESH_MS]'de bir; iki
-     * gönderim arası en az [OFFERS_MIN_GAP_MS] (plan 4.4 "≥200 ms"; arada gelen son liste [tick]'te gider).
+     * Teklifler (RS E8 `FeedChanges`): içerik değişince — kare saati `lastSeenAtMs` yalnız [OFFERS_REFRESH_MS]'lik dilime girince
+     * değişim sayılır — ve teklif varken [OFFERS_REFRESH_MS]'de bir (Receiver sessizlikte listeyi boşaltır); iki gönderim arası en az
+     * [OFFERS_MIN_GAP_MS] (plan 4.4 "≥200 ms"): aradaki son değişiklik [tick]'te mutlaka gider, gönderilmiş içeriğe dönen titreşim gitmez.
      */
     fun providerOffers(list: List<OfferSummary>, now: Long = wall()) {
         if (role != LinkRole.PROVIDER) return
@@ -258,11 +264,15 @@ class PhoneBridge(
 
     // ------------------------------------------------------------------ Receiver girdileri
 
-    /** Scooter canlı değeri: `BatterySummary.due` (60 sn, %1, bağlantı değişimi). Hiç bağlanmadıysa bağlantısız özet. */
+    /** Scooter canlı değeri: `BatterySummary.due` (60 sn, %1, bağlantı değişimi) ya da tazelik değişimi. Hiç bağlanmadıysa bağlantısız özet. */
     fun receiverScooter(live: ScooterLive?, now: Long = wall()) {
         if (role != LinkRole.RECEIVER) return
         val b = live?.let { BatterySummary.of(it, now) } ?: BatterySummary(now, linkActive = false)
-        val send = synchronized(lock) { if (b.due(sentBattery)) { sentBattery = b; true } else false }
+        // RS E8: kare yaşı değişim değildir, tazeliğini yitirmek (≤15 sn) değişimdir.
+        val fresh = live?.fresh == true
+        val send = synchronized(lock) {
+            if (b.due(sentBattery) || fresh != sentFresh) { sentBattery = b; sentFresh = fresh; true } else false
+        }
         if (send) publish(LinkTopic.BATTERY, LinkPayloads.battery(b))
     }
 
@@ -439,7 +449,7 @@ class PhoneBridge(
         pendingOffers = null
     }
 
-    private fun norm(l: List<OfferSummary>) = l.map { it.copy(lastSeenAtMs = 0) }
+    private fun norm(l: List<OfferSummary>) = l.map { it.copy(lastSeenAtMs = Math.floorDiv(it.lastSeenAtMs, OFFERS_REFRESH_MS)) }
 
     private fun publish(t: LinkTopic, payload: ByteArray): UUID? = try {
         if (t.reliable) link.publishReliable(t.type, payload, t.ttlMs) else link.publishLatest(t.type, payload, t.ttlMs)

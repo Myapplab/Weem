@@ -215,14 +215,14 @@ Plan 4.3–4.5'in kodu. Saf kısım `logic/link` (`LinkRoles`, `LinkPayloads`, `
 
 | Tür (zarf adı) | Sınıf | TTL | Gönderen | Ne zaman |
 |---|---|---|---|---|
-| `ShiftState` | son durum | 24 sa | P | her değişimde (`ShiftHub.state`) |
-| `OfferSummary` (liste) | son durum | 2 dk | P | liste değişince (yalnız `lastSeenAtMs` değişimi sayılmaz), teklif varken 5 sn'de bir; arası ≥ 200 ms; boş liste = teklif yok |
+| `ShiftState` | son durum | 24 sa | P | içerik değişince (`ShiftHub.state`; yalnız `generatedAtMs` değişimi sayılmaz) |
+| `OfferSummary` (liste) | son durum | 2 dk | P | liste değişince (`lastSeenAtMs` yalnız 5 sn dilimine girince sayılır; RS E8), teklif varken 5 sn'de bir; arası ≥ 200 ms; boş liste = teklif yok |
 | `TripStages` | teslim zorunlu | 1 sa | P | her değişimde |
 | `DaySummary` | son durum | 24 sa | P | değişince, en çok dakikada bir (gün değişince hemen); `OrderDaySummary`: platform başına teslim, brüt, net; çevrimiçi dakika ve nakit ölçülmez (null) |
 | `NavTarget` | teslim zorunlu | 2 dk | P | Wolt/Bolt "Navigasyon" ya da pano hedefi çözülünce |
 | `EnergyRequest` | teslim zorunlu | 24 sa | P | ekonomi bir bacak ya da boşta dönem satırı yazarken |
 | `EnergyResult` | teslim zorunlu | 24 sa | R | istek gelince (yerel `ScooterBridge.energy`; kaynak yoksa `not_measured`) |
-| `BatterySummary` | son durum | 5 dk | R | `BatterySummary.due` (60 sn, %1, bağlantı değişimi); 10 sn'de bir denenir; scooter hiç yoksa bağlantısız özet |
+| `BatterySummary` | son durum | 5 dk | R | `BatterySummary.due` (60 sn, %1, bağlantı değişimi) ya da kare tazeliğini (≤ 15 sn) yitirince/kazanınca; 10 sn'de bir denenir; scooter hiç yoksa bağlantısız özet |
 | `RouteStatus` | son durum | 60 sn | R | hedef ya da rota ölçümü değişince, en çok 1/sn; rota yoksa hedefsiz ve ölçümsüz |
 | `LinkRole` | son durum | 24 sa | ikisi | bağlanınca |
 
@@ -262,7 +262,7 @@ Giden her yük `ReceiverSafety`'den geçer: anahtarında `customername`, `custom
 
 ### 4.9 Testler
 
-`logic/link` +26: `LinkPayloadsTest` 5 (tür tablosu, gidiş-dönüş, saat düzeltmesi, bozuk yük, S5 süzgeci), `PhoneBridgeTest` 17 (rol çakışması, teklif hız sınırı ve tazeleme, sessizlik/kopmada boşalma, aşamalar ve sipariş sayacı, gün özeti, vardiya izleme ve elle karar, hedefin bir kez açılması, yerel yedek, enerji yanıtı, geç enerji ve yeniden başlatmadan sonra eşleşme, tekrar isteğe aynı yanıt, batarya özeti → canlı değer, rota hız sınırı, yön süzgeci, saat), `TwoPhoneLinkTest` 2 (gerçek `LinkStack` + `FakeNet`, saati 7,3 sn farklı telefonlar: vardiya, teklif, hedef, batarya, enerji penceresi), `LinkViewTest` 2; `logic/economics` `LateEnergyTest` 2; `logic/orders` `OrderDaySummaryTest` 1; `logic/map` `NavControllerForwardTest` 3; `logic/app` `TwoPhonePrivacyTest` 1; `CrashGuardTest` ve `NotificationIdsTest` güncellendi.
+`logic/link` +34 (toplam 165): eski `FeedChangesE8Test` 8 çevrildi (RS @ 6388c04: içerik değişince yayın, kare saati/kare yaşı/üretim saati değişim değil, görünen teklif 5 sn dilimle yeniden, ≥ 200 ms aralıkta son değişiklik mutlaka çıkar, titreşim gitmez, scooter tazeliğini yitirince bildirilir, gün özeti birleştirilir); `LinkPayloadsTest` 5 (tür tablosu, gidiş-dönüş, saat düzeltmesi, bozuk yük, S5 süzgeci), `PhoneBridgeTest` 17 (rol çakışması, teklif hız sınırı ve tazeleme, sessizlik/kopmada boşalma, aşamalar ve sipariş sayacı, gün özeti, vardiya izleme ve elle karar, hedefin bir kez açılması, yerel yedek, enerji yanıtı, geç enerji ve yeniden başlatmadan sonra eşleşme, tekrar isteğe aynı yanıt, batarya özeti → canlı değer, rota hız sınırı, yön süzgeci, saat), `TwoPhoneLinkTest` 2 (gerçek `LinkStack` + `FakeNet`, saati 7,3 sn farklı telefonlar: vardiya, teklif, hedef, batarya, enerji penceresi), `LinkViewTest` 2; `logic/economics` `LateEnergyTest` 2; `logic/orders` `OrderDaySummaryTest` 1; `logic/map` `NavControllerForwardTest` 3; `logic/app` `TwoPhonePrivacyTest` 1; `CrashGuardTest` ve `NotificationIdsTest` güncellendi.
 
 ### 4.10 Ekranlar
 
