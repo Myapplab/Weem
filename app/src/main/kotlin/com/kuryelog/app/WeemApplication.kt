@@ -8,6 +8,10 @@ import com.kuryelog.app.core.LogImport
 import com.kuryelog.app.core.ShiftHub
 import com.kuryelog.app.core.Store
 import com.kuryelog.app.economics.Economics
+import com.kuryelog.app.map.BatteryRuntime
+import com.kuryelog.app.map.DatasetRecording
+import com.kuryelog.app.map.NavRuntime
+import com.kuryelog.app.map.WeatherRuntime
 import com.kuryelog.app.orders.Orders
 import com.kuryelog.app.scooter.Scooter
 import com.kuryelog.app.scooter.ScooterShiftLink
@@ -31,6 +35,13 @@ class WeemApplication : Application() {
         Store.guarded(this, "start") { Orders.bind(this) }
         // Scooter dikişi: teklif anı pili ve sipariş başına enerji (R14); `:orders` `:scooter`'ı tanımaz, bağı burada kurulur.
         Store.guarded(this, "start") { Orders.bindScooter(this, Scooter.bridge) }
+        // A6.7: hava (R15, teklif satırı) ve batarya tahmini (canlı scooter değeri çapa olur); `:orders` `:map`'i tanımaz, bağ burada.
+        Store.guarded(this, "start") {
+            Orders.bindWeather(WeatherRuntime.get(this).port)
+            BatteryRuntime.get(this).bind(Scooter.bridge)
+        }
+        // A6.9: gün motoru, sürüş günlüğü, gün raporu, görev ve hatırlatıcı çalışma zamanları süreçle birlikte kalkar (vardiya arka planda sürerken ekran kapalı olabilir).
+        Store.guarded(this, "start") { NavRuntime.get(this) }
         LogImport.afterImport = Orders::reloadImportedStats
         // Vardiya dinleyicileri, Rawstats `GpsService` sırasıyla (ORDERS.md 4.2): cep nakdi + CASH PENDING → günlük paket (R17) → şifreli
         // yedek (N3) → siparişler → scooter (A5.3). `onEnd`'de CASH PENDING sonu günlük paketten, o da siparişlerin kapanmasından önce yazılır.
@@ -40,7 +51,10 @@ class WeemApplication : Application() {
             // N3 (S22): günlük paketten sonra, siparişler kapanmadan; kendi iş parçacığında.
             ShiftHub.listeners.add("encrypted_backup", EncryptedBackupHook(this))
             ShiftHub.listeners.add("orders", Orders.shiftHooks(this))
+            // A6.9 teklif veri seti (Y19): siparişlerin gün klasörü tamamlandıktan sonra gün toplanır ve mühürlenir (MAP.md 13.11).
+            ShiftHub.listeners.add("dataset", DatasetRecording.hooks(this))
         }
+        Store.guarded(this, "start") { DatasetRecording.start(this) }
         // Scooter bağlantısı (SCOOTER.md 5.3): vardiya canlı bağlantıyı açar/kapatır, M23, D8 odometre; siparişlerden sonra (ORDERS.md 4.2).
         Store.guarded(this, "start") { ShiftHub.listeners.add("scooter", ScooterShiftLink.hooks(this)) }
         // A4.2 gün sonu raporu: siparişler ve scooter kapandıktan sonra (kapanan sipariş ve son enerji hesapta).

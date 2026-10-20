@@ -10,6 +10,7 @@ import com.kuryelog.logic.core.Clock
 import com.kuryelog.logic.core.KuryelogPrefs
 import com.kuryelog.logic.core.LogStore
 import com.kuryelog.logic.core.ScooterBridge
+import com.kuryelog.logic.core.WeatherPort
 import com.kuryelog.logic.economics.DaySummaries
 import com.kuryelog.logic.economics.EconomicsObserver
 import com.kuryelog.logic.economics.OfferScoreBook
@@ -52,8 +53,10 @@ object Economics {
         override val log: LogStore get() = Store.log(ctx)
         override val prefs: KuryelogPrefs.Values = Store.values(ctx)
         override val clock: Clock = Shift.AndroidClock
-        /** A5.3 köprüsü (`Orders.bindScooter`): bağlı değilse `NONE` → enerji `not_measured`. Hava A6'ya kadar `NONE`. */
+        /** A5.3 köprüsü (`Orders.bindScooter`): bağlı değilse `NONE` → enerji `not_measured`.  */
         override val scooter: ScooterBridge get() = Orders.scooter
+        /** A6.7 köprüsü (`Orders.bindWeather`): bağlı değilse `NONE` → hava alanları boş. */
+        override val weather: WeatherPort get() = Orders.weather
         override fun monoNs(): Long = SystemClock.elapsedRealtimeNanos()
     }
 }

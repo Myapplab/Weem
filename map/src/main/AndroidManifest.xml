@@ -1,2 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <!-- Hatırlatıcı titreşimi (Y20; `:app` ile aynı izin, birleşik manifestte çoğalmaz). -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Lint: tür `location` için konum izni de bildirilmeli (birleşik manifestte `:app` ile aynı izinler, çoğalmaz). -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <application>
+        <!-- A6.6 yalnız-navigasyon (MAP.md 7.12, 7.17 SORU-N4): gün bitince açık rota ≤90 dk; tür location. -->
+        <service
+            android:name="com.kuryelog.app.map.NavOnlyService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+    </application>
+</manifest>

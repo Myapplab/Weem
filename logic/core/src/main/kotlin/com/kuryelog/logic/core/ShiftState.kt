@@ -68,6 +68,9 @@ class ShiftFollower(private var handledEndMs: Long? = null, private var handledS
     /** [handledEndMs] / [handledStartMs]: işlendi diye saklanacak damga (null: değişmez). */
     data class Decision(val action: Action, val atMs: Long? = null, val handledEndMs: Long? = null, val handledStartMs: Long? = null)
 
+    /** Saklanan damgalar `(bitiş, başlangıç)` (tercihe yazmak için). */
+    fun handled(): Pair<Long?, Long?> = handledEndMs to handledStartMs
+
     /** Damgaları saklayarak [decide] çağırır. */
     fun follow(s: ShiftState?, dayActive: Boolean, dayStartedAtMs: Long?): Decision =
         decide(s, dayActive, dayStartedAtMs, handledEndMs, handledStartMs).also {

@@ -2,6 +2,7 @@ package com.kuryelog.app
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +23,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.SaveableStateHolder
@@ -35,8 +37,16 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.kuryelog.app.core.CrashLog
 import com.kuryelog.app.core.Store
+import com.kuryelog.app.map.MapScreen
+import com.kuryelog.app.map.ReminderCard
+import com.kuryelog.app.map.ReminderRuntime
+import com.kuryelog.app.map.TaskAlertCard
+import com.kuryelog.app.map.TaskRuntime
+import com.kuryelog.app.map.MapSettingsScreen
+import com.kuryelog.app.map.WeatherRuntime
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.app.Tab
+import com.kuryelog.app.map.NavRuntime
 import com.kuryelog.logic.app.Text as Str
 import com.kuryelog.logic.app.ThemeMode
 import com.kuryelog.logic.app.label
@@ -67,6 +77,9 @@ fun WeemApp(
     // A5.4: yüzen panelden açma isteği Scooter sekmesine götürür; PiP penceresinde yalnız küçük ızgara; tam ekranda alt menü yok.
     val openScooter = ScooterNav.open
     LaunchedEffect(openScooter) { if (openScooter != null) selectedKey = Tab.SCOOTER.key }
+    // Gelen navigasyon bağlantısı harita sekmesini açar (Y5).
+    val openMap by NavRuntime.get(ctx).openMap.collectAsState()
+    LaunchedEffect(openMap) { if (openMap > 0) selectedKey = Tab.MAP.key }
     var scooterImmersive by remember { mutableStateOf(false) }
     if (ScooterNav.pip) {
         GuardedPage("scooter_pip", lang, build = {}) { ScooterPip(lang, dark) }
@@ -86,22 +99,31 @@ fun WeemApp(
             }
         },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
+        // A6.9: hatırlatıcı kartı ve görev uyarısı uygulama kabuğunda, her sekmenin üstünde (CORE.md 3.1: WEEM öndeyken sistem bildirimi yok).
+        val reminders = remember { ReminderRuntime.get(ctx) }
+        val taskRt = remember { TaskRuntime.get(ctx) }
+        val reminder by reminders.active.collectAsState()
+        val tasks by taskRt.view.collectAsState()
+        Box(Modifier.fillMaxSize().padding(padding)) {
+        Column(Modifier.fillMaxSize()) {
             crash?.let { j -> CrashCard(j, lang) { CrashLog.hide(ctx, j); crash = null } }
+            ReminderCard(reminder, lang, onDone = reminders::done)
             holder.SaveableStateProvider(selected.key) {
                 GuardedPage(selected.key, lang, build = {}) {
                     when (selected) {
                         // A3.8: Siparişler sekmesi.
                         Tab.ORDERS -> OrdersTab(lang)
                         Tab.MORE -> MoreScreen(lang, langSetting, theme, versionName, onLangSetting, onTheme)
-                        // G1: vardiya düğmesi açılış sekmesinde (harita A6'da gelir).
-                        Tab.MAP -> Column { ShiftCard(lang); PlaceholderScreen(selected, lang) }
+                        // A6.5: Harita sekmesi (graf yokken vardiya kartı + kurulum kartı; G1 vardiya düğmesi açılış sekmesinde).
+                        Tab.MAP -> MapScreen(lang, dark)
                         // A5.4: Scooter sekmesi (canlı panel, tarama, eşleştirme, ayarlar, tanı, ZIP).
                         Tab.SCOOTER -> ScooterTab(lang, dark, scooterImmersive) { scooterImmersive = it }
                         else -> PlaceholderScreen(selected, lang)
                     }
                 }
             }
+        }
+        TaskAlertCard(tasks.alerts, tasks.lastPoint, lang, onRoute = { t -> taskRt.openRoute(t) }, onDismiss = { t -> taskRt.dismiss(t.id) })
         }
     }
 }
@@ -138,6 +160,18 @@ private fun MoreScreen(
     var records by rememberSaveable { mutableStateOf(false) }
     var home by rememberSaveable { mutableStateOf(false) }
     var ordersSettings by rememberSaveable { mutableStateOf(false) }
+    var mapSettings by rememberSaveable { mutableStateOf(false) }
+    if (mapSettings) {
+        val ctx = LocalContext.current
+        val weather = remember { WeatherRuntime.get(ctx) }
+        val strip by weather.strip.collectAsState()
+        val notify by weather.enabled.collectAsState()
+        MapSettingsScreen(
+            lang, weatherStrip = strip, onWeatherStripChange = weather::setStrip, onBack = { mapSettings = false },
+            weatherNotify = notify, onWeatherNotifyChange = weather::setEnabled, onWeatherFetch = weather::fetchNow,
+        )
+        return
+    }
     if (ordersSettings) {
         OrdersSettingsScreen(lang, onBack = { ordersSettings = false })
         return
@@ -155,6 +189,9 @@ private fun MoreScreen(
 
         Section(Str.HOME_TITLE.get(lang)) {
             TextButton(onClick = { home = true }) { Text(Str.HOME_OPEN.get(lang)) }
+        }
+        Section(Str.MSET_TITLE.get(lang)) {
+            TextButton(onClick = { mapSettings = true }) { Text(Str.MSET_OPEN.get(lang)) }
         }
         Section(Str.OSET_TITLE.get(lang)) {
             TextButton(onClick = { ordersSettings = true }) { Text(Str.OSET_OPEN.get(lang)) }

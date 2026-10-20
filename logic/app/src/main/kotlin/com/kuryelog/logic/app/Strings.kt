@@ -104,6 +104,7 @@ enum class Text(override val tr: String, override val az: String) : Bilingual {
     HOME_DELETE_ASK("Ev konumunu sil?", "Ev məkanını sil?"),
     HOME_PICK("Ev konumunu seç", "Ev məkanını seç"),
     HOME_USE_CURRENT("Şu anki konumumu kullan", "Hazırkı məkanımı istifadə et"),
+    HOME_FROM_MAP("Haritadan seç", "Xəritədən seç"),
     HOME_MEASURING("%d saniye ölçülüyor…", "%d saniyə ölçülür…"),
     HOME_ACCURACY("Doğruluk: ±%s m", "Dəqiqlik: ±%s m"),
     HOME_DRAFT("Seçilen konum · taslak", "Seçilmiş məkan · qaralama"),
@@ -118,6 +119,8 @@ enum class Text(override val tr: String, override val az: String) : Bilingual {
     ),
 
     // A4.2 Siparişler ayarları (S20 (b); RS "Özel ayarlar") ve net kazanç / günlük hedef (N4, N8).
+    MSET_TITLE("Harita ayarları", "Xəritə tənzimləmələri"),
+    MSET_OPEN("Harita görünümü, harita verisi, Google Maps", "Xəritənin görünüşü, xəritə məlumatları, Google Maps"),
     OSET_TITLE("Siparişler ayarları", "Sifariş ayarları"),
     OSET_OPEN("Komisyon, ekran, net kazanç ve günlük hedef", "Komissiya, ekran, xalis qazanc və gündəlik hədəf"),
     OSET_COMMISSION("Filo komisyonları", "Filo komissiyaları"),

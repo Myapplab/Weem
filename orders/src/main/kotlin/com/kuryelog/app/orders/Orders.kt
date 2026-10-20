@@ -16,6 +16,7 @@ import com.kuryelog.logic.core.KuryelogPrefs
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.core.LogStore
 import com.kuryelog.logic.core.ScooterBridge
+import com.kuryelog.logic.core.WeatherPort
 import com.kuryelog.logic.core.ShiftMachine
 import com.kuryelog.logic.orders.CourierRecords
 import com.kuryelog.logic.orders.OfferAnnotator
@@ -55,6 +56,10 @@ object Orders {
     /** Scooter dikişi (SCOOTER.md 12.2): `:app` bağlayana dek `NONE` (teklif anı pili ve sipariş enerjisi yok). `:orders` `:scooter`'ı tanımaz. */
     @Volatile var scooter: ScooterBridge = ScooterBridge.NONE
         private set
+    /** Hava dikişi (R15, MAP.md 10.10): `:app` bağlayana dek `NONE` (teklif satırında hava yok). `:orders` `:map`'i tanımaz. */
+    @Volatile var weather: WeatherPort = WeatherPort.NONE
+        private set
+    fun bindWeather(port: WeatherPort) { weather = port }
     private var stepJob: Job? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -108,6 +113,7 @@ object Orders {
         override val prefs: KuryelogPrefs.Values = Store.values(ctx)
         override val db: CourierRecords by lazy { AndroidCourierRecords(CourierDb(ctx)) }
         override val scooter: ScooterBridge get() = Orders.scooter
+        override val weather: WeatherPort get() = Orders.weather
         override val observer: OrderObserver get() = Orders.observer
         override val annotator: OfferAnnotator get() = Orders.annotator
         override val clock: Clock = Shift.AndroidClock
