@@ -5,7 +5,7 @@ Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 
 ## 2026-10-20 — A8.3 bitti: 2 telefon roller ve mesajlar (Claude Opus · high; dal `ccr-dcc0d014-9kome5`)
 - Yapılan: saf `link.PhoneBridge` (uzak `OrderEvents`/`ScooterBridge`/`NavPort`; plan 4.4 türleri `LinkTopic`, hız sınırları, Receiver vardiya izleme, hedef iletme + 8 sn yerel yedek, enerji dönüşü), `LinkPayloads` (saat düzeltmesi, S5 `ReceiverSafety`), `LinkRole` (S11), `LinkText`/`LinkView`; `ScooterBridge.late` + `EconomicsObserver.lateEnergy` (düzeltme satırı); `OrderDaySummary`, `Orders.events`; `NavController.forward`; `:link` `LinkHub` + `LinkService` (7403); `:app` `TwoPhone`, 2 telefon ekranı (ZXing + code scanner), Receiver/Provider kartları. `LINK.md` 4.
 - Önemli karar: Provider uzak enerjiyi beklemez (ekonomi satırı ana iş parçacığında `runBlocking`; bekleme ANR) → satır `not_measured`, yanıt düzeltme satırı.
-- Doğrulama: `-p logic test` 1.829 test (A7.2 ile birleşik), 0 kırmızı (RS `FeedChangesE8Test` 8 çevrildi); `:app` 82 + `:map` 8 Android testi yeşil, `:app`/`:link`/`:scooter` lint 0 hata (yerelde). Telefonda denenmedi.
+- Doğrulama: `-p logic test` 1.829 test (A7.2 ile birleşik), 0 kırmızı (RS `FeedChangesE8Test` 8 çevrildi); `:app` 82 + `:map` 8 Android testi yeşil, `:app`/`:link`/`:scooter` lint 0 hata (yerelde); PR #6 CI yeşil, `main`'e birleşti. Telefonda denenmedi.
 - Açık kalan: `LINK.md` 4.11 (Provider'da sipariş başına Wh yok; Receiver'da arka plan vardiya başlatma kısıtı; Receiver ev kuralı), AZ metin onayı M-L-1.
 - Sıradaki: A8.4 (hırsızlık koruması; başta kullanıcıya sorulur, S10).
 
