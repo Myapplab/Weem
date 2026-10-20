@@ -7,7 +7,7 @@ import java.time.LocalDateTime
 /** Bir hızda rota tahmini (MAP.md 10.2): süre [seconds], enerji [wh]. */
 data class SpeedOption(val kmh: Double, val seconds: Double, val wh: Double)
 
-/** `lib/routing/speed_options.dart` (MAP.md 10.2). İskelet (A6.2b): gövdeler A6.7'de. */
+/** `lib/routing/speed_options.dart` (MAP.md 10.2). İskelet (A6.2b): gövdeler A6.7'de ([arrivalClock] A6.6). */
 object SpeedOptions {
     const val AERO_SHARE = 0.6
 
@@ -17,6 +17,9 @@ object SpeedOptions {
     /** Liste `speeds ?? [20, 25, round(flatKmh)]` → tekrarsız → artan sıra → her biri için [speedOption]. */
     fun speedOptions(ride: List<RoutePoint>, p: RideParams, speeds: List<Double>? = null): List<SpeedOption> = TODO("A6.7")
 
-    /** `now + round(seconds)` → "HH:mm". */
-    fun arrivalClock(now: LocalDateTime, seconds: Double): String = TODO("A6.7")
+    /** `now + round(seconds)` → "HH:mm" (A6.6'da rota paneli için yazıldı). */
+    fun arrivalClock(now: LocalDateTime, seconds: Double): String {
+        val t = now.plusSeconds(Math.round(seconds))
+        return "%02d:%02d".format(t.hour, t.minute)
+    }
 }
