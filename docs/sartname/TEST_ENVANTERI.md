@@ -461,3 +461,10 @@ Y1 harita ekranı ve Y2 ikinci görünüm uygulandı (`MAP.md` 6; uygulama notla
 **Sapmalar:** `MapShiftActionsTest.acikKartYalnizBilgiGosterir` döngüsünde her aşamadan önce 21 sn beklenir (YolGo her aşamayı ayrı testte taze kartla çizer; tek testte aşama değişimi kartı kendiliğinden açtığı için çeviri hatasıydı). `SmartLocateButton`/`RouteFab` imzalarına `lang` (varsayılan TR) eklendi. `MapTab`'a yuvalar (`toast`, `reminder`, `taskAlerts`, `wrongWay`, `routePanel`, `metrics`, `topCard`) ve `MapTabActions` eklendi; testler varsayılanlarla çalışır. Harita metinleri `logic/map` `ui.MapText` (`:app`'te düz metin yok; `logic/app` `TextCoverageTest`).
 
 **Doğrulama:** `LC_ALL=C.UTF-8 ./gradlew -p logic test --continue` → **1.605 test, 232 kırmızı** (`:map` 206 + `:orders` `dataset` 26; hepsi `NotImplementedError`, başka görevlerin iskeleti; önceki 243'ten 11 az); `:app:testDebugUnitTest` 50 test, 26 kırmızı (A6.6–A6.9 iskeleti + yukarıdaki 2), `:map:testDebugUnitTest` 8/8; `:app:lintDebug` ve `:map:lintDebug` 0 hata; `:app:assembleRelease` yeşil. CI koşusu yok (`[skip ci]`), telefonda denenmedi.
+
+## A6.6 kod durumu (20 Ekim 2026)
+
+`input` 34/34 ve `nav` 44/45 yeşil (`NavAssistantTest` A6.8 `DayController`'ı bekler); yeni: `NavControllerTargetTest` 3, `ClipboardHashTest` 1, `AddressParserTest` +1, `NavPanelTextTest` 2, `ui.RouteLayerTest` 3, `input.ApiCardsTest` 2, `:app` Robolectric `RoutePanelTest` 4; `SpeedOptionsTest` varış saati testi yeşil (`arrivalClock` öne alındı). `RouteEngineTest` zaman aşımı testi yük altında kırılmaz (motor süresi 150 ms). `NotificationIdsTest` 18 girdi (7402), `CrashGuardTest` `NavOnlyService`'in her başlatışının `startForeground`'a vardığını sınar.
+
+**Doğrulama:** `LC_ALL=C.UTF-8 ./gradlew -p logic test --continue` → **1.617 test, 163 kırmızı** (hepsi A6.7–A6.11 iskeleti `NotImplementedError`); `:app:compileDebugKotlin`, `:app:lintDebug` (0 hata) yeşil; `:app` harita Robolectric: kırmızılar yalnız A6.7/A6.9 iskeleti ve bir Robolectric indirme hatası (`BikewayTabTest`, ağ). Telefonda denenmedi.
+
