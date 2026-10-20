@@ -85,6 +85,33 @@ interface WeatherPort {
 }
 
 /**
+ * Menzil girdileri (N5; `:map` uygular, `:economics` tüketir — `economics=core,orders`, `map=core` sınırı korunur; MAP.md 10.6).
+ * Batarya: taze BLE % ya da Y9 tahmini; rota: harita verisiyle sürüş kilometresi, süresi ve enerjisi. `NONE` veri uydurmaz.
+ */
+interface RangePort {
+    fun battery(): RangeBattery?
+
+    /** [from] → [to] sürüş; harita hazır değilse ya da rota yoksa null. */
+    suspend fun rideTo(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double): RangeLeg?
+
+    object NONE : RangePort {
+        override fun battery(): RangeBattery? = null
+        override suspend fun rideTo(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double): RangeLeg? = null
+    }
+}
+
+/** Kalan batarya: [source] `ble_fresh` (taze scooter değeri) ya da `estimator` (Y9 tahmini); [atMs] ölçüm/tahmin anı. */
+data class RangeBattery(val pct: Double, val wh: Double, val source: String, val atMs: Long) {
+    companion object {
+        const val BLE_FRESH = "ble_fresh"
+        const val ESTIMATOR = "estimator"
+    }
+}
+
+/** Bir sürüş bacağı: [km], [minutes], [wh]. */
+data class RangeLeg(val km: Double, val minutes: Double, val wh: Double)
+
+/**
  * Bildirim (hepsi → `:core`; G4). Numara yalnız [NotificationIds] tablosundan; YolGo kökenli bildirimler [NotifyPolicy.TIMEOUT_MS]
  * sonra kalkar. Dokununca ne olacağı Android katmanının işi ([tapAction]: vardiya servisine gidecek eylem; null = uygulamayı aç).
  */
