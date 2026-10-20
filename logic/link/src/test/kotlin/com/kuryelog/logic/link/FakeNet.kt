@@ -169,6 +169,10 @@ class FakeNet(val cfg: LinkConfig = LinkConfig()) {
 
         fun publishReliable(type: String, text: String, ttlMs: Long = 86_400_000L) = stack.publishReliable(type, text.toByteArray(), ttlMs, now, wall).also { apply(stack.drain()) }
 
+        fun publishLatestBytes(type: String, b: ByteArray, ttlMs: Long) = stack.publishLatest(type, b, ttlMs, now, wall).also { apply(stack.drain()) }
+
+        fun publishReliableBytes(type: String, b: ByteArray, ttlMs: Long) = stack.publishReliable(type, b, ttlMs, now, wall).also { apply(stack.drain()) }
+
         fun publishReliableBytes(type: String, b: ByteArray) = stack.publishReliable(type, b, 86_400_000L, now, wall).also { apply(stack.drain()) }
 
         fun unpair() {

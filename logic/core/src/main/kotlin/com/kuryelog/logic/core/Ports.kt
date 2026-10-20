@@ -42,7 +42,16 @@ interface OrderEvents {
  */
 data class EnergyStep(val usedWh: Double, val recoveredWh: Double, val ms: Long, val complete: Boolean = true)
 
-/** Scooter (`:scooter` → `:orders`, `:economics`, `:map`). [energy] uzakta yanıt gelene dek askıda kalır. */
+/**
+ * 2 telefon modunda zamanında gelmeyen enerji yanıtı (LINK.md 4.6): [fromWallMs]–[toWallMs] penceresi (isteyenin saati) ve blok.
+ * `:economics` aynı pencerenin ölçülmemiş satırına düzeltme satırı yazar.
+ */
+data class LateEnergy(val fromWallMs: Long, val toWallMs: Long, val energy: EnergyBlock)
+
+/**
+ * Scooter (`:scooter` → `:orders`, `:economics`, `:map`). Uzak uygulamada (2 telefon, Provider) [energy] bağlıyken kısa bekler;
+ * zamanında gelmeyen yanıt sonra [late]'e düşer (tek telefonda boş).
+ */
 interface ScooterBridge {
     fun orderAccepted(tripId: String, atWallMs: Long)
     fun orderDone(tripId: String, atWallMs: Long)
@@ -53,6 +62,7 @@ interface ScooterBridge {
     val live: StateFlow<ScooterLive?>
     /** Bağlantı okurken her saniye bir adım (A5.3, SCOOTER.md 12.2); `:orders` vardiyadayken toplar. `NONE` adım üretmez. */
     val steps: SharedFlow<EnergyStep>
+    val late: SharedFlow<LateEnergy> get() = NO_LATE
 
     object NONE : ScooterBridge {
         override fun orderAccepted(tripId: String, atWallMs: Long) {}
@@ -61,6 +71,10 @@ interface ScooterBridge {
         override fun batteryPct(): Double? = null
         override val live: StateFlow<ScooterLive?> = MutableStateFlow<ScooterLive?>(null).asStateFlow()
         override val steps: SharedFlow<EnergyStep> = MutableSharedFlow<EnergyStep>().asSharedFlow()
+    }
+
+    private companion object {
+        val NO_LATE: SharedFlow<LateEnergy> = MutableSharedFlow<LateEnergy>().asSharedFlow()
     }
 }
 
