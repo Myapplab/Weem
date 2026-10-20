@@ -4,7 +4,7 @@ Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 
 
 ## 2026-10-20 — A7.2 bitti: ilk açılış kurulumu, dil bütünlüğü, az bildirim (Claude Opus · high; dal `ccr-c0e88a81-nubqjp`)
 - Yapılan: saf `logic/app` `Setup.kt` (`SetupStep`, `Permissions` RS sırası/"! n/m", `Vendor`/`BatteryGuide` Xiaomi·Pixel·diğer, `SetupText`); `:app` `SetupScreen` (dil → izinler → harita → pil; bir kez, `weem.setupDone`, yedeğe girmez), `PermissionsCard`/`BatteryGuideCard`, Daha fazla → İzinler (+ kurulumu yeniden göster), `MapDataStep`; G3 `logic/scooter` `ScooterStatusText` (servis bildirimi, uyarı satırı, Durum ekranda AZ; kayıt TR); G4 `NotificationAuditTest`; `BrandingK26Test` uyarlandı (2).
-- Doğrulama: `-p logic test` 1.788 test, 0 kırmızı; `:app` 82 + `:map` 8 test yeşil, `:app`/`:scooter` lint 0 hata (yerelde; Maven 429 birkaç denemede geçti). Telefonda denenmedi.
+- Doğrulama: `-p logic test` 1.788 test, 0 kırmızı; `:app` 82 + `:map` 8 test yeşil, `:app`/`:scooter` lint 0 hata (yerelde; Maven 429 birkaç denemede geçti); PR #5 CI yeşil, `main`'e birleşti. Telefonda denenmedi.
 - Açık kalan: yeni AZ metinleri onay bekler (M-G5-1); MIUI otomatik başlatma sayfası bileşen adıyla açılır (açılmazsa uygulama bilgisi) — cihazda doğrulanmadı; uygulama simgesi yok (kullanıcı).
 - Sıradaki: A8.3 (Opus · high).
 
