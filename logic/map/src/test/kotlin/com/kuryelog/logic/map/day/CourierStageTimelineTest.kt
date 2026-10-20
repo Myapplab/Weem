@@ -45,7 +45,7 @@ class CourierStageTimelineTest {
         assertEquals(listOf(at(4), at(300), at(600), at(600)), x.map { it.atMs })
         assertTrue(x.all { it.data["source"] == ShiftEngine.FEED_SOURCE })
         val o = e.s.current!!
-        assertEquals(listOf(at(4), at(300), at(600), 300), listOf(o.startedAtMs, o.restArrivedAtMs, o.restLeftAtMs, o.restWaitS))
+        assertEquals(listOf<Any?>(at(4), at(300), at(600), 300), listOf(o.startedAtMs, o.restArrivedAtMs, o.restLeftAtMs, o.restWaitS))
         assertEquals(OrderPhase.TO_CUSTOMER, e.s.phase)
         assertEquals(TRIP_A, f.linkedTrip)
         assertTrue(sync(listOf(trip(TRIP_A, Stage.TO_DROPOFF)), 705, listOf(line(TRIP_A, full, stage = Stage.TO_DROPOFF))).isEmpty())
@@ -82,7 +82,7 @@ class CourierStageTimelineTest {
         assertEquals(listOf("arrive_customer", "delivered"), x.map { it.type })
         assertEquals(listOf(at(1200), at(1250)), x.map { it.atMs })
         val o = e.s.orders.single()
-        assertEquals(listOf(at(1200), at(1250), 50), listOf(o.custArrivedAtMs, o.deliveredAtMs, o.custWaitS))
+        assertEquals(listOf<Any?>(at(1200), at(1250), 50), listOf(o.custArrivedAtMs, o.deliveredAtMs, o.custWaitS))
         assertNull(e.s.current)
         assertNull(f.linkedTrip)
         assertTrue("biten yolculuk yeni sipariş açmaz", sync(emptyList(), 1305, listOf(ended)).isEmpty())
