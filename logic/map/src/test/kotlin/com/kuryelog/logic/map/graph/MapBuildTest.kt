@@ -59,6 +59,16 @@ class MapBuildTest {
         return File(tmp, "roads.json").apply { writeText("""{"elements":[$nodes${ways.trimEnd(',')}]}""") }
     }
 
+    /** Geofabrik özeti biçimi yer dosyası: 2 yemek noktası, 1 ışık. */
+    private fun pois(): File = File(tmp, "pois.json").apply {
+        writeText(
+            """{"elements":[
+            {"type":"node","id":1,"lat":40.40,"lon":49.85,"tags":{"amenity":"restaurant","name":"Firuze"}},
+            {"type":"node","id":2,"lat":40.41,"lon":49.86,"tags":{"amenity":"cafe","name":"Kafe"}},
+            {"type":"node","id":3,"lat":40.42,"lon":49.87,"tags":{"highway":"traffic_signals"}}]}""",
+        )
+    }
+
     @Test
     fun `hazır yol dosyasından graf, yükseklik ve manifest üretilir`() = runBlocking {
         val gz = MapDownload.gzip(hgt(30))
@@ -66,7 +76,7 @@ class MapBuildTest {
         val out = File(tmp, "assets/map")
         val log = ArrayList<String>()
         val clock = { ZonedDateTime.of(2026, 10, 19, 12, 30, 59, 0, ZoneOffset.ofHours(4)) }
-        MapBuild(http, "WEEM/test (personal courier navigation)", File(tmp, "work"), { log += it }, clock).run(out, roads(1000), null)
+        MapBuild(http, "WEEM/test (personal courier navigation)", File(tmp, "work"), { log += it }, clock).run(out, roads(1000), pois())
 
         val g = RoadGraph.deserialize(gunzip(File(out, "graph_wide.bin.gz").readBytes()))
         assertEquals(1000, g.edgeCount)
@@ -78,6 +88,11 @@ class MapBuildTest {
         assertEquals("2026-10-19T08:30", m.getString("version")) // UTC, dakikaya kadar
         assertEquals(2, m.getInt("format"))
         assertEquals("wide", m.getJSONArray("regions").getString(0))
+        assertEquals(1, m.getJSONObject("pois").getInt("r"))
+        assertEquals(1, m.getJSONObject("pois").getInt("l"))
+        val wide = PoiSet.decode(gunzip(File(out, "pois_wide.json.gz").readBytes()))
+        assertEquals(3, wide.length)
+        assertTrue(File(out, "pois_central.json.gz").exists())
         assertTrue(log.contains("1000 yol, 2000 düğüm"))
         assertTrue(log.contains("wide: 1000 kenar"))
         assertTrue(log.contains("Yükseklik: N40E050 indirilemedi, düz kabul edilecek"))

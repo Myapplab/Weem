@@ -57,13 +57,9 @@ class MapBuild(
         File(out, "graph_wide.bin.gz").writeBytes(MapDownload.gzip(g.serialize()))
         log("wide: ${g.edgeCount} kenar")
 
-        // 4) Yerler: restoran, AVM, metro, trafik ışığı (PoiSet A6.8'de; o zamana dek atlanır, manifest `pois` boş).
+        // 4) Yerler: restoran, AVM, metro, trafik ışığı
         val kinds = JSONObject()
-        try {
-            writePois(out, poisFile, fetcher, wide, kinds)
-        } catch (e: NotImplementedError) {
-            log("yerler: atlandı (${e.message})")
-        }
+        writePois(out, poisFile, fetcher, wide, kinds)
 
         val version = now().withZoneSameInstant(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"))
         val manifest = JSONObject()
