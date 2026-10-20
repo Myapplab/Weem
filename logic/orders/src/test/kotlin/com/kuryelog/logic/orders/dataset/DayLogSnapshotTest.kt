@@ -123,7 +123,9 @@ class DayLogSnapshotTest {
         }
         val (manifest, out) = build(root, raw)
         val copied = File(out, "platforms.jsonl")
-        assertTrue(copied.readText(Charsets.UTF_8).contains("əğü ₼"))
+        // JVM org.json U+2000–U+20FF aralığını \u kaçışıyla yazar (Android JSONObject yazmaz): ikisi de aynı değeri taşır.
+        val text = copied.readText(Charsets.UTF_8)
+        assertTrue(text.contains("əğü") && (text.contains("₼") || text.contains("\\u20bc")))
         assertEquals(DayLogSnapshot.sha256(copied), meta(manifest, "platforms.jsonl").getString("sha256"))
         assertEquals(4000, meta(manifest, "platforms.jsonl").getInt("rows"))
         assertEquals(copied.length(), meta(manifest, "platforms.jsonl").getLong("size"))
