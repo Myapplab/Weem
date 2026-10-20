@@ -52,9 +52,13 @@ class BatteryRuntime private constructor(private val app: Context) : SensorEvent
         scope.launch { settings.map { it.vehicle.capacityWh }.collect { estimator.setCapacity(it) } }
     }
 
+    private var bindJob: kotlinx.coroutines.Job? = null
+
     /** `:app` açılışta: canlı scooter değeri tahminin çapası olur. */
     fun bind(bridge: ScooterBridge) {
-        scope.launch {
+        // A8.3: rol değişince yeniden bağlanır (Provider'da uzak köprü); önceki dinleyici kapanır.
+        bindJob?.cancel()
+        bindJob = scope.launch {
             bridge.live.map { it?.takeIf { l -> l.fresh } }.collect {
                 liveFlow.value = it
                 estimator.onLive(it)

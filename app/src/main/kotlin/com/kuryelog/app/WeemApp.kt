@@ -50,6 +50,7 @@ import com.kuryelog.app.map.NavRuntime
 import com.kuryelog.logic.app.Text as Str
 import com.kuryelog.logic.app.ThemeMode
 import com.kuryelog.logic.app.label
+import com.kuryelog.logic.link.LinkText
 
 private val tabIcon = mapOf(
     Tab.MAP to "🗺", Tab.ORDERS to "📋", Tab.SCOOTER to "🛵", Tab.REMOTE to "📱", Tab.MORE to "⋯",
@@ -112,12 +113,20 @@ fun WeemApp(
                 GuardedPage(selected.key, lang, build = {}) {
                     when (selected) {
                         // A3.8: Siparişler sekmesi.
-                        Tab.ORDERS -> OrdersTab(lang)
+                        Tab.ORDERS -> Column {
+                            // A8.3: Receiver'da Provider'ın verisi (LINK.md 4.10).
+                            RemoteOrdersCard(lang)
+                            OrdersTab(lang)
+                        }
                         Tab.MORE -> MoreScreen(lang, langSetting, theme, versionName, onLangSetting, onTheme)
                         // A6.5: Harita sekmesi (graf yokken vardiya kartı + kurulum kartı; G1 vardiya düğmesi açılış sekmesinde).
                         Tab.MAP -> MapScreen(lang, dark)
                         // A5.4: Scooter sekmesi (canlı panel, tarama, eşleştirme, ayarlar, tanı, ZIP).
-                        Tab.SCOOTER -> ScooterTab(lang, dark, scooterImmersive) { scooterImmersive = it }
+                        Tab.SCOOTER -> Column {
+                            // A8.3: Provider'da scooter Receiver'da (S11); batarya özeti.
+                            if (!scooterImmersive) RemoteScooterCard(lang)
+                            ScooterTab(lang, dark, scooterImmersive) { scooterImmersive = it }
+                        }
                         else -> PlaceholderScreen(selected, lang)
                     }
                 }
@@ -161,6 +170,11 @@ private fun MoreScreen(
     var home by rememberSaveable { mutableStateOf(false) }
     var ordersSettings by rememberSaveable { mutableStateOf(false) }
     var mapSettings by rememberSaveable { mutableStateOf(false) }
+    var twoPhone by rememberSaveable { mutableStateOf(false) }
+    if (twoPhone) {
+        TwoPhoneScreen(lang, versionName) { twoPhone = false }
+        return
+    }
     if (mapSettings) {
         val ctx = LocalContext.current
         val weather = remember { WeatherRuntime.get(ctx) }
@@ -198,6 +212,10 @@ private fun MoreScreen(
         }
         Section(Str.RECORDS_TITLE.get(lang)) {
             TextButton(onClick = { records = true }) { Text(Str.RECORDS_OPEN.get(lang)) }
+        }
+        // A8.3: 2 telefon modu (LINK.md 4.10).
+        Section(LinkText.TITLE.get(lang)) {
+            TextButton(onClick = { twoPhone = true }) { Text(LinkText.OPEN.get(lang)) }
         }
 
         Section(Str.SETTINGS_LANGUAGE.get(lang)) {

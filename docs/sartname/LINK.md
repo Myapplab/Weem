@@ -1,6 +1,6 @@
 # LINK.md — 2 telefon modu (`:link`) şartnamesi
 
-Durum: A8.1 (18 Ekim 2026, Claude Opus · xhigh) — Bölüm 1 (taşıma) ve Bölüm 2 (Bluetooth ↔ scooter BLE ölçüm planı; ölçüm telefonda, henüz yapılmadı). A8.2 (18 Ekim 2026, Claude Opus · xhigh) — Bölüm 3 (eşleştirme, kimlik doğrulama, şifreleme, zarf, kuyruk, `ack`, saat farkı, sürüm); Bölüm 1'in değişen yerleri 3.4–3.5'te. A8.3 (roller, mesajlar, ekranlar) bu belgeye bölüm olarak eklenir. Üst kaynak: `WEEM_PLANI.md` 4.4–4.5 ve Bölüm 8 (S5, S6, S11, S23, S24). Eski kod yok (N1 yeni; `OZELLIK_HARITASI.md` N1).
+Durum: A8.3 (20 Ekim 2026, Claude Opus · high) — Bölüm 4 (roller, mesajlar, portlar, ekranlar). A8.1 (18 Ekim 2026, Claude Opus · xhigh) — Bölüm 1 (taşıma) ve Bölüm 2 (Bluetooth ↔ scooter BLE ölçüm planı; ölçüm telefonda, henüz yapılmadı). A8.2 (18 Ekim 2026, Claude Opus · xhigh) — Bölüm 3 (eşleştirme, kimlik doğrulama, şifreleme, zarf, kuyruk, `ack`, saat farkı, sürüm); Bölüm 1'in değişen yerleri 3.4–3.5'te. Üst kaynak: `WEEM_PLANI.md` 4.4–4.5 ve Bölüm 8 (S5, S6, S11, S23, S24). Eski kod yok (N1 yeni; `OZELLIK_HARITASI.md` N1).
 
 ## 1. Taşıma (A8.1)
 
@@ -199,3 +199,82 @@ Kaldıran telefon bağlıysa `link.unpair` yollar (en iyi çaba), sonra eş kayd
 - `SecureLinkTest` 16 (`FakeNet`, uçtan uca): Wi-Fi'da okuyan ya da veren başlatan eşleşme, Bluetooth'ta eşleşme, yanlış jeton (jeton harcanmaz), süresi geçmiş jeton, kullanılmış jeton (üçüncü telefon), araya giren (iki yönü üstüne çeken sahte A: kimse eşleşmez, B msg3'ü ve şifreli veriyi hiç yollamaz), özel anahtarı olmayan sahte eş, anahtarı değişmiş eş (`AUTH`), değiştirilmiş şifreli metin ve tekrarlanan çerçeve (kanal kapanır, ileti bir kez), ana/küçük sürüm farkı, eşleşmeyi kaldırma, eşleştirme penceresinde eski eş bağlanamaz, takılan el sıkışma zaman aşımı.
 - `MessengerLinkTest` 9 (`FakeNet`): iki yönlü akış ve onay, alıcı yeniden başlayınca son durum yeniden gelir, gönderen yeniden başlayınca teslim zorunlu gider, onayı kaybolan ileti alıcı yeniden başlasa da bir kez işlenir, Bluetooth'ta büyük ileti Wi-Fi'ı bekler, Wi-Fi ↔ Bluetooth geçişinde iki kanaldan gelen tekrar ve eski durum atılır, saati 7,3 sn farklı telefonlar (fark tam, ± gecikme / 2; 20 dk'da 8 ölçüm iletisi), yolda bayatlayan son durum, gönderilemeden süresi geçen teslim zorunlu.
 - Android `:link` derlenir ve lint'ten geçer; Keystore, dosya yolu ve soketler **cihazda doğrulanmadı** (A8.3 + A8.5).
+
+## 4. Roller ve mesajlar (A8.3)
+
+Plan 4.3–4.5'in kodu. Saf kısım `logic/link` (`LinkRoles`, `LinkPayloads`, `PhoneBridge`, `LinkText`), Android `:link` (`LinkHub`, `LinkService`), bağ `:app` `TwoPhone` (modüller birbirini tanımaz). Cihazda doğrulanmadı.
+
+### 4.1 Roller
+
+- `LinkRole` `off | provider | receiver`, `weem-link` → `role` (tanınmayan değer `off`). Daha fazla → 2 telefon modu'ndan seçilir; değişince köprü yeniden kurulur ve portlar yeniden takılır (uygulama yeniden başlamaz).
+- **S11:** Provider'da `ScooterShiftLink.providerRole` true: vardiya bağlantıyı açmaz (`role_provider`), `Scooter.startLive`/`startRecording` false döner, `ScooterService` başlatışı reddeder (`refuseStart`; CrashGuard 4 ret). Rol Provider'a geçince açık scooter bağlantısı kapanır.
+- `listenOnly` = Receiver (scooter telefonu Bluetooth yedeğinde yalnız bekler, 1.3).
+- İki telefon aynı roldeyse (`LinkRole` iletisi, iki yönde, bağlanınca) iki ekranda uyarı; Provider hedefi Receiver'a yollamaz.
+
+### 4.2 Türler
+
+| Tür (zarf adı) | Sınıf | TTL | Gönderen | Ne zaman |
+|---|---|---|---|---|
+| `ShiftState` | son durum | 24 sa | P | her değişimde (`ShiftHub.state`) |
+| `OfferSummary` (liste) | son durum | 2 dk | P | liste değişince (yalnız `lastSeenAtMs` değişimi sayılmaz), teklif varken 5 sn'de bir; arası ≥ 200 ms; boş liste = teklif yok |
+| `TripStages` | teslim zorunlu | 1 sa | P | her değişimde |
+| `DaySummary` | son durum | 24 sa | P | değişince, en çok dakikada bir (gün değişince hemen); `OrderDaySummary`: platform başına teslim, brüt, net; çevrimiçi dakika ve nakit ölçülmez (null) |
+| `NavTarget` | teslim zorunlu | 2 dk | P | Wolt/Bolt "Navigasyon" ya da pano hedefi çözülünce |
+| `EnergyRequest` | teslim zorunlu | 24 sa | P | ekonomi bir bacak ya da boşta dönem satırı yazarken |
+| `EnergyResult` | teslim zorunlu | 24 sa | R | istek gelince (yerel `ScooterBridge.energy`; kaynak yoksa `not_measured`) |
+| `BatterySummary` | son durum | 5 dk | R | `BatterySummary.due` (60 sn, %1, bağlantı değişimi); 10 sn'de bir denenir; scooter hiç yoksa bağlantısız özet |
+| `RouteStatus` | son durum | 60 sn | R | hedef ya da rota ölçümü değişince, en çok 1/sn; rota yoksa hedefsiz ve ölçümsüz |
+| `LinkRole` | son durum | 24 sa | ikisi | bağlanınca |
+
+`WeatherNow` ve saniyelik `ScooterLive` tür değildir (S6; plan 4.4). Yanlış yönden gelen tür (iki Provider), bilinmeyen tür ve bozuk yük atılır.
+
+### 4.3 Yükler ve saat
+
+- Yük = `:core` mesajının JSON'u (`toJson`/`parse`), UTF-8; teklifler `{schemaVersion: 1, offers: [...]}`, rol `{schemaVersion: 1, role}`.
+- Eşten gelen yüklerdeki zamanlar `yerel = eşin saati − fark` ile bu telefonun saatine çevrilir (3.9): `ShiftState` başlangıç/bitiş/üretim, teklif ilk/son görülme ve bitiş, aşama olayları ve bitiş, hedef istek anı, enerji penceresi (Receiver kendi örneklerini kendi saatiyle okur), batarya özeti anı, rota hedefi/ölçümü/güncellemesi. Gün özeti saat taşımaz.
+- Vardiya izlemede kimlik ham (eşin saatindeki) başlangıç/bitiştir: saat farkı tahmini oynasa da aynı vardiya bir kez işlenir.
+
+### 4.4 Portlar (modüller farkı görmez)
+
+- **Provider:** `Orders.bindScooter` ve `BatteryRuntime.bind` uzak `ScooterBridge`'i alır: `live` = son `BatterySummary` (yalnız iç/harici %, menzil, sıcaklık; hız yok), bağlıyken ve özet ≤ 75 sn ise canlı; `batteryPct()` yalnız canlıyken; `steps` boş (sipariş başına Wh Provider'da ölçülmez, enerji satırlarında); `orderAccepted/Done` Receiver'da aşamalardan türetilir (4.6). `NavController.forward` hedefi Receiver'a yollar.
+- **Receiver:** `DayRuntime.bindOrders` uzak `OrderEvents`'i alır (teklifler 15 sn ileti gelmezse ve bağlantı kopunca boşalır; aşamalar ve gün özeti son hâlinde kalır). Siparişler sekmesinin üstünde Provider kartı (vardiya, teklifler, açık sipariş, gün özeti).
+- **Tek telefon:** `Orders.events` (yeni `OrderEvents` üreticisi: vardiyada 500 ms, kapalıyken 5 sn; gün özeti 5 sn) `DayRuntime.bindOrders`'a bağlanır (A6.8'in açık işi kapandı).
+
+### 4.5 Navigasyon hedefi
+
+Provider'da `LinkIntake` → `NavController.onExternalText` hedefi çözer; 60 m yakınlık denetiminden sonra `forward` bağlıysa `NavTarget`'ı yollar ("Rota öteki telefonda açılıyor"), bu telefonda rota açılmaz. Bağlı değilse ya da 8 sn içinde onay gelmezse rota Provider'da açılır. Receiver aynı `requestId`'yi bir kez açar ve harita sekmesine geçer; TTL'den (2 dk) eski hedefi açmaz (Provider zaten açtı). Etiket restoran adı ya da adres metni (S5).
+
+### 4.6 Enerji dönüşü
+
+- Provider'da ekonomi satırı yazılırken `energy(from, to)`: istek teslim zorunlu gider; bağlıysa en çok 5 sn beklenir, yanıt gelirse satıra girer. Gelmezse (ya da bağlı değilse hemen) satır `not_measured` yazılır, istek kuyrukta kalır.
+- Geç yanıt `ScooterBridge.late`'e düşer → `EconomicsObserver.lateEnergy` pencerenin (başladığı/bittiği gün) ölçülmemiş son satırının kopyasını yeni damga ve ölçülen enerjiyle ekler (okuyucular dönem başına son satırı alır). İstek kimliği pencereyi taşır (`e1:<from>:<to>:<uuid>`): Provider yeniden başlasa da eşleşir. Zaten ölçülmüş satır ve ölçülmemiş yanıt düzeltme yazmaz.
+- Receiver aynı `requestId`'ye aynı yanıtı verir (teslim zorunlu tekrarı). Aşamalardan: yeni açık sipariş → `orderAccepted` (ilk olay anı), kapanan → `orderDone` (bitiş anı); ilk iletideki açık siparişler sürüyor sayılır (sayaç sıfırlanmaz).
+
+### 4.7 Android
+
+- `LinkHub` (süreçte tek): rol, `LinkRuntime`, `PhoneBridge`, eş kaydı/bilgisi, eşleştirme penceresi, bildirimler (eşleşti, süre doldu, eş kaldırdı); saniyede bir `tick`. `:app` `TwoPhone.start` `NavRuntime`'dan sonra `localFor` (role göre yerel portlar) ve `onBridge` (yeniden bağlama) verir.
+- `LinkService`: mod açık ve eşleşmişken ya da eşleştirme penceresinde ön plan servisi, `connectedDevice` (`CHANGE_NETWORK_STATE`), bildirim **7403** kanal **`link`** (LOW, ongoing; metin bağlantı durumu). Her başlatış `startForeground`'a varır (CrashGuard).
+- Vardiya (Receiver): Provider'ın her başlangıcı/bitişi bir kez `ShiftHub.start/stop("link")`; Receiver'da daha sonra elle verilen karar ezilmez (yerel bitiş Provider'ın başlangıcından sonraysa yeniden açılmaz; yerel başlangıç Provider'ın bitişinden sonraysa durdurulmaz).
+
+### 4.8 Gizlilik (S5)
+
+Giden her yük `ReceiverSafety`'den geçer: anahtarında `customername`, `customerphone`, `phone`, `tel`, `note`, `comment`, `instruction`, `firstname`, `lastname`, `fullname`, `recipient` geçen ya da `name`/`customer` olan yük yollanmaz (`UnsafePayload`, hata kaydı yalnız anahtar adı). Tipler bu alanları zaten taşımaz; `TwoPhonePrivacyTest` sipariş akışında adı, telefonu, notu, talimatı ve kapı kodu olan bir teklifin ve siparişin yükünde bunların olmadığını, adres metninin olduğunu denetler.
+
+### 4.9 Testler
+
+`logic/link` +26: `LinkPayloadsTest` 5 (tür tablosu, gidiş-dönüş, saat düzeltmesi, bozuk yük, S5 süzgeci), `PhoneBridgeTest` 17 (rol çakışması, teklif hız sınırı ve tazeleme, sessizlik/kopmada boşalma, aşamalar ve sipariş sayacı, gün özeti, vardiya izleme ve elle karar, hedefin bir kez açılması, yerel yedek, enerji yanıtı, geç enerji ve yeniden başlatmadan sonra eşleşme, tekrar isteğe aynı yanıt, batarya özeti → canlı değer, rota hız sınırı, yön süzgeci, saat), `TwoPhoneLinkTest` 2 (gerçek `LinkStack` + `FakeNet`, saati 7,3 sn farklı telefonlar: vardiya, teklif, hedef, batarya, enerji penceresi), `LinkViewTest` 2; `logic/economics` `LateEnergyTest` 2; `logic/orders` `OrderDaySummaryTest` 1; `logic/map` `NavControllerForwardTest` 3; `logic/app` `TwoPhonePrivacyTest` 1; `CrashGuardTest` ve `NotificationIdsTest` güncellendi.
+
+### 4.10 Ekranlar
+
+Daha fazla → **2 telefon modu**: rol (Kapalı / Provider / Receiver) ve rol notu, hotspot notu, durum kartı (`LinkView.lines`: bağlı Wi-Fi/Bluetooth + RTT, aranıyor + ret nedeni, yerel ağ/Bluetooth eksikliği, rol çakışması, uygulama sürümü farkı), bu telefonun ve eşin parmak izi, "Eşleştirme QR'ı göster" (ZXing, 5 dk geri sayım, vazgeç), "Öteki telefonun QR'ını tara" (Google code scanner), "Eşleşmeyi kaldır" (onaylı). Receiver'da Siparişler sekmesinin, Provider'da Scooter sekmesinin üstünde öteki telefonun kartı.
+
+### 4.11 Açık kalan (A8.3 sonrası)
+
+- Provider'da sipariş başına Wh (`TripRecord.usedWh`, gün raporunun sipariş enerjisi) ölçülmez: enerji yalnız `economics-energy.jsonl` bacak satırlarında. Gün raporunun bacak satırlarından Wh alması ayrı iş (karar gerekir).
+- Receiver'ın kendi ev kuralı (otomatik vardiya) kapatılmadı; iki telefon birlikte olduğundan çakışma beklenmez, telefonda görülür.
+- Geç enerji düzeltmesi bağlıyken 5 sn'lik beklemeyle ekonomi yazıcısını tutar (bağlıyken yanıt Wi-Fi'da ~0,1 sn beklenir); telefonda ölçülür.
+- Tanı ekranı (`MessengerStats`, kuyruk boyu) ve LINK.md Bölüm 2 ölçümü A8.4/A10'da.
+
+### 4.12 Metin onayı
+
+`LinkText` ve `NavText.FORWARDED` AZ metinleri onay bekler (M-L-1).
