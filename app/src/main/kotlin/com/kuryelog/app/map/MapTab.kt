@@ -109,7 +109,7 @@ fun MapTab(
             footer = {
                 Column(Modifier.fillMaxWidth()) {
                     wrongWay()
-                    state.nav.stops.firstOrNull()?.let { ArrivalAddressCard(it.label, it.unitNote) }
+                    state.nav.activeStop?.let { ArrivalAddressCard(it.label, it.unitNote) }
                 }
             },
         )
