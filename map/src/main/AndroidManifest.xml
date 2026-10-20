@@ -1,2 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <application>
+        <!-- A6.6 yalnız-navigasyon (MAP.md 7.12, 7.17 SORU-N4): gün bitince açık rota ≤90 dk; tür location. -->
+        <service
+            android:name="com.kuryelog.app.map.NavOnlyService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+    </application>
+</manifest>

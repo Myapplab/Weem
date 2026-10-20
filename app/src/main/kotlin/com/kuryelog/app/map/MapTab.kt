@@ -57,6 +57,8 @@ data class MapTabState(
     val mapOnly: Boolean = false,
     /** Klavye açık: sol göstergeler ve alt panel yok. */
     val keyboard: Boolean = false,
+    /** Rota paneli açık (`route-fab` ✕ gösterir). */
+    val routeOpen: Boolean = false,
 )
 
 /** Harita sekmesinin eylemleri; ekranı kuran (`MapScreen`) bağlar. Dolmayan yuvalar (A6.6–A6.9) boş kalır. */
@@ -180,7 +182,7 @@ fun MapTab(
                             Spacer(Modifier.width(8.dp))
                             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 locate()
-                                RouteFab(actions.onRouteFab, lang = lang)
+                                RouteFab(actions.onRouteFab, lang = lang, open = state.routeOpen, busy = state.nav.busy, error = state.nav.error != null)
                             }
                         }
                     }
@@ -190,7 +192,7 @@ fun MapTab(
                         Spacer(Modifier.height(10.dp))
                         wrongWay()
                         routePanel()
-                        RouteFab(actions.onRouteFab, lang = lang)
+                        RouteFab(actions.onRouteFab, lang = lang, open = state.routeOpen, busy = state.nav.busy, error = state.nav.error != null)
                         Spacer(Modifier.height(8.dp))
                         bar()
                     }
