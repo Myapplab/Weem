@@ -82,6 +82,9 @@ class RideLogStore(private val dir: File, private val zone: ZoneId) {
         private val REPORT_CLOCK = Regex("_(\\d{2})(\\d{2})\\.gun\\.json$")
         private val DAY = Regex("^\\d{4}-\\d{2}-\\d{2}$")
 
+        /** Ad kayıt kalıbına uyuyor mu (içe aktarma, A7.1). */
+        fun isLogName(name: String): Boolean = NAME.matches(name)
+
         /** Aktif sürüş dosyası adı kalıbı (`ride.active.v1`). */
         val RIDE_FILE = Regex("^\\d{4}-\\d{2}-\\d{2}_ride_\\d+\\.jsonl$")
 

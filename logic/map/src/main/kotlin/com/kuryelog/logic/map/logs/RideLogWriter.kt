@@ -7,6 +7,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.io.IOException
+import java.io.Reader
 import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.roundToLong
@@ -18,6 +19,7 @@ import kotlin.math.roundToLong
  */
 class RideLogWriter(private val dir: File, private val prefs: MapPrefs, private val clock: Clock) {
     private val lock = Any()
+    private val importLock = Any()
     private val ioLock = Any()
     private val buffers = LinkedHashMap<String, StringBuilder>()
     private var dayId: String? = null
@@ -161,8 +163,10 @@ class RideLogWriter(private val dir: File, private val prefs: MapPrefs, private 
         return RideLogStore(dir, clock.zone()).entries()
     }
 
-    fun isActive(e: RideLogEntry): Boolean = synchronized(lock) {
-        enabled && dayId != null && (e.name == rideFile || e.name == "${dayDate ?: dayOf(clock.wallMs())}.jsonl")
+    fun isActive(e: RideLogEntry): Boolean = isActiveName(e.name)
+
+    private fun isActiveName(name: String): Boolean = synchronized(lock) {
+        enabled && dayId != null && (name == rideFile || name == "${dayDate ?: dayOf(clock.wallMs())}.jsonl")
     }
 
     /** Etkin sürüş ve gün dosyası silinemez (`IllegalStateException("Aktif kayıt silinemez")`). */
@@ -183,6 +187,12 @@ class RideLogWriter(private val dir: File, private val prefs: MapPrefs, private 
     fun export(exportDir: File, day: String? = null): File {
         flush()
         return RideLogStore(dir, clock.zone()).export(File(exportDir, (clock.wallMs() * 1000).toString()), day)
+    }
+
+    /** YolGo (ya da WEEM) `duzyol-journal-v1` dosyasını içe aktarır (A7.1, MAP.md 12.17); var olan ve etkin kayıt ezilmez. */
+    fun importJournal(input: Reader): JournalImportResult {
+        flush()
+        return synchronized(importLock) { JournalImport.import(input, dir, ::isActiveName) }
     }
 
     /** Kapanışta: açık sürüş kapanmaz (süreç yeniden başlayınca `ride.active.v1` ile sürer); tampon boşaltılır. */
