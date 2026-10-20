@@ -21,6 +21,11 @@ import com.kuryelog.logic.map.roads.RoadFiles
 import com.kuryelog.logic.map.roads.RoadHaptic
 import com.kuryelog.logic.map.roads.VolumeDispatch
 import com.kuryelog.logic.map.roads.VolumeEnv
+import com.kuryelog.logic.map.roads.RoadsText
+import com.kuryelog.logic.map.graph.RoadGraph
+import com.kuryelog.logic.map.route.StreetList
+import com.kuryelog.logic.map.route.StreetRatios
+import com.kuryelog.logic.map.ui.ToastTone
 import com.kuryelog.logic.map.route.StreetPrefsStore
 import com.kuryelog.logic.map.settings.MapSettings
 import com.kuryelog.logic.map.surface.MarkStore
@@ -50,6 +55,9 @@ internal class RoadFilesAndroid(private val mapDir: File) : RoadFiles {
     }
 }
 
+/** Uzun basış menüsünün Y12 satırları için basılan yol bilgisi. */
+data class PressedRoadInfo(val rateSubtitle: String, val badRatioTitle: String, val wwAllowed: Boolean, val blocked: Boolean)
+
 /**
  * Yol kalitesi öğrenmenin (Y12) Android bağı (MAP.md 9.12 `RoadsRuntime`): [book] (`RoadBook`), kalite kartı [prompt], ses tuşları [onKeyEvent].
  * **S26:** `MapSettings.roadLearning` kapalıyken (varsayılan) öğrenme kapsamı açılmaz, ters yön sorusu çıkmaz, ses tuşları yakalanmaz; elle girilmiş ve
@@ -62,7 +70,7 @@ class RoadsRuntime internal constructor(
     private val scope: CoroutineScope,
     private val settings: StateFlow<MapSettings>,
     private val lang: () -> Lang,
-    streets: StreetPrefsStore,
+    private val streets: StreetPrefsStore,
     private val streetsChanged: () -> Unit,
 ) {
     private val clock = Clock.Jvm
@@ -80,7 +88,8 @@ class RoadsRuntime internal constructor(
         override fun here(): GeoPoint? = nav.here()
         override fun suggestion(): WrongWayEvent? = nav.state.value.suggestion
         override fun clearSuggestion() = nav.clearSuggestion()
-        override fun replanIfRoute() = nav.replanIfRoute()
+        // Yeniden hesap `routeRev` üzerinden (aşağıdaki girdiler akışı); burada ikinci kez istenmez.
+        override fun replanIfRoute() = Unit
     }
     private val volume = VolumeDispatch(book, clock, prompt, env)
     private val main = Handler(Looper.getMainLooper())
@@ -100,7 +109,6 @@ class RoadsRuntime internal constructor(
     init {
         toasts.onChange = { toastFlow.value = it }
         book.haptic = ::vibrate
-        prompt.onSaved = { nav.replanIfRoute() }
         RideLogRuntime.get(app).let { log -> book.log = { name, data -> log.writer.event(name, data) } }
         DayDeletionRuntime.get(app).deleteContributions = { book.deleteContributions(it) }
         nav.onMatchedFix = { fix, info ->
@@ -119,13 +127,16 @@ class RoadsRuntime internal constructor(
         scope.launch {
             var lastRoute = -1
             var lastApproved = book.state.approvedRev
-            combine(MapData.controller(app).state.map { it.graph }.distinctUntilChanged(), book.states) { g, s -> g to s }.collect { (g, s) ->
-                nav.setRoadInputs(book.forPlan(g), replan = lastRoute >= 0 && s.routeRev != lastRoute)
-                lastRoute = s.routeRev
+            val graphs = MapData.controller(app).state.map { it.graph }.distinctUntilChanged()
+            val threshold = settings.map { it.wwMaxProblemPct }.distinctUntilChanged()
+            combine(graphs, book.states, threshold) { g, s, _ -> g to s }.collect { (g, s) ->
+                // Önce sokak kararları (onay/kara liste) denetleyiciye, sonra girdiler: yeniden hesap güncel kararlarla yapılır.
                 if (s.approvedRev != lastApproved) {
                     lastApproved = s.approvedRev
                     streetsChanged()
                 }
+                nav.setRoadInputs(book.forPlan(g), replan = lastRoute >= 0 && s.routeRev != lastRoute)
+                lastRoute = s.routeRev
             }
         }
         scope.launch {
@@ -185,6 +196,58 @@ class RoadsRuntime internal constructor(
     private fun armDue() {
         main.removeCallbacks(due)
         if (volume.pending) main.postDelayed(due, VolumeDispatch.DOUBLE_MS)
+    }
+
+    // ---------------------------------------------------------------- Uzun basış (MAP.md 6.7, 9.4.2, 9.7, 9.8.5, 9.8.6)
+
+    /** Basılan yolun Y12 satır verisi: elle puan alt yazısı, kötü kesim oranı başlığı, ww kesimi izni, kapalı mı. */
+    fun pressed(g: RoadGraph, edge: Int): PressedRoadInfo {
+        val way = g.osmIdOf(edge)
+        val l = lang()
+        return PressedRoadInfo(
+            rateSubtitle = RoadsText.rateSubtitle(l, book.state.k.ways[way]),
+            badRatioTitle = StreetRatios.text(StreetRatios.of(g, way, book.state.marks), l),
+            wwAllowed = book.wwSegAllowed(g, edge),
+            blocked = way in streets.current.blocked,
+        )
+    }
+
+    /** 👍 (90) / 👎 (25): ad "isimsiz yol" ise yazılmaz; şerit; açık rota yeniden hesaplanır (`routeRev`). */
+    fun rateThumb(g: RoadGraph, edge: Int, rating: Int) {
+        val l = lang()
+        val raw = g.nameOf(edge)
+        book.rate(g.osmIdOf(edge), rating, raw)
+        val name = raw.ifEmpty { RoadsText.unnamed(l) }
+        toasts.show(MapToast(RoadsText.rated(l, name, rating), if (rating >= 50) ToastTone.GREEN else ToastTone.ORANGE, 4))
+    }
+
+    /** "Elle yüzey puanı": % kartı. */
+    fun openRate(g: RoadGraph, edge: Int) = prompt.open(g.osmIdOf(edge), g.nameOf(edge).ifEmpty { RoadsText.unnamed(lang()) })
+
+    /** "Burada yol yok" / "Bu sokağın tamamı yok" + "Geri al" (7 sn); rota kendiliğinden yeniden hesaplanır (hayalet kümesi değişti). */
+    fun markGhost(g: RoadGraph, edge: Int, all: Boolean) {
+        val l = lang()
+        val mark = book.markGhost(g, edge, all)
+        toasts.show(
+            MapToast(RoadsText.ghostToast(l, mark.name, mark.all), ToastTone.ORANGE, 7, RoadsText.undo(l)) {
+                book.removeGhost(mark)
+                toasts.hide()
+            },
+        )
+    }
+
+    /** Ana cadde kesiminde ters yön izni ver / kaldır. */
+    fun toggleWwSegment(g: RoadGraph, edge: Int) {
+        val allow = !book.wwSegAllowed(g, edge)
+        book.setWwSegment(g, edge, allow)
+        toasts.show(MapToast(RoadsText.wwSegToast(lang(), g.nameOf(edge), allow), ToastTone.GREEN, 4))
+    }
+
+    /** "Bu yolu tamamen kapat" / "Yol kapatmayı kaldır" (Y8 kara liste). */
+    fun toggleBlock(g: RoadGraph, edge: Int) {
+        val way = g.osmIdOf(edge)
+        if (way in streets.current.blocked) streets.remove(StreetList.BLOCKED, way) else streets.block(way, g.nameOf(edge).ifEmpty { RoadsText.unnamed(lang()) })
+        book.streetsEdited()
     }
 
     /** Uygulama arka plana geçti: zorla kayıt. */

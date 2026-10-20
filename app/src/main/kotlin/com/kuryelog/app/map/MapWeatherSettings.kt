@@ -161,6 +161,7 @@ fun MapSettingsScreen(
         "dataset" -> { DatasetHost(lang, shiftDay = null) { sub = null }; return }
         "tasks" -> { TasksHost(lang) { sub = null }; return }
         "reminders" -> { ReminderSettingsHost(lang) { sub = null }; return }
+        "roads" -> { RoadsHost(lang, onBack = { sub = null }); return }
     }
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -179,6 +180,7 @@ fun MapSettingsScreen(
         }
         MapDataSection(lang)
         MapsKeySection(lang)
+        RoadsSettingsSection(lang, onOpen = { sub = "roads" })
         for ((key, title) in listOf(
             "ridelogs" to RideLogText.TITLE.get(lang), "dataset" to DatasetText.TITLE.get(lang), "tasks" to TaskText.TITLE.get(lang), "reminders" to ReminderText.SECTION.get(lang),
         )) {

@@ -36,7 +36,7 @@ enum class RoadHaptic { HEAVY, SELECTION, MEDIUM, VIBRATE }
 class RoadState(
     val k: RoadKnowledge,
     val question: WwQuestion? = null,
-    /** Onaylı sokak kümesi her değiştiğinde artar (harita katmanı yenilemesi, yeniden rota). */
+    /** Sokak kararları (`streets.*`: onay, kara liste, eğim) her değiştiğinde artar (harita katmanı, denetleyiciye yeniden yükleme). */
     val approvedRev: Int = 0,
     /** Elle değişiklikte artar (yol kalitesi katmanı yenilemesi); otomatik kayıt artırmaz. */
     val statsRev: Int = 0,
@@ -434,6 +434,7 @@ class RoadBook(
             save(force = true)
         }
         log("bad_road_clear", mapOf("way" to way))
+        approvedRev++
         routeRev++
         emit()
         true
@@ -446,6 +447,16 @@ class RoadBook(
         routeRev++
         emit()
     }
+
+    /** Yollarım'dan onay kaldırma gibi olaysız sokak düzenlemesi: katman ve rota sayaçları. */
+    fun streetsEdited() = synchronized(lock) {
+        approvedRev++
+        routeRev++
+        emit()
+    }
+
+    /** Kalite toleransı gibi yalnız ekranı yenileyen değişiklik. */
+    fun refresh() = synchronized(lock) { emit() }
 
     // ---------------------------------------------------------------- Rota girdileri
 

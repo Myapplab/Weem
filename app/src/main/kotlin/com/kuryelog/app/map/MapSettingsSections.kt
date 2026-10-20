@@ -1,5 +1,9 @@
 package com.kuryelog.app.map
 
+import com.kuryelog.logic.map.roads.RoadsText
+import androidx.compose.ui.platform.testTag
+import androidx.compose.material3.Switch
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -155,6 +159,44 @@ fun MapsKeySection(lang: Lang) {
         TextButton(onClick = { runCatching { uri.openUri("https://console.cloud.google.com/apis/credentials") } }) { Text(MapText.MAPS_KEY_OPEN.get(lang)) }
         TextButton(onClick = { runCatching { uri.openUri("https://console.cloud.google.com/apis/library/maps-android-backend.googleapis.com") } }) {
             Text(MapText.MAPS_SDK_OPEN.get(lang))
+        }
+    }
+}
+
+/**
+ * Harita ayarları → "Yollarım" (MAP.md 9.8.1, 9.5; S26): "Yol kalitesi öğrenme" ana anahtarı (varsayılan kapalı), ses tuşu anahtarı (öğrenme kapalıyken
+ * pasif) ve "Yolları görüntüle" (Kalite · ters yön · yol yok · bisiklet).
+ */
+@Composable
+fun RoadsSettingsSection(lang: Lang, onOpen: () -> Unit) {
+    val ctx = LocalContext.current
+    val settings by MapSettingsRepo.settings(ctx).collectAsState()
+    SectionCard(RoadsText.settingsGroup()) {
+        Row(
+            Modifier.fillMaxWidth().clickable { ctx.safely { MapSettingsRepo.update(ctx) { it.copy(roadLearning = !it.roadLearning) } } }.testTag("road-learning"),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(RoadsText.learningSwitch(lang), style = MaterialTheme.typography.bodyLarge)
+                Text(RoadsText.learningSwitchSub(lang), style = MaterialTheme.typography.bodySmall)
+            }
+            Switch(checked = settings.roadLearning, onCheckedChange = null)
+        }
+        Row(
+            Modifier.fillMaxWidth().padding(top = 8.dp).clickable(enabled = settings.roadLearning) {
+                ctx.safely { MapSettingsRepo.update(ctx) { it.copy(volumeKeys = !it.volumeKeys) } }
+            },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(RoadsText.volumeKeys(lang), style = MaterialTheme.typography.bodyMedium)
+                Text(RoadsText.volumeKeysSub(lang), style = MaterialTheme.typography.bodySmall)
+            }
+            Switch(checked = settings.roadLearning && settings.volumeKeys, onCheckedChange = null, enabled = settings.roadLearning)
+        }
+        Column(Modifier.fillMaxWidth().padding(top = 8.dp).clickable(onClick = onOpen).testTag("open-roads")) {
+            Text(RoadsText.viewRoads(lang), style = MaterialTheme.typography.bodyLarge)
+            Text(RoadsText.viewRoadsSub(lang), style = MaterialTheme.typography.bodySmall)
         }
     }
 }

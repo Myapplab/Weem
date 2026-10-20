@@ -1,5 +1,6 @@
 package com.kuryelog.app.map
 
+import com.kuryelog.logic.map.route.QualityRating
 import android.os.VibrationEffect
 import android.os.Vibrator
 import androidx.activity.compose.BackHandler
@@ -159,6 +160,15 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
             nowMs = System.currentTimeMillis()
         }
     }
+    // Ters yön sorusunun "~N sn" sayacı için saniyelik saat (yalnız soru açıkken).
+    var nowMsFast by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    val askOpen = runtime.roads.book.states.collectAsState().value.question != null
+    LaunchedEffect(askOpen) {
+        while (askOpen) {
+            nowMsFast = System.currentTimeMillis()
+            delay(1_000)
+        }
+    }
     // Bildirim izni (Android 13+): gün açık ve hava bildirimi açıkken bir kez sorulur.
     val needsPermission by weather.needsPermission.collectAsState()
     val askPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { weather.permissionAsked() }
@@ -221,6 +231,26 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
         dayRt.steps.collect { step ->
             step.toasts.lastOrNull()?.let { t -> banner = DayBanner(++bannerSeq, t.text, t.tone.toTone(), 5) }
             if (step.haptic) vibrate(ctx, NavHaptic.HEAVY)
+        }
+    }
+    // Y12 (A6.11): yol öğrenme şeridi ("Onaylandı", "Kötü nokta", "Yol yok" …), ters yön sorusu ve kalite kartı.
+    val roads = runtime.roads
+    val roadState by roads.book.states.collectAsState()
+    val qualityAsk by roads.prompt.state.collectAsState()
+    var roadsOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(roads) {
+        roads.toast.collect { t -> banner = t?.let { DayBanner(++bannerSeq, it.text, it.tone, it.seconds, it.actionLabel, it.onAction) } }
+    }
+    val wwView = run {
+        val q = roadState.question
+        val live = roadState.live
+        if (q != null) {
+            WrongWayView(true, q.pass.name, q.pass.incidents, (20 - ((nowMsFast - q.askedAtMs) / 1000).toInt()))
+        } else if (live != null) {
+            val st = roadState.k.ww[live.way]
+            WrongWayView(liveName = live.name, liveRatioPct = st?.takeIf { it.passes > 0 }?.let { (it.ratio * 100).roundToInt() })
+        } else {
+            WrongWayView()
         }
     }
     val moveEveryMs = if (google) MapCamera.GOOGLE_MOVE_MS else MapCamera.MAPLIBRE_MOVE_MS
@@ -374,6 +404,13 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
         ),
         toast = { NavToastBanner(toast, dark); DayToastBanner(banner, dark) },
         routePanel = { if (panelOpen && nav.hasPanelInfo()) RoutePanel(nav, lang, dark, panelActions) },
+        // Y12 kartları (MAP.md 9.4.4): varış odağında yalnız ters yön kartı; yalnız-harita kipinde hiçbiri (MapTab çizmez).
+        wrongWay = {
+            Column(Modifier.fillMaxWidth()) {
+                if (!focusOn) qualityAsk?.let { RoadPromptCard(it, lang) }
+                WrongWayCard(wwView, lang, onAnswer = { roads.book.answer(it) }, onReport = { roads.book.reportProblem() }, modifier = Modifier.padding(horizontal = 8.dp))
+            }
+        },
         // Sol göstergeler (A6.7); vardiya kapalıyken ya da yarıda kalmışken başlat/bitir kartı üstte.
         metrics = {
             MapMetrics(
@@ -384,6 +421,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
                 lang,
                 onMode = { m: RideMode -> navCtl.setMode(m) },
                 onSpeedChoices = { list -> ctx.safely { MapSettingsRepo.update(ctx) { it.copy(speedChoices = list) } } },
+                onRoadDetails = { roadsOpen = true },
             )
         },
         topCard = { if (!active || interrupted) ShiftCard(lang) },
@@ -417,14 +455,18 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
         val road = remember(hit, bikeRev) {
             if (g == null || hit == null) null else {
                 val flags = g.flagsOf(hit.edge)
+                val info = roads.pressed(g, hit.edge)
                 PressedRoad(
-                    g.nameOf(hit.edge), g.classOf(hit.edge).isMainRoad, (flags and (WayFlag.ONEWAY_FWD or WayFlag.ONEWAY_BWD)) != 0, false, false,
-                    BikewayMenu.action(g, hit.edge, runtime.bikeway.marks),
+                    g.nameOf(hit.edge), g.classOf(hit.edge).isMainRoad, (flags and (WayFlag.ONEWAY_FWD or WayFlag.ONEWAY_BWD)) != 0, info.wwAllowed, info.blocked,
+                    BikewayMenu.action(g, hit.edge, runtime.bikeway.marks), rateSubtitle = info.rateSubtitle, badRatioTitle = info.badRatioTitle,
                 )
             }
         }
         val rows = remember(lang, road, place) { LongPressMenu.rows(road, place?.let { PressedPlace(it.kind, it.name) }, lang).filter { it.action in DAY_ROWS } }
-        LongPressSheet(rows, onDismiss = { pressed = null }, onPick = { a ->
+        LongPressSheet(rows, onDismiss = { pressed = null }, onThumb = { good ->
+            pressed = null
+            if (g != null && hit != null) roads.rateThumb(g, hit.edge, if (good) QualityRating.GOOD else QualityRating.BAD)
+        }, thumbHints = LongPressMenu.thumbHints(lang), onPick = { a ->
             pressed = null
             when (a) {
                 LongPressAction.GO_TO -> navCtl.goTo(p)
@@ -453,6 +495,11 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
                 }
                 LongPressAction.POI_EDIT -> poiEdit = PoiEditTarget(p, place)
                 LongPressAction.ADD_TASK -> taskAt = p
+                LongPressAction.RATE_ROAD -> if (g != null && hit != null) roads.openRate(g, hit.edge)
+                LongPressAction.NO_ROAD_HERE -> if (g != null && hit != null) roads.markGhost(g, hit.edge, all = false)
+                LongPressAction.NO_STREET -> if (g != null && hit != null) roads.markGhost(g, hit.edge, all = true)
+                LongPressAction.WRONG_WAY_SEGMENT -> if (g != null && hit != null) roads.toggleWwSegment(g, hit.edge)
+                LongPressAction.BLOCK_ROAD -> if (g != null && hit != null) roads.toggleBlock(g, hit.edge)
                 else -> Unit
             }
         })
@@ -467,6 +514,10 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
                 poiEdit = null
             },
         )
+    }
+    if (roadsOpen) {
+        // Yollarım (A6.11): Harita'nın alt ekranı; ses tuşları burada da yakalanır.
+        RoadsHost(lang, onBack = { roadsOpen = false })
     }
     if (statsOpen) {
         // İstatistik (A6.9): tam ekran; elle günü bitirince o güne odaklı açılır.
@@ -526,6 +577,9 @@ private val DAY_ROWS = setOf(
     LongPressAction.GO_TO, LongPressAction.ADD_STOP, LongPressAction.GO_TO_RESTAURANT, LongPressAction.PICK_AS_RESTAURANT, LongPressAction.CURB_WAIT,
     LongPressAction.CURB_REMOVE, LongPressAction.BIKEWAY, LongPressAction.LIGHT_HERE, LongPressAction.NO_LIGHT, LongPressAction.POI_EDIT,
     LongPressAction.ADD_TASK,
+    // Y12 ve sokak kapatma (A6.11). "Saatli çift yön izni" (ROAD_HOURS) saat düzenleyicisiyle sonra.
+    LongPressAction.RATE_ROAD, LongPressAction.BAD_RATIO, LongPressAction.BLOCK_ROAD, LongPressAction.WRONG_WAY_SEGMENT,
+    LongPressAction.NO_ROAD_HERE, LongPressAction.NO_STREET,
 )
 
 /** Yer düzeltme penceresinin hedefi: basılan nokta ve (varsa) düzeltilen yer. */

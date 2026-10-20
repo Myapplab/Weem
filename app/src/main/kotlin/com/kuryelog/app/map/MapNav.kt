@@ -42,6 +42,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -276,15 +278,28 @@ fun SearchOverlay(view: SearchView, lang: Lang, onQuery: (String) -> Unit, onSub
 /** Uzun basış sayfası (MAP.md 6.7): satıra dokununca sayfa kapanır ve eylem çalışır. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LongPressSheet(rows: List<LongPressRow>, onPick: (LongPressAction) -> Unit, onDismiss: () -> Unit) {
+fun LongPressSheet(
+    rows: List<LongPressRow>,
+    onPick: (LongPressAction) -> Unit,
+    onDismiss: () -> Unit,
+    onThumb: ((Boolean) -> Unit)? = null,
+    thumbHints: Pair<String, String> = "" to "",
+) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = 24.dp).testTag("long-press-sheet")) {
             for (r in rows) {
-                Column(
-                    Modifier.fillMaxWidth().clickable(enabled = r.enabled) { onPick(r.action) }.padding(horizontal = 20.dp, vertical = 12.dp),
-                ) {
-                    Text(r.title, fontWeight = FontWeight.SemiBold, color = if (r.enabled) Color.Unspecified else MaterialTheme.colorScheme.onSurfaceVariant)
-                    r.subtitle?.let { Text(it, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Column(
+                        Modifier.weight(1f).clickable(enabled = r.enabled) { onPick(r.action) }.padding(horizontal = 20.dp, vertical = 12.dp),
+                    ) {
+                        Text(r.title, fontWeight = FontWeight.SemiBold, color = if (r.enabled) Color.Unspecified else MaterialTheme.colorScheme.onSurfaceVariant)
+                        r.subtitle?.let { Text(it, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    }
+                    // Elle puan satırı: 👍 (%90) / 👎 (%25) (MAP.md 9.4.2).
+                    if (r.thumbs && onThumb != null) {
+                        TextButton(onClick = { onThumb(true) }, modifier = Modifier.semantics { contentDescription = thumbHints.first }.testTag("thumb-up")) { Text("👍") }
+                        TextButton(onClick = { onThumb(false) }, modifier = Modifier.semantics { contentDescription = thumbHints.second }.testTag("thumb-down")) { Text("👎") }
+                    }
                 }
             }
         }
