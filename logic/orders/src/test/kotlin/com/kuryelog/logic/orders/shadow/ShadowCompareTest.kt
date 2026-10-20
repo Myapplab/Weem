@@ -51,6 +51,30 @@ class ShadowCompareTest {
     }
     private fun orders(vararg recs: JSONObject) = mapOf("$day/orders.jsonl" to recs.flatMap(::orderRows))
 
+    // ---- A3.11 (S16 (a)): gölge modda bahşiş cevabı yalnız Rawstats'ta ----
+
+    @Test fun aTipAnsweredOnlyInRawstatsIsExpectedNotHard() {
+        val answered = record("trip-1", wolt, t0, 3.94, "ZOO 28", extra = { put("tip", 1.5); put("tip_source", "user_cash_input") })
+        val r = compare(orders(answered), orders(record("trip-1", wolt, t0, 3.94, "ZOO 28")))
+        assertEquals(0, r.hard); assertEquals(0, r.soft)
+        assertEquals(setOf("order.tip_answer", "day.tip_answer"), r.rules(Level.EXPECTED))
+        // Hızlı düğme ve bahşiş düzenleyicisi de kullanıcı cevabıdır.
+        for (source in listOf("user_quick_tip", "user_manual")) {
+            val q = record("trip-1", wolt, t0, 3.94, "ZOO 28", extra = { put("tip", 2.0); put("tip_source", source) })
+            assertEquals(source, 0, compare(orders(q), orders(record("trip-1", wolt, t0, 3.94, "ZOO 28"))).hard)
+        }
+    }
+
+    @Test fun aNetDifferenceThatIsNotTheAnsweredTipStaysHard() {
+        // Bahşiş cevabı 1,5; ama net 2,0 farklı: 0,5'i cevap açıklamaz.
+        val rs = record("trip-1", wolt, t0, 4.44, "ZOO 28", extra = { put("tip", 1.5); put("tip_source", "user_cash_input") })
+        val r = compare(orders(rs), orders(record("trip-1", wolt, t0, 3.94, "ZOO 28")))
+        assertTrue(r.rules(Level.HARD).containsAll(setOf("order.net", "order.fee", "day.net")))
+        // Cevapsız (platform ya da kayıtsız) bahşiş farkı da sert kalır.
+        val noSource = record("trip-1", wolt, t0, 3.94, "ZOO 28", extra = { put("tip", 1.5) })
+        assertTrue(compare(orders(noSource), orders(record("trip-1", wolt, t0, 3.94, "ZOO 28"))).rules(Level.HARD).contains("order.net"))
+    }
+
     @Test fun sameDataNoDifference() {
         val a = orders(record("trip-1", wolt, t0, 3.94, "ZOO 28"), record("trip-2", bolt, t0 + 3_600_000, 2.5, "Shanson Restaurant"))
         val r = compare(a, a)

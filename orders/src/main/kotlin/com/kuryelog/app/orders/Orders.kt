@@ -2,6 +2,7 @@ package com.kuryelog.app.orders
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.location.Geocoder
 import android.os.Handler
 import android.os.Looper
@@ -20,6 +21,7 @@ import com.kuryelog.logic.orders.CourierRecords
 import com.kuryelog.logic.orders.OfferAnnotator
 import com.kuryelog.logic.orders.OrderFlow
 import com.kuryelog.logic.orders.OrderObserver
+import com.kuryelog.logic.orders.OrderSettings
 import com.kuryelog.logic.orders.TripRecord
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -111,6 +113,9 @@ object Orders {
         override val clock: Clock = Shift.AndroidClock
         override fun importing(): Boolean = Store.importing
         override fun phoneBattery(): Int? = Store.phoneBattery(ctx)
+        /** A3.11: anahtar yalnız hata ayıklanabilir (`.dev`) yapıda geçerli; sürüm yapısına ZIP geri yüklemesiyle geçse de soru ve pencereler kapanmaz. */
+        override fun shadowMode(): Boolean =
+            ctx.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0 && OrderSettings.shadowMode(prefs)
         override fun tl(tr: String, az: String): String = Orders.tl(ctx, tr, az)
         /** RS `OrderTracker.resolve/resolveRestaurant`: arka planda `Geocoder`, sonuç ana iş parçacığında. */
         override fun geocode(address: String, done: (DoubleArray?) -> Unit) {
