@@ -142,6 +142,7 @@ Parola AndroidKeyStore AES/GCM anahtarıyla şifreli (`password` = Base64 IV `:`
 | `identity.public` | String: Base64 NO_WRAP(P-256 SEC1 sıkıştırılmamış, 65 bayt) |
 | `peer.id`, `peer.public`, `peer.name`, `peer.pairedAtMs` | eşleşen telefon: cihaz kimliği (küçük harfli UUID), açık anahtarı (Base64 SEC1), cihaz adı (≤ 32 bayt), eşleşme zamanı (Long, ms) |
 | `peer.btAddress` | String: A8.1'in öğrendiği Bluetooth adresi (büyük harf), yoksa yok |
+| `role` | String: 2 telefon rolü `off` \| `provider` \| `receiver` (A8.3, `LINK.md` 4.1); yoksa ya da tanınmazsa `off`. Eşleşme kaldırılınca kalır |
 
 Dosya `MODE_PRIVATE`, yazma eşzamanlı (`commit`). Yedeğe, dışa aktarmaya ve `kuryelog`'a girmez; eşleşme kaldırılınca `peer.*` silinir, `identity.*` kalır.
 

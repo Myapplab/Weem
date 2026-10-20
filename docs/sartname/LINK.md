@@ -246,8 +246,8 @@ Provider'da `LinkIntake` → `NavController.onExternalText` hedefi çözer; 60 m
 
 ### 4.6 Enerji dönüşü
 
-- Provider'da ekonomi satırı yazılırken `energy(from, to)`: istek teslim zorunlu gider; bağlıysa en çok 5 sn beklenir, yanıt gelirse satıra girer. Gelmezse (ya da bağlı değilse hemen) satır `not_measured` yazılır, istek kuyrukta kalır.
-- Geç yanıt `ScooterBridge.late`'e düşer → `EconomicsObserver.lateEnergy` pencerenin (başladığı/bittiği gün) ölçülmemiş son satırının kopyasını yeni damga ve ölçülen enerjiyle ekler (okuyucular dönem başına son satırı alır). İstek kimliği pencereyi taşır (`e1:<from>:<to>:<uuid>`): Provider yeniden başlasa da eşleşir. Zaten ölçülmüş satır ve ölçülmemiş yanıt düzeltme yazmaz.
+- Provider'da ekonomi satırı yazılırken `energy(from, to)`: istek teslim zorunlu gider ve çağrı **beklemeden** null döner; satır `not_measured` yazılır. Neden: satır ekran okuma olayında ana iş parçacığında `runBlocking` ile yazılır (`OrderFlow` gözlemcisi), uzak yanıtı beklemek ANR'dir. (`PhoneBridge` bekleme süresi parametre; 0'dan büyüğü yalnız testte.)
+- Geç yanıt `ScooterBridge.late`'e düşer (bağlıyken Wi-Fi'da ~0,1 sn sonra) → `EconomicsObserver.lateEnergy` pencerenin (başladığı/bittiği gün) ölçülmemiş son satırının kopyasını yeni damga ve ölçülen enerjiyle ekler (okuyucular dönem başına son satırı alır). İstek kimliği pencereyi taşır (`e1:<from>:<to>:<uuid>`): Provider yeniden başlasa da eşleşir. Zaten ölçülmüş satır ve ölçülmemiş yanıt düzeltme yazmaz.
 - Receiver aynı `requestId`'ye aynı yanıtı verir (teslim zorunlu tekrarı). Aşamalardan: yeni açık sipariş → `orderAccepted` (ilk olay anı), kapanan → `orderDone` (bitiş anı); ilk iletideki açık siparişler sürüyor sayılır (sayaç sıfırlanmaz).
 
 ### 4.7 Android
@@ -271,8 +271,9 @@ Daha fazla → **2 telefon modu**: rol (Kapalı / Provider / Receiver) ve rol no
 ### 4.11 Açık kalan (A8.3 sonrası)
 
 - Provider'da sipariş başına Wh (`TripRecord.usedWh`, gün raporunun sipariş enerjisi) ölçülmez: enerji yalnız `economics-energy.jsonl` bacak satırlarında. Gün raporunun bacak satırlarından Wh alması ayrı iş (karar gerekir).
+- Receiver'da vardiyanın Provider'ı izleyerek arka planda açılması Android 12+ ön plan servisi başlatma kısıtına takılabilir (hata kaydedilir; o zaman vardiya Receiver açılınca elle). Telefonda görülür.
 - Receiver'ın kendi ev kuralı (otomatik vardiya) kapatılmadı; iki telefon birlikte olduğundan çakışma beklenmez, telefonda görülür.
-- Geç enerji düzeltmesi bağlıyken 5 sn'lik beklemeyle ekonomi yazıcısını tutar (bağlıyken yanıt Wi-Fi'da ~0,1 sn beklenir); telefonda ölçülür.
+- Her uzak enerji iki satır olur (önce `not_measured`, sonra düzeltme); bacak satırlarının okuyucusu yazılırsa o da pencere başına son satırı almalı.
 - Tanı ekranı (`MessengerStats`, kuyruk boyu) ve LINK.md Bölüm 2 ölçümü A8.4/A10'da.
 
 ### 4.12 Metin onayı

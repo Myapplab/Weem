@@ -131,7 +131,7 @@ class PhoneBridge(
     /**
      * Provider'da uzak `ScooterBridge` (S11: Provider scooter'a bağlanmaz). [ScooterBridge.live] Receiver'ın `BatterySummary`'sinden
      * (yalnız %, menzil, sıcaklık); saniyelik adım yok. [ScooterBridge.energy] isteği teslim zorunlu yollar ve bağlıyken en çok
-     * [energyWaitMs] bekler; zamanında gelmeyen yanıt [ScooterBridge.late]'e düşer (ekonomi düzeltme satırı yazar).
+     * [energyWaitMs] bekler (varsayılan 0: hemen null); zamanında gelmeyen yanıt [ScooterBridge.late]'e düşer (ekonomi düzeltme satırı yazar).
      */
     val scooter: ScooterBridge = object : ScooterBridge {
         override fun orderAccepted(tripId: String, atWallMs: Long) {}
@@ -459,8 +459,11 @@ class PhoneBridge(
         const val ROUTE_MIN_GAP_MS = 1_000L
         /** Receiver hedefi onaylamazsa Provider rotayı bu süre sonra kendisi açar. */
         const val NAV_FALLBACK_MS = 8_000L
-        /** Bağlıyken enerji yanıtı için bekleme (ekonomi satırı yazılırken; geç gelen düzeltme satırı olur). */
-        const val ENERGY_WAIT_MS = 5_000L
+        /**
+         * Enerji yanıtı için bekleme: 0. Ekonomi satırı ekran okuma olayında, ana iş parçacığında `runBlocking` ile yazılır (`OrderFlow`
+         * gözlemcisi); beklemek ANR'ye yol açar. Satır "ölçülmedi" yazılır, yanıt düzeltme satırı olur ([ScooterBridge.late]).
+         */
+        const val ENERGY_WAIT_MS = 0L
         /** Özet 60 sn'de bir gelir: bu süreden eski özet canlı sayılmaz. */
         const val BATTERY_CURRENT_MS = 75_000L
         private const val MAX_ENERGY_WAITING = 256
