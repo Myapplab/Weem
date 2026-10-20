@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -50,6 +52,7 @@ import com.kuryelog.logic.map.ui.LocateAction
 import com.kuryelog.logic.map.ui.LocateButtonRules
 import com.kuryelog.logic.map.ui.MapCamera
 import com.kuryelog.logic.map.ui.MapStyles
+import com.kuryelog.logic.map.route.RideMode
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -88,7 +91,7 @@ fun MapScreen(lang: Lang, dark: Boolean) {
         }
         return
     }
-    LiveMap(lang, dark, data, settings.mapStyle, shift.active, shift.startedAtMs, shift.interrupted)
+    LiveMap(lang, dark, data, settings, shift.active, shift.startedAtMs, shift.interrupted)
 }
 
 private object MapScreenLoad {
@@ -96,10 +99,36 @@ private object MapScreenLoad {
 }
 
 @Composable
-private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, mapStyle: String, active: Boolean, startedAtMs: Long?, interrupted: Boolean) {
+private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com.kuryelog.logic.map.settings.MapSettings, active: Boolean, startedAtMs: Long?, interrupted: Boolean) {
     val ctx = LocalContext.current
     val uri = LocalUriHandler.current
-    val base = MapStyles.resolve(mapStyle, BuildConfig.MAPS_ENABLED)
+    val base = MapStyles.resolve(settings.mapStyle, BuildConfig.MAPS_ENABLED)
+    // Hava (Y10), batarya (Y9) ve navigasyon çalışma zamanları: harita görünürken konum/hava yenilemesi açılır.
+    val nav = remember { NavRuntime.get(ctx) }
+    val weather = remember { WeatherRuntime.get(ctx) }
+    val batteryRt = remember { BatteryRuntime.get(ctx) }
+    DisposableEffect(Unit) {
+        nav.setVisible(true)
+        onDispose { nav.setVisible(false) }
+    }
+    val weatherState by weather.state.collectAsState()
+    val weatherStrip by weather.strip.collectAsState()
+    val battery by batteryRt.state.collectAsState()
+    val scooter by batteryRt.live.collectAsState()
+    val navState by nav.controller.state.collectAsState()
+    val measure by nav.controller.progress.collectAsState()
+    var nowMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(30_000)
+            nowMs = System.currentTimeMillis()
+        }
+    }
+    // Bildirim izni (Android 13+): gün açık ve hava bildirimi açıkken bir kez sorulur.
+    val needsPermission by weather.needsPermission.collectAsState()
+    val askPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { weather.permissionAsked() }
+    LaunchedEffect(needsPermission) { if (needsPermission) { weather.permissionAsked(); askPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS) } }
+    val speeds = remember(navState.plan, settings, battery.percent) { speedOptionsFor(navState.plan, settings.paramsFor(battery.percent), settings.speedChoices) }
     val puck by rememberMapPuck(enabled = true, graph = data.graph)
     var follow by remember { mutableStateOf(true) }
     var headingUp by remember { mutableStateOf(true) }
@@ -145,7 +174,10 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, mapStyle: Str
         onCameraIdle = { _, z, _ -> if (abs(z - zoom) > 0.01) { zoom = z; if (abs(z - MapCamera.STANDARD_ZOOM) > 0.05) autoZoom = false } },
     )
     MapTab(
-        state = MapTabState(day = day, cameraMode = mode, mapOnly = mapOnly, weatherStrip = false, nowMs = System.currentTimeMillis()),
+        state = MapTabState(
+            day = day, cameraMode = mode, mapOnly = mapOnly, weatherStrip = weatherStrip, nowMs = nowMs,
+            weather = WeatherView(weatherState.report, weatherState.failed, weatherState.busy),
+        ),
         lang = lang,
         mapSurface = {
             Box(Modifier.fillMaxSize()) {
@@ -172,9 +204,20 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, mapStyle: Str
                 }
             },
             onShowPanels = { mapOnly = false },
+            onWeatherRefresh = { weather.refresh(force = true) },
         ),
-        // Sol göstergeler A6.7'de (MapMetrics); vardiya kapalıyken ya da yarıda kalmışken başlat/bitir kartı üstte.
-        metrics = {},
+        // Sol göstergeler (A6.7); vardiya kapalıyken ya da yarıda kalmışken başlat/bitir kartı üstte.
+        metrics = {
+            MapMetrics(
+                MapMetricsState(
+                    plan = navState.plan, mode = navState.mode, measure = measure, battery = battery, scooter = scooter, speeds = speeds, nowMs = nowMs,
+                    speedChoices = settings.speedChoices, lowBatteryPct = settings.lowBatteryPct,
+                ),
+                lang,
+                onMode = { m: RideMode -> nav.controller.setMode(m) },
+                onSpeedChoices = { list -> ctx.safely { MapSettingsRepo.update(ctx) { it.copy(speedChoices = list) } } },
+            )
+        },
         topCard = { if (!active || interrupted) ShiftCard(lang) },
     )
     if (askHome) {

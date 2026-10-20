@@ -142,6 +142,12 @@ class BatteryEstimator(private val prefs: MapPrefs, capacityWh: Double, private 
         save()
     }
 
+    /** Araç profili değişti (`settings.vehicleId`): kapasite güncellenir, çapa ve harcama kalır. */
+    @Synchronized
+    fun setCapacity(wh: Double) {
+        if (wh > 0 && wh != _state.value.capacityWh) _state.value = _state.value.copy(capacityWh = wh)
+    }
+
     @Synchronized
     fun onFix(point: GeoPoint, atMs: Long, accuracy: Double, speedMps: Double, flatWhPerM: Double, climbWhPerM: Double, altitude: AltitudeSample?) {
         // Canlıyken tahmin yürütülmez (değer scooter'dan gelir).

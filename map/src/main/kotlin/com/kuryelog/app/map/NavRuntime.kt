@@ -58,8 +58,12 @@ class NavRuntime private constructor(private val app: Context) {
         }
     }
 
-    private val location = NavLocation(app) { controller.onFix(it) }
-    val controller = NavController(RouteEngine(), scope, Clock.Jvm, DestinationResolver(AndroidHttp, geocoder), lang, location)
+    private val location = NavLocation(app) { f ->
+        controller.onFix(f)
+        WeatherRuntime.get(app).onFix(f)
+        BatteryRuntime.get(app).onFix(f)
+    }
+    val controller: NavController = NavController(RouteEngine(), scope, Clock.Jvm, DestinationResolver(AndroidHttp, geocoder), lang, location)
 
     val search = PlaceSearch(
         scope = scope,
@@ -129,11 +133,14 @@ class NavRuntime private constructor(private val app: Context) {
 
     /** Konum: harita önde, gün açık ya da yalnız-nav iken (MAP.md 7.6 kapsam). */
     private fun refreshLocation() {
-        location.setActive(visible || ShiftHub.state.value.active || navOnly.on)
+        val on = visible || ShiftHub.state.value.active || navOnly.on
+        location.setActive(on)
+        BatteryRuntime.get(app).setActive(on)
     }
 
     fun setVisible(on: Boolean) {
         visible = on
+        WeatherRuntime.get(app).setVisible(on)
         refreshLocation()
     }
 
