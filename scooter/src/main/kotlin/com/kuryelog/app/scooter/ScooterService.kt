@@ -100,6 +100,8 @@ class ScooterService : Service() {
         // Every start below came from startForegroundService: it must reach startForeground even when refused, or Android closes
         // the whole app (CORE.md 4.1, CrashGuardTest). Callers already check these, so the refusals are only a safety net.
         if (Scooter.active) { refuseStart(running = true); return START_NOT_STICKY }
+        // S11 (A8.3): 2 telefon modunda Provider rolünde scooter BLE hiç açılmaz (scooter Receiver telefonunda).
+        if (ScooterShiftLink.providerRole()) { refuseStart(running = false); return START_NOT_STICKY }
         if (Scooter.maintenance && !live) { refuseStart(running = false); return START_NOT_STICKY }
         if (intent == null || !permissions(this, live)) { refuseStart(running = false); return START_NOT_STICKY }
         val nm = getSystemService(NotificationManager::class.java)

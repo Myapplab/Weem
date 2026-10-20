@@ -81,6 +81,8 @@ class CrashGuardTest {
                 if (call.contains("ScooterService.")) return@forEach
                 // Yalnız-navigasyon servisi (A6.6) vardiya servisi değil; her başlatışı startForeground'a varır (aşağıda).
                 if (f.name == "NavOnlyService.kt") return@forEach
+                // 2 telefon bağlantı servisi (A8.3) vardiya servisi değil; her başlatışı startForeground'a varır (aşağıda).
+                if (f.name == "LinkService.kt") return@forEach
                 calls++
                 assertTrue("${f.name}: $call", call.contains("ACTION_START") || call.contains("Home.startIntent(") || call.contains("ScooterService.startIntent("))
             }
@@ -90,12 +92,17 @@ class CrashGuardTest {
         val scooter = RepoSource.text("scooter/src/main/kotlin/com/kuryelog/app/scooter/ScooterService.kt")
         val start = RepoSource.body(scooter, "override fun onStartCommand(", "private var fgsType")
         assertFalse(Regex("""\{\s*stopSelf\(\)""").containsMatchIn(start))
-        assertEquals(3, Regex("""refuseStart\(running = """).findAll(start).count())
+        // A8.3: S11 (Provider rolü) dördüncü ret.
+        assertEquals(4, Regex("""refuseStart\(running = """).findAll(start).count())
         assertTrue(RepoSource.body(scooter, "private fun refuseStart(", "private fun begin(").contains("startForeground("))
         val navOnly = RepoSource.text("map/src/main/kotlin/com/kuryelog/app/map/NavOnlyService.kt")
         val navStart = RepoSource.body(navOnly, "override fun onStartCommand(", "companion object")
         assertTrue(navStart.contains("startForeground(NotificationIds.NAV_ONLY_FGS"))
         assertEquals(1, Regex("""stopSelf\(\)""").findAll(navStart.substringBefore("startForeground(")).count())
+        val link = RepoSource.text("link/src/main/kotlin/com/kuryelog/app/link/LinkService.kt")
+        val linkStart = RepoSource.body(link, "override fun onStartCommand(", "companion object")
+        assertTrue(linkStart.contains("startForeground(NotificationIds.LINK_FGS"))
+        assertEquals(1, Regex("""stopSelf\(\)""").findAll(linkStart.substringBefore("startForeground(")).count())
         assertTrue(RepoSource.text(core + "Home.kt").contains("Intent(ctx, ShiftService::class.java).setAction(ShiftMachine.ACTION_HOME_START)"))
     }
 }

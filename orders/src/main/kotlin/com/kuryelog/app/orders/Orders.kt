@@ -15,11 +15,16 @@ import com.kuryelog.logic.core.Clock
 import com.kuryelog.logic.core.KuryelogPrefs
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.core.LogStore
+import com.kuryelog.logic.core.DaySummary
+import com.kuryelog.logic.core.OfferSummary
+import com.kuryelog.logic.core.OrderEvents
 import com.kuryelog.logic.core.ScooterBridge
+import com.kuryelog.logic.core.TripStages
 import com.kuryelog.logic.core.WeatherPort
 import com.kuryelog.logic.core.ShiftMachine
 import com.kuryelog.logic.orders.CourierRecords
 import com.kuryelog.logic.orders.OfferAnnotator
+import com.kuryelog.logic.orders.OrderDaySummary
 import com.kuryelog.logic.orders.OrderFlow
 import com.kuryelog.logic.orders.OrderObserver
 import com.kuryelog.logic.orders.OrderSettings
@@ -28,6 +33,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.util.Locale
@@ -74,6 +83,49 @@ object Orders {
         val app = ctx.applicationContext
         stepJob = scope.launch {
             bridge.steps.collect { step -> Store.guarded(app, "scooter_energy") { flow.scooterEnergy(step.usedWh, step.recoveredWh, step.ms, step.complete) } }
+        }
+    }
+
+    @Volatile private var eventsInstance: OrderEvents? = null
+
+    /**
+     * WEEM `OrderEvents` (plan 4.3; A8.3, LINK.md 4.2): akış vardiyadayken yarım saniyede, kapalıyken 5 sn'de bir okunur ([OrderFlow.offers],
+     * [OrderFlow.stages]); gün özeti ([OrderDaySummary]) 5 sn'de bir. `:map` aşama izleyicisi ve 2 telefon modu (Provider) bunu dinler.
+     */
+    fun events(ctx: Context): OrderEvents = eventsInstance ?: synchronized(this) {
+        eventsInstance ?: FlowEvents(ctx.applicationContext, flow(ctx)).also { eventsInstance = it }
+    }
+
+    private class FlowEvents(private val app: Context, private val flow: OrderFlow) : OrderEvents {
+        private val offersFlow = MutableStateFlow<List<OfferSummary>>(emptyList())
+        private val stagesFlow = MutableStateFlow(TripStages.EMPTY)
+        private val dayFlow = MutableStateFlow<DaySummary?>(null)
+        override val offers: StateFlow<List<OfferSummary>> = offersFlow.asStateFlow()
+        override val stages: StateFlow<TripStages> = stagesFlow.asStateFlow()
+        override val day: StateFlow<DaySummary?> = dayFlow.asStateFlow()
+
+        init {
+            scope.launch {
+                var n = 0
+                while (true) {
+                    val on = Store.shiftOn(app)
+                    Store.guarded(app, "order_events") {
+                        offersFlow.value = flow.offers()
+                        stagesFlow.value = flow.stages()
+                        if (n % DAY_EVERY == 0) dayFlow.value = OrderDaySummary.of(Store.log(app).day(), flow.today())
+                    }
+                    n++
+                    delay(if (on) FAST_MS else SLOW_MS)
+                    if (!on) n = 0
+                }
+            }
+        }
+
+        private companion object {
+            const val FAST_MS = 500L
+            const val SLOW_MS = 5_000L
+            /** Vardiyada 10 okumada bir (5 sn); kapalıyken her okumada. */
+            const val DAY_EVERY = 10
         }
     }
 

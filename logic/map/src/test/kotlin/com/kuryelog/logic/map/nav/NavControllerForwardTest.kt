@@ -60,6 +60,16 @@ class NavControllerForwardTest {
     }
 
     @Test
+    fun stopBecomesANavTarget() {
+        val s = Stop(GeoPoint(40.4, 49.8), "Nizami 5", restaurant = false, origin = NavOrigin.INTENT, requestedAtMs = T0, sourcePackage = "com.wolt.courierapp")
+        val t = s.navTarget("r1", T0 + 5)
+        assertEquals(listOf<Any?>("r1", 40.4, 49.8, com.kuryelog.logic.core.NavKind.CUSTOMER, NavOrigin.INTENT, "com.wolt.courierapp", T0, "Nizami 5"),
+            listOf(t.requestId, t.lat, t.lon, t.kind, t.origin, t.sourcePackage, t.requestedAtMs, t.label))
+        assertEquals(com.kuryelog.logic.core.NavKind.UNKNOWN, s.copy(restaurant = null, requestedAtMs = null).navTarget("r2", T0 + 5).kind)
+        assertEquals(T0 + 5, s.copy(requestedAtMs = null).navTarget("r2", T0 + 5).requestedAtMs)
+    }
+
+    @Test
     fun unreachablePeerKeepsTheLocalRoute() = runBlocking {
         val nav = nav()
         nav.forward = { false }

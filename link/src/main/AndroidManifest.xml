@@ -1,9 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- :link (LINK.md 1): hotspot yerel ağında TCP + UDP işareti, yedek klasik Bluetooth RFCOMM. targetSdk 36: yerel ağ INTERNET ile örtük;
-     37'ye geçince ACCESS_LOCAL_NETWORK (Android 17) gerekir. -->
+<!-- :link (LINK.md 1, 4.7): hotspot yerel ağında TCP + UDP işareti, yedek klasik Bluetooth RFCOMM; ön plan servisi connectedDevice.
+     targetSdk 36: yerel ağ INTERNET ile örtük; 37'ye geçince ACCESS_LOCAL_NETWORK (Android 17) gerekir. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <!-- connectedDevice ön plan servisinin ön koşulu (olağan izin; Android 14+). -->
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+
+    <application>
+        <service
+            android:name="com.kuryelog.app.link.LinkService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
+    </application>
 </manifest>

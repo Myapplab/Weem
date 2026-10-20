@@ -141,7 +141,7 @@ object Scooter {
 
     /** Seçili scooter için kayıtsız canlı panel; çağıran Bluetooth izinlerine sahip. Seçili scooter yoksa ya da bağlantı zaten varsa false. */
     fun startLive(ctx: Context): Boolean {
-        if (active || !selected(ctx) || !ScooterService.permissions(ctx, true)) return false
+        if (active || ScooterShiftLink.providerRole() || !selected(ctx) || !ScooterService.permissions(ctx, true)) return false
         ctx.startForegroundService(ScooterService.startIntent(ctx, pair = false, live = true))
         return true
     }
@@ -186,7 +186,7 @@ object Scooter {
 
     /** Kayıt ya da eşleştirme ile başlat (NB `startRecording`); canlı panel için [startLive]. Çağıran izinlere sahip. */
     fun startRecording(ctx: Context, pair: Boolean): Boolean {
-        if (active || exporting || maintenance || !ScooterService.permissions(ctx, false)) return false
+        if (active || exporting || maintenance || ScooterShiftLink.providerRole() || !ScooterService.permissions(ctx, false)) return false
         ctx.startForegroundService(ScooterService.startIntent(ctx, pair, live = false))
         return true
     }
