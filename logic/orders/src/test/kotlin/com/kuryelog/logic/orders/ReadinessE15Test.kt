@@ -94,7 +94,7 @@ class ReadinessE15Test {
         assertTrue(fn.contains("Readiness.headline(Readiness.of("))
         assertFalse(tracker.contains("Hazır olmalı (tahmin)"))
         // As it counts down the notification is posted again silently (same id, alert once).
-        assertTrue(tracker.contains("env.notifyReminder(next, update = true)"))
+        assertTrue(tracker.contains("notifyReminder(next, update = true)") && tracker.contains("env.notifyReminder(r, update)"))
         assertTrue(RepoSource.text("orders/src/main/kotlin/com/kuryelog/app/orders/Orders.kt").contains("DeliveryReminder.notify(ctx, reminder, update)"))
         val reminder = RepoSource.text("orders/src/main/kotlin/com/kuryelog/app/orders/DeliveryReminder.kt")
         assertTrue(reminder.contains("setOnlyAlertOnce(update)"))

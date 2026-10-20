@@ -98,6 +98,11 @@ fun OrdersSettingsScreen(lang: Lang, onBack: () -> Unit) {
         SettingsSwitch(Str.OSET_OVERLAY.get(lang), values.getBoolean(OrderSettings.OVERLAY, true)) { write(mapOf(OrderSettings.OVERLAY to it)) }
         SettingsSwitch(Str.OSET_OCR.get(lang), values.getBoolean(OrderSettings.OCR, true)) { write(mapOf(OrderSettings.OCR to it)) }
         SettingsSwitch(Str.OSET_CARD.get(lang), values.getBoolean(OrderSettings.CUSTOMER_CARD, true)) { write(mapOf(OrderSettings.CUSTOMER_CARD to it)) }
+        // A3.11 (S16 (a)): yalnız `.dev` yapıda; sürüm yapısında anahtar da görünmez, akış da okumaz.
+        if (BuildInfo.isDebuggable(ctx)) {
+            SettingsSwitch(Str.OSET_SHADOW.get(lang), OrderSettings.shadowMode(values)) { write(mapOf(OrderSettings.SHADOW to it)) }
+            Text(Str.OSET_SHADOW_NOTE.get(lang), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         val bubble = RestaurantBubble.widthPct(values.getInt(RestaurantBubble.WIDTH_KEY, RestaurantBubble.DEFAULT_WIDTH_PCT))
         SettingsRow(Str.OSET_BUBBLE.get(lang), "%$bubble") {
             dialog = Dialog.Choice(Str.OSET_BUBBLE_ASK.get(lang), RestaurantBubble.WIDTH_CHOICES, bubble) { write(mapOf(RestaurantBubble.WIDTH_KEY to it)) }

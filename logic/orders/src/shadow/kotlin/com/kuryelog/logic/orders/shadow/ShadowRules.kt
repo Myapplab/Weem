@@ -1,6 +1,8 @@
 package com.kuryelog.logic.orders.shadow
 
 import com.kuryelog.logic.capture.NoteFields
+import com.kuryelog.logic.orders.CashTips
+import com.kuryelog.logic.orders.TripRecord
 
 /**
  * Bilerek farklar (WEEM ≠ Rawstats; gölge mod "beklenen fark" sayar): ORDERS.md 14.3 ve 16, CAPTURE.md 9, CORE.md 3.3. Her kural
@@ -17,6 +19,15 @@ object ShadowRules {
         "economics-scooter.jsonl", "scooter.jsonl", "scooter_events.jsonl", "scooter_averages.jsonl")
     /** Kullanıcının cevapları (nakit bahşiş K32, cep nakdi M15): gölge modda soruyu yalnız bir uygulama sorar (ORDERS.md 16, soru 2). */
     val answers = setOf("economics-cash-tips.jsonl", "economics-pocket-cash.jsonl")
+
+    /**
+     * A3.11 (S16 (a)): gölge modda soruyu yalnız Rawstats sorar, bahşiş cevabı yalnız onun kaydındadır; siparişin ve günün neti
+     * (net = … + bahşiş) o kadar farklıdır. Bahşişi kullanıcı yazmış sayılan kaynaklar (`tipSource`): nakit cevabı K32, hızlı düğme F4.6,
+     * bahşiş düzenleyicisi.
+     */
+    val tipAnswerSources = setOf(CashTips.SOURCE, CashTips.SOURCE_QUICK, "user_manual")
+    /** Siparişin netindeki kullanıcı cevabı olan bahşiş (yoksa 0). */
+    fun answeredTip(t: TripRecord): Double = if (t.tipSource in tipAnswerSources) t.tip else 0.0
 
     /** Uygulamanın kendi paketleri (bildirim anahtarlarında). */
     val ownPackages = setOf("com.kuryelog.app", "com.kuryelog.app.dev")

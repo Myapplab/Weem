@@ -18,7 +18,9 @@ data class Diff(val level: Level, val day: String, val file: String, val rule: S
 
 /** Bir tarafın gün özeti (`OrderHistory.Day` tanımlarıyla). */
 data class Side(val trips: Int, val orders: Int, val delivered: Int, val inferred: Int, val unconfirmed: Int, val active: Int,
-                val gross: Double, val net: Double, val offers: Int, val screens: Int) {
+                val gross: Double, val net: Double, val offers: Int, val screens: Int,
+                /** [net] içindeki kullanıcı cevabı bahşişler (A3.11, [ShadowRules.answeredTip]); JSON'a yazılmaz. */
+                val answeredTips: Double = 0.0) {
     fun json(): JSONObject = JSONObject().put("trips", trips).put("orders", orders).put("delivered", delivered).put("delivered_inferred", inferred)
         .put("unconfirmed", unconfirmed).put("active", active).put("gross", gross).put("net", net).put("offers", offers).put("screens", screens)
 }

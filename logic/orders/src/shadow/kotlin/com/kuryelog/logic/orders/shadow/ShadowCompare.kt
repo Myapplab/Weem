@@ -158,7 +158,12 @@ class ShadowCompare(private val rs: ShadowExport, private val weem: ShadowExport
         fun hard(rule: String, x: Any?, y: Any?) { if (x != y) add(Level.HARD, day, ORDERS, rule, key, x ?: "-", y ?: "-") }
         hard("order.outcome", PlatformHistory.state(a.t), PlatformHistory.state(b.t))
         if (!sameMoney(a.t.gross, b.t.gross)) add(Level.HARD, day, ORDERS, "order.fee", key, a.t.gross ?: "-", b.t.gross ?: "-")
-        if (!sameMoney(a.t.net, b.t.net)) add(Level.HARD, day, ORDERS, "order.net", key, a.t.net ?: "-", b.t.net ?: "-")
+        if (!sameMoney(a.t.net, b.t.net)) {
+            // A3.11: tek taraflı bahşiş cevabı (gölge modda soruyu yalnız Rawstats sorar); cevap düşülünce eşitse fark beklenendir.
+            val x = a.t.net; val y = b.t.net
+            if (x != null && y != null && sameMoney(x - ShadowRules.answeredTip(a.t), y - ShadowRules.answeredTip(b.t))) count(Level.EXPECTED, day, ORDERS, "order.tip_answer", "bahşiş cevabı")
+            else add(Level.HARD, day, ORDERS, "order.net", key, a.t.net ?: "-", b.t.net ?: "-")
+        }
         if (!sameMoney(a.t.extraWaitAzn, b.t.extraWaitAzn)) add(Level.HARD, day, ORDERS, "order.extra_wait", key, a.t.extraWaitAzn, b.t.extraWaitAzn)
         hard("order.orders", a.t.expectedOrders, b.t.expectedOrders)
         hard("order.payment", a.t.paymentMethod, b.t.paymentMethod)
@@ -238,7 +243,8 @@ class ShadowCompare(private val rs: ShadowExport, private val weem: ShadowExport
         val d = OrderHistory.Day(day, trips)
         val states = trips.groupingBy { PlatformHistory.state(it) }.eachCount()
         return Side(trips.size, d.orders, states["delivered"] ?: 0, states["delivered_inferred"] ?: 0, states["unconfirmed"] ?: 0, states["active"] ?: 0,
-            d.gross, d.net, o.offers.values.count { it.day == day }, x.rows(day, SCREENS).size)
+            d.gross, d.net, o.offers.values.count { it.day == day }, x.rows(day, SCREENS).size,
+            d.delivered.sumOf { ShadowRules.answeredTip(it) })
     }
 
     /** Gün başına sipariş sayısı, teslim/çıkarım/doğrulanamayan, brüt ve net (sert). */
@@ -247,7 +253,10 @@ class ShadowCompare(private val rs: ShadowExport, private val weem: ShadowExport
         hard("day.trips", a.trips, b.trips); hard("day.orders", a.orders, b.orders); hard("day.delivered", a.delivered, b.delivered)
         hard("day.delivered_inferred", a.inferred, b.inferred); hard("day.unconfirmed", a.unconfirmed, b.unconfirmed)
         if (!sameMoney(a.gross, b.gross)) add(Level.HARD, day, ORDERS, "day.gross", "gün", a.gross, b.gross)
-        if (!sameMoney(a.net, b.net)) add(Level.HARD, day, ORDERS, "day.net", "gün", a.net, b.net)
+        if (!sameMoney(a.net, b.net)) {
+            if (sameMoney(a.net - a.answeredTips, b.net - b.answeredTips)) count(Level.EXPECTED, day, ORDERS, "day.tip_answer", "gün")
+            else add(Level.HARD, day, ORDERS, "day.net", "gün", a.net, b.net)
+        }
         if (a.active != b.active) add(Level.SOFT, day, ORDERS, "day.active", "gün", a.active, b.active)
     }
 

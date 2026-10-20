@@ -102,4 +102,25 @@ class OrdersSettingsScreenTest {
         compose.onNodeWithText("İzlənən Wolt və ya Bolt tətbiqi yoxdur").assertIsDisplayed()
         compose.onNodeWithText("Gündəlik xalis hədəf (₼)").assertIsDisplayed()
     }
+
+    // ---- A3.11 (S16 (a)): gölge mod anahtarı yalnız .dev (hata ayıklanabilir) yapıda ----
+
+    @Test fun shadowSwitchIsHiddenInReleaseBuilds() {
+        ctx.applicationInfo.flags = ctx.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE.inv()
+        show()
+        compose.onNodeWithText("Gölge mod (Rawstats ile yan yana)").assertDoesNotExist()
+    }
+
+    @Test fun shadowSwitchWritesTheShadowModePrefInDevBuilds() {
+        ctx.applicationInfo.flags = ctx.applicationInfo.flags or android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE
+        show()
+        compose.onNodeWithText("Gölge mod (Rawstats ile yan yana)").assertIsDisplayed()
+        assertFalse(Store.prefs(ctx).getBoolean("shadowMode", false))
+        compose.onNodeWithText("Gölge mod (Rawstats ile yan yana)").performClick()
+        compose.waitForIdle()
+        assertTrue(Store.prefs(ctx).getBoolean("shadowMode", false))
+        compose.onNodeWithText("Gölge mod (Rawstats ile yan yana)").performClick()
+        compose.waitForIdle()
+        assertFalse(Store.prefs(ctx).getBoolean("shadowMode", false))
+    }
 }

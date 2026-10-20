@@ -15,6 +15,14 @@ object OrderSettings {
     const val OCR = "ocr"
     /** Bool (true): müşteri kartı. */
     const val CUSTOMER_CARD = "customerCard"
+    /**
+     * Bool (false): gölge mod (A3.11, S16 (a); yalnız `.dev`): Rawstats'ın yanında çalışırken WEEM soru sormaz (nakit bahşiş K32, cep nakdi
+     * M15), rozet ve balon/kart penceresi ile bildirim 12 çizmez; ekran okuma, kayıtlar ve hesaplar aynen sürer. Soruyu yalnız Rawstats sorar,
+     * cevabı yalnız onda kalır; rapor bu bahşiş farkını "beklenen" sayar ([ShadowRules]).
+     */
+    const val SHADOW = "shadowMode"
+
+    fun shadowMode(p: KuryelogPrefs.Values) = p.getBoolean(SHADOW, false)
     const val COMMISSION = "commission"
     const val MAX_COMMISSION = 99.99
 

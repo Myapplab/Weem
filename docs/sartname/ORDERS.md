@@ -803,3 +803,11 @@ Yer: `logic/orders/src/shadow` (ayrı kaynak seti; APK'ya girmez, modül grafiğ
 ### 16.5 S20 kararı (18 Ekim 2026)
 
 §16.4'te "yapılmadı" denenlerden: Ayarlar (komisyon, `overlay`, `ocr`, `customerCard`, boyutlar, izlenen uygulamalar) A4.2'de yapıldı (`OrderSettings`, `:app` `OrdersSettingsScreen`; `ECONOMICS.md` 6.1); "Çevrimiçi oturumlar" listesi ve Araçlar WEEM 1.0 sonrasına bırakıldı (`BEKLEYEN_OZELLIKLER.md`); kayıt günü "Paylaş" A4.3'te yapıldı.
+
+### 16.6 A3.11 — gölge mod anahtarı (S16 (a); 20 Ekim 2026)
+
+- **Anahtar:** tercih `shadowMode` (Bool, varsayılan false; `OrderSettings.SHADOW`). Ayarlar → Siparişler ayarları → "Ekran ve kartlar"da "Gölge mod (Rawstats ile yan yana)"; yalnız `.dev` (hata ayıklanabilir) yapıda görünür ve yalnız orada geçerlidir (`Orders.AndroidEnv.shadowMode()`: `FLAG_DEBUGGABLE` ve tercih); sürüm yapısı ZIP geri yüklemesiyle anahtarı alsa da soru sorar.
+- **Açıkken kapanan:** nakit bahşiş sorusu K32 (`askCashTip`), vardiya başı cep nakdi sorusu M15 (`askPocketCash`), bildirim 12 (restoran balonu/müşteri kartı bildirimi, sessiz güncellemeleri dahil; `notifyReminder`), ekran üstü rozet ve hatırlatıcı pencereleri (`OrdersHost.onTick`).
+- **Sürenler:** ekran okuma, `orders.jsonl`/`screens.jsonl`, `courier.db`, `reminder` durumu ve `reminderAt` alanları, CASH PENDING satırları, ekran okuma uyarısı (5104) aynen sürer: iki uygulamanın kaydı aynı kalmalı.
+- **Rapor (`ShadowRules.tipAnswerSources`):** soruyu yalnız Rawstats sorar, cevap (`tip_source` `user_cash_input`, `user_quick_tip`, `user_manual`) yalnız onun kaydındadır. Bahşiş cevabı düşülünce siparişin neti (`order.tip_answer`) ve günün neti (`day.tip_answer`) eşitse fark "beklenen" sayılır; eşit değilse `order.net` / `day.net` sert kalır. `economics-cash-tips`/`economics-pocket-cash` dosyaları zaten `file.user_answers` ile beklenen.
+- Doğrulama: `ShadowModeA311Test` (flow, 7), `ShadowCompareTest` (+2), `OrdersSettingsScreenTest` (+2). Telefonda denenmedi (A3.10).

@@ -101,6 +101,7 @@ Bugünkü mesajlar (alan alan: `bulgular/X_protocol.md` P1–P11; WEEM'deki kar�
 | `bx`, `by` | Int (12, 95) | rozet konumu | `:orders` · A3 |
 | `commission`, `commission:<pkg>` | Float | filo komisyonu | `:orders` · A3 |
 | `customerCard` | Bool | müşteri kartı | `:orders` · A3 |
+| `shadowMode` | Bool (false) | gölge mod (yalnız `.dev`; Rawstats'ta karşılığı yok): soru ve pencereler kapalı, kayıt sürer | `:orders` · A3.11 |
 | `customerCardSizePct`, `restaurantBubbleWidthPct` | Int (85, 90) | balon boyu | `:orders` · A3 |
 | `onlineSessions.v1`, `economicsIdle.v1`, `openWaits.v1` | String JSON | açık oturum/bekleme | `:orders` · A3 (`onlineSessions.v1`); `:economics` · A4.1 (öbür ikisi, `EconomicsObserver`) |
 | `cashPending.azn`, `cashPending.at` | String / Long | son Wolt nakit borcu | `:orders` · A3 |
