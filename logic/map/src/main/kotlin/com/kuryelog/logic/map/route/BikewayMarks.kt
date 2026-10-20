@@ -13,8 +13,30 @@ class BikewayMarksStore(private val prefs: MapPrefs) {
         const val KEY = "streets.bikeway.v1"
     }
 
-    val marks: BikewayMarks get() = TODO("A6.8")
-    fun mark(way: Long, name: String): Unit = TODO("A6.8")
-    fun unmark(way: Long): Unit = TODO("A6.8")
-    fun isMarked(way: Long): Boolean = TODO("A6.8")
+    private val ways = LinkedHashMap<Long, String>()
+
+    init {
+        for (item in prefs.getStringList(KEY).orEmpty()) {
+            val bar = item.indexOf('|')
+            val id = (if (bar < 0) item else item.substring(0, bar)).trim().toLongOrNull() ?: continue
+            ways[id] = if (bar >= 0 && bar < item.length - 1) item.substring(bar + 1) else ""
+        }
+    }
+
+    val marks: BikewayMarks
+        get() = BikewayMarks(ways.keys.toSet(), ways.filterValues { it.isNotEmpty() })
+
+    /** [name] boşsa ad yazılmaz. */
+    fun mark(way: Long, name: String) {
+        ways[way] = name
+        save()
+    }
+
+    fun unmark(way: Long) {
+        if (ways.remove(way) != null) save()
+    }
+
+    fun isMarked(way: Long): Boolean = way in ways
+
+    private fun save() = prefs.setStringList(KEY, ways.map { (w, n) -> "$w|$n" })
 }
