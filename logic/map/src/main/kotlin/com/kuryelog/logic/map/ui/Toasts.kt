@@ -19,4 +19,8 @@ class Toasts {
     fun show(toast: MapToast) {
         current = toast
     }
+
+    fun hide() {
+        current = null
+    }
 }
