@@ -87,7 +87,8 @@ data class MapMetricsState(
 
 private fun fmtMin(seconds: Double) = if (seconds < 60) "<1" else (seconds / 60).roundToInt().toString()
 
-private fun fmtKm(m: Double) = if (m < 1000) "${m.roundToInt()} m" else String.format(Locale.US, "%.1f km", m / 1000)
+/** 1.000 m altı "N m", değilse "X.X km". */
+internal fun fmtKm(m: Double) = if (m < 1000) "${m.roundToInt()} m" else String.format(Locale.US, "%.1f km", m / 1000)
 
 private fun clockOf(nowMs: Long, seconds: Double): String {
     val at = LocalDateTime.ofInstant(Instant.ofEpochMilli(if (nowMs > 0) nowMs else System.currentTimeMillis()), ZoneId.systemDefault()).plusSeconds(Math.round(seconds))

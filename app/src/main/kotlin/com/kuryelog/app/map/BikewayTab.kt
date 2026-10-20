@@ -104,6 +104,3 @@ fun BikewayTab(
         }
     }
 }
-
-/** 1.000 m altı "N m", değilse "X.X km". */
-internal fun fmtKm(m: Double): String = if (m < 1000) "${m.roundToInt()} m" else String.format(Locale.US, "%.1f km", m / 1000)
