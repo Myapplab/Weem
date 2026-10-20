@@ -476,7 +476,7 @@ Gün motoru (Y11), POI (Y16), bisiklet yolu (Y15) ve bölge bilgisi (Y21) uygula
 
 **Sapmalar:** `CourierStageTimelineTest` iki beklentisi `listOf<Any?>` (Long/Int); `NavAssistantTest` hâlâ kırmızı — `TODO("A6.9")` (görev denetleyicisi), A6.8'in değil.
 
-**Doğrulama:** `LC_ALL=C.UTF-8 ./gradlew -p logic test --continue` → **1.653 test, 90 kırmızı** (A6.7 15, A6.9 51, A6.11 24; hepsi `NotImplementedError` iskeleti ya da onlara bağlı; önceki 163'ten 73 az); `:map`/`:app` `compileDebugKotlin` yeşil; `:app` harita Robolectric kırmızıları yalnız A6.7/A6.9 iskeleti. `lintDebug` koşmadı (Maven Central 429). Telefonda denenmedi.
+**Doğrulama:** `LC_ALL=C.UTF-8 ./gradlew -p logic test --continue` → **1.688 test, 75 kırmızı** (A6.9 51, A6.11 24; A6.7 dalı birleştirildikten sonra; hepsi `NotImplementedError` iskeleti ya da onlara bağlı); `:app` harita Robolectric 45 test, 8 kırmızı (A6.9); `:map`/`:app` `compileDebugKotlin` yeşil; `:app` harita Robolectric kırmızıları yalnız A6.7/A6.9 iskeleti. `lintDebug` koşmadı (Maven Central 429). Telefonda denenmedi.
 
 ## A6.7 kod durumu (20 Ekim 2026)
 
