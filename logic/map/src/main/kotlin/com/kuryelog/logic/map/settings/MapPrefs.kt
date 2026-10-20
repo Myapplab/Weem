@@ -15,4 +15,5 @@ interface MapPrefs {
     fun setDouble(key: String, value: Double)
     fun getLong(key: String): Long?
     fun setLong(key: String, value: Long)
+    fun remove(key: String)
 }

@@ -27,6 +27,7 @@ class MapPrefsStore(context: Context) : MapPrefs {
     override fun setDouble(key: String, value: Double) = p.edit().putLong(key, value.toRawBits()).apply()
     override fun getLong(key: String): Long? = if (p.contains(key)) runCatching { p.getLong(key, 0) }.getOrNull() else null
     override fun setLong(key: String, value: Long) = p.edit().putLong(key, value).apply()
+    override fun remove(key: String) = p.edit().remove(key).apply()
 
     companion object {
         const val FILE = "map"
