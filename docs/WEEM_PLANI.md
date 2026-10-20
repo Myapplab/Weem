@@ -146,7 +146,7 @@ Her aşama: testler yeşil → `.dev` APK → telefonda gölge mod denemesi (kul
 | 8 | `:link` 2 telefon modu (N1) + hırsızlık koruması (N6) | Testler yeşil (S28: gerçek vardiya A10.4 sonrası) | 4–5 |
 | 9 | `:remote` uzaktan kullanım (N2) | Testler yeşil (S28) | 2–3 |
 | 10 | Optimizasyon (pil, bellek, APK boyutu, arka planda kalma), kod sadeleştirme (`/simplify`), güvenlik ve büyük denetim, geri yükleme provası; **WEEM 1.0**; geçiş: ZIP yedek → WEEM Rawstats'ın üstüne → YolGo içe aktar | İş telefonlarında WEEM | 4 |
-| 11 | `BEKLEYEN_OZELLIKLER.md` kullanıcıya sorulur | Kullanıcı kararı | — |
+| 11 | ~~`BEKLEYEN_OZELLIKLER.md` kullanıcıya sorulur~~ → S29: Aşama 10'da gerçek kullanımdan (A10.5) sonra, sadeleştirmeden (A10.6) önce sorulur (A10.5b) | Kullanıcı kararı | — |
 
 Toplam 48 oturumluk görev (`docs/WEEM_ISLER.md`; aksamalarla kabaca 50–55 oturum) + telefon denemeleri. Ara `.dev` sürümleri gölge modda sahada denenir; geçiş yalnız WEEM 1.0 ile.
 
@@ -211,6 +211,7 @@ Toplam 48 oturumluk görev (`docs/WEEM_ISLER.md`; aksamalarla kabaca 50–55 otu
 | S26 Yol kalitesi (A6.11) | Scooter'a yeni koltuk geldi, önemi azaldı; sistem tam yazılır ve geliştirmeye açık kalır ama Ayarlarda tek anahtarla açılıp kapanır, **varsayılan kapalı**. Kapalıyken sensörler, arka plan hesabı, Ses± yakalama ve puan soruları hiç çalışmaz; önceden öğrenilmiş puanlar rotada kullanılmaya devam eder. A6.11, A6.6–A6.9'dan sonraya alınabilir — 19 Ekim |
 | S27 Aşama 10 sırası | Önce kalan özellikler → optimizasyon → **geçiş öncesi kısa güvenlik kontrolü** (müşteri verisi, izinler) → geri yükleme provası → iş telefonlarına geçiş → gerçek kullanım dönemi (kullanıcı gereksiz/birleşecek özellikleri seçer) → sadeleştirme (özellik çıkarma/birleştirme dahil) → **en son** büyük denetim (ultracode, A10.7) — 20 Ekim |
 | S28 Saha denemeleri | Kullanıcı ara deneme yapmak istemiyor: (K) deneme görevleri (A3.10 gölge mod, A4.4, A5.5, A6.10 YolGo ile yan yana sürüş, A7.3, A8.5, A9.3) kaldırıldı; aşama bitişi = testler yeşil. Sorunlar son sürümden sonra gerçek kullanımda (A10.4–A10.5) düzeltilir. Risk: telefonda hiç denenmemiş kod geçişte ilk kez çalışır; geçişe kadar Rawstats/YolGo/Sürüş Paneli kurulu kalır — 20 Ekim |
+| S29 Bekleyen özellikler ne zaman | `BEKLEYEN_OZELLIKLER.md` kod sadeleştirmeden (A10.6) önce kullanıcıya tek tek sorulur (A10.5b; eski A11.1). Sadeleştirme bu kararları ve A10.5 listesini birlikte gözetir — 20 Ekim |
 
 ## 9. İlerleme
 

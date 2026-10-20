@@ -134,14 +134,15 @@ Kurallar: `AGENTS.md` → "Birden çok Claude hesabı". Durumlar: `bekliyor` · 
 | A10.3 | Geri yükleme provası, geçiş rehberi | Belge + deneme | Sonnet · high | A10.2 | bekliyor |
 | A10.4 | (K) Geçiş: ZIP yedek → WEEM Rawstats'ın üstüne → YolGo içe aktar | İş telefonlarında WEEM | — | A10.3 | bekliyor |
 | A10.5 | (K) Gerçek kullanım dönemi: kullanıcı gereksiz özellikleri ve aynı motora birleşebilecekleri yazar | Kullanıcının listesi | — | A10.4 | bekliyor |
-| A10.6 | Sadeleştirme: A10.5 listesine göre özellik çıkarma/birleştirme (kararlar Bölüm 8'e) + tekrar eden kod, gereksiz katman, ölü kod (`/simplify`); testler yeşil | Testler yeşil, satır sayısı belgede | Opus · high | A10.5 | bekliyor |
+| A10.5b | `docs/BEKLEYEN_OZELLIKLER.md` kullanıcıya tek tek sorulur (S29: sadeleştirmeden önce; eski A11.1). Onaylananların ne zaman yazılacağı soru sırasında kararlaştırılır, kararlar plan Bölüm 8'e | Kullanıcı kararları Bölüm 8'de | Sonnet · medium | A10.5 | bekliyor |
+| A10.6 | Sadeleştirme: A10.5 listesine göre özellik çıkarma/birleştirme (kararlar Bölüm 8'e) + tekrar eden kod, gereksiz katman, ölü kod (`/simplify`); testler yeşil | Testler yeşil, satır sayısı belgede | Opus · high | A10.5, A10.5b | bekliyor |
 | A10.7 | Büyük denetim: güvenlik, izinler, `/code-review xhigh` (son kod üzerinde) | Bulgular kapandı | Opus · xhigh + ultracode (S13) | A10.6 | bekliyor |
 
 ## Aşama 11 — Sonrası
 
 | No | İş | Durum |
 |---|---|---|
-| A11.1 | `docs/BEKLEYEN_OZELLIKLER.md` kullanıcıya tek tek sorulur | bekliyor |
+| A11.1 | Taşındı → A10.5b (S29: bekleyen özellikler sadeleştirmeden önce sorulur) | taşındı |
 
 ## Açık sorular
 
