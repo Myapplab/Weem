@@ -428,6 +428,12 @@ class NavController(
     }
 
     /** Dış metin (bağlantı, paylaşım, pano): ayrıştır, çöz, <60 m kuralı, durak yoksa rota, varsa bekleyen kart (MAP.md 8.7). */
+    /**
+     * 2 telefon, Provider (LINK.md 4.5): çözülen dış hedef (kurye uygulaması, pano) öteki telefona gider; `true` = gitti, bu telefonda
+     * rota açılmaz. Null ya da `false`: olağan akış (Receiver'a ulaşılamazsa rota burada açılır).
+     */
+    @Volatile var forward: ((Stop) -> Boolean)? = null
+
     suspend fun onExternalText(text: String, source: String, origin: NavOrigin? = null, referrer: String? = null, requestedAtMs: Long? = null) {
         val asked = requestedAtMs ?: clock.wallMs()
         val uri = LinkUri.tryParse(text.trim())
@@ -459,9 +465,15 @@ class NavController(
                 r.point, r.label, r.unitNote, confidenceOf(r.confidence), r.restaurant,
                 origin = origin ?: if (source == "clipboard") NavOrigin.CLIPBOARD else NavOrigin.INTENT, requestedAtMs = asked, sourcePackage = referrer,
             )
+            val near = dm != null && dm < NEAR_M && !restaurantTarget(stop, null)
+            if (!near && forward?.invoke(stop) == true) {
+                synchronized(lock) { set(stateFlow.value.copy(busy = false, busyText = null)) }
+                showToast(NavText.FORWARDED.get(lang()), ToastTone.INFO, ToastIcon.SWAP)
+                return
+            }
             val replan = synchronized(lock) {
                 // Restoran önündeyken gelen gerçek restoran hedefi hatalı adres sayılmaz.
-                if (dm != null && dm < NEAR_M && !restaurantTarget(stop, null)) {
+                if (near) {
                     set(stateFlow.value.copy(busy = false, busyText = null, error = nearError(dm, text)))
                     haptic(NavHaptic.VIBRATE)
                     false

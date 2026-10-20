@@ -8,12 +8,10 @@ import com.kuryelog.app.core.LogImport
 import com.kuryelog.app.core.ShiftHub
 import com.kuryelog.app.core.Store
 import com.kuryelog.app.economics.Economics
-import com.kuryelog.app.map.BatteryRuntime
 import com.kuryelog.app.map.DatasetRecording
 import com.kuryelog.app.map.NavRuntime
 import com.kuryelog.app.map.WeatherRuntime
 import com.kuryelog.app.orders.Orders
-import com.kuryelog.app.scooter.Scooter
 import com.kuryelog.app.scooter.ScooterShiftLink
 
 /** Sürecin girişi: çökme kaydı ([CrashLog]) servislerden ve Activity'den önce kurulur (CORE.md 4.1, RS `RawstatsApp.kt`). */
@@ -33,15 +31,13 @@ class WeemApplication : Application() {
         // Ekran/bildirim olayları ve servis tiki sipariş tarafına (CAPTURE.md 7.1). Bağlama hatası kaydedilir, süreç açılır kalır
         // (bağlanmamış hâlde ekran okuma satır yazar, sipariş işi yapmaz).
         Store.guarded(this, "start") { Orders.bind(this) }
-        // Scooter dikişi: teklif anı pili ve sipariş başına enerji (R14); `:orders` `:scooter`'ı tanımaz, bağı burada kurulur.
-        Store.guarded(this, "start") { Orders.bindScooter(this, Scooter.bridge) }
-        // A6.7: hava (R15, teklif satırı) ve batarya tahmini (canlı scooter değeri çapa olur); `:orders` `:map`'i tanımaz, bağ burada.
-        Store.guarded(this, "start") {
-            Orders.bindWeather(WeatherRuntime.get(this).port)
-            BatteryRuntime.get(this).bind(Scooter.bridge)
-        }
+        // A6.7: hava (R15, teklif satırı); `:orders` `:map`'i tanımaz, bağ burada.
+        Store.guarded(this, "start") { Orders.bindWeather(WeatherRuntime.get(this).port) }
         // A6.9: gün motoru, sürüş günlüğü, gün raporu, görev ve hatırlatıcı çalışma zamanları süreçle birlikte kalkar (vardiya arka planda sürerken ekran kapalı olabilir).
         Store.guarded(this, "start") { NavRuntime.get(this) }
+        // Scooter dikişi (teklif anı pili, sipariş enerjisi R14, batarya tahmininin çapası), sipariş olayları → harita aşama izleyicisi ve
+        // A8.3 2 telefon modu: role göre yerel ya da uzak portlar (TwoPhone; Provider'da scooter BLE açılmaz, S11).
+        Store.guarded(this, "start") { TwoPhone.start(this) }
         LogImport.afterImport = Orders::reloadImportedStats
         // Vardiya dinleyicileri, Rawstats `GpsService` sırasıyla (ORDERS.md 4.2): cep nakdi + CASH PENDING → günlük paket (R17) → şifreli
         // yedek (N3) → siparişler → scooter (A5.3). `onEnd`'de CASH PENDING sonu günlük paketten, o da siparişlerin kapanmasından önce yazılır.

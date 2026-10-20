@@ -1,6 +1,8 @@
 package com.kuryelog.logic.map.nav
 
+import com.kuryelog.logic.core.NavKind
 import com.kuryelog.logic.core.NavOrigin
+import com.kuryelog.logic.core.NavTarget
 import com.kuryelog.logic.map.geo.GeoPoint
 
 /** [TASK]: günlük iş (Y20, S9); siparişin restoran/müşteri hedefi sayılmaz. */
@@ -26,4 +28,13 @@ data class Stop(
 ) {
     /** Aynı durak sipariş hedefi olur: `purpose = ORDER`, `orderId = n`, `restaurant = toRestaurant`; kaynak, saat ve gönderen korunur. */
     fun forOrder(n: Int, toRestaurant: Boolean?): Stop = copy(purpose = StopPurpose.ORDER, orderId = n, restaurant = toRestaurant)
+
+    /**
+     * 2 telefon (LINK.md 4.5): öteki telefona giden hedef. Etiket restoran adı ya da adres metnidir (S5); istek saati yoksa [nowMs].
+     */
+    fun navTarget(requestId: String, nowMs: Long): NavTarget = NavTarget(
+        requestId, point.lat, point.lon,
+        when (restaurant) { true -> NavKind.RESTAURANT; false -> NavKind.CUSTOMER; null -> NavKind.UNKNOWN },
+        origin, sourcePackage, requestedAtMs ?: nowMs, label,
+    )
 }

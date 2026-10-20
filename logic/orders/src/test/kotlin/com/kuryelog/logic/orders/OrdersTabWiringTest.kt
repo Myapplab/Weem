@@ -18,7 +18,8 @@ class OrdersTabWiringTest {
         assertTrue(access.contains("Orders.flow(ctx)"))
         assertTrue(access.contains("Orders.records(ctx)"))
         assertTrue(access.contains("LogOrdersSource("))
-        assertTrue(shell.contains("Tab.ORDERS -> OrdersTab(lang)"))
+        // A8.3: Receiver'da üstte Provider kartı, altında aynı sekme.
+        assertTrue(shell.contains("Tab.ORDERS -> Column {") && shell.contains("RemoteOrdersCard(lang)\n                            OrdersTab(lang)"))
         assertTrue(shell.contains("RecordsScreen(lang, onBack = { records = false })"))
     }
 

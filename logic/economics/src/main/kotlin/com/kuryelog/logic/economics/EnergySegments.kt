@@ -88,6 +88,19 @@ object EnergySegments {
         }
     }
 
+    /**
+     * WEEM (2 telefon, LINK.md 4.6): Receiver'ın enerji yanıtı satır yazıldıktan sonra geldi. [rows] günün satırları; aynı pencerenin
+     * (`startAtMs`, `endAtMs`) son satırı ölçülmemişse onun kopyası, enerjisi [energy] ve damgası [s] olarak (okuyucular dönem başına son
+     * satırı alır, `DayReport.idleWh`); pencere yoksa ya da zaten ölçülmüşse null. Ölçülmemiş yanıt düzeltme sayılmaz.
+     */
+    fun corrected(rows: List<JSONObject>, from: Long, to: Long, energy: JSONObject, s: Stamp): JSONObject? {
+        if (energy.optString("source", NOT_MEASURED) !in ENERGY_SOURCES - NOT_MEASURED) return null
+        val last = rows.lastOrNull { it.optString("kind") == "energy_segment" && it.optLong("startAtMs", -1) == from && it.longOrNull("endAtMs") == to }
+            ?: return null
+        if (last.optJSONObject("energy")?.optString("source", NOT_MEASURED) != NOT_MEASURED) return null
+        return JSONObject(last.toString()).put("wall_ms", s.wallMs).put("mono_ns", s.monoNs).put("energy", JSONObject(energy.toString()))
+    }
+
     /** One row for a closed `idleSpell` (the empty return and waiting between tasks). */
     fun fromIdle(spell: JSONObject, s: Stamp, e: EnergyOf = NOT_MEASURED_ENERGY): JSONObject? {
         val id = spell.optString("spellId").ifEmpty { return null }

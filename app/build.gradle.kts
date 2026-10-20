@@ -102,11 +102,16 @@ dependencies {
     implementation("com.kuryelog.logic:economics")
     // Harita ekranlarının durum tipleri (A6.2b iskeleti, A6.5–A6.9 doldurur): logic/map gün, nav, ride, weather, logs, tasks, reminders.
     implementation("com.kuryelog.logic:map")
+    // 2 telefon ekranı (A8.3): logic/link LinkText, LinkView, LinkRole, PhoneBridge.
+    implementation("com.kuryelog.logic:link")
     implementation("com.kuryelog.logic:core")
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
     implementation(libs.activity.compose)
+    // A8.3 eşleştirme ekranı (S24): QR okuma ve üretme.
+    implementation(libs.play.services.code.scanner)
+    implementation(libs.zxing.core)
     // Kabuk her modüle bağlanır (WEEM_PLANI.md 4.2).
     listOf("core", "capture", "orders", "economics", "scooter", "map", "link", "remote").forEach {
         implementation(project(":$it"))

@@ -194,6 +194,23 @@ class EconomicsObserver(private val env: Env) : OrderObserver, OfferAnnotator {
         } catch (e: Exception) { failure("offer_score", e) }
     }
 
+    /**
+     * WEEM (2 telefon, LINK.md 4.6): `ScooterBridge.late` — pencerenin ölçülmemiş satırına düzeltme satırı (başladığı ve bittiği gün
+     * dosyalarında aranır). Yazıldıysa true; hata kaydedilir.
+     */
+    fun lateEnergy(fromWallMs: Long, toWallMs: Long, energy: JSONObject): Boolean = try {
+        var done = false
+        for (day in linkedSetOf(env.log.day(fromWallMs), env.log.day(toWallMs))) {
+            val f = java.io.File(env.log.dayDir(day), EnergySegments.FILE)
+            if (!f.exists()) continue
+            val rows = f.useLines { l -> l.mapNotNull { runCatching { JSONObject(it) }.getOrNull() }.toList() }
+            val row = EnergySegments.corrected(rows, fromWallMs, toWallMs, energy, energyStamp()) ?: continue
+            done = env.log.append(EnergySegments.FILE, row.toString(), day)
+            break
+        }
+        done
+    } catch (e: Exception) { failure("late_energy", e); false }
+
     /** Energy of a leg / idle window from the scooter link (`ScooterBridge.energy`); all null while no scooter source is connected. */
     private val scooterEnergy = EnergySegments.EnergyOf { start, end ->
         if (end == null || end <= start) EnergySegments.energy()

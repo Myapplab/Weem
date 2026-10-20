@@ -242,6 +242,7 @@ YolGo evi Rawstats'tan okur (`SHARE_HOME`, istek 703, 20 sn zaman aşımı, 6 sa
 | 7301 | `WEATHER` | `duzyol_weather` | DEFAULT | 30 sn; günde bir | `:map`/Y10 · A6 |
 | 7401 | `DATASET_FGS` (**kullanılmaz**, A6.1) | `yolgo_offer_dataset` | — | — | yok (aşağıda) |
 | **7402** | `NAV_ONLY_FGS` (yeni, A6.6; MAP.md 7.17 SORU-N4) | `navigation` | LOW, ongoing | rota bitince ya da 90 dk | `:map` · A6.6 |
+| **7403** | `LINK_FGS` (yeni, A8.3; LINK.md 4.7) | `link` | LOW, ongoing | 2 telefon modu kapanınca | `:link` · A8.3 |
 | 7435 | `CALIBRATION_FGS` | `yolgo_calibration` | LOW | ongoing | Y14 · sonra |
 | **10000–14095** | `CASH_TIP(tripId)` = 10000 + (`tripId.hashCode() and 0xFFF`) (**eskiden 4000+**) | `cash_tips` | HIGH | onay 15 sn | `:orders` · A3 |
 
