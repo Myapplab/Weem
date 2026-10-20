@@ -2,15 +2,19 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
-<<<<<<< HEAD
+## 2026-10-20 — A6.9 bitti: sürüş günlüğü, İstatistik, Sürüş kayıtları, veri seti, görevler, hatırlatıcılar (Claude Sonnet · high; dal `ccr-1736f30d-of4a0s`)
+- Yapılan: `logic/map` `logs` (`RideLogWriter/Store`, `RouteRecorder`, `RouteRecording`, `DayLogBridge`), `stats` (`DayStats`, `DayReportFile`, `DayHistory`, `StatsTabs`, `LightStats`, `DayDeletionPlan`…), `tasks`, `reminders` (+`ReminderController`); `logic/orders` `dataset` (`DatasetContract/Pack/DayLogSnapshot/OfferRowGate/Recorder/Shifts/Manual`); `:map` `RideLogRuntime`, `DayReportWriter`, `DayDeletionRuntime`, `TaskRuntime`, `ReminderRuntime`; `:app` `StatsScreen`, `RideLogsScreen`, `TasksScreen`+düzenleyici+`TaskAlertCard`, `ReminderSettingsSection`, `ReminderCard` (kabukta), `DatasetScreen`/`AppDatasetRuntime`/`DatasetManualSheet`; `tools/veri_seti`. Ayrıntı `MAP.md` 12.16, 13.21.
+- Doğrulama: `-p logic test` 1.723 test, 24 kırmızı (yalnız A6.11 `roads` iskeleti); `:app` 72 + `:map` 8 test yeşil; `lintDebug` 0 hata; `kontrol.py` WEEM ZIP'ini geçirir. Telefonda denenmedi; CI koşmadı.
+- Açık kalan: veri setinde rota/yükseklik ölçümü (`RouteMeasurePort`) yok (alanlar `unavailable`); elle ekleme AZ metinleri onay bekler; `DayDeletionRuntime.deleteContributions` ve Yollarım girişi A6.11'de; `OrderEvents` Android uygulayıcısı yok (A6.8'den); İstatistik mini haritası MapLibre OSM (cihazda denenmedi).
+- Not: `AI_HANDOFF.md`/`CHANGELOG.md`'deki birleşme çakışma işaretleri (A6.8 dalından geliyordu) temizlendi.
+- Sıradaki: A6.11 (Opus · high) bu daldan; bitince dal `main`'e birleşir.
+
 ## 2026-10-20 — A6.8 bitti: gün motoru, POI, bisiklet yolu, bölge bilgisi (Claude Sonnet · high; dal `ccr-e899edd4-bztcog`)
 - Yapılan: `logic/map` `day` (motor `feed`/`endDay`, `LightTracker`, `LightsDb`, `SidewalkMarks`, `StopReconciler`, `RoadInfoBuilder`, `CourierStageFollower`/`StageFeed`, `DayController`, `DayText`), `graph` (`Pois`/`PoiSet`, `PoiCorrections`, güncelleme sonrası POI indirme), bisiklet (`BikewayMarksStore`, `BikewayMenu`, `BikewayLayerRules`), `ui.PoiLayerRules`/`PlaceText`; Android `DayRuntime`, `MapPois`, `MarkerKind.POI_*`, `MapScreen` (gün kartı gerçek durum, toast/titreşim, yer+ışık işaretleri, bisiklet çizgileri, uzun basış satırları, işletme penceresi), `BikewayTab`, bölge bilgisi ⓘ. `:core` `ShiftFollower.handled()`. Ayrıntı `MAP.md` 5.9, 11.19.
 - Doğrulama: `-p logic test` 1.688 test, 75 kırmızı (A6.9 51, A6.11 24 iskeleti; A6.7 dalıyla birleşik); `:map`/`:app` derleniyor; yeni Robolectric testleri yeşil; `lintDebug` koşmadı (Maven 429). Telefonda denenmedi.
 - Açık kalan: `OrderEvents` Android uygulayıcısı yok → `DayRuntime.bindOrders` çağrılmıyor, aşama izleyici cihazda çalışmaz; yer adı etiketleri ve bölge önizleme haritası yok; `BikewayTab` Yollarım ekranı (A6.11) gelince takılır; sürüş günlüğü/gün raporu A6.9 (`DayRuntime.onStep`).
 - Sıradaki: A6.9 (Sonnet · high) bu daldan, sonra A6.11. (A6.7 başka hesapta bitti, dala birleşti.)
 
-=======
->>>>>>> origin/main
 ## 2026-10-20 — A6.7 hız ve batarya (Y9), hava (Y10), menzil girdileri (N5) (Claude Sonnet · high; dal `ccr-9f8c8f6c-07ubij` ← A6.6 dalı `ccr-56fdfbc1-p00o8e`, kod `5e63562`)
 - Yapılan: `logic/map` `ride` (`SpeedOptions`, `EnergyOdometer`, `BatteryState`/`BatteryEstimator`, `RangeInputs`), `weather` (`WeatherReport`, `WeatherSummary`, `WeatherIcons`, `WeatherRequest`, `WeatherNotifyText`, `WeatherPrefs`, `WeatherFetcher`, `WeatherNotifier`, `LiveWeather`), `ui` `RideText`/`WeatherUiText`; `:core` `RangePort`; `:map` `BatteryRuntime` (+`range`), `WeatherRuntime`, `FileReportStore`; `:app` `MapMetrics`/`SpeedSheet`/`ScooterValuesSheet`, `WeatherChip`/`WeatherDetailSheet`, Hava ayarları; `Orders.bindWeather` (R15). Bildirim WorkManager değil süreç içi döngü (`MAP.md` 10.15). A6.6 dalıyla (`ccr-56fdfbc1-p00o8e`) birleştirildi: `NavRuntime` fix akışı `WeatherRuntime`/`BatteryRuntime`'a da gider, `MapScreen` sol göstergeleri/hava şeridini bağlar, `MapSettingsScreen` hem "API ve bağlantılar" hem "Hava durumu" taşır.
 - Düzeltilen A6.5 hatası: `MapTab` gün kartı açılınca durumunu kaybediyordu → `movableContentOf`. Test uyarlamaları `TEST_ENVANTERI` "A6.7 kod durumu".
@@ -138,16 +142,3 @@ Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 
 - Doğrulama: `bash ninebot-logger/tests/run.sh` (JDK 21) 14 suit yeşil; kaynak repoya yazılmadı. Kod, test ve CI yok (`[skip ci]`); telefonda denenecek bir şey yok.
 - Kararlar (şartname): `ScooterBridge.steps` (sipariş enerjisi adımları) A5.3'te `logic/core`'a eklenir; Provider rolünde BLE yok, `skip role_provider` (S11); `nb_crypto.py` yalnız test referansı, LICENSE/NOTICE ile.
 - Açık kalan: kullanıcı sorusu **S18** (bağlantı `fail()` sonrası boşta kalıyor; yeniden deneme?). Riskler R-S5/R-S6 (2 telefonda sipariş enerjisi ve vardiya durumu) A8.1'e. Sıradaki scooter işi A5.2 (Opus · xhigh).
-
-## 2026-10-17 — A3.5 `:orders` çekirdek (Claude Opus · high; dal `ccr-e90bca59-fxabvl`, `c192b40`)
-- Yapılan: `DeliveryCore` + yardımcılar (Readiness, DeliveryDeadline, ArrivalDistance, VenueArrival, LegacyRecords, RecordJson, PlatformHistory, CashPayment/CashTips, OnlineSessions, OfferWeather, BoostLog, OrderHistory) satır satır `logic/orders`'a; uyarlananlar `OfferWindows`, `Platforms`, `OverlayText` (`OwnLines` sabitleri), `OrderStages`, `NavBinding`, `OfferSummaries`, `OfferWeather.from(WeatherNow)`; `OrderTracker` → saf `OrderFlow` (`Env`: LogStore, prefs, `CourierRecords`, Clock, ScooterBridge, WeatherPort, `OrderObserver`), `CaptureSink` + `ShiftMachine.Hooks` uygular. Farklar `ORDERS.md` 16.1.
-- Doğrulama: `logic/orders` 383 test, 336 yeşil (A3.2 sipariş testleri, `SahaTekrarTest` 10/10, yeni `OrderFlowTest` 7, `OverlayTextOwnLinesTest` 2); kalan 47 = A3.6 iskeletleri (PlatformTotals 19, CashReconcile 5, CashPending 3, PocketCash 3, RecordPages 2, RestaurantBubble 4, CustomerBubble 6, CustomerCard 5). capture 128/129, core 216 yeşil; kök `:orders`/`:capture` derlenir. CI yok (`[skip ci]`), telefonda denenmedi.
-- **`main`'e birleşmedi** (orders kırmızı); `main`'e yalnız `WEEM_ISLER.md` + bu not.
-- Açık kalan: A3.6 (Sonnet · high): A3.6 sınıfları + `OrderFlow`'daki "A3.6" notlu adımlar (resmî toplamlar, CASH PENDING, cep nakdi, E14/E16 açılışı). `OrderObserver` kanca imzaları A4.1'de kesinleşir. AZ "hava məlumatı gəlmədi" onayı hâlâ bekliyor.
-
-## 2026-10-17 — A3.4 `:capture` kodu (Claude Opus · high; dal `ccr-e90bca59-fxabvl`, `aea4f62`)
-- Yapılan: Rawstats ayrıştırıcısı + yardımcılar satır satır `logic/capture`'a; saf yeni parçalar `CaptureText`, `CaptureTiming`, `OcrAcceptance`, `NotificationDedup`, `TargetApps`, `CaptureRows`, `CaptureSink`; JDK 21/ICU `\b` → açık Unicode sınırı, norm'da NBSP (`CAPTURE.md` 7.5); ağ yasağı: `NoNetworkTest`, `:capture:verifyRuntimeAllowlist` (`capture/runtime-allowlist.txt`, `preBuild`), ML Kit 16.0.1.
-- S17: `transport-backend-cct` dışlanamaz (ML Kit `CCTDestination.INSTANCE`'a doğrudan bakar → `NoClassDefFoundError`); onun yerine `TransportBackendDiscovery` meta-data'sı `tools:node="remove"` → arka uç yok, olaylar gönderilmeden silinir. Birleşik manifestte doğrulandı.
-- Doğrulama: `logic/capture` 129 test, 128 yeşil (kalan `ScreenReadingE7Test.shiftServiceWarnsAndTheHomeShowsIt` = A3.7 Android); `logic/orders` 374 (365 kırmızı); core yeşil; kök `:capture`/`:orders` `compileDebugKotlin` yeşil, `:capture:lintDebug` temiz. CI yok (`[skip ci]`), telefonda denenmedi (OCR ve ağsızlık A3.7).
-- **`main`'e birleşmedi** (orders kırmızı); `main`'e yalnız `WEEM_ISLER.md` + bu not.
-- Açık kalan: A3.5 (Opus · high) sırada. `ShiftMachine.kt` MotionGate notu silindi. A3.6 sonunda bile birleşme için A3.7'deki E7 testi gerekir (ya da kullanıcı kararı).
