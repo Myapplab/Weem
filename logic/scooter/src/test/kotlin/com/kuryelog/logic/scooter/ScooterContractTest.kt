@@ -51,7 +51,10 @@ class ScooterContractTest {
         val scooter = app.indexOf("add(\"scooter\"")
         val screen = app.indexOf("add(\"screen_reading\"")
         assertTrue("$orders $scooter $screen", orders in 0 until scooter && scooter < screen)
-        assertTrue(app.contains("Orders.bindScooter(this, Scooter.bridge)"))
+        // A8.3: köprü role göre `TwoPhone`'da bağlanır (tek telefon ve Receiver yerel, Provider uzak).
+        assertTrue(app.contains("TwoPhone.start(this)"))
+        val two = text("app/src/main/kotlin/com/kuryelog/app/TwoPhone.kt")
+        assertTrue(two.contains("Orders.bindScooter(app, Scooter.bridge)") && two.contains("Orders.bindScooter(app, b.scooter)"))
     }
 
     @Test fun ordersModuleKnowsOnlyTheBridgeInterface() {
