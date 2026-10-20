@@ -32,7 +32,14 @@ import com.kuryelog.app.core.Home
 import com.kuryelog.app.core.HomeFixSampler
 import com.kuryelog.app.core.Store
 import com.kuryelog.logic.app.HomeTexts
+import com.kuryelog.app.map.HomePickMap
+import com.kuryelog.app.map.HomePickOutcome
+import com.kuryelog.app.map.HomePickScreen
+import com.kuryelog.logic.app.Palette
 import com.kuryelog.logic.core.HomeDraft
+import com.kuryelog.logic.core.HomePickResult
+import com.kuryelog.logic.map.geo.GeoPoint
+import com.kuryelog.logic.map.ui.MapStyles
 import com.kuryelog.logic.core.Lang
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -41,7 +48,7 @@ import com.kuryelog.logic.app.Text as Str
 
 /**
  * Daha fazla → Ev konumu (G2, CORE.md 2.1–2.2; RS ev kartı): kayıtlı ev, GPS ile seçim (6 sn ölçüm, taslak, Kaydet/İptal), silme
- * (onaylı), arka plan konumu izni ve kuralın açıklaması. Haritadan seçme A6'da (`:map`). Ekran durumu tercih değildir.
+ * (onaylı), arka plan konumu izni ve kuralın açıklaması; haritadan seçme (`:map` `HomePickScreen`, A6.5). Ekran durumu tercih değildir.
  */
 @Composable
 fun HomeScreen(lang: Lang, onBack: () -> Unit) {
@@ -52,6 +59,7 @@ fun HomeScreen(lang: Lang, onBack: () -> Unit) {
     var measuring by remember { mutableStateOf<String?>(null) }
     var status by remember { mutableStateOf<String?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var picking by remember { mutableStateOf(false) }
     val sampler = remember { HomeFixSampler(ctx) }
     DisposableEffect(Unit) { onDispose { sampler.cancel() } }
 
@@ -70,6 +78,21 @@ fun HomeScreen(lang: Lang, onBack: () -> Unit) {
     val askLocation = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { ctx.safely { if (Home.hasFine(ctx)) measure() } }
     val askBackground = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ctx.safely { version++ } }
 
+    if (picking) {
+        // Haritadan seçme (MAP.md 6.11): girdi taslak ya da kayıtlı ev; sonuç yalnız taslak olur (Kaydet yine burada, CORE.md 2).
+        val initial = draft?.let { GeoPoint(it.lat, it.lon) } ?: Home.point(ctx)?.let { GeoPoint(it.lat, it.lon) }
+        val dark = LocalWeemPalette.current == Palette.dark
+        HomePickScreen(
+            initial = initial,
+            locate = { HomePickLocate.current(ctx) },
+            lang = lang, dark = dark,
+            onResult = { r ->
+                picking = false
+                if (r is HomePickOutcome.Saved) HomePickResult.parse(true, r.lat, r.lon)?.let { draft = it; status = null }
+            },
+        ) { s -> HomePickMap(s, MapStyles.userAgent(BuildInfo.versionName(ctx))) }
+        return
+    }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = onBack) { Text(Str.BACK.get(lang)) }
@@ -102,6 +125,7 @@ fun HomeScreen(lang: Lang, onBack: () -> Unit) {
                     Button(onClick = { ctx.safely { if (Home.hasFine(ctx)) measure() else askLocation.launch(locationPermissions()) } }, enabled = measuring == null) {
                         Text(Str.HOME_USE_CURRENT.get(lang))
                     }
+                    OutlinedButton(onClick = { sampler.cancel(); measuring = null; picking = true }) { Text(Str.HOME_FROM_MAP.get(lang)) }
                     measuring?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     status?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                     draft?.let { d ->
