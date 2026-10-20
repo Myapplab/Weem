@@ -41,7 +41,7 @@ import kotlinx.coroutines.launch
 /**
  * Navigasyonun Android çalışma zamanı (MAP.md 7.16, 8.12): tek [NavController] (rota, takip, yayın), yer arama [search], konum kaynağı, gelen bağlantılar ve pano,
  * `NavPort` ([port]). Harita verisi, Harita ayarları, sokak kararları ve vardiya akışlarını denetleyiciye bağlar; saati saniyede bir ilerletir.
- * Gün motoru (A6.8), POI (A6.8), sürüş günlüğü ve rota kaydı (A6.9), yol öğrenme (A6.11) kendi görevlerinde bağlanır.
+ * Gün motoru ve POI (A6.8) bağlı; sürüş günlüğü ve rota kaydı (A6.9), yol öğrenme (A6.11) kendi görevlerinde bağlanır.
  */
 class NavRuntime private constructor(private val app: Context) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -62,7 +62,11 @@ class NavRuntime private constructor(private val app: Context) {
     private val location: NavLocation = NavLocation(app) {
         speedKmh = (it.speedMps ?: 0.0).coerceAtLeast(0.0) * 3.6
         controller.onFix(it)
+        day.onFix(it)
     }
+
+    /** Gün motoru (MAP.md 11): fix'ler, vardiya, aşama okuması; hedef bağı [controller]'a aşağıda takılır. */
+    val day: DayRuntime = DayRuntime.get(app)
 
     /** Son fix'in hızı (km/s; yaklaşma zoom'u, MAP.md 7.10). */
     @Volatile var speedKmh = 0.0
@@ -73,7 +77,7 @@ class NavRuntime private constructor(private val app: Context) {
         scope = scope,
         http = AndroidHttp,
         credentials = { ApkGoogleConfig.credentials(app, settings.value.googleKey) },
-        pois = { emptyList() },
+        pois = { MapPois.all(app) },
         graph = { MapData.controller(app).state.value.graph },
         lang = lang,
         near = { controller.here() },
@@ -113,6 +117,8 @@ class NavRuntime private constructor(private val app: Context) {
     }
 
     init {
+        controller.shift = day.navShift
+        controller.restaurantNear = { MapPois.foodNear(app, it) }
         controller.setStreetPrefs(StreetPrefsCodec.load(mapPrefs))
         scope.launch { MapData.controller(app).state.map { it.graph }.distinctUntilChanged().collect { controller.setGraph(it) } }
         scope.launch { settings.collect { controller.setSettings(it) } }

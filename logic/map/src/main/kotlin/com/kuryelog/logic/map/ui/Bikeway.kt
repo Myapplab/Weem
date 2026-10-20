@@ -19,6 +19,30 @@ enum class BikewayText(override val tr: String, override val az: String) : Bilin
     UNMARKED("Bisiklet yolu işareti kaldırıldı: %s", "Velosiped yolu qeydi silindi: %s"),
     UNDO("Geri al", "Geri qaytar"),
     NO_NAME("isimsiz yol", "adsız yol"),
+    TAB("Bisiklet", "Velosiped"),
+    TAB_TITLE("Bisiklet yolları", "Velosiped yolları"),
+    TAB_NOTE("Bakü'de OSM bisiklet yolu kaydı az; eksikleri elle işaretleyebilirsin.", "Bakıda OSM-də velosiped yolu qeydləri azdır; çatışmayanları əl ilə qeyd edə bilərsən."),
+    TAB_HELP(
+        "Haritada sokağa uzun bas → \"Bisiklet yolu olarak işaretle\". İşaret yalnız bu telefonda kalır, OSM bisiklet yolu gibi kullanılır.",
+        "Xəritədə küçəyə uzun bas → \"Velosiped yolu kimi qeyd et\". Qeyd yalnız bu telefonda qalır, OSM velosiped yolu kimi istifadə olunur.",
+    ),
+    TAB_STATS("OSM: %d sokak", "OSM: %d küçə"),
+    TAB_STATS_KM("OSM: %d sokak · %s", "OSM: %d küçə · %s"),
+    TAB_OLD_MAP(
+        "Kayıtlı harita bisiklet yolu bilgisi içermiyor (eski harita). Ayarlar → İlave ayarlar → Harita verisi → İndir / güncelle.",
+        "Yaddaşdakı xəritədə velosiped yolu məlumatı yoxdur (köhnə xəritə). Tənzimləmələr → Əlavə tənzimləmələr → Xəritə məlumatları → Yüklə / yenilə.",
+    ),
+    LAYER("Haritada bisiklet yolları", "Xəritədə velosiped yolları"),
+    LAYER_SUB("Düz çizgi: OSM · kesikli: elle işaretli", "Düz xətt: OSM · qırıq xətt: əl ilə qeyd olunan"),
+    WEIGHT("Bisiklet yolu tercihi", "Velosiped yoluna üstünlük"),
+    WEIGHT_SUB(
+        "Rota maliyeti bu çarpanla (×1.00: tercih yok). Süre, tek yön ve ters yön kuralları değişmez.",
+        "Marşrut xərci bu əmsalla (×1.00: üstünlük yoxdur). Vaxt, birtərəfli hərəkət və əks istiqamət qaydaları dəyişmir.",
+    ),
+    MARKS_TITLE("Elle işaretlenen bisiklet yolları", "Əl ilə qeyd olunan velosiped yolları"),
+    MARKS_EMPTY("Henüz yok", "Hələ yoxdur"),
+    MARK_ID("OSM #%d", "OSM #%d"),
+    REMOVE_MARK("İşareti kaldır", "Qeydi sil"),
     ;
 
     fun format(lang: Lang, vararg args: Any?): String = String.format(get(lang), *args)
