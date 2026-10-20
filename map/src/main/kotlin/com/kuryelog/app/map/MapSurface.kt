@@ -14,9 +14,14 @@ enum class LinePattern { SOLID, DASH, DOT }
 /** Haritadaki bir çizgi; [z] büyük olan üstte. Renk ARGB. */
 data class MapLine(val id: String, val points: List<GeoPoint>, val color: Int, val widthDp: Float, val pattern: LinePattern = LinePattern.SOLID, val z: Int = 0)
 
-enum class MarkerKind { STOP_FIRST, STOP, REACHED }
+enum class MarkerKind {
+    STOP_FIRST, STOP, REACHED,
 
-/** İşaret: duraklar (mor, numaralı; ilk tam, diğerleri %60) ve varılan hedef (yeşil). */
+    /** Yer noktaları (MAP.md 5.3): ışık, metro, AVM, restoran, fast food, kafe, market. */
+    POI_LIGHT, POI_METRO, POI_MALL, POI_RESTAURANT, POI_FASTFOOD, POI_CAFE, POI_MARKET,
+}
+
+/** İşaret: duraklar (mor, numaralı; ilk tam, diğerleri %60), varılan hedef (yeşil) ve yer noktaları. */
 data class MapMarker(val id: String, val point: GeoPoint, val kind: MarkerKind, val label: String = "")
 
 /** Konum işareti: [course] ok yönü, [beam] koni yönü (pusula dahil), [arrow] rota açık; doğruluk dairesi 8 < [accuracyM] < 80 m. */

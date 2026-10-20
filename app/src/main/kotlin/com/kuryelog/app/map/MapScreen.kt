@@ -59,13 +59,21 @@ import com.kuryelog.logic.map.nav.ArrivalFocus
 import com.kuryelog.logic.map.nav.ArrivalFocusTracker
 import com.kuryelog.logic.map.nav.NavHaptic
 import com.kuryelog.logic.map.nav.Refollow
+import com.kuryelog.logic.map.graph.Poi
+import com.kuryelog.logic.map.graph.WayFlag
+import com.kuryelog.logic.map.ui.BikewayLayerRules
+import com.kuryelog.logic.map.ui.BikewayMenu
+import com.kuryelog.logic.map.ui.BikewayMenuAction
+import com.kuryelog.logic.map.ui.PoiLayerRules
+import com.kuryelog.logic.map.ui.PressedPlace
+import com.kuryelog.logic.map.ui.PressedRoad
+import com.kuryelog.logic.map.ui.PlaceText
+import com.kuryelog.logic.map.ui.Toasts
 import com.kuryelog.logic.map.ui.LongPressAction
 import com.kuryelog.logic.map.ui.LongPressMenu
 import com.kuryelog.logic.map.ui.MapPalette
 import com.kuryelog.logic.map.ui.RouteLayer
 import com.kuryelog.logic.map.ui.MapText
-import com.kuryelog.logic.map.day.DayState
-import com.kuryelog.logic.map.day.DayView
 import com.kuryelog.logic.map.graph.MapDataPhase
 import com.kuryelog.logic.map.graph.MapDataState
 import com.kuryelog.logic.map.ui.LocateAction
@@ -79,8 +87,9 @@ import kotlin.math.roundToInt
 /**
  * Harita sekmesi (MAP.md 6.2, 6.3, 6.9): graf yokken vardiya kartı + kurulum kartı (harita yüzeyi yok); graf hazırsa harita yüzeyi (altlık `mapStyle`, tema) + HUD.
  * Kamera takip ve konum düğmesi kuralları 6.5; ekran açık = vardiya açık ya da durak var. Navigasyon (A6.6; MAP.md 7.10, 7.11, 8.8): rota çizgileri ve rozetler, yeni rotada
- * sığdırma, yaklaşma zoom'u, varış odağı, dokunmadan sonra takibe dönüş, rota paneli, bildirim şeridi, arama, uzun basış hedef satırları, Eve dön. Sol göstergeler ve
- * hava A6.7, gün motoru ve İstatistik A6.8/A6.9'da bağlanır.
+ * sığdırma, yaklaşma zoom'u, varış odağı, dokunmadan sonra takibe dönüş, rota paneli, bildirim şeridi, arama, uzun basış hedef satırları, Eve dön. Gün motoru (A6.8; MAP.md 11):
+ * gün kartı gerçek durumdan, toast ve titreşim, yer ve ışık işaretleri, bisiklet yolu katmanı, uzun basış ışık/kaldırım/bisiklet/işletme satırları. Sol göstergeler ve hava A6.7,
+ * İstatistik A6.9'da bağlanır.
  */
 @Composable
 fun MapScreen(lang: Lang, dark: Boolean) {
@@ -128,6 +137,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, mapStyle: Str
     val scope = rememberCoroutineScope()
     val runtime = remember { NavRuntime.get(ctx) }
     val navCtl = runtime.controller
+    val settings by MapSettingsRepo.settings(ctx).collectAsState()
     val nav by navCtl.state.collectAsState()
     val progress by navCtl.progress.collectAsState()
     val toast by navCtl.toast.collectAsState()
@@ -166,6 +176,22 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, mapStyle: Str
     var panelOpen by remember { mutableStateOf(false) }
     var searching by remember { mutableStateOf(false) }
     var pressed by remember { mutableStateOf<GeoPoint?>(null) }
+    val dayRt = runtime.day
+    val dayView by dayRt.view.collectAsState()
+    var banner by remember { mutableStateOf<DayBanner?>(null) }
+    var bannerSeq by remember { mutableLongStateOf(0L) }
+    var bikeRev by remember { mutableIntStateOf(0) }
+    var lightsRev by remember { mutableIntStateOf(0) }
+    var poiRev by remember { mutableIntStateOf(0) }
+    var center by remember { mutableStateOf<GeoPoint?>(null) }
+    var poiEdit by remember { mutableStateOf<PoiEditTarget?>(null) }
+    // Gün motoru: toast ve titreşim yalnız harita görünürken (kaçan toast sonradan gösterilmez; MAP.md 11.14).
+    LaunchedEffect(dayRt) {
+        dayRt.steps.collect { step ->
+            step.toasts.lastOrNull()?.let { t -> banner = DayBanner(++bannerSeq, t.text, t.tone.toTone(), 5) }
+            if (step.haptic) vibrate(ctx, NavHaptic.HEAVY)
+        }
+    }
     val moveEveryMs = if (google) MapCamera.GOOGLE_MOVE_MS else MapCamera.MAPLIBRE_MOVE_MS
     val navNow by rememberUpdatedState(nav)
 
@@ -242,20 +268,37 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, mapStyle: Str
         command(p.point, z, bearing)
     }
     val mode = LocateButtonRules.cameraModeOf(follow, headingUp)
-    val day = remember(active, startedAtMs) {
-        DayView(DayState().apply { this.active = active; this.startedAtMs = startedAtMs }, null)
-    }
+    val day = dayView
     val lines = remember(nav.plans, nav.mode, dark) { RouteLayer.strokes(nav, MapPalette.of(dark)).map { it.toMapLine() } }
-    val markers = remember(nav.plans, nav.mode, nav.reached) { RouteLayer.pins(nav).map { it.toMarker() } }
+    val routeMarkers = remember(nav.plans, nav.mode, nav.reached) { RouteLayer.pins(nav).map { it.toMarker() } }
+    // Bisiklet yolu katmanı (MAP.md 5.1): OSM düz, elle işaretli kesikli; rota çizgilerinin altında.
+    val graph = data.graph
+    val bikeLines = remember(graph, bikeRev, settings.showBikewayLayer, dark) {
+        if (graph == null) emptyList()
+        else BikewayLayerRules.lines(graph, runtime.bikeway.marks, settings.showBikewayLayer, dark).map { l ->
+            MapLine("bike-${l.edge}", graph.geometry(l.edge).map { GeoPoint(it.lat, it.lon) }, (0xD9 shl 24) or l.rgb, l.width.toFloat(), if (l.dashed) LinePattern.DASH else LinePattern.SOLID, -1)
+        }
+    }
+    // Yer ve ışık işaretleri (MAP.md 5.3): düzeltilmiş yerler + ışık işaretleri, yakınlığa ve görünür kutuya göre süzülür.
+    val poiMarkers = remember(center, zoom, viewport, poiRev, lightsRev, data.pois) {
+        val c = center ?: return@remember emptyList<MapMarker>()
+        if (viewport == IntSize.Zero) return@remember emptyList<MapMarker>()
+        val wDp = with(density) { viewport.width.toDp().value.toDouble() }
+        val hDp = with(density) { viewport.height.toDp().value.toDouble() }
+        val box = PoiLayerRules.bounds(c.lat, c.lon, wDp, hDp, zoom)
+        val all = PoiLayerRules.withLights(MapPois.all(ctx), dayRt.lightSpots())
+        PoiLayerRules.select(all, box, zoom).mapIndexed { i, p -> p.toMarker(i) }
+    }
+    val markers = routeMarkers + poiMarkers
     val model = MapSurfaceModel(
-        base = base, dark = dark, camera = camera, lines = lines, markers = markers,
+        base = base, dark = dark, camera = camera, lines = bikeLines + lines, markers = markers,
         puck = puck?.let { MapPuck(it.point, it.course, it.beam, arrow = nav.hasRoute, accuracyM = it.accuracyM) },
     )
     val events = MapSurfaceEvents(
         onTap = { mapOnly = !mapOnly },
         onLongPress = { pressed = it },
         onGesture = { follow = false; autoZoom = false; freeByGesture = true; lastGestureMs = System.currentTimeMillis() },
-        onCameraIdle = { _, z, _ -> zoom = z },
+        onCameraIdle = { c, z, _ -> zoom = z; center = c },
     )
     val panelActions = RoutePanelActions(
         acceptPending = { navCtl.acceptPending(it) }, dismissPending = navCtl::dismissPending, retry = { navCtl.requestReplan() },
@@ -296,7 +339,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, mapStyle: Str
             onSearch = { searching = true },
             onShowPanels = { mapOnly = false },
         ),
-        toast = { NavToastBanner(toast, dark) },
+        toast = { NavToastBanner(toast, dark); DayToastBanner(banner, dark) },
         routePanel = { if (panelOpen && nav.hasPanelInfo()) RoutePanel(nav, lang, dark, panelActions) },
         // Sol göstergeler A6.7'de (MapMetrics); vardiya kapalıyken ya da yarıda kalmışken başlat/bitir kartı üstte.
         metrics = {},
@@ -324,17 +367,62 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, mapStyle: Str
         )
     }
     pressed?.let { p ->
-        // A6.6: hedef satırları (Buraya git, durak ekle, restoran olarak seç); yol/POI/ışık/görev satırları sahip görevlerde (A6.8–A6.11).
-        val rows = remember(lang) { LongPressMenu.rows(null, null, lang).filter { it.action in NAV_ROWS } }
+        // Uzun basış (MAP.md 6.7): hedef satırları A6.6; ışık, kaldırım, bisiklet yolu ve işletme satırları A6.8; öteki yol satırları A6.9–A6.11.
+        val g = data.graph
+        val hit = remember(p, g, bikeRev) { g?.nearestEdge(p.lat, p.lon, LongPressMenu.ROAD_RADIUS_M) }
+        val place = remember(p, poiRev) { MapPois.nearestBusiness(ctx, p, LongPressMenu.PLACE_RADIUS_M) }
+        val road = remember(hit, bikeRev) {
+            if (g == null || hit == null) null else {
+                val flags = g.flagsOf(hit.edge)
+                PressedRoad(
+                    g.nameOf(hit.edge), g.classOf(hit.edge).isMainRoad, (flags and (WayFlag.ONEWAY_FWD or WayFlag.ONEWAY_BWD)) != 0, false, false,
+                    BikewayMenu.action(g, hit.edge, runtime.bikeway.marks),
+                )
+            }
+        }
+        val rows = remember(lang, road, place) { LongPressMenu.rows(road, place?.let { PressedPlace(it.kind, it.name) }, lang).filter { it.action in DAY_ROWS } }
         LongPressSheet(rows, onDismiss = { pressed = null }, onPick = { a ->
             pressed = null
             when (a) {
                 LongPressAction.GO_TO -> navCtl.goTo(p)
                 LongPressAction.ADD_STOP -> navCtl.addStop(p)
                 LongPressAction.PICK_AS_RESTAURANT -> navCtl.goTo(p, restaurant = true)
+                LongPressAction.GO_TO_RESTAURANT -> place?.let { navCtl.goTo(GeoPoint(it.lat, it.lon), it.name, restaurant = true) }
+                LongPressAction.CURB_WAIT -> dayRt.markSidewalk(p, remove = false)
+                LongPressAction.CURB_REMOVE -> dayRt.markSidewalk(p, remove = true)
+                LongPressAction.LIGHT_HERE -> { dayRt.markLight(p.lat, p.lon, true); lightsRev++ }
+                LongPressAction.NO_LIGHT -> {
+                    // "Işık yok": 25 m içindeki ışığın yeri, yoksa basılan nokta.
+                    val spot = dayRt.lightSpots().filter { Geo.haversine(p.lat, p.lon, it.lat, it.lon) <= LongPressMenu.LIGHT_RADIUS_M }
+                        .minByOrNull { Geo.haversine(p.lat, p.lon, it.lat, it.lon) }?.let { GeoPoint(it.lat, it.lon) }
+                        ?: MapPois.base(ctx)?.nearest('l', p.lat, p.lon, LongPressMenu.LIGHT_RADIUS_M)?.let { GeoPoint(it.lat, it.lon) }
+                        ?: p
+                    dayRt.markLight(spot.lat, spot.lon, false); lightsRev++
+                }
+                LongPressAction.BIKEWAY -> if (g != null && hit != null) {
+                    val toasts = Toasts()
+                    BikewayMenu.toggleWithUndo(runtime.bikeway, toasts, g, hit.edge, g.nameOf(hit.edge), lang)
+                    runtime.reloadBikeway(); bikeRev++
+                    toasts.current?.let { t ->
+                        val undo = t.onAction
+                        banner = DayBanner(++bannerSeq, t.text, t.tone, t.seconds, t.actionLabel, undo?.let { u -> { u(); runtime.reloadBikeway(); bikeRev++ } })
+                    }
+                }
+                LongPressAction.POI_EDIT -> poiEdit = PoiEditTarget(p, place)
                 else -> Unit
             }
         })
+    }
+    poiEdit?.let { t ->
+        PoiEditDialog(
+            initial = t.place, lang = lang, onDismiss = { poiEdit = null },
+            onSave = { name, kind ->
+                val orig = t.place
+                MapPois.save(ctx, if (orig == null) Poi(t.point.lat, t.point.lon, kind, name) else Poi(orig.lat, orig.lon, kind, name, orig.osmRef), orig)
+                poiRev++
+                poiEdit = null
+            },
+        )
     }
     if (askHome) {
         val hasHome = remember { Home.point(ctx) != null }
@@ -367,7 +455,13 @@ private const val MOVING_KMH = 3.0
 /** Otomatik yakınlık her kamera adımında hedefe bu oranda yaklaşır (YolGo kare başı %4; WEEM 80/160 ms adımında). */
 private const val ZOOM_EASE = 0.15
 private const val FOCUS_EASE = 0.25
-private val NAV_ROWS = setOf(LongPressAction.GO_TO, LongPressAction.ADD_STOP, LongPressAction.GO_TO_RESTAURANT, LongPressAction.PICK_AS_RESTAURANT)
+private val DAY_ROWS = setOf(
+    LongPressAction.GO_TO, LongPressAction.ADD_STOP, LongPressAction.GO_TO_RESTAURANT, LongPressAction.PICK_AS_RESTAURANT, LongPressAction.CURB_WAIT,
+    LongPressAction.CURB_REMOVE, LongPressAction.BIKEWAY, LongPressAction.LIGHT_HERE, LongPressAction.NO_LIGHT, LongPressAction.POI_EDIT,
+)
+
+/** Yer düzeltme penceresinin hedefi: basılan nokta ve (varsa) düzeltilen yer. */
+private class PoiEditTarget(val point: GeoPoint, val place: Poi?)
 
 /** Navigasyon titreşimi (YolGo `HapticFeedback`): seçim kısa, güçlü orta, uyarı uzun. */
 private fun vibrate(ctx: android.content.Context, h: NavHaptic) {
@@ -404,6 +498,9 @@ fun MapSetupCard(state: MapDataState, region: String, lang: Lang, onRegion: (Str
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             val building = state.phase == MapDataPhase.BUILDING
+            var info by remember { mutableStateOf(false) }
+            TextButton(onClick = { info = true }) { Text("ⓘ ${PlaceText.REGION_WHAT.get(lang)}") }
+            if (info) RegionInfoSheet(lang) { info = false }
             for ((key, label) in listOf("central" to MapText.REGION_CENTRAL.get(lang), "wide" to MapText.REGION_WIDE.get(lang))) {
                 androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable(enabled = !building) { onRegion(key) }) {
                     RadioButton(selected = region == key, onClick = { onRegion(key) }, enabled = !building)

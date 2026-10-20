@@ -24,6 +24,7 @@ import com.kuryelog.logic.map.nav.NavOnlyController
 import com.kuryelog.logic.map.nav.NavText
 import com.kuryelog.logic.map.nav.Stop
 import com.kuryelog.logic.map.net.UserAgent
+import com.kuryelog.logic.map.route.BikewayMarksStore
 import com.kuryelog.logic.map.route.RouteEngine
 import com.kuryelog.logic.map.route.StreetPrefsCodec
 import java.util.Locale
@@ -116,7 +117,11 @@ class NavRuntime private constructor(private val app: Context) {
         }
     }
 
+    /** Elle bisiklet yolu işaretleri (`streets.bikeway.v1`); değişince açık rota yeniden hesaplanır (MAP.md 5.1). */
+    val bikeway = BikewayMarksStore(mapPrefs)
+
     init {
+        controller.setBikewayMarks(bikeway.marks)
         controller.shift = day.navShift
         controller.restaurantNear = { MapPois.foodNear(app, it) }
         controller.setStreetPrefs(StreetPrefsCodec.load(mapPrefs))
@@ -156,6 +161,9 @@ class NavRuntime private constructor(private val app: Context) {
 
     /** Eve dön (MAP.md 7.3, 7.8): ev `:core`'da; yoksa denetleyici uyarır. */
     fun goHome() = controller.goHome(Home.point(app)?.let { GeoPoint(it.lat, it.lon) })
+
+    /** Bisiklet işaretleri değişti: denetleyici yeni kümeyle sürer, açık rota yeniden hesaplanır. */
+    fun reloadBikeway() = controller.setBikewayMarks(bikeway.marks)
 
     /** Sokak kararları değişti (uzun basış, Ses±): denetleyici yeni listeyle sürer. */
     fun reloadStreetPrefs() = controller.setStreetPrefs(StreetPrefsCodec.load(mapPrefs))

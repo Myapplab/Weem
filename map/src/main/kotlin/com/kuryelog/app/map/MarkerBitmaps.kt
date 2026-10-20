@@ -31,6 +31,50 @@ object MarkerBitmaps {
         c.drawText("⚑", SIZE / 2, SIZE / 2 - (t.descent() + t.ascent()) / 2, t.apply { color = green })
     }
 
+    /** Yer işaretleri (MAP.md 5.3): metro `#E30613` daire + beyaz M; AVM `#7B4DFF` yuvarlak kutu; ışık `#222222` daire + `#FFB13D` ışık; yemek/market palet `food` dairesi. */
+    fun poi(density: Float, kind: MarkerKind, dark: Boolean): Bitmap = draw(density) { c ->
+        val glyph = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFFFFFF.toInt(); typeface = Typeface.DEFAULT_BOLD; textAlign = Paint.Align.CENTER }
+        fun letter(t: String, size: Float) {
+            glyph.textSize = size
+            c.drawText(t, SIZE / 2, SIZE / 2 - (glyph.descent() + glyph.ascent()) / 2, glyph)
+        }
+        fun disc(r: Float, color: Int) = c.drawCircle(SIZE / 2, SIZE / 2, r, Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color })
+        when (kind) {
+            MarkerKind.POI_METRO -> { disc(13f, 0xFFE30613.toInt()); letter("M", 15f) }
+            MarkerKind.POI_MALL -> {
+                c.drawRoundRect(2f, 2f, SIZE - 2, SIZE - 2, 8f, 8f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF7B4DFF.toInt() })
+                letter("A", 15f)
+            }
+            MarkerKind.POI_LIGHT -> {
+                disc(8f, 0xFF222222.toInt())
+                val dot = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFFB13D.toInt() }
+                for (dy in listOf(-3.2f, 0f, 3.2f)) c.drawCircle(SIZE / 2, SIZE / 2 + dy, 1.6f, dot)
+            }
+            else -> {
+                disc(13f, MapPalette.of(dark).food)
+                letter(
+                    when (kind) { MarkerKind.POI_FASTFOOD -> "F"; MarkerKind.POI_CAFE -> "C"; MarkerKind.POI_MARKET -> "T"; else -> "R" },
+                    14f,
+                )
+            }
+        }
+    }
+
+    /** İki yüzeyin ortak bit eşlem anahtarı ve çizimi. */
+    fun key(mk: MapMarker, dark: Boolean): String = when (mk.kind) {
+        MarkerKind.REACHED -> "reached-$dark"
+        MarkerKind.STOP_FIRST -> "stop1-${mk.label}-$dark"
+        MarkerKind.STOP -> "stop-${mk.label}-$dark"
+        else -> "${mk.kind.name.lowercase()}-$dark"
+    }
+
+    fun of(mk: MapMarker, density: Float, dark: Boolean): Bitmap = when (mk.kind) {
+        MarkerKind.REACHED -> reached(density, dark)
+        MarkerKind.STOP_FIRST -> stop(density, mk.label, true, dark)
+        MarkerKind.STOP -> stop(density, mk.label, false, dark)
+        else -> poi(density, mk.kind, dark)
+    }
+
     private fun draw(density: Float, block: (Canvas) -> Unit): Bitmap {
         val px = (SIZE * density).toInt().coerceAtLeast(1)
         return Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888).also { val c = Canvas(it); c.scale(density, density); block(c) }

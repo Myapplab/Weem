@@ -40,7 +40,7 @@ object DayToasts {
                 DayToast(t.get(lang)) to false
             }
             "day_end" -> if (e.data["reason"] == "home_arrival") DayToast(DayText.DAY_END_HOME.get(lang)) to false else null
-            "order_start" -> DayToast(DayText.ORDER_START.format(lang, n())) to false
+            "order_start" -> DayToast(DayText.ORDER_START.format(lang, n()), DayTone.PINK) to false
             "arrive_restaurant" -> DayToast(DayText.ARRIVE_RESTAURANT.get(lang)) to true
             "leave_restaurant" -> {
                 val wait = (e.data["waitS"] as? Number)?.toInt()
@@ -53,9 +53,9 @@ object DayToasts {
                 val stop = e.data["stop"] as? org.json.JSONObject ?: return null
                 if (stop.optString("kind") != "light") return null
                 val s = ((stop.getLong("end") - stop.getLong("start")) / 1000).toInt()
-                DayToast(DayText.LIGHT_WAIT.format(lang, DayText.mmss(s))) to false
+                DayToast(DayText.LIGHT_WAIT.format(lang, DayText.mmss(s)), DayTone.ORANGE) to false
             }
-            "order_cancel" -> if (e.data["source"] == ShiftEngine.FEED_SOURCE) DayToast(DayText.ORDER_CANCEL.format(lang, n())) to false else null
+            "order_cancel" -> if (e.data["source"] == ShiftEngine.FEED_SOURCE) DayToast(DayText.ORDER_CANCEL.format(lang, n()), DayTone.ORANGE) to false else null
             else -> null
         }
     }

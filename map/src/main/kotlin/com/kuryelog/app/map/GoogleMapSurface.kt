@@ -145,12 +145,7 @@ internal class GoogleHolder(private val app: Context) {
             markers = model.markers
             markerHandles.forEach { it.remove() }; markerHandles.clear()
             for (mk in model.markers) {
-                val key = "${mk.kind}-${mk.label}-${model.dark}"
-                val icon = icons.getOrPut(key) {
-                    BitmapDescriptorFactory.fromBitmap(
-                        if (mk.kind == MarkerKind.REACHED) MarkerBitmaps.reached(density, model.dark) else MarkerBitmaps.stop(density, mk.label, mk.kind == MarkerKind.STOP_FIRST, model.dark),
-                    )
-                }
+                val icon = icons.getOrPut(MarkerBitmaps.key(mk, model.dark)) { BitmapDescriptorFactory.fromBitmap(MarkerBitmaps.of(mk, density, model.dark)) }
                 m.addMarker(MarkerOptions().position(LatLng(mk.point.lat, mk.point.lon)).icon(icon).anchor(.5f, .5f).title(mk.label))?.let { markerHandles += it }
             }
         }

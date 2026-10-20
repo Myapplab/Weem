@@ -16,6 +16,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +33,7 @@ import com.kuryelog.app.R
 import com.kuryelog.app.safely
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.map.ui.MapText
+import com.kuryelog.logic.map.ui.PlaceText
 import com.kuryelog.logic.map.graph.MapDataPhase
 import com.kuryelog.logic.map.ui.MapStyles
 import kotlinx.coroutines.launch
@@ -95,6 +98,9 @@ fun MapDataSection(lang: Lang) {
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         val building = state.phase == MapDataPhase.BUILDING
+        var info by remember { mutableStateOf(false) }
+        TextButton(onClick = { info = true }) { Text("ⓘ ${PlaceText.REGION_WHAT.get(lang)}") }
+        if (info) RegionInfoSheet(lang) { info = false }
         for ((key, label) in listOf("central" to MapText.REGION_CENTRAL.get(lang), "wide" to MapText.REGION_WIDE.get(lang))) {
             Row(
                 Modifier.fillMaxWidth().selectable(selected = settings.region == key, enabled = !building, role = Role.RadioButton) {

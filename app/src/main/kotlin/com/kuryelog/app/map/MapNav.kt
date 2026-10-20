@@ -48,6 +48,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kuryelog.logic.core.Lang
+import com.kuryelog.logic.map.geo.GeoPoint
+import com.kuryelog.logic.map.graph.Poi
 import com.kuryelog.logic.map.input.SearchItem
 import com.kuryelog.logic.map.input.SearchView
 import com.kuryelog.logic.map.nav.NavPanelText
@@ -293,3 +295,17 @@ fun LongPressSheet(rows: List<LongPressRow>, onPick: (LongPressAction) -> Unit, 
 internal fun RouteStroke.toMapLine() = MapLine(id, points, color, widthDp.toFloat(), if (dashed) LinePattern.DASH else LinePattern.SOLID, z)
 
 internal fun RoutePin.toMarker() = MapMarker(id, point, if (reached) MarkerKind.REACHED else if (first) MarkerKind.STOP_FIRST else MarkerKind.STOP, if (reached) "" else number.toString())
+
+/** Yer noktası → işaret (MAP.md 5.3 türleri); kimlik sıra + konum. */
+internal fun Poi.toMarker(i: Int) = MapMarker(
+    "poi-$i-$lat-$lon", GeoPoint(lat, lon),
+    when (kind) {
+        'l' -> MarkerKind.POI_LIGHT
+        's' -> MarkerKind.POI_METRO
+        'm' -> MarkerKind.POI_MALL
+        'f' -> MarkerKind.POI_FASTFOOD
+        'c' -> MarkerKind.POI_CAFE
+        't' -> MarkerKind.POI_MARKET
+        else -> MarkerKind.POI_RESTAURANT
+    },
+)

@@ -7,8 +7,11 @@ import com.kuryelog.logic.map.geo.GeoPoint
 import com.kuryelog.logic.map.settings.MapPrefs
 import org.json.JSONObject
 
+/** Toast rengi (MAP.md 11.14: gün yeşil, sipariş başlangıcı pembe, ışık/iptal turuncu). */
+enum class DayTone { GREEN, PINK, ORANGE }
+
 /** Toast şeridi isteği (MAP.md 11.14): [text] seçili dilde. */
-data class DayToast(val text: String)
+data class DayToast(val text: String, val tone: DayTone = DayTone.GREEN)
 
 /** Bir girdinin sonucu (MAP.md 11.14): olaylar, kaydedilecek mi, toast'lar, titreşim, güncel görünüm. */
 class DayStep(val events: List<DayEvent>, val save: Boolean, val toasts: List<DayToast>, val haptic: Boolean, val view: DayView)
@@ -121,7 +124,7 @@ class DayController(private val prefs: MapPrefs, private val lang: () -> Lang) {
         lights.setManual(lat, lon, exists)
         prefs.setString(LIGHTS_KEY, lights.toJsonString())
         val text = (if (exists) DayText.LIGHT_SAVED else DayText.LIGHT_HIDDEN).get(lang())
-        return DayStep(emptyList(), false, listOf(DayToast(text)), false, view)
+        return DayStep(emptyList(), false, listOf(DayToast(text, DayTone.ORANGE)), false, view)
     }
 
     /** Elle kaldırım işareti (uzun basış satırı 5/6): ölçer sıfırlanır; olay `stop_surface_override`. */
@@ -131,7 +134,7 @@ class DayController(private val prefs: MapPrefs, private val lang: () -> Lang) {
         tracker.reset()
         val ev = if (engine.s.active) listOf(DayEvent("stop_surface_override", nowMs, mapOf("surface" to if (remove) "unknown" else "sidewalk"))) else emptyList()
         val text = (if (remove) DayText.SIDEWALK_REMOVED else DayText.SIDEWALK_SAVED).get(lang())
-        return DayStep(ev, false, listOf(DayToast(text)), false, view)
+        return DayStep(ev, false, listOf(DayToast(text, DayTone.ORANGE)), false, view)
     }
 
     /** "Eve dön" ölçümü başlar: gün açık, süren sipariş yok ve ölçüm sürmüyor (MAP.md 11.13). */
