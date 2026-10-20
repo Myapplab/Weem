@@ -4,7 +4,7 @@ Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 
 
 ## 2026-10-20 — A7.1 bitti: YolGo kayıtlarını içe aktarma (Claude Opus · high; dal `ccr-1b2259ea-0dmgmm`)
 - Yapılan: saf `logs.JournalImport` + `JsonPull` (YolGo `duzyol-journal-v1` akışla okunur, `files/map/logs/.import-<ns>/`'e açılır, eksiksizse ezmeden taşınır; ad kalıbı 12.4, etkin gün/sürüş atlanır), `RideLogWriter.importJournal`, `RideLogStore.isLogName`; `:app` Sürüş kayıtları ⤓ menüsü → "YolGo kayıtlarını içe aktar" (`OpenDocument`), sonuç "N kayıt eklendi · M zaten vardı". `MAP.md` 12.17.
-- Doğrulama: `-p logic test` 1.767 test, 0 kırmızı (`JournalImportTest` 12); `:app` `RideLogsScreenTest` (+1) ve lint yerelde koşmadı (Maven Central 429), PR CI'ında. Telefonda denenmedi.
+- Doğrulama: `-p logic test` 1.767 test, 0 kırmızı (`JournalImportTest` 12); `:app` `RideLogsScreenTest` (+1) ve lint yerelde koşmadı (Maven Central 429); PR #4 CI yeşil (test + lintDebug + assemble), `main`'e birleşti. Telefonda denenmedi.
 - Açık kalan: AZ metin onayı M-12-4; YolGo paylaşım menüsünden doğrudan WEEM'e gönderme (ACTION_SEND) yok, dosya seçiciyle alınır.
 - Sıradaki: A7.2 ya da A8.3.
 
