@@ -60,10 +60,12 @@ class NavRuntime private constructor(private val app: Context) {
         }
     }
 
-    private val location: NavLocation = NavLocation(app) {
-        speedKmh = (it.speedMps ?: 0.0).coerceAtLeast(0.0) * 3.6
-        controller.onFix(it)
-        day.onFix(it)
+    private val location: NavLocation = NavLocation(app) { f ->
+        speedKmh = (f.speedMps ?: 0.0).coerceAtLeast(0.0) * 3.6
+        controller.onFix(f)
+        day.onFix(f)
+        WeatherRuntime.get(app).onFix(f)
+        BatteryRuntime.get(app).onFix(f)
     }
 
     /** Gün motoru (MAP.md 11): fix'ler, vardiya, aşama okuması; hedef bağı [controller]'a aşağıda takılır. */
@@ -151,11 +153,14 @@ class NavRuntime private constructor(private val app: Context) {
 
     /** Konum: harita önde, gün açık ya da yalnız-nav iken (MAP.md 7.6 kapsam). */
     private fun refreshLocation() {
-        location.setActive(visible || ShiftHub.state.value.active || navOnly.on)
+        val on = visible || ShiftHub.state.value.active || navOnly.on
+        location.setActive(on)
+        BatteryRuntime.get(app).setActive(on)
     }
 
     fun setVisible(on: Boolean) {
         visible = on
+        WeatherRuntime.get(app).setVisible(on)
         refreshLocation()
     }
 

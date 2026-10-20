@@ -134,12 +134,22 @@ fun MapTab(
     var rootCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
     var cardBounds by remember { mutableStateOf(Rect.Zero) }
     val hasRoute = state.nav.hasRoute || state.nav.busy || state.nav.pending != null
-    val bar = @Composable {
-        MapShiftActions(
-            state.day, hasRoute, lang, onHome, onStats, onEnd,
-            modifier = Modifier.onGloballyPositioned { cardBounds = it.boundsInRoot() },
-            collapseSignal = collapseSignal, onCollapsedChange = { shiftCollapsed = it },
-        )
+    // Gün kartı katlı/açık yerleşimde farklı yerde durur; durumu (katlı mı, 20 sn sayacı) korumak için aynı örnek taşınır (movableContentOf), girdileri güncel tutulur.
+    val barDay by rememberUpdatedState(state.day)
+    val barHasRoute by rememberUpdatedState(hasRoute)
+    val barLang by rememberUpdatedState(lang)
+    val barHome by rememberUpdatedState(onHome)
+    val barStats by rememberUpdatedState(onStats)
+    val barEnd by rememberUpdatedState(onEnd)
+    val barSignal by rememberUpdatedState(collapseSignal)
+    val bar = remember {
+        movableContentOf {
+            MapShiftActions(
+                barDay, barHasRoute, barLang, barHome, barStats, barEnd,
+                modifier = Modifier.onGloballyPositioned { cardBounds = it.boundsInRoot() },
+                collapseSignal = barSignal, onCollapsedChange = { shiftCollapsed = it },
+            )
+        }
     }
     val locate = @Composable { SmartLocateButton(state.cameraMode, actions.onLocate, lang = lang) }
     Box(

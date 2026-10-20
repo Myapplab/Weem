@@ -38,6 +38,7 @@ import com.kuryelog.app.core.CrashLog
 import com.kuryelog.app.core.Store
 import com.kuryelog.app.map.MapScreen
 import com.kuryelog.app.map.MapSettingsScreen
+import com.kuryelog.app.map.WeatherRuntime
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.app.Tab
 import com.kuryelog.app.map.NavRuntime
@@ -147,7 +148,14 @@ private fun MoreScreen(
     var ordersSettings by rememberSaveable { mutableStateOf(false) }
     var mapSettings by rememberSaveable { mutableStateOf(false) }
     if (mapSettings) {
-        MapSettingsScreen(lang, weatherStrip = true, onWeatherStripChange = {}, onBack = { mapSettings = false })
+        val ctx = LocalContext.current
+        val weather = remember { WeatherRuntime.get(ctx) }
+        val strip by weather.strip.collectAsState()
+        val notify by weather.enabled.collectAsState()
+        MapSettingsScreen(
+            lang, weatherStrip = strip, onWeatherStripChange = weather::setStrip, onBack = { mapSettings = false },
+            weatherNotify = notify, onWeatherNotifyChange = weather::setEnabled, onWeatherFetch = weather::fetchNow,
+        )
         return
     }
     if (ordersSettings) {
