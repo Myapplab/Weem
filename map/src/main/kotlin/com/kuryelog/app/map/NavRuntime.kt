@@ -2,6 +2,7 @@ package com.kuryelog.app.map
 
 import android.content.ClipboardManager
 import android.content.Context
+import com.kuryelog.app.core.Home
 import com.kuryelog.app.core.ShiftHub
 import com.kuryelog.logic.core.Clock
 import com.kuryelog.logic.core.Lang
@@ -58,11 +59,16 @@ class NavRuntime private constructor(private val app: Context) {
         }
     }
 
-    private val location = NavLocation(app) { f ->
+    private val location: NavLocation = NavLocation(app) { f ->
+        speedKmh = (f.speedMps ?: 0.0).coerceAtLeast(0.0) * 3.6
         controller.onFix(f)
         WeatherRuntime.get(app).onFix(f)
         BatteryRuntime.get(app).onFix(f)
     }
+
+    /** Son fix'in hızı (km/s; yaklaşma zoom'u, MAP.md 7.10). */
+    @Volatile var speedKmh = 0.0
+        private set
     val controller: NavController = NavController(RouteEngine(), scope, Clock.Jvm, DestinationResolver(AndroidHttp, geocoder), lang, location)
 
     val search = PlaceSearch(
@@ -77,7 +83,10 @@ class NavRuntime private constructor(private val app: Context) {
         orsKey = { settings.value.let { if (it.googleKey.isEmpty()) it.orsKey else "" } },
     )
 
-    private val navOnly = NavOnlyController(Clock.Jvm) { refreshLocation() }
+    private val navOnly = NavOnlyController(Clock.Jvm) { on ->
+        NavOnlyService.set(app, on)
+        refreshLocation()
+    }
 
     /** Harita sekmesi görünür mü (konum ön planda). */
     @Volatile private var visible = false
@@ -143,6 +152,9 @@ class NavRuntime private constructor(private val app: Context) {
         WeatherRuntime.get(app).setVisible(on)
         refreshLocation()
     }
+
+    /** Eve dön (MAP.md 7.3, 7.8): ev `:core`'da; yoksa denetleyici uyarır. */
+    fun goHome() = controller.goHome(Home.point(app)?.let { GeoPoint(it.lat, it.lon) })
 
     /** Sokak kararları değişti (uzun basış, Ses±): denetleyici yeni listeyle sürer. */
     fun reloadStreetPrefs() = controller.setStreetPrefs(StreetPrefsCodec.load(mapPrefs))

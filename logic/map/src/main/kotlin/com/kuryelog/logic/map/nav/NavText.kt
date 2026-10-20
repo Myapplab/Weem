@@ -35,4 +35,13 @@ enum class NavText(override val tr: String, override val az: String) : Bilingual
     SEARCH_FIELD("Adres veya mekân ara", "Ünvan və ya obyekt axtar"),
     DRAW_ROUTE("Rota çiz", "Marşrut çək"),
     NO_RESULTS("Sonuç bulunamadı", "Nəticə tapılmadı"),
+
+    /** Yalnız-navigasyon servisi (yeni metinler, MAP.md 7.17 SORU-N4). */
+    NAV_CHANNEL("WEEM navigasyon", "WEEM naviqasiya"),
+    NAV_ONLY_TITLE("Navigasyon sürüyor", "Naviqasiya davam edir"),
+    NAV_ONLY_TEXT("Gün bitti; rota açık olduğu için konum en çok 90 dk sürer", "Gün bitdi; marşrut açıq olduğu üçün mövqe ən çox 90 dəq davam edir"),
+
+    /** Uzun basış ve rota paneli (MAP.md 6.7, 7.11). */
+    ROUTE_PIN("Rota ve pin", "Marşrut və nöqtə"),
+    GOOGLE_ATTRIBUTION("Google Maps", "Google Maps"),
 }

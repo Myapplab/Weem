@@ -1,5 +1,6 @@
 package com.kuryelog.app.map
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.size
 import com.kuryelog.logic.core.Lang
+import com.kuryelog.logic.map.input.ApiText
 import com.kuryelog.logic.map.ui.MapText
 import com.kuryelog.logic.map.ui.WeatherUiText
 import com.kuryelog.logic.map.weather.WeatherReport
@@ -127,7 +129,7 @@ fun MapWeatherSettings(
 }
 
 /**
- * Harita ayarları ekranı (6.9): bölümler "Harita görünümü", "Harita verisi", Google Maps (A6.5), "Hava durumu" (A6.7, başlığa dokununca açılır), "Yollarım", … Rawstats bilgileri bölümü yok (WEEM).
+ * Harita ayarları ekranı (6.9): bölümler "Harita görünümü", "Harita verisi", Google Maps (A6.5), "Hava durumu" (A6.7, başlığa dokununca açılır), "API ve bağlantılar" (A6.6, 8.9), "Yollarım", … Rawstats bilgileri bölümü yok (WEEM).
  * Daha fazla → Harita ayarları; [onBack] varsa üstte geri düğmesi.
  */
 @Composable
@@ -142,6 +144,12 @@ fun MapSettingsScreen(
     onWeatherFetch: ((WeatherReport?) -> Unit) -> Unit = { it(null) },
 ) {
     var weatherOpen by remember { mutableStateOf(false) }
+    var api by remember { mutableStateOf(false) }
+    if (api) {
+        BackHandler { api = false }
+        MapApiSettingsScreen(lang, onBack = { api = false })
+        return
+    }
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (onBack != null) TextButton(onClick = onBack) { Text("←") }
@@ -159,5 +167,9 @@ fun MapSettingsScreen(
         }
         MapDataSection(lang)
         MapsKeySection(lang)
+        // A6.6: "API ve bağlantılar" (MAP.md 8.9).
+        Card(Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable { api = true }.testTag("open-api-settings")) {
+            Text(ApiText.OPEN.get(lang), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(16.dp))
+        }
     }
 }

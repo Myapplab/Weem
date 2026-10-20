@@ -53,14 +53,15 @@ fun SmartLocateButton(mode: CameraMode, onTap: () -> Unit, modifier: Modifier = 
     RoundHudButton(glyph, hint, "smart-locate", onTap, modifier, glyphTag = "locate-${mode.key}")
 }
 
-/** Alt yer düğmesi (`route-fab`): rota panelini açar; boyu konum düğmesiyle aynı. */
+/** Alt yer düğmesi (`route-fab`): rota panelini açar/kapatır ([open] ✕); hesap sürerken "…", hata varken kırmızı; boyu konum düğmesiyle aynı. */
 @Composable
-fun RouteFab(onClick: () -> Unit, modifier: Modifier = Modifier, lang: Lang = Lang.TR) {
-    RoundHudButton("⇅", MapText.ROUTE.get(lang), "route-fab", onClick, modifier)
+fun RouteFab(onClick: () -> Unit, modifier: Modifier = Modifier, lang: Lang = Lang.TR, open: Boolean = false, busy: Boolean = false, error: Boolean = false) {
+    val glyph = if (busy) "…" else if (open) "✕" else "⇅"
+    RoundHudButton(glyph, MapText.ROUTE.get(lang), "route-fab", onClick, modifier, tint = if (error) MaterialTheme.colorScheme.error else null)
 }
 
 @Composable
-private fun RoundHudButton(glyph: String, hint: String, tag: String, onClick: () -> Unit, modifier: Modifier, glyphTag: String? = null) {
+private fun RoundHudButton(glyph: String, hint: String, tag: String, onClick: () -> Unit, modifier: Modifier, glyphTag: String? = null, tint: androidx.compose.ui.graphics.Color? = null) {
     // Kip anahtarı dış kutuda: tıklanabilir yüzey alt düğümlerin anlamını birleştirir.
     Box(if (glyphTag != null) modifier.testTag(glyphTag) else modifier) {
     Surface(
@@ -72,7 +73,7 @@ private fun RoundHudButton(glyph: String, hint: String, tag: String, onClick: ()
         modifier = Modifier.size(HudLayout.LOCATE_BUTTON_DP.dp).testTag(tag).semantics { contentDescription = hint },
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Text(glyph, fontSize = 26.sp, color = MaterialTheme.colorScheme.primary)
+            Text(glyph, fontSize = 26.sp, color = tint ?: MaterialTheme.colorScheme.primary)
         }
     }
     }

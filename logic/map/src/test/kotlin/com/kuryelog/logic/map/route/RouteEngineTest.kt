@@ -83,8 +83,9 @@ class RouteEngineTest {
 
     @Test
     fun `zaman aşımı RouteTimeout verir, takılan hesap iptal edilir ve kuyruk kilitlenmez`() = runBlocking {
-        // MAP.md 3.11: ağır plan (dört duraktan biri kopuk adada, 150 × 150 ızgara, ~0,6 s) 50 ms'de düşer; hemen ardından gelen
-        // hafif istek ağır hesabın bitmesini beklemez (A* 1.024 çekişte bir iptale bakar).
+        // MAP.md 3.11: ağır plan (dört duraktan biri kopuk adada, 150 × 150 ızgara, ~0,6 s) 150 ms'de düşer; hemen ardından gelen
+        // hafif istek ağır hesabın bitmesini beklemez (A* 1.024 çekişte bir iptale bakar). Süre 50 ms iken yük altında (paralel test JVM'leri)
+        // iptal edilen ağır hesabın kuyruğu bırakması 50 ms'yi aşıp hafif isteği de düşürüyordu (A6.6'da görüldü); 150 ms hâlâ ağır planın çok altında.
         val big = TestGraphs.gridCity(150, seed = 7)
         val corner = GeoPoint(big.nodeLat[0], big.nodeLon[0])
         val node = { k: Int -> GeoPoint(big.nodeLat[k], big.nodeLon[k]) }
@@ -92,7 +93,7 @@ class RouteEngineTest {
             graph = big, origin = corner, stops = listOf(node(5_000), node(9_000), TestGraphs.gridIsland(150), node(15_000)),
             params = RideParams(), approved = emptySet(), blocked = emptySet(),
         )
-        val engine = RouteEngine(timeoutMs = 50)
+        val engine = RouteEngine(timeoutMs = 150)
         try {
             val t0 = System.nanoTime()
             val e = runCatching { engine.compute(heavy) }.exceptionOrNull()
