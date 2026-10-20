@@ -1,6 +1,10 @@
 package com.kuryelog.logic.map.ui
 
 import com.kuryelog.logic.core.Bilingual
+import com.kuryelog.logic.map.day.LightSpot
+import com.kuryelog.logic.map.graph.Poi
+import com.kuryelog.logic.map.geo.BBox
+import com.kuryelog.logic.map.geo.Geo
 import com.kuryelog.logic.map.geo.GeoPoint
 
 /** Harita altlığı (S4, SORU-N5 (a)): Google (anahtarlı derlemede), MapLibre OSM raster, MapLibre vektör (varsayılan). */
@@ -112,4 +116,52 @@ object PoiZoomRules {
     fun markerVisible(kind: Char, zoom: Double): Boolean = zoom >= HIDE_BELOW && zoom >= markerMinZoom(kind)
 
     fun labelVisible(kind: Char, zoom: Double): Boolean = markerVisible(kind, zoom) && labelMinZoom(kind)?.let { zoom >= it } == true
+}
+
+/**
+ * Harita yer katmanının seçimi (MAP.md 5.3, `displayPoisProvider` + `PoiLayer`; saf): düzeltilmiş yerler + ışık işaretleri → görünür kutu ve yakınlığa göre süzülür;
+ * öncelik ışık → metro → AVM → öteki; restoran/fast food/kafe/market ekranın 34 dp ızgarasında hücre başına bir; en çok 180 simge.
+ */
+object PoiLayerRules {
+    /** "Yok" işaretinin 25 m içindeki OSM ışığı gizlenir; "var" işareti 25 m içinde OSM ışığı yoksa eklenir. */
+    fun withLights(base: List<Poi>, spots: List<LightSpot>): List<Poi> {
+        val hidden = spots.filter { !it.exists }
+        val osmLights = base.filter { it.kind == 'l' }
+        val kept = osmLights.filter { l -> hidden.none { Geo.haversine(l.lat, l.lon, it.lat, it.lon) <= LIGHT_NEAR_M } }
+        val added = spots.filter { s -> s.exists && osmLights.none { Geo.haversine(it.lat, it.lon, s.lat, s.lon) <= LIGHT_NEAR_M } }.map { Poi(it.lat, it.lon, 'l', "") }
+        return base.filter { it.kind != 'l' } + kept + added
+    }
+
+    /** 256 dp'lik dünya (MapLibre/Google standart ölçeği): bir dp'nin boylam derecesi. */
+    fun degPerDp(zoom: Double): Double = 360.0 / (256.0 * Math.pow(2.0, zoom))
+
+    /** Görünür kutu: merkez ± yarım ekran (dp), enlemde `cos` düzeltmeli. Sıra (güney, batı, kuzey, doğu). */
+    fun bounds(centerLat: Double, centerLon: Double, widthDp: Double, heightDp: Double, zoom: Double): BBox {
+        val d = degPerDp(zoom)
+        val dLat = heightDp / 2 * d * Math.cos(Math.toRadians(centerLat))
+        val dLon = widthDp / 2 * d
+        return BBox(centerLat - dLat, centerLon - dLon, centerLat + dLat, centerLon + dLon)
+    }
+
+    /** Yakınlığa göre görünür simgeler (en çok [PoiZoomRules.MAX_MARKERS]); girdi sırası eşit önceliklerde korunur. */
+    fun select(pois: List<Poi>, box: BBox, zoom: Double, lat: Double = (box.south + box.north) / 2): List<Poi> {
+        if (zoom < PoiZoomRules.HIDE_BELOW) return emptyList()
+        val cell = PoiZoomRules.FOOD_GRID_DP * degPerDp(zoom)
+        val cellLat = cell * Math.cos(Math.toRadians(lat))
+        val taken = HashSet<Long>()
+        val out = ArrayList<Poi>()
+        val visible = pois.filter { it.lat in box.south..box.north && it.lon in box.west..box.east && PoiZoomRules.markerVisible(it.kind, zoom) }
+        for (p in visible.sortedBy { PoiZoomRules.priority(it.kind) }) {
+            if (out.size >= PoiZoomRules.MAX_MARKERS) break
+            if (p.kind in GRID_KINDS) {
+                val key = Math.floor(p.lat / cellLat).toLong() * 1_000_003L + Math.floor(p.lon / cell).toLong()
+                if (!taken.add(key)) continue
+            }
+            out += p
+        }
+        return out
+    }
+
+    private const val LIGHT_NEAR_M = 25.0
+    private val GRID_KINDS = setOf('r', 'f', 'c', 't')
 }
