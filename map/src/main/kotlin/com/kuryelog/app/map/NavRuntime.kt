@@ -22,6 +22,7 @@ import com.kuryelog.logic.map.input.Geocoder
 import com.kuryelog.logic.map.input.IncomingLink
 import com.kuryelog.logic.map.input.PlaceSearch
 import com.kuryelog.logic.map.nav.NavController
+import com.kuryelog.logic.map.nav.NavFix
 import com.kuryelog.logic.map.nav.NavOnlyController
 import com.kuryelog.logic.map.nav.NavText
 import com.kuryelog.logic.map.nav.Stop
@@ -62,7 +63,12 @@ class NavRuntime private constructor(private val app: Context) {
         }
     }
 
+    /** Son konum okuması (veri seti kurye noktası, MAP.md 13.11). */
+    @Volatile var lastFix: NavFix? = null
+        private set
+
     private val location: NavLocation = NavLocation(app) { f ->
+        lastFix = f
         speedKmh = (f.speedMps ?: 0.0).coerceAtLeast(0.0) * 3.6
         controller.onFix(f)
         day.onFix(f)

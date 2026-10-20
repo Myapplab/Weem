@@ -208,12 +208,29 @@ fun DatasetHost(lang: Lang, shiftDay: String?, onBack: () -> Unit) {
     val ctx = LocalContext.current
     val runtime = remember { AppDatasetRuntime(ctx) }
     val scope = rememberCoroutineScope()
+    var manualDay by remember { mutableStateOf<String?>(null) }
+    var pickKind by remember { mutableStateOf<String?>(null) }
+    var refresh by remember { mutableIntStateOf(0) }
+    val picker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
+        val day = manualDay
+        val kind = pickKind
+        manualDay = null
+        pickKind = null
+        if (uri != null && day != null && kind != null) {
+            scope.launch {
+                runCatching { withContext(Dispatchers.IO) { runtime.copyScreenshot(day, kind, uri) } }
+                    .onFailure { Toast.makeText(ctx, com.kuryelog.logic.map.ui.DatasetText.PICK_FAILED.get(lang), Toast.LENGTH_LONG).show() }
+                refresh++
+            }
+        }
+    }
     BackHandler(onBack = onBack)
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxSize()) {
             TextButton(onClick = onBack, Modifier.padding(start = 8.dp)) { Text("←") }
-            DatasetScreen(
+            androidx.compose.runtime.key(refresh) { DatasetScreen(
                 runtime, lang, shiftDay, Modifier.fillMaxWidth(),
+                onManual = { day -> manualDay = day },
                 onShare = { day ->
                     scope.launch {
                         runCatching {
@@ -225,7 +242,19 @@ fun DatasetHost(lang: Lang, shiftDay: String?, onBack: () -> Unit) {
                         }.onFailure { Toast.makeText(ctx, com.kuryelog.logic.map.ui.DatasetText.ERROR_ACTION.get(lang), Toast.LENGTH_LONG).show() }
                     }
                 },
-            )
+            ) }
         }
+    }
+    manualDay?.let { day ->
+        if (pickKind == null) DatasetManualSheet(
+            lang,
+            onPick = { kind -> pickKind = kind; picker.launch(arrayOf("image/*")) },
+            onSave = { kind, input ->
+                val r = com.kuryelog.logic.orders.dataset.DatasetManual.save(kind, input, System.currentTimeMillis(), android.os.SystemClock.elapsedRealtimeNanos())
+                r.row?.let { runtime.addManual(day, it); refresh++ }
+                r.error
+            },
+            onDismiss = { if (pickKind == null) manualDay = null },
+        )
     }
 }

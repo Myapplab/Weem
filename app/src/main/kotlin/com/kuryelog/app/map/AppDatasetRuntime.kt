@@ -5,12 +5,19 @@ import android.os.SystemClock
 import com.kuryelog.app.core.Store
 import com.kuryelog.logic.orders.dataset.DailyLogSecret
 import com.kuryelog.logic.orders.dataset.DatasetContract
+import com.kuryelog.logic.orders.dataset.DatasetFiles
+import com.kuryelog.logic.orders.dataset.DatasetManual
 import com.kuryelog.logic.orders.dataset.DatasetPack
+import com.kuryelog.logic.orders.dataset.DatasetRecorder
+import com.kuryelog.logic.orders.dataset.DatasetShifts
 import com.kuryelog.logic.orders.dataset.DayLogSnapshot
 import org.json.JSONObject
 import java.io.File
 import java.io.FileInputStream
 import java.time.ZoneId
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 /**
  * Teklif veri seti Android çalışma zamanı (Y19; MAP.md 13.6–13.8, 13.11): kök `files/TeklifVeriSeti/`, gün toplama `:core` kilidi altında dondurulan gün klasörü
@@ -67,6 +74,41 @@ class AppDatasetRuntime(private val ctx: Context) : DatasetRuntime {
         File(DatasetPack.seal(root, dir, day, versionName(), versionCode(), zone, System.currentTimeMillis(), SystemClock.elapsedRealtimeNanos()).getString("zip"))
     }
 
+    /** `shifts.jsonl`: vardiyanın değdiği her güne bir satır (açıkken bitiş null). */
+    fun writeShift(startMs: Long, endMs: Long?) = synchronized(LOCK) {
+        val row = DatasetShifts.row(startMs, endMs, System.currentTimeMillis(), SystemClock.elapsedRealtimeNanos()) ?: return@synchronized
+        for (d in DatasetShifts.days(startMs, endMs, zone)) DatasetFiles.append(root, d, DatasetShifts.FILE, JSONObject(row.toString()))
+    }
+
+    /** Canlı teklif satırları (`yolgo-live.jsonl`). */
+    fun appendLive(day: String, rows: List<JSONObject>) = synchronized(LOCK) {
+        for (r in rows) DatasetFiles.append(root, day, DatasetRecorder.FILE, r)
+    }
+
+    /** Elle ekleme (MAP.md 13.9): yapılandırılmış satır ya da seçilen görüntünün opak kopyası + satırı. */
+    fun addManual(day: String, row: JSONObject) = synchronized(LOCK) { DatasetFiles.append(root, day, DatasetManual.FILE, row) }
+
+    fun copyScreenshot(day: String, kind: String, uri: android.net.Uri) {
+        DatasetContract.date(day)
+        require(kind in DatasetManual.SCREENSHOT_KINDS)
+        val mime = app.contentResolver.getType(uri)
+        require(mime?.startsWith("image/") == true)
+        synchronized(LOCK) {
+            val dir = DatasetFiles.day(root, day)
+            val path = DatasetManual.attachmentPath(kind, java.util.UUID.randomUUID().toString(), mime)
+            val temp = File(dir, ".image-${java.util.UUID.randomUUID()}.tmp")
+            try {
+                app.contentResolver.openInputStream(uri)!!.use { input -> temp.outputStream().buffered().use { input.copyTo(it) } }
+                val file = File(dir, path)
+                file.parentFile!!.mkdirs()
+                check(temp.renameTo(file))
+                DatasetFiles.append(root, day, DatasetManual.FILE, DatasetManual.screenshotRow(kind, path, mime!!, System.currentTimeMillis(), SystemClock.elapsedRealtimeNanos()))
+            } finally {
+                temp.delete()
+            }
+        }
+    }
+
     private fun info(j: JSONObject): DatasetDayInfo {
         val offers = j.getJSONObject("offers")
         val m = j.getJSONObject("matching")
@@ -87,5 +129,59 @@ class AppDatasetRuntime(private val ctx: Context) : DatasetRuntime {
 
     companion object {
         private val LOCK = Any()
+    }
+}
+
+/**
+ * Teklif veri seti kaydı (Y19; MAP.md 13.3–13.5, 13.11): vardiya açıkken saniyelik tik teklif durumunu [DatasetRecorder]'a verir (okuma/yoklama yok), satırlar
+ * `yolgo-live.jsonl`'a eklenir; vardiya açılınca/kapanınca `shifts.jsonl` satırları, kapanışta her gün için toplama ve mühür (hata ötekini durdurmaz).
+ */
+object DatasetRecording {
+    private val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO)
+    @Volatile private var started = false
+
+    fun start(app: Context) {
+        if (started) return
+        started = true
+        val rt = AppDatasetRuntime(app)
+        val recorder = com.kuryelog.logic.orders.dataset.DatasetRecorder({ ZoneId.systemDefault() }, { MapSettingsRepo.settings(app).value.region })
+        scope.launch {
+            var openFor: Long? = null
+            com.kuryelog.app.core.ShiftHub.state.collect { s ->
+                val start = s.startedAtMs
+                if (s.active && start != null && openFor != start) {
+                    openFor = start
+                    runCatching { rt.writeShift(start, null) }
+                }
+                if (!s.active) openFor = null
+            }
+        }
+        scope.launch {
+            while (isActive) {
+                delay(1_000)
+                if (!com.kuryelog.app.core.ShiftHub.state.value.active) continue
+                runCatching {
+                    val now = System.currentTimeMillis()
+                    val offers = com.kuryelog.app.orders.Orders.flow(app).exportableOffers(now)
+                    val fix = NavRuntime.get(app).lastFix?.takeIf { f -> now - f.atMs in -5_000..30_000 && f.accuracyM in 0.0..65.0 }
+                    val courier = fix?.let { f -> com.kuryelog.logic.orders.dataset.DatasetContract.point(f.lat, f.lon) }
+                    val (day, rows) = recorder.rows(offers, now, SystemClock.elapsedRealtimeNanos(), SystemClock.elapsedRealtime(), courier, com.kuryelog.app.orders.Orders.weather.current())
+                    if (rows.isNotEmpty()) rt.appendLive(day, rows)
+                }
+            }
+        }
+    }
+
+    /** Vardiya bitti (`ShiftMachine.Hooks.onEnd`): kapanış satırı her güne, sonra her gün için toplama (ayrı iş parçacığı; hata ötekini durdurmaz). */
+    fun hooks(app: Context): com.kuryelog.logic.core.ShiftMachine.Hooks = object : com.kuryelog.logic.core.ShiftMachine.Hooks {
+        override fun onEnd(startMs: Long, nowMs: Long, reason: String) {
+            val rt = AppDatasetRuntime(app)
+            Thread({
+                runCatching { rt.writeShift(startMs, nowMs) }
+                for (d in com.kuryelog.logic.orders.dataset.DatasetShifts.days(startMs, nowMs, ZoneId.systemDefault())) {
+                    runCatching { kotlinx.coroutines.runBlocking { rt.collect(d) } }
+                }
+            }, "weem-dataset-end").start()
+        }
     }
 }

@@ -842,6 +842,9 @@ class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
 
     /** WEEM `OrderEvents.offers` (ORDERS.md 13.2): K21 kuralıyla dışa verilebilir teklifler. */
     @Synchronized fun offers(now: Long = now()) = OfferSummaries.of(core.running, core.pending.values, now, restartedAtMs, env.annotator)
+    /** Veri seti kaydı (Y19, MAP.md 13.11): K21 kuralıyla dışa verilebilir iç teklif durumları (anlık kopya). */
+    @Synchronized fun exportableOffers(now: Long = now()): List<OfferState> =
+        if (core.running) core.pending.values.filter { OfferSummaries.exportable(it, now, restartedAtMs) }.take(OfferSummaries.MAX_OFFERS) else emptyList()
     /** WEEM `OrderEvents.stages` (E8). */
     @Synchronized fun stages(now: Long = now()) = OrderStages.of(core.trips.values, { tripEnds[it] }, now)
 

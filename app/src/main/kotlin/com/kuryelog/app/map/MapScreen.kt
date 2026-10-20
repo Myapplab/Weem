@@ -201,6 +201,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
     var askHome by remember { mutableStateOf(false) }
     var askEnd by remember { mutableStateOf(false) }
     var statsOpen by remember { mutableStateOf(false) }
+    var statsFocus by remember { mutableStateOf<Long?>(null) }
     var taskAt by remember { mutableStateOf<GeoPoint?>(null) }
     val routeSpeed by RideLogRuntime.get(ctx).routeSpeed.collectAsState()
     var panelOpen by remember { mutableStateOf(false) }
@@ -354,7 +355,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
             }
         },
         onHome = { askHome = true },
-        onStats = { statsOpen = true },
+        onStats = { statsFocus = dayRt.activeDay()?.startedAtMs ?: dayRt.lastDay()?.startedAtMs; statsOpen = true },
         onEnd = { askEnd = true },
         actions = MapTabActions(
             onLocate = {
@@ -469,7 +470,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
     }
     if (statsOpen) {
         // İstatistik (A6.9): tam ekran; elle günü bitirince o güne odaklı açılır.
-        StatsHost(lang, focusStartMs = dayRt.activeDay()?.startedAtMs ?: dayRt.lastDay()?.startedAtMs, onBack = { statsOpen = false })
+        StatsHost(lang, focusStartMs = statsFocus, onBack = { statsOpen = false })
     }
     taskAt?.let { p ->
         // Uzun basış satırı 4 (MAP.md 6.7): düzeltilmiş nokta ile günlük iş düzenleyicisi.
@@ -501,7 +502,16 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
             onDismissRequest = { askEnd = false },
             title = { Text(MapText.END_ASK.get(lang)) },
             text = { Text(MapText.END_TEXT.get(lang)) },
-            confirmButton = { Button(onClick = { askEnd = false; ctx.safely { ShiftHub.stop() } }) { Text(MapText.END_CONFIRM.get(lang)) } },
+            confirmButton = {
+                Button(onClick = {
+                    askEnd = false
+                    // Elle bitişten sonra İstatistik o güne odaklı açılır, rota temizlenir (MAP.md 12.8, 11.14).
+                    val start = dayRt.activeDay()?.startedAtMs
+                    ctx.safely { ShiftHub.stop() }
+                    navCtl.clearRoute()
+                    if (start != null) { statsFocus = start; statsOpen = true }
+                }) { Text(MapText.END_CONFIRM.get(lang)) }
+            },
             dismissButton = { TextButton(onClick = { askEnd = false }) { Text(MapText.CANCEL.get(lang)) } },
         )
     }

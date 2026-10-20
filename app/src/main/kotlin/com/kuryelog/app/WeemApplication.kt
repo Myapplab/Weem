@@ -9,6 +9,7 @@ import com.kuryelog.app.core.ShiftHub
 import com.kuryelog.app.core.Store
 import com.kuryelog.app.economics.Economics
 import com.kuryelog.app.map.BatteryRuntime
+import com.kuryelog.app.map.DatasetRecording
 import com.kuryelog.app.map.NavRuntime
 import com.kuryelog.app.map.WeatherRuntime
 import com.kuryelog.app.orders.Orders
@@ -50,7 +51,10 @@ class WeemApplication : Application() {
             // N3 (S22): günlük paketten sonra, siparişler kapanmadan; kendi iş parçacığında.
             ShiftHub.listeners.add("encrypted_backup", EncryptedBackupHook(this))
             ShiftHub.listeners.add("orders", Orders.shiftHooks(this))
+            // A6.9 teklif veri seti (Y19): siparişlerin gün klasörü tamamlandıktan sonra gün toplanır ve mühürlenir (MAP.md 13.11).
+            ShiftHub.listeners.add("dataset", DatasetRecording.hooks(this))
         }
+        Store.guarded(this, "start") { DatasetRecording.start(this) }
         // Scooter bağlantısı (SCOOTER.md 5.3): vardiya canlı bağlantıyı açar/kapatır, M23, D8 odometre; siparişlerden sonra (ORDERS.md 4.2).
         Store.guarded(this, "start") { ShiftHub.listeners.add("scooter", ScooterShiftLink.hooks(this)) }
         // A4.2 gün sonu raporu: siparişler ve scooter kapandıktan sonra (kapanan sipariş ve son enerji hesapta).

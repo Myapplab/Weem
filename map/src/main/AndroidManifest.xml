@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <!-- Hatırlatıcı titreşimi (Y20; `:app` ile aynı izin, birleşik manifestte çoğalmaz). -->
+    <uses-permission android:name="android.permission.VIBRATE" />
     <!-- Lint: tür `location` için konum izni de bildirilmeli (birleşik manifestte `:app` ile aynı izinler, çoğalmaz). -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
