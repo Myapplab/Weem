@@ -2,6 +2,11 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-20 — A3.11 gölge mod anahtarı (Claude Sonnet · high; dal `claude/a3-10-u-yap-keet02` → `main`)
+- Yapılan: tercih `shadowMode` (yalnız `.dev`): açıkken nakit bahşiş/cep nakdi soruları, bildirim 12, rozet ve balon/kart pencereleri kapanır, kayıt sürer (`OrderFlow.shadowMode`, `OrdersHost`, `Orders.AndroidEnv`); Ayarlar'da anahtar; rapor tek taraflı bahşiş cevabını `order.tip_answer`/`day.tip_answer` beklenen sayar. `ORDERS.md` 16.6. Belge onarımı: CHANGELOG ve AI_HANDOFF'taki birleşme işaretleri silindi.
+- Doğrulama: `-p logic :orders:test :app:test` yeşil; `:orders:compileDebugKotlin`, `:app` `OrdersSettingsScreenTest` (7) yeşil. Telefonda denenmedi; lint koşmadı.
+- Açık kalan: **A3.10 (K)** kullanıcıda — `.dev` APK derlet, Pixel'de gölge mod açık 1–2 vardiya, iki ZIP + `shadowReport`. Ekran okuma uyarısı 5104 gölge modda da çıkar (beklenen fark).
+
 ## 2026-10-20 — A6.8 bitti: gün motoru, POI, bisiklet yolu, bölge bilgisi (Claude Sonnet · high; dal `ccr-e899edd4-bztcog`)
 - Yapılan: `logic/map` `day` (motor `feed`/`endDay`, `LightTracker`, `LightsDb`, `SidewalkMarks`, `StopReconciler`, `RoadInfoBuilder`, `CourierStageFollower`/`StageFeed`, `DayController`, `DayText`), `graph` (`Pois`/`PoiSet`, `PoiCorrections`, güncelleme sonrası POI indirme), bisiklet (`BikewayMarksStore`, `BikewayMenu`, `BikewayLayerRules`), `ui.PoiLayerRules`/`PlaceText`; Android `DayRuntime`, `MapPois`, `MarkerKind.POI_*`, `MapScreen` (gün kartı gerçek durum, toast/titreşim, yer+ışık işaretleri, bisiklet çizgileri, uzun basış satırları, işletme penceresi), `BikewayTab`, bölge bilgisi ⓘ. `:core` `ShiftFollower.handled()`. Ayrıntı `MAP.md` 5.9, 11.19.
 - Doğrulama: `-p logic test` 1.688 test, 75 kırmızı (A6.9 51, A6.11 24 iskeleti; A6.7 dalıyla birleşik); `:map`/`:app` derleniyor; yeni Robolectric testleri yeşil; `lintDebug` koşmadı (Maven 429). Telefonda denenmedi.
