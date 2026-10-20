@@ -36,7 +36,7 @@ import org.robolectric.annotation.Config
 /**
  * YolGo `hud_layout_test.dart` 1. test (1; 1. tanım 320/390 px × açık/koyu: 4 çalışma; A6.2b, MAP.md 6.12, 6.14): harita kontrolleri taşmaz; gün kartı simgelerle başlar, kaydırınca açılır,
  * "Restorana vardın", `add-second-order`/`order-next` yok, üç düğme ≥48 dp; hava yuvarlağı kapalıyken yalnız "23°" ve kompakt boy, dokununca "Şimdi" + dört saat + yenile; dışarı dokunuş
- * (hava) kartı katlar; aşama ilerleyince "Müşteriye gidiyorsun". Yazı tipi: Inter yerine sistem; altın görüntüler (`HUD_CAPTURE`) çevrilmez.
+ * (hava) kartı katlar; aşama ilerleyince "Müşteriye gidiyorsun". Yazı tipi: Inter yerine sistem; altın görüntüler (`HUD_CAPTURE`) çevrilmez. Tek testte dört kombinasyon art arda koşar: aşama değişimi kartı açtığı için her kombinasyon başında 21 sn ilerletilir (kart 20 sn sonra katlanır) ve sonunda hava şeridi küçültülür (A6.7).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class, qualifiers = "w411dp-h891dp-port-xxhdpi")
@@ -61,6 +61,9 @@ class MapTabLayoutTest {
         for (w in listOf(320, 390)) for (d in listOf(false, true)) {
             width = w; dark = d
             state = state.copy(day = day(OrderPhase.AT_RESTAURANT))
+            // Önceki kombinasyondan açık kalan kart (aşama değişimi kartı açar) 20 sn sonra kendiliğinden simgelere döner; YolGo her kombinasyonu taze kartla çizer.
+            compose.waitForIdle()
+            compose.mainClock.advanceTimeBy(21_000)
             compose.waitForIdle()
             // 1.7.0: gün kartı simgelerle başlar; soldan sağa kaydırınca açılır.
             compose.onNodeWithTag("shift-collapsed").assertExists()
@@ -94,6 +97,9 @@ class MapTabLayoutTest {
             compose.waitForIdle()
             compose.onAllNodes(hasText("Müşteriye gidiyorsun", substring = true)).assertCountEquals(1)
             compose.onAllNodes(hasTestTag("order-next")).assertCountEquals(0)
+            // Sonraki kombinasyon yuvarlakla başlasın (YolGo her kombinasyonu taze çizer): hava şeridi küçültülür.
+            compose.onNodeWithTag("weather-collapse").performClick()
+            compose.waitForIdle()
         }
     }
 }

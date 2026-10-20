@@ -41,7 +41,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -180,10 +179,14 @@ fun WeatherChip(view: WeatherView, lang: Lang, nowMs: Long, modifier: Modifier =
     if (detail >= 0 && report != null && detail < report.hours.size) {
         val screen = LocalConfiguration.current.screenHeightDp
         Dialog(onDismissRequest = { detail = -1 }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-            Box(Modifier.fillMaxSize().clickable { detail = -1 }.windowInsetsPadding(WindowInsets.ime), contentAlignment = Alignment.BottomCenter) {
+            Box(Modifier.fillMaxSize()) {
+                // Örtü ayrı katman: tıklanabilir üst düğüm ayrıntıyı anlamsal olarak birleştirmesin.
+                Box(Modifier.fillMaxSize().clickable { detail = -1 })
                 // Klavye açıkken görünen yüksekliğin %40'ı (Dialog penceresi ekranı kaplar; IME payı ayrıca düşülür).
                 val ime = with(LocalDensity.current) { WindowInsets.ime.getBottom(this).toDp() }
-                WeatherDetailSheet(report, detail, availableHeightDp = max(0.0, screen - ime.value.toDouble()), lang = lang)
+                Box(Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.ime)) {
+                    WeatherDetailSheet(report, detail, availableHeightDp = max(0.0, screen - ime.value.toDouble()), lang = lang)
+                }
             }
         }
     }
@@ -246,8 +249,9 @@ fun WeatherDetailSheet(report: WeatherReport, index: Int, availableHeightDp: Dou
     val ink = Color(0xFF17283A)
     val inkLo = Color(0xFF506275)
     Box(
-        modifier.fillMaxWidth().height(availableHeightDp.times(.4).dp).testTag("weather-detail").clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-            .background(Brush.verticalGradient(listOf(Color(0xFFE5EFF5), Color.White))),
+        modifier.fillMaxWidth().height(availableHeightDp.times(.4).dp).testTag("weather-detail")
+            // Üst köşeler yalnız arka planda yuvarlanır; asimetrik `clip` Robolectric'te dokunma isabetini bozar (içerik köşelere değmez).
+            .background(Brush.verticalGradient(listOf(Color(0xFFE5EFF5), Color.White)), RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)),
     ) {
         Box(Modifier.align(Alignment.TopCenter).padding(top = 10.dp).size(36.dp, 4.dp).background(Color(0x8017283A), RoundedCornerShape(2.dp)))
         Column(Modifier.fillMaxSize().testTag("weather-detail-scroll").verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 24.dp)) {

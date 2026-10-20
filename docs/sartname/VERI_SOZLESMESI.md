@@ -161,6 +161,7 @@ Anahtarların anlamı WEEM `:map` ayarları için başvurudur; değerler WEEM'de
 | `battery.setPct`, `battery.consumed`, `battery.setAt` | batarya tahmini durumu | hayır (anlık) |
 | `shift.v1`, `shift.last`, `day.home.v1`, `courier.follow.v1`, `shift.deleted.days.v2`, `ride.active.v1`, `passive.pausedAt.v2`, `rawstats.*` | anlık gün durumu | hayır (WEEM tek vardiya) |
 | `weather.enabled.v1`, `weather.strip.v1`, `weather.key.v1`, `weather.permission.asked.v1` | hava ayarları | yeniden girilir (anahtar değeri belgeye yazılmaz) |
+| `weather.fetched` (Long ms), `weather.notified` (Long ms), `weather.notifiedDay` (String), `weather.lat`, `weather.lon` (String), `weather.locationAt` (Long ms) | hava çalışma durumu (A6.7; YolGo `duzyol_weather` içindeki `fetched`/`notified`/`notifiedDay`/`lat`/`lon`/`locationAt`); rapor gövdesi `files/map/weather.json` | hayır (önbellek) |
 | `map.bundled.<region>`, `map.bundledAt`, `clipboard.lastHash` | önbellek | hayır |
 | `roads.ways.v1`, `roads.ww.v1`, `roads.ghost.v1`, `roads.wwseg.v1`, `roads.rate.v1`, `roads.names.v1`, `roads.days.v2`, `roads.days.damaged.v2`, `surface.*` | Y12/Y13 verisi | aktarılmaz; Y12 WEEM'de sıfırdan öğrenir (S3, A6.11); Y13 sonra |
 

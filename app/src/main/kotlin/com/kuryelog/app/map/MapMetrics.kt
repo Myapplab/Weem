@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -127,7 +128,8 @@ fun MapMetrics(
     val pct = battery.percent
     val remainingKm = state.measure?.takeIf { plan != null && it.onRoute }?.let { String.format(Locale.US, "%.1f km", it.remainingM / 1000) }
     Box(modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
-        Column(Modifier.width(if (open) 250.dp else width).testTag("vertical-metrics")) {
+        // En az 1 dp: boş sütunun sınırı sıfıra kırpılıp genişliği kaybolmasın (testler genişliği ölçer).
+        Column(Modifier.width(if (open) 250.dp else width).heightIn(min = 1.dp).testTag("vertical-metrics")) {
             Column(Modifier.width(width), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 // Batarya kutusu yalnız rota varken (YolGo SORU-3); tahmin hâli renkte %50 eşiğini göstermez.
                 if (plan != null) {
@@ -252,10 +254,12 @@ private fun SpeedBox(speeds: List<SpeedOption>, lang: Lang, big: Boolean, onClic
 @Composable
 internal fun BottomSheetHost(onDismiss: () -> Unit, content: @Composable () -> Unit) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Box(Modifier.fillMaxSize().clickable(onClick = onDismiss), contentAlignment = Alignment.BottomCenter) {
+        Box(Modifier.fillMaxSize()) {
+            // Örtü ayrı katman: tıklanabilir üst düğüm içeriği anlamsal olarak birleştirmesin.
+            Box(Modifier.fillMaxSize().clickable(onClick = onDismiss))
             Surface(
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp), color = MaterialTheme.colorScheme.surface,
-                modifier = Modifier.fillMaxWidth().clickable(enabled = false) {},
+                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
             ) { content() }
         }
     }

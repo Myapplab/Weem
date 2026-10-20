@@ -83,9 +83,8 @@ class WeatherRuntime private constructor(private val app: Context) {
         scope.launch {
             ShiftHub.state.map { dayOf(it) }.distinctUntilChanged().collect { day ->
                 live.scopeChanged(day != null)
-                if (day == null) {
-                    for (id in NotificationIds.SHIFT_END_CANCEL.filter { it == NotificationIds.WEATHER }) app.getSystemService(NotificationManager::class.java)?.cancel(id)
-                } else {
+                // Vardiya sonunda 7301'i kaldırmak `:core` vardiya servisinin işi (`NotificationIds.SHIFT_END_CANCEL`).
+                if (day != null) {
                     updatePermissionFlag()
                     if (visible) live.refresh(dayId = day)
                 }
