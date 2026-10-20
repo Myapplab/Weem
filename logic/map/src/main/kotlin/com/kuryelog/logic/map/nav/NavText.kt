@@ -10,6 +10,8 @@ enum class NavText(override val tr: String, override val az: String) : Bilingual
     SEARCHING("Adres aranıyor…", "Ünvan axtarılır…"),
     WORKING("Çalışıyor…", "Hesablanır…"),
     NO_LINK_LOCATION("Bu linkte konum bulunamadı", "Bu linkdə ünvan tapılmadı"),
+    /** A8.3 (LINK.md 4.5): Provider'da yakalanan hedef Receiver'a gitti. */
+    FORWARDED("Rota öteki telefonda açılıyor", "Marşrut digər telefonda açılır"),
     SEARCH_HINT("Adres, mekân adı, koordinat veya harita linki yaz", "Ünvan, obyekt adı, koordinat və ya xəritə linki yaz"),
     KEEP_OLD_ROUTE("Yeni rota bulunamadı — eski rota sürüyor", "Yeni marşrut tapılmadı — köhnə marşrut davam edir"),
     MAIN_ROAD_WRONG_WAY("Ana caddede ters yöndesin!", "Əsas küçədə əks istiqamətdəsən!"),
