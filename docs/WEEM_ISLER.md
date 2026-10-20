@@ -24,7 +24,7 @@ Kurallar: `AGENTS.md` → "Birden çok Claude hesabı". Durumlar: `bekliyor` · 
 |---|---|---|---|---|---|
 | A0.1 | Planın son hâli: `docs/sartname/OZELLIK_HARITASI.md`, `VERI_SOZLESMESI.md`, `TEST_ENVANTERI.md`, `bulgular/`; plan mimarisi ve arayüzler; iş listesi; açık sorular | Belgeler `main`'de | Opus · xhigh + ultracode | — | bitti (`5fd61fc`; çok ajanlı okuma usage nedeniyle yarıda durduruldu, eksikler şartname görevlerine yazıldı) |
 | A0.2 | (K) Açık soruları yanıtla (bu dosyanın sonu); kararlar `WEEM_PLANI.md` Bölüm 8'e tarihle yazılır | Kararlar plan Bölüm 8'de | Sonnet · medium (yazma) | A0.1 | bitti (17 Ekim; plan Bölüm 8) |
-| K0.1 | (K) Kodsuz saha denemesi, 1–2 vardiya: Poco scooter'da (Sürüş Paneli + YolGo, hedef elle; scooter'a yalnız Poco bağlı), Pixel'de Wolt + Bolt + Rawstats, Pixel'deki Sürüş Paneli kapalı ve Bluetooth'ta scooter yok. Bakılacak: scooter Bluetooth'u kopuyor mu, ısınma, güneşte okunma, hotspot'un (bugün Poco'da) pile etkisi, **Pixel cepteyken teklifler okunuyor mu** | Kullanıcı sonuçları yazar | — | — | bekliyor |
+| K0.1 | (K) Kodsuz saha denemesi, 1–2 vardiya: Poco scooter'da (Sürüş Paneli + YolGo, hedef elle; scooter'a yalnız Poco bağlı), Pixel'de Wolt + Bolt + Rawstats, Pixel'deki Sürüş Paneli kapalı ve Bluetooth'ta scooter yok. Bakılacak: scooter Bluetooth'u kopuyor mu, ısınma, güneşte okunma, hotspot'un (bugün Poco'da) pile etkisi, **Pixel cepteyken teklifler okunuyor mu** | Kullanıcı sonuçları yazar | — | — | kaldırıldı (S28, 20 Ekim) |
 
 ## Aşama 1 — İskelet
 
