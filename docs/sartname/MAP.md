@@ -2321,6 +2321,14 @@ Toplam (bu bölüm): 22 test tanımı; çevrilen 13 (A6.2b), sonra 8 (Y13), çev
 <!-- END sec:12 -->
 
 <!-- BEGIN sec:13 -->
+### 12.17 A7.1 YolGo kayıtlarını içe aktarma (20 Ekim 2026)
+
+- **Akış:** Sürüş kayıtları → üst menü (⤓) → "YolGo kayıtlarını içe aktar" → belge seçici (`OpenDocument`, `*/*`) → YolGo'nun "Tüm günlüğü paylaş/kaydet" dosyası (`YolGo_<gün | tum_kayitlar>.json`, `duzyol-journal-v1`, 12.4). Sonuç satırı "N kayıt eklendi · M zaten vardı" (+ " · K okunamadı"); biçim yanlışsa hata "Bu dosya YolGo kayıt dosyası değil". WEEM'in kendi dışa aktarması (`WEEM_surus_…json`) da aynı yoldan geri yüklenir.
+- **Kural (saf `logs.JournalImport`):** dosya akışla okunur (YolGo dışa aktarmayı akışla yazar, "tüm kayıtlar" çok büyük olabilir; her `content` doğrudan diske); önce `files/map/logs/.import-<ns>/` geçici klasörüne açılır, biçim `duzyol-journal-v1` ve belge eksiksizse her öğe ham metniyle aynı adla `files/map/logs/`'a taşınır (`Files.move`, ezmeden). Ad 12.4 kalıbına uymayan (yol kaçışı dahil), `content`'i metin olmayan öğe "okunamadı"; aynı adlı dosya varsa, dosyada ikinci kez geçiyorsa ya da etkin kayıtsa (açık günün `<gün>.jsonl`'u, açık sürüş; `RideLogWriter.isActive`) atlanır. `kind`/`day` alanları okunmaz (ad belirler). Yanlış biçim, bozuk ya da yarım dosyada klasöre hiçbir şey yazılmaz (`JournalFormatException`); yarım kalmış eski geçici klasör sonraki içe aktarmada silinir. Alan sırası ve bilinmeyen alanlar fark etmez.
+- **Sonuç:** içe aktarılan gün raporları İstatistik'te (≤ 60, 12.6) ve Sürüş kayıtları'nda WEEM günleri gibi görünür (eski `….gun.json` adı da); `lights.v1`, Y12 ve diğer YolGo verisi aktarılmaz (S1). Bilinen: içe aktarılan gün dosyası WEEM'in o günkü kaydıyla birleşmez (aynı ad varsa atlanır).
+- **Testler:** `logic/map` `JournalImportTest` 12; `:app` `RideLogsScreenTest` +1 (menü + sonuç metni).
+- **M-12-4 (metin onayı, AZ):** "YolGo qeydlərini köçür", "%d qeyd əlavə olundu · %d artıq var idi", " · %d oxunmadı", "Bu fayl YolGo qeyd faylı deyil".
+
 ## 13. Y19 Teklif veri seti ekranı ve Y20 Görev kartları, hatırlatıcılar (A6.9)
 
 ### 13.1 Kaynak ve kapsam

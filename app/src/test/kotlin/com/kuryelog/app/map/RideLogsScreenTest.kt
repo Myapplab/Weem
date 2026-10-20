@@ -10,6 +10,7 @@ import androidx.compose.ui.test.performClick
 import com.kuryelog.app.WeemTheme
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.map.logs.RideLogEntry
+import com.kuryelog.logic.map.ui.importSummary
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -38,17 +39,18 @@ class RideLogsScreenTest {
         val deletedDays = ArrayList<String>()
         var logging: Boolean? = null
         val saves = ArrayList<String>()
+        var imports = 0
     }
 
-    private fun show(rec: Rec, logging: Boolean = true, dayActive: Boolean = true, lang: Lang = Lang.TR, entries: List<RideLogEntry>? = list, error: String? = null) = compose.setContent {
+    private fun show(rec: Rec, logging: Boolean = true, dayActive: Boolean = true, lang: Lang = Lang.TR, entries: List<RideLogEntry>? = list, error: String? = null, message: String? = null) = compose.setContent {
         WeemTheme(false) {
             RideLogsScreen(
                 entries, logging, dayActive, lang, ZoneOffset.ofHours(4), active = { it.name == "2026-10-02.jsonl" },
                 actions = RideLogActions(
                     onLoggingChange = { rec.logging = it }, onDeleteOne = { rec.deleted += it.name }, onDeleteDay = { rec.deletedDays += it },
-                    onSave = { e, d, all -> rec.saves += "${e?.name}|$d|$all" },
+                    onSave = { e, d, all -> rec.saves += "${e?.name}|$d|$all" }, onImport = { rec.imports++ },
                 ),
-                error = error,
+                error = error, message = message,
             )
         }
     }
@@ -115,5 +117,17 @@ class RideLogsScreenTest {
         show(Rec(), entries = null, error = "Kayıtlar okunamadı")
         compose.waitForIdle()
         text("Kayıtlar okunamadı").assertCountEquals(1)
+    }
+
+    @Test
+    fun yolgoIceAktarmaMenudeSonucMetniGorunur() {
+        val rec = Rec()
+        show(rec, message = importSummary(Lang.TR, 12, 3, 1))
+        compose.waitForIdle()
+        compose.onNodeWithTag("ridelogs-menu").performClick()
+        text("YolGo kayıtlarını içe aktar").assertCountEquals(1)
+        compose.onNodeWithTag("ridelogs-import").performClick()
+        assertEquals(1, rec.imports)
+        text("12 kayıt eklendi · 3 zaten vardı · 1 okunamadı").assertCountEquals(1)
     }
 }
