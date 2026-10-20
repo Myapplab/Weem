@@ -486,6 +486,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Veri:** izin durumu, harita verisi
 - **Bağımlı:** G3, R19, Y7
 - **WEEM:** `:app` · 7 (A7.2)
+- **A7.2 (20 Ekim):** saf `logic/app` `Setup.kt` (`SetupStep` dil → izinler → harita verisi → pil; `Permissions`: RS sırası ve "! n/m" sayacı, eksikte açık, pil satırı yalnız bilgi; `Vendor`/`BatteryGuide` Xiaomi·Redmi·POCO / Pixel / diğer; `SetupText` TR/AZ), `:app` `SetupScreen` (ilk açılışta bir kez, `weem.setupDone`; atlanabilir), `PermissionsCard`/`BatteryGuideCard` (Daha fazla → İzinler; "Kurulumu yeniden göster"), harita adımı `MapDataStep` (Harita sekmesinin kurulum kartı). `BrandingK26Test` uyarlandı (2; üçüncüsü çevrilmez: WEEM'de alt menü var). G3: scooter durum metinleri ekranda AZ (`ScooterStatusText`); G4: `NotificationAuditTest`. Cihazda denenmedi; yeni AZ metinleri onay bekler (M-G5-1).
 
 ### N1 2 telefon modu
 - **Eski kod:** yeni; temeli RS↔YG protokolü (`FeedChanges`, feed v2, `stages`, nav v1, hava, scooter canlı) ve `ScooterBridge`
