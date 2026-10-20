@@ -67,12 +67,17 @@ class MainActivity : ComponentActivity() {
         if (hasFocus) safely("clipboard") { NavRuntime.get(this).checkClipboard(this) }
     }
 
-    /** Ses+ / Ses− (Y12, MAP.md 9.5): yol öğrenme açık ve Harita önde iken tüketilir; aksi sistem sesi. */
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        val consumed = event.keyCode.let { it == KeyEvent.KEYCODE_VOLUME_UP || it == KeyEvent.KEYCODE_VOLUME_DOWN } &&
+    /**
+     * Ses+ / Ses− (Y12, MAP.md 9.5): yol öğrenme açık ve Harita önde iken basış, tekrar ve bırakış tüketilir; aksi sistem sesi.
+     * (`ComponentActivity.dispatchKeyEvent` androidx'te kısıtlı; görünümlerin tüketmediği ses tuşları buraya gelir.)
+     */
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean = volumeKey(event) || super.onKeyDown(keyCode, event)
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean = volumeKey(event) || super.onKeyUp(keyCode, event)
+
+    private fun volumeKey(event: KeyEvent): Boolean =
+        (event.keyCode == KeyEvent.KEYCODE_VOLUME_UP || event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) &&
             runCatching { NavRuntime.get(this).roads.onKeyEvent(event) }.getOrDefault(false)
-        return consumed || super.dispatchKeyEvent(event)
-    }
 
     /** Yüzen panel: uzun basma canlı paneli, çift dokunma Scooter ayarlarını açar (A5.4). */
     private fun openFrom(intent: Intent?) {

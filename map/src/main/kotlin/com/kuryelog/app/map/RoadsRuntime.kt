@@ -153,7 +153,7 @@ class RoadsRuntime internal constructor(
     fun capture(): Boolean = settings.value.let { it.roadLearning && it.volumeKeys } && mapInFront
 
     /**
-     * `MainActivity.dispatchKeyEvent` (MAP.md 9.5.1): yakalama açıkken ses tuşu olayları (basış, bırakış, tekrar) tüketilir. Ses+ basışta; Ses− kısa
+     * `MainActivity.onKeyDown/onKeyUp` (MAP.md 9.5.1): yakalama açıkken ses tuşu olayları (basış, bırakış, tekrar) tüketilir. Ses+ basışta; Ses− kısa
      * bırakışta, 1 sn basılı tutulursa uzun basış.
      */
     fun onKeyEvent(e: KeyEvent): Boolean {

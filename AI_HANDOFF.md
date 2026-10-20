@@ -3,8 +3,8 @@
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
 ## 2026-10-20 — A6.11 bitti: Y12 yol kalitesi öğrenme; Aşama 6 `main`'de (Claude Opus · high; dal `ccr-81cb765e-vxs3px`)
-- Yapılan: saf `roads` (YolGo `road_knowledge`/`road_controller`/`day_contributions`/`quality_prompt`/`street_ratio` birebir; `RoadBook`, `VolumeDispatch`, `QualityPrompt`, `LearnFixes`, `RoadsText`), `surface.MarkStore`; S26 `MapSettings.roadLearning` (varsayılan kapalı); `:map` `RoadsRuntime` (+ `MainActivity.dispatchKeyEvent`, gün silme kancası, rota girdileri); `:app` kartlar, Yollarım, uzun basış satırları, Harita ayarları → Yollarım, katman. Ayrıntı `MAP.md` 9.14.
-- Doğrulama: `-p logic test` 1.755 test, 0 kırmızı; ANDROID_SONUC Telefonda denenmedi; CI koşmadı.
+- Yapılan: saf `roads` (YolGo `road_knowledge`/`road_controller`/`day_contributions`/`quality_prompt`/`street_ratio` birebir; `RoadBook`, `VolumeDispatch`, `QualityPrompt`, `LearnFixes`, `RoadsText`), `surface.MarkStore`; S26 `MapSettings.roadLearning` (varsayılan kapalı); `:map` `RoadsRuntime` (+ `MainActivity.onKeyDown/onKeyUp`, gün silme kancası, rota girdileri); `:app` kartlar, Yollarım, uzun basış satırları, Harita ayarları → Yollarım, katman. Ayrıntı `MAP.md` 9.14.
+- Doğrulama: `-p logic test` 1.755 test, 0 kırmızı; `./gradlew :app:testDebugUnitTest :map:testDebugUnitTest :app:lintDebug :map:lintDebug` → `:app` 76 test, `:map` 8 test yeşil, lint 0 hata. Telefonda denenmedi; CI koşmadı.
 - Açık kalan: rota sırasında "Yol yok" seçicisi, Y8 saat düzenleyicisi + onay/kara liste katmanı, `OrderEvents` (aşama ile `excludeStops`), AZ metin onayları (9.14), 2 telefon rolü (A8.3).
 - Sıradaki: Aşama sonu `/code-review high` önerilir; A6.10 (K) için APK derlet; A8.3.
 

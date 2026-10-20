@@ -476,7 +476,7 @@ Y12 yol kalitesi öğrenme uygulandı (`MAP.md` 9.14); dal `ccr-81cb765e-vxs3px`
 
 **Sapmalar:** `MapSettings.roadLearning` (S26) WEEM alanı; testlerdeki `RoadBook` bunu okumaz (anahtar Android `RoadsRuntime`'da uygulanır, saf akış anahtardan bağımsız sınanır). `RoadBookTest`'te ilk kayıtta boş `roads.*.json` dosyaları da yazılır (YolGo'daki gibi `{}`), sonraki kayıtta değişmeyen dosya yazılmaz.
 
-**Doğrulama:** `LC_ALL=C.UTF-8 ./gradlew -p logic test --continue` → **1.755 test, 0 kırmızı** (Aşama 6 iskeletlerinin hepsi yeşil). ANDROID_SONUC Telefonda denenmedi.
+**Doğrulama:** `LC_ALL=C.UTF-8 ./gradlew -p logic test --continue` → **1.755 test, 0 kırmızı** (Aşama 6 iskeletlerinin hepsi yeşil). `./gradlew :app:testDebugUnitTest :map:testDebugUnitTest :app:lintDebug :map:lintDebug` → `:app` 76 test, `:map` 8 test yeşil, lint 0 hata. Telefonda denenmedi.
 
 ## A6.9 kod durumu (20 Ekim 2026)
 
