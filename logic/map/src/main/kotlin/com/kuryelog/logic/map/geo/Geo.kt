@@ -88,6 +88,15 @@ data class BBox(val south: Double, val west: Double, val north: Double, val east
 
     val center get() = GeoPoint((south + north) / 2, (west + east) / 2)
 
+    /** Güney kenarı boyunca doğu-batı genişlik (km, haversine). */
+    val widthKm: Double get() = Geo.haversine(south, west, south, east) / 1000
+
+    /** Batı kenarı boyunca kuzey-güney yükseklik (km, haversine). */
+    val heightKm: Double get() = Geo.haversine(south, west, north, west) / 1000
+
+    /** Bölge ekranı etiketi: `~W × H km` (yuvarlanır). */
+    val sizeKmLabel: String get() = "~${Math.round(widthKm)} × ${Math.round(heightKm)} km"
+
     /** Overpass sırası: (güney,batı,kuzey,doğu). */
     val overpass get() = "$south,$west,$north,$east"
 
