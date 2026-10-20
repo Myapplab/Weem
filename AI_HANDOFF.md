@@ -2,6 +2,12 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-20 — A7.2 bitti: ilk açılış kurulumu, dil bütünlüğü, az bildirim (Claude Opus · high; dal `ccr-c0e88a81-nubqjp`)
+- Yapılan: saf `logic/app` `Setup.kt` (`SetupStep`, `Permissions` RS sırası/"! n/m", `Vendor`/`BatteryGuide` Xiaomi·Pixel·diğer, `SetupText`); `:app` `SetupScreen` (dil → izinler → harita → pil; bir kez, `weem.setupDone`, yedeğe girmez), `PermissionsCard`/`BatteryGuideCard`, Daha fazla → İzinler (+ kurulumu yeniden göster), `MapDataStep`; G3 `logic/scooter` `ScooterStatusText` (servis bildirimi, uyarı satırı, Durum ekranda AZ; kayıt TR); G4 `NotificationAuditTest`; `BrandingK26Test` uyarlandı (2).
+- Doğrulama: `-p logic test` 1.788 test, 0 kırmızı; `:app` 82 + `:map` 8 test yeşil, `:app`/`:scooter` lint 0 hata (yerelde; Maven 429 birkaç denemede geçti). Telefonda denenmedi.
+- Açık kalan: yeni AZ metinleri onay bekler (M-G5-1); MIUI otomatik başlatma sayfası bileşen adıyla açılır (açılmazsa uygulama bilgisi) — cihazda doğrulanmadı; uygulama simgesi yok (kullanıcı).
+- Sıradaki: A8.3 (Opus · high).
+
 ## 2026-10-20 — A7.1 bitti: YolGo kayıtlarını içe aktarma (Claude Opus · high; dal `ccr-1b2259ea-0dmgmm`)
 - Yapılan: saf `logs.JournalImport` + `JsonPull` (YolGo `duzyol-journal-v1` akışla okunur, `files/map/logs/.import-<ns>/`'e açılır, eksiksizse ezmeden taşınır; ad kalıbı 12.4, etkin gün/sürüş atlanır), `RideLogWriter.importJournal`, `RideLogStore.isLogName`; `:app` Sürüş kayıtları ⤓ menüsü → "YolGo kayıtlarını içe aktar" (`OpenDocument`), sonuç "N kayıt eklendi · M zaten vardı". `MAP.md` 12.17.
 - Doğrulama: `-p logic test` 1.767 test, 0 kırmızı (`JournalImportTest` 12); `:app` `RideLogsScreenTest` (+1) ve lint yerelde koşmadı (Maven Central 429); PR #4 CI yeşil (test + lintDebug + assemble), `main`'e birleşti. Telefonda denenmedi.
