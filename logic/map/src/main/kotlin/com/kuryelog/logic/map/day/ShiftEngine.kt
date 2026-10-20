@@ -1,5 +1,6 @@
 package com.kuryelog.logic.map.day
 
+import com.kuryelog.logic.map.geo.Geo
 import com.kuryelog.logic.map.geo.GeoPoint
 
 /**
@@ -39,7 +40,24 @@ class ShiftEngine(val s: DayState = DayState()) {
         return listOf(DayEvent("day_start", atMs, mapOf("reason" to r)))
     }
 
-    fun endDay(atMs: Long, road: (Double, Double) -> RoadInfo, reason: String? = null): List<DayEvent> = TODO("A6.8")
+    fun endDay(atMs: Long, road: (Double, Double) -> RoadInfo, reason: String? = null): List<DayEvent> {
+        if (!s.active) return emptyList()
+        val ev = ArrayList<DayEvent>()
+        cand?.let { ev += endStop(it, road); cand = null }
+        for (o in listOfNotNull(s.current) + s.queuedOrders) {
+            o.cancelled = true
+            o.endedAtMs = atMs
+            s.orders.add(o)
+        }
+        s.current = null
+        s.queuedOrders.clear()
+        s.phase = OrderPhase.NONE
+        s.active = false
+        s.endedAtMs = atMs
+        s.endReason = reason ?: "manual"
+        ev += DayEvent("day_end", atMs, mapOf("reason" to s.endReason))
+        return ev
+    }
 
     /** Gün açık değilse hiçbir şey yapmaz (sipariş günü kendiliğinden başlatmaz). */
     fun startOrder(atMs: Long): List<DayEvent> {
@@ -183,5 +201,110 @@ class ShiftEngine(val s: DayState = DayState()) {
     private fun fromFeed(ev: List<DayEvent>): List<DayEvent> = ev.map { it.copy(data = it.data + ("source" to FEED_SOURCE)) }
 
     /** Bir konum okuması: km, hareket süresi, duruş. Eski ya da geriye giden zaman, 41° sıçraması, titreme km eklemez. */
-    fun feed(fix: DayFix, road: (Double, Double) -> RoadInfo): List<DayEvent> = TODO("A6.8")
+    fun feed(fix: DayFix, road: (Double, Double) -> RoadInfo): List<DayEvent> {
+        if (!s.active) return emptyList()
+        if (!fix.accuracy.isFinite() || fix.accuracy < 0 || fix.accuracy > 50) return emptyList()
+        if (!fix.lat.isFinite() || !fix.lon.isFinite() || Math.abs(fix.lat) > 90 || Math.abs(fix.lon) > 180) return emptyList()
+        if (lastFeedAtMs != null && fix.atMs <= lastFeedAtMs!!) return emptyList()
+        lastFeedAtMs = fix.atMs
+        val kmh = if (fix.speedMps < 0) 0.0 else fix.speedMps * 3.6
+        odometer(fix, kmh)
+        val ev = ArrayList<DayEvent>()
+        fast = if (kmh > DEPART_KMH) fast + 1 else 0
+        var c = cand
+        if (c == null && kmh <= STOP_KMH) {
+            cand = Cand(fix.atMs, fix.lat, fix.lon)
+            return ev
+        }
+        if (c != null) {
+            val d = Geo.haversine(c.lat, c.lon, fix.lat, fix.lon)
+            if (fast >= 2 || (d > STOP_RADIUS_M && fix.accuracy <= 25)) {
+                ev += endStop(c, road)
+                cand = if (kmh <= STOP_KMH) Cand(fix.atMs, fix.lat, fix.lon) else null
+                return ev
+            }
+            if (kmh <= STOP_KMH) c.lastMs = fix.atMs
+            if (!c.announced && c.lastMs - c.startMs >= STOP_MIN_S * 1000L) {
+                c.announced = true
+                ev += DayEvent("stopping", fix.atMs, mapOf("lat" to c.lat, "lon" to c.lon))
+            }
+        }
+        return ev
+    }
+
+    private class Cand(val startMs: Long, val lat: Double, val lon: Double) {
+        var lastMs: Long = startMs
+        var announced = false
+    }
+
+    private var cand: Cand? = null
+    private var fast = 0
+    private var lastFeedAtMs: Long? = null
+    private var prevT: Long? = null
+    private var odoT: Long? = null
+    private var odoLat = 0.0
+    private var odoLon = 0.0
+
+    private fun odometer(f: DayFix, kmh: Double) {
+        if (f.accuracy > 35 || f.accuracy < 0 || !f.accuracy.isFinite()) return
+        val prev = prevT
+        if (prev != null && f.atMs <= prev) return
+        prevT = f.atMs
+        if (prev != null && kmh > STOP_KMH) {
+            val dt = (f.atMs - prev) / 1000.0
+            if (dt > 0 && dt <= 15) s.movingS += dt
+        }
+        val aT = odoT
+        if (aT == null) {
+            anchor(f)
+            return
+        }
+        val d = Geo.haversine(odoLat, odoLon, f.lat, f.lon)
+        val dt = (f.atMs - aT) / 1000.0
+        if (dt <= 0) return
+        if (dt > 30 || d / dt > 16) {
+            anchor(f)
+            return
+        }
+        if (f.speedMps >= 0 && kmh < 2.5) {
+            anchor(f)
+            return
+        }
+        if (d >= 3 && d >= 0.35 * f.accuracy) {
+            s.distM += d
+            s.current?.let { it.distM += d }
+            anchor(f)
+        }
+    }
+
+    private fun anchor(f: DayFix) {
+        odoT = f.atMs; odoLat = f.lat; odoLon = f.lon
+    }
+
+    /** Duruş adayı biterken tür sırası: sipariş aşaması, AVM, ışık, kaldırım, diğer (MAP.md 11.4). */
+    private fun endStop(c: Cand, road: (Double, Double) -> RoadInfo): List<DayEvent> {
+        val durS = ((c.lastMs - c.startMs) / 1000).toInt()
+        if (durS < STOP_MIN_S) return emptyList()
+        val info = road(c.lat, c.lon)
+        val inOrder = s.current != null
+        val kind: String
+        var longWait = false
+        when {
+            s.phase == OrderPhase.AT_RESTAURANT || s.phase == OrderPhase.READY_FOR_CUSTOMER || s.phase == OrderPhase.AT_CUSTOMER -> kind = "order"
+            info.mall -> kind = "mall"
+            info.atLight && durS <= LIGHT_MAX_S * 2 -> {
+                if (durS > LIGHT_LONG_S) { kind = "light?"; longWait = true } else kind = "light"
+            }
+            info.surface == StopSurface.SIDEWALK -> kind = "sidewalk"
+            else -> kind = "stop"
+        }
+        val isLight = kind == "light" || kind == "light?"
+        val rec = StopRec(
+            startMs = c.startMs, endMs = c.lastMs, lat = c.lat, lon = c.lon, kind = kind, onRoad = info.onRoad, junctionM = info.junctionM,
+            inOrder = inOrder, lightLat = if (isLight) info.lightLat else null, lightLon = if (isLight) info.lightLon else null,
+            surface = info.surface, longWait = longWait,
+        )
+        s.stops.add(rec)
+        return listOf(DayEvent("stop", rec.endMs, mapOf("stop" to rec.toJson())))
+    }
 }
