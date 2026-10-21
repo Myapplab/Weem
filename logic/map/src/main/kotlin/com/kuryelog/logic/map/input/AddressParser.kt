@@ -86,6 +86,7 @@ object AddressParser {
 
     private val parens = Regex("\\([^)]*\\)")
     private val lineBreaks = Regex("[\\r\\n\\t]+")
+    private val lineSplit = Regex("[\\r\\n]+")
     private val spaces = Regex("[$S]+")
     private val commas = Regex("(?:[$S]*,[$S]*)+")
     private val edges = Regex("^[$S,.;:–-]+|[$S,.;:–-]+$")
@@ -124,7 +125,8 @@ object AddressParser {
         val pc = PlusCode.pattern.find(raw)
         if (pc != null && PlusCode.looksReal(pc.groupValues[1])) {
             val p = PlusCode.recover(pc.groupValues[1], Baku.center)
-            if (p != null && p.isInAzerbaijan) return ParsedDestination.Coordinate(raw, p, label = raw)
+            // Etiket: kodun satırı, koddan sonrası ("9RQW+344 Baku, …"). Öncesi ve öteki satırlar (ad, telefon, not) öteki telefona gitmesin (A10.2, S5).
+            if (p != null && p.isInAzerbaijan) return ParsedDestination.Coordinate(raw, p, label = raw.substring(pc.range.first).lineSequence().first())
         }
 
         // 3) Çıplak koordinat
@@ -135,11 +137,10 @@ object AddressParser {
         // 4) Serbest adres metni
         if (url.containsMatchIn(raw)) return null // harita dışı link (Instagram vb.)
         val (rest, note) = extractUnit(raw)
-        val query = clean(rest)
+        val query = clean(addressLines(rest))
         if (!hasLetters.containsMatchIn(query) || query.length < 4 || query.length > 250) return null
         // Yalnız adres gibi görünenler: sokak türü, semt adı ya da "Sokak 12" kalıbı (sohbet mesajı, sipariş kodu rota çizmesin).
-        val strong = streetWord.containsMatchIn(query) || district.containsMatchIn(query) || streetNumber.containsMatchIn(query)
-        if (!strong) return null
+        if (!looksLikeAddress(query)) return null
         return ParsedDestination.Address(raw, withCity(query), strong = true, unitNote = note)
     }
 
@@ -294,6 +295,19 @@ object AddressParser {
         val note = if (parts.isEmpty()) null else parts.entries.joinToString(" · ") { "${it.key} ${it.value}" }
         return rest to note
     }
+
+    /**
+     * A10.2: çok satırlı metinde (mesajdan kopyalanan) yalnız adres gibi görünen satırlar kalır; ad ve not satırları geokod sorgusuna
+     * (Google, ORS, Nominatim) ve etikete girmez. Hiçbir satır tek başına adres değilse metin olduğu gibi kalır.
+     */
+    private fun addressLines(text: String): String {
+        val lines = text.split(lineSplit).filter { it.isNotBlank() }
+        if (lines.size < 2) return text
+        val kept = lines.filter { looksLikeAddress(clean(it)) }
+        return if (kept.isEmpty()) text else kept.joinToString("\n")
+    }
+
+    private fun looksLikeAddress(q: String) = streetWord.containsMatchIn(q) || district.containsMatchIn(q) || streetNumber.containsMatchIn(q)
 
     private fun clean(s: String): String {
         var t = s.replace(phone, " ").replace(labels, " ").replace(parens, " ").replace(lineBreaks, ", ")
