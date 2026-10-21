@@ -28,7 +28,7 @@ class CaptureCrashGuardTest {
 
     @Test fun tickRecordsAFailureAndAlwaysRunsAgain() {
         val w = capture("WatchService.kt")
-        val tick = RepoSource.body(w, "private val tick = object : Runnable", "private var eventsForAll")
+        val tick = RepoSource.body(w, "private val tick = object : Runnable", "private var eventScope")
         assertTrue(tick.contains("Store.guarded(this@WatchService, \"tick\") {"))
         assertTrue(tick.contains("} finally {"))
         assertTrue(tick.indexOf("h.postDelayed(this, if (shift) CaptureTiming.TICK_SHIFT_MS else CaptureTiming.TICK_IDLE_MS)") > tick.indexOf("} finally {"))

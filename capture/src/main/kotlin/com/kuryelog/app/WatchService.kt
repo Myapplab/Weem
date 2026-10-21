@@ -9,6 +9,7 @@ import android.graphics.Rect
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.telecom.TelecomManager
 import android.view.Display
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
@@ -82,7 +83,7 @@ class WatchService : AccessibilityService() {
         if (e != null) Store.guarded(this, "event") { onEvent(e) }
     }
     private fun onEvent(e: AccessibilityEvent) {
-        if (!Store.canRecordScreen(this)) return
+        if (!Store.canRecordScreen(this) || CaptureState.receiverRole()) return
         val pkg = e.packageName?.toString() ?: ""
         // The dialer is read only right after a customer card, for the number the courier is calling.
         if (Dialer.isDialer(pkg) && sink().awaitingPhone(now())) {
@@ -124,7 +125,7 @@ class WatchService : AccessibilityService() {
      *  failing frame crashed the app on the main thread. */
     private fun readScreen() { Store.guarded(this, "screen") { snapshot() } }
     private fun snapshot() {
-        if (!connected || !Store.canRecordScreen(this)) return
+        if (!connected || !Store.canRecordScreen(this) || CaptureState.receiverRole()) return
         val allowed = Store.targets(this)
         val reads = ArrayList<WindowRead>()
         val wins = windows.orEmpty()
@@ -170,7 +171,7 @@ class WatchService : AccessibilityService() {
         }
     }
     private fun accept(r: WindowRead, texts: List<String>, actions: List<String>, at: Long, source: String): CourierObservation? {
-        if (!Store.canRecordScreen(this)) return null
+        if (!Store.canRecordScreen(this) || CaptureState.receiverRole()) return null
         CaptureState.seen[r.pkg] = at
         if (actions.any(CourierParser::isAccept)) CaptureState.seenAccept[r.pkg] = at
         val obs = CourierParser.parse(r.pkg, texts, actions, at, source)
@@ -311,7 +312,7 @@ class WatchService : AccessibilityService() {
                     // K38/E7: the process-wide home watcher (the notification listener drives it too, screen reading or not).
                     HomeWatch.refresh(this@WatchService)
                     shift = Store.shiftOn(this@WatchService)
-                    syncEventScope(Store.canRecordScreen(this@WatchService))
+                    syncEventScope(Store.canRecordScreen(this@WatchService) && !CaptureState.receiverRole())
                     // Orders tick, badge and reminders (RS: OrderTracker.tick, badge, DeliveryReminder.update; off shift both go).
                     CaptureState.host.onTick(this@WatchService, now(), shift)
                     // During a shift the screen is read at least once per tick.
@@ -325,17 +326,20 @@ class WatchService : AccessibilityService() {
     }
     /**
      * 0.22.2 (battery): off shift Android delivers only this app's own events instead of every content change of every
-     * app (they were dropped right away by [Store.canRecordScreen], but each one still woke the service). Restored to all
-     * apps the moment recording is allowed; the tick checks every 0.5–2 s.
+     * app (they were dropped right away by [Store.canRecordScreen], but each one still woke the service). While recording,
+     * A10.2: only the watched apps and the dialers ([Dialer.eventScope]), never every app (banking, messages). The tick checks
+     * every 0.5–2 s, so a change of the watched apps applies within a tick.
      */
-    private var eventsForAll: Boolean? = null
-    private fun syncEventScope(all: Boolean) {
-        if (eventsForAll == all) return
+    private var eventScope: Set<String>? = null
+    private val defaultDialer: String? by lazy { runCatching { getSystemService(TelecomManager::class.java)?.defaultDialerPackage }.getOrNull() }
+    private fun syncEventScope(recording: Boolean) {
+        val scope = if (recording) Dialer.eventScope(Store.targets(this), defaultDialer, packageName) else setOf(packageName)
+        if (eventScope == scope) return
         Store.guarded(this, "event_scope") {
             val info = serviceInfo ?: return
-            info.packageNames = if (all) null else arrayOf(packageName)
+            info.packageNames = scope.toTypedArray()
             serviceInfo = info
-            eventsForAll = all
+            eventScope = scope
         }
     }
     override fun onInterrupt() {}

@@ -1,6 +1,7 @@
 package com.kuryelog.app
 
 import android.content.Context
+import com.kuryelog.app.capture.CaptureState
 import com.kuryelog.app.core.ShiftHub
 import com.kuryelog.app.core.Store
 import com.kuryelog.app.economics.Economics
@@ -41,6 +42,8 @@ object TwoPhone {
     fun start(ctx: Context) {
         val app = ctx.applicationContext
         ScooterShiftLink.providerRole = { LinkHub.role.value == LinkRole.PROVIDER }
+        // A10.2 (plan 4.5): Receiver'da ekran ve bildirim okunmaz.
+        CaptureState.receiverRole = { LinkHub.role.value == LinkRole.RECEIVER }
         // Önce tek telefon bağı; mod açıksa `init` köprüyü kurup yeniden bağlar.
         rewire(app, null)
         Store.guarded(app, "two_phone_link") { LinkHub.init(app, localFor = { role -> local(app, role) }, onBridge = { rewire(app, it) }) }
