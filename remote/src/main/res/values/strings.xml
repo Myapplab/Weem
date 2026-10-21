@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Erişilebilirlik ayarında görünür (REMOTE.md 2.3). Ad değişmez: izin bileşen adına bağlı (VERI_SOZLESMESI 9). -->
+    <string name="remote_touch_label">WEEM uzaktan dokunuş</string>
+    <string name="remote_touch_desc">Yalnız uzaktan kullanımda, bu telefonun ekranını eşleşmiş öteki telefonla paylaşmayı onayladığında çalışır: öteki telefondaki dokunuşlarını ve Geri, Ana ekran, Son uygulamalar, Bildirimler tuşlarını bu telefonda yineler. Ekranı okumaz, kendiliğinden hiçbir şeye basmaz. Paylaşım sürerken ekranın üstünde kırmızı işaret görünür; ona dokununca paylaşım biter.</string>
+</resources>

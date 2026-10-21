@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- :remote (REMOTE.md 1.2, 1.7): ekran paylaşımı (MediaProjection, ön plan servisi mediaProjection), onay penceresi, TCP akışı
-     (yerel ağ; :link eşleşmesi). Bildirim izni :app'te. -->
+     (yerel ağ; :link eşleşmesi), dokunuş servisi (REMOTE.md 2). Bildirim izni :app'te. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -17,5 +17,18 @@
             android:excludeFromRecents="true"
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <!-- Uzaktan dokunuş (REMOTE.md 2.3): okuma servisinden (WatchService) ayrı; yalnız dokunuş yetkisi. Ad değişmez. -->
+        <service
+            android:name="com.kuryelog.app.remote.TouchService"
+            android:exported="true"
+            android:label="@string/remote_touch_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/remote_touch_config" />
+        </service>
     </application>
 </manifest>

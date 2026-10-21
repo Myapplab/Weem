@@ -1,7 +1,12 @@
 package com.kuryelog.app
 
+import android.content.Context
+import android.content.Intent
+import android.provider.Settings
+import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import android.view.View
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +22,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
@@ -37,11 +43,15 @@ import com.kuryelog.logic.link.Transport
 import com.kuryelog.logic.remote.HostView
 import com.kuryelog.logic.remote.RemoteLines
 import com.kuryelog.logic.remote.RemoteText
+import com.kuryelog.logic.remote.GlobalAction
+import com.kuryelog.logic.remote.TouchLimits
+import com.kuryelog.logic.remote.ViewerMachine.PointerKind
 import com.kuryelog.logic.remote.ViewerView
 
 /**
- * Uzaktan sekmesi (A9.1, REMOTE.md 1.6): üstte öteki telefonun ekranı (Göster / Kapat, video oran korunarak), altta bu telefonun
- * paylaşımı (aç / bitir). 2 telefon modu kapalı ya da eşleşme yoksa yalnız yönlendirme metni. Dokunuş iletimi A9.2'de.
+ * Uzaktan sekmesi (A9.1–A9.2, REMOTE.md 1.6, 2.4): üstte öteki telefonun ekranı (Göster / Kapat, video oran korunarak; öteki
+ * telefonda dokunuş açıksa videoya dokunuş ve Geri · Ana ekran · Son uygulamalar · Bildirimler tuşları oraya gider), altta bu
+ * telefonun paylaşımı (aç / bitir, dokunuş servisi durumu). 2 telefon modu kapalı ya da eşleşme yoksa yalnız yönlendirme metni.
  */
 @Composable
 fun RemoteScreen(lang: Lang) {
@@ -81,7 +91,9 @@ fun RemoteScreen(lang: Lang) {
                 }
                 val line = if (!watching && linkIssue != null) linkIssue.get(lang) else RemoteLines.viewer(vv, lang)
                 line?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                RemoteLines.viewOnly(vv, lang)?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("remote_view_only")) }
                 if (vv.state == ViewerView.State.CONNECTING || vv.state == ViewerView.State.PLAYING) Video(vv)
+                if (vv.control) Keys(lang)
             }
         }
         Card(Modifier.fillMaxWidth()) { Share(hv, lang) }
@@ -96,6 +108,7 @@ private fun ColumnScope.Video(v: ViewerView) {
         AndroidView(
             factory = { c ->
                 SurfaceView(c).apply {
+                    setOnTouchListener { view, e -> forward(view, e); true }
                     holder.addCallback(object : SurfaceHolder.Callback {
                         override fun surfaceCreated(h: SurfaceHolder) = RemoteHub.setSurface(h.surface)
                         override fun surfaceChanged(h: SurfaceHolder, format: Int, width: Int, height: Int) = Unit
@@ -109,8 +122,53 @@ private fun ColumnScope.Video(v: ViewerView) {
     DisposableEffect(Unit) { onDispose { RemoteHub.setSurface(null) } }
 }
 
+/** Videoya dokunuş → [RemoteHub.pointer] (görüntüye göre 0..NORM); izleyen makine dokunuş kapalıysa yok sayar. */
+private fun forward(v: View, e: MotionEvent) {
+    if (v.width <= 0 || v.height <= 0) return
+    fun nx(x: Float) = (x / v.width * TouchLimits.NORM).toInt()
+    fun ny(y: Float) = (y / v.height * TouchLimits.NORM).toInt()
+    fun send(kind: PointerKind, i: Int) = RemoteHub.pointer(kind, e.getPointerId(i), nx(e.getX(i)), ny(e.getY(i)), e.eventTime)
+    when (e.actionMasked) {
+        MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
+            v.parent?.requestDisallowInterceptTouchEvent(true)
+            send(PointerKind.DOWN, e.actionIndex)
+        }
+        MotionEvent.ACTION_MOVE -> {
+            // Ara örnekler (tarih) de gider: hızlı kaydırmanın biçimi korunur.
+            for (h in 0 until e.historySize) for (i in 0 until e.pointerCount) {
+                RemoteHub.pointer(PointerKind.MOVE, e.getPointerId(i), nx(e.getHistoricalX(i, h)), ny(e.getHistoricalY(i, h)), e.getHistoricalEventTime(h))
+            }
+            for (i in 0 until e.pointerCount) send(PointerKind.MOVE, i)
+        }
+        MotionEvent.ACTION_POINTER_UP -> send(PointerKind.UP, e.actionIndex)
+        MotionEvent.ACTION_UP -> {
+            send(PointerKind.UP, e.actionIndex)
+            v.performClick()
+        }
+        MotionEvent.ACTION_CANCEL -> RemoteHub.pointer(PointerKind.CANCEL, 0, 0, 0, e.eventTime)
+    }
+}
+
+/** Öteki telefonun sistem tuşları. */
 @Composable
-private fun Share(hv: HostView, lang: Lang) {
+private fun Keys(lang: Lang) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+        for ((a, t) in listOf(
+            GlobalAction.BACK to RemoteText.KEY_BACK, GlobalAction.HOME to RemoteText.KEY_HOME,
+            GlobalAction.RECENTS to RemoteText.KEY_RECENTS, GlobalAction.NOTIFICATIONS to RemoteText.KEY_NOTIFICATIONS,
+        )) {
+            TextButton(onClick = { RemoteHub.action(a) }, modifier = Modifier.testTag("remote_key_${a.name.lowercase()}")) { Text(t.get(lang)) }
+        }
+    }
+}
+
+private fun openAccessibilitySettings(ctx: Context) {
+    runCatching { ctx.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+}
+
+@Composable
+internal fun Share(hv: HostView, lang: Lang) {
+    val ctx = LocalContext.current
     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Column(Modifier.weight(1f)) {
@@ -121,6 +179,18 @@ private fun Share(hv: HostView, lang: Lang) {
                 Button(onClick = RemoteHub::requestShare, modifier = Modifier.testTag("remote_share")) { Text(RemoteText.SHARE_START.get(lang)) }
             } else {
                 OutlinedButton(onClick = RemoteHub::stopShare) { Text(RemoteText.SHARE_STOP.get(lang)) }
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                (if (hv.touch) RemoteText.TOUCH_ON else RemoteText.TOUCH_OFF).get(lang),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f).testTag("remote_touch_state"),
+            )
+            if (!hv.touch) {
+                TextButton(onClick = { openAccessibilitySettings(ctx) }, modifier = Modifier.testTag("remote_touch_settings")) {
+                    Text(RemoteText.TOUCH_SETTINGS.get(lang))
+                }
             }
         }
     }

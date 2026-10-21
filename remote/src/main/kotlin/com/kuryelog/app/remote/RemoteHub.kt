@@ -14,6 +14,7 @@ import com.kuryelog.logic.remote.HostMachine
 import com.kuryelog.logic.remote.HostView
 import com.kuryelog.logic.remote.RemoteConfig
 import com.kuryelog.logic.remote.RemoteControl
+import com.kuryelog.logic.remote.GlobalAction
 import com.kuryelog.logic.remote.ViewerMachine
 import com.kuryelog.logic.remote.ViewerView
 import kotlinx.coroutines.CoroutineScope
@@ -32,7 +33,8 @@ import java.util.concurrent.TimeUnit
 /**
  * Uzaktan kullanımın süreçteki merkezi (REMOTE.md 1.7): saf [HostMachine] (paylaşan) ve [ViewerMachine] (izleyen) tek iş
  * parçacığında sürülür; komutları uygular: link iletisi ([LinkHub]), izin bildirimi ve onay penceresi, [CaptureService]
- * (MediaProjection + kodlayıcı), [StreamNet] soketleri, [Player] çözücü. `:app` açılışta [init] der. Cihazda doğrulanmadı.
+ * (MediaProjection + kodlayıcı), [StreamNet] soketleri, [Player] çözücü, [TouchService] (dokunuş ve sistem tuşları, REMOTE.md 2).
+ * `:app` açılışta [init] der. Cihazda doğrulanmadı.
  */
 // Yalnız uygulama bağlamı tutulur.
 @SuppressLint("StaticFieldLeak")
@@ -98,6 +100,17 @@ object RemoteHub {
         player.setSurface(s)
     }
 
+    /**
+     * Görüntüye dokunuş (REMOTE.md 2.1): [x], [y] görüntüye göre 0..`TouchLimits.NORM`; [eventTimeMs] `MotionEvent.getEventTime()`
+     * (uptime; makinenin saatine, `elapsedRealtime`'a çevrilir).
+     */
+    fun pointer(kind: ViewerMachine.PointerKind, id: Int, x: Int, y: Int, eventTimeMs: Long) {
+        val at = eventTimeMs - android.os.SystemClock.uptimeMillis() + android.os.SystemClock.elapsedRealtime()
+        viewer(ViewerMachine.Event.Pointer(kind, id, x, y, at))
+    }
+
+    fun action(a: GlobalAction) = viewer(ViewerMachine.Event.Action(a))
+
     // --- CaptureService / ConsentActivity'den ---
 
     internal fun consentGranted(w: Int, h: Int) = host(HostMachine.Event.ConsentGranted(w, h))
@@ -105,6 +118,7 @@ object RemoteHub {
     internal fun projectionStopped() = host(HostMachine.Event.ProjectionStopped)
     internal fun screenSize(w: Int, h: Int) = host(HostMachine.Event.ScreenSize(w, h))
     internal fun encoderFailed() = host(HostMachine.Event.EncoderFailed)
+    internal fun touchAvailable(on: Boolean) = host(HostMachine.Event.TouchAvailable(on))
 
     internal fun encoderConfig(gen: Int, w: Int, h: Int, csd: ByteArray) = post {
         if (gen == encoderGen) { host.handle(HostMachine.Event.EncoderConfig(w, h, csd), now()); apply() }
@@ -195,6 +209,8 @@ object RemoteHub {
             is HostMachine.Command.Write -> hostNet.write(c.conn, c.bytes)
             is HostMachine.Command.Close -> hostNet.close(c.conn)
             HostMachine.Command.StopProjection -> CaptureService.stop(a)
+            is HostMachine.Command.Gesture -> TouchService.current?.play(c.part)
+            is HostMachine.Command.Global -> TouchService.current?.global(c.action)
             is HostMachine.Command.State -> {
                 val was = _hostView.value.watched
                 _hostView.value = c.view
