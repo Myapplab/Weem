@@ -313,13 +313,18 @@ class DeliveryReminder(private val service: AccessibilityService) {
         fun notify(ctx: Context, r: OrderFlow.Reminder, update: Boolean = false) {
             val az = Store.lang(ctx) == Lang.AZ
             val nm = ctx.getSystemService(NotificationManager::class.java)
-            nm.createNotificationChannel(NotificationChannel(CHANNEL, Orders.tl(ctx, "Müşteri teslimat notu", "Müştəri çatdırılma qeydi"), NotificationManager.IMPORTANCE_HIGH).apply { enableVibration(true) })
+            // A10.2: kilit ekranında müşteri adı, telefonu ve notu görünmez (kanal ve bildirim gizli; kilit ekranında yalnız [publicVersion]).
+            nm.createNotificationChannel(NotificationChannel(CHANNEL, Orders.tl(ctx, "Müşteri teslimat notu", "Müştəri çatdırılma qeydi"), NotificationManager.IMPORTANCE_HIGH)
+                .apply { enableVibration(true); lockscreenVisibility = Notification.VISIBILITY_PRIVATE })
             val open = PendingIntent.getActivity(ctx, NotificationIds.DELIVERY_NOTE, ctx.packageManager.getLaunchIntentForPackage(ctx.packageName) ?: Intent().setPackage(ctx.packageName), PendingIntent.FLAG_IMMUTABLE)
             val restaurant = r.kind == "restaurant"
             val text = if (restaurant) r.headline ?: r.estimate else r.details.facts(az).joinToString(" · ").ifBlank { r.details.note ?: r.details.instructions ?: r.details.address ?: Orders.tl(ctx, "Teslimat bilgileri", "Çatdırılma məlumatları") }
             val big = if (restaurant) listOfNotNull(r.headline, r.estimate, r.body).joinToString("\n") else r.details.display(az)
+            val public = Notification.Builder(ctx, CHANNEL).setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle(Orders.tl(ctx, "Müşteri teslimat notu", "Müştəri çatdırılma qeydi")).build()
             nm.notify(NotificationIds.DELIVERY_NOTE, Notification.Builder(ctx, CHANNEL).setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle(r.title)
-                .setContentText(text).setStyle(Notification.BigTextStyle().bigText(big)).setContentIntent(open).setAutoCancel(true).setOnlyAlertOnce(update).build())
+                .setContentText(text).setStyle(Notification.BigTextStyle().bigText(big)).setContentIntent(open).setAutoCancel(true).setOnlyAlertOnce(update)
+                .setVisibility(Notification.VISIBILITY_PRIVATE).setPublicVersion(public).build())
         }
         private const val CHANNEL = "delivery_notes"
     }
