@@ -242,6 +242,25 @@ class RemoteSessionTest {
         assertEquals(n + 1, r.decoded.size)
     }
 
+    @Test fun rotationMidStreamKeepsAcksCountingAndFramesFlowing() {
+        // Döndürmeden sonra izleyenin ACK toplamı bağlantı başından sayar; paylaşan sayacı sıfırlarsa her onay reddedilir,
+        // yolda bayt sınırı dolar ve akış donar.
+        val r = playing()
+        repeat(100) {
+            r.frame(key = false, size = 5_000)
+            r.advance(33, step = 33)
+        }
+        r.host(HE.ScreenSize(2400, 1080))
+        r.frame(key = true, size = 5_000)
+        val n = r.decoded.size
+        repeat(200) {
+            r.frame(key = false, size = 5_000)
+            r.advance(33, step = 33)
+        }
+        assertEquals(n + 200, r.decoded.size)
+        assertFalse(r.hostCommands.any { it is H.SetBitrate && it.bps < 2_211_840 })
+    }
+
     @Test fun encoderFailureFallsBackToSmallerSizesThenUnavailable() {
         val r = rig()
         r.autoConfig = false

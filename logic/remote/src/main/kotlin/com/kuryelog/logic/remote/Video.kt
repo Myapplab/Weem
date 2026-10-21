@@ -126,6 +126,14 @@ class FlowControl(startBitrate: Int, private val minBps: Int = CaptureGeometry.M
         lastIncreaseMs = now
     }
 
+    /**
+     * Aynı bağlantıda yeni kodlayıcı (döndürme, kodlayıcı hatası): ilk kare anahtar kare olmalı. Bayt sayaçları bağlantınındır,
+     * sıfırlanmaz; izleyenin `ACK`'teki toplamı bağlantı açıldığından beri sayar.
+     */
+    fun restart() {
+        waitingKey = true
+    }
+
     fun admit(key: Boolean, bytes: Int, now: Long): Decision {
         val congested = inFlight + bytes > limit && inFlight > 0
         if (!congested && (key || !waitingKey)) {
