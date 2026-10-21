@@ -130,7 +130,8 @@ fun WeemApp(
                             if (!scooterImmersive) RemoteScooterCard(lang)
                             ScooterTab(lang, dark, scooterImmersive) { scooterImmersive = it }
                         }
-                        else -> PlaceholderScreen(selected, lang)
+                        // A9.1: Uzaktan sekmesi (öteki telefonun ekranı, bu telefonun paylaşımı).
+                        Tab.REMOTE -> RemoteScreen(lang)
                     }
                 }
             }
@@ -138,26 +139,6 @@ fun WeemApp(
         TaskAlertCard(tasks.alerts, tasks.lastPoint, lang, onRoute = { t -> taskRt.openRoute(t) }, onDismiss = { t -> taskRt.dismiss(t.id) })
         // A8.4: Receiver'da hırsızlık koruması geri sayımı / alarm ekranı (LINK.md 5.1).
         TheftOverlay(lang)
-        }
-    }
-}
-
-@Composable
-private fun PlaceholderScreen(tab: Tab, lang: Lang) {
-    var taps by rememberSaveable { mutableStateOf(0) }
-    val debuggable = BuildInfo.isDebuggable(LocalContext.current)
-    Column(
-        Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(tab.label.get(lang), style = MaterialTheme.typography.headlineMedium)
-        Text(Str.PLACEHOLDER_COMING.get(lang), color = MaterialTheme.colorScheme.onSurfaceVariant)
-        if (debuggable) {
-            // .dev denemesi (A1.5): sayaç sekme değişince korunmalı.
-            Button(onClick = { taps++ }, modifier = Modifier.padding(top = 16.dp)) {
-                Text(Str.PLACEHOLDER_COUNTER.get(lang).format(taps))
-            }
         }
     }
 }

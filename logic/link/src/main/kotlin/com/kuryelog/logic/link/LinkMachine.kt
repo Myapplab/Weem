@@ -20,6 +20,8 @@ data class LinkStatus(
     val channel: Int? = null,
     /** Son ret nedeni (aranırken); bağlanınca silinir. */
     val issue: LinkIssue? = null,
+    /** Etkin kanal Wi-Fi ise eşin yerel ağ adresi (uzaktan kullanım akışı buraya bağlanır; REMOTE.md 1.4); değilse null. */
+    val peerHost: String? = null,
 ) {
     enum class State { OFF, SEARCHING, LINKED }
 
@@ -746,7 +748,8 @@ class LinkMachine(
         val a = active()
         val phones = btTargets.isNotEmpty()
         return if (a != null) {
-            LinkStatus(LinkStatus.State.LINKED, a.transport, a.peer, linkedSinceMs ?: a.openedMs, a.rttMs, lan, btOn, phones, channel = a.id)
+            LinkStatus(LinkStatus.State.LINKED, a.transport, a.peer, linkedSinceMs ?: a.openedMs, a.rttMs, lan, btOn, phones, channel = a.id,
+                peerHost = a.remote.takeIf { a.transport == Transport.WIFI })
         } else {
             LinkStatus(LinkStatus.State.SEARCHING, null, null, searchSinceMs, null, lan, btOn, phones, issue = issue)
         }

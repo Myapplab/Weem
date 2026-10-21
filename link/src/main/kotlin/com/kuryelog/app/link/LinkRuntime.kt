@@ -189,6 +189,12 @@ class LinkRuntime(
         return id!!
     }
 
+    /** Adres yerel ağ arayüzlerinden birinin alt ağında mı (uzaktan kullanım akışı; REMOTE.md 1.4). */
+    fun onLan(host: String): Boolean = LanTargets.onLan(host, net.interfaces())
+
+    /** Uzaktan kullanım soketi: hedef Wi-Fi istemci ağındaysa o ağa bağlanır. */
+    fun bindToLan(s: Socket, host: String) = net.bindIfWifi(s, host)
+
     fun stop() {
         feed(LinkEvent.Disable)
         synchronized(lock) {

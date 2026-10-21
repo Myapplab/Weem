@@ -11,7 +11,7 @@ class NotificationIdsTest {
             val (a, ra) = entries[i]; val (b, rb) = entries[j]
             assertTrue("$a $ra ∩ $b $rb", ra.last < rb.first || rb.last < ra.first)
         }
-        assertEquals(20, entries.size) // A8.3: LINK_FGS, A8.4: THEFT
+        assertEquals(22, entries.size) // A8.3: LINK_FGS; A9.1: REMOTE_FGS, REMOTE_ASK; A8.4: THEFT
     }
 
     @Test fun theTwoOldCollisionsAreGone() {

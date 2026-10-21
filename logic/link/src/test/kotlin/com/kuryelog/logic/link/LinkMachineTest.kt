@@ -36,6 +36,9 @@ class LinkMachineTest {
         assertLinked(Transport.WIFI)
         assertTrue(b.connects(Transport.WIFI).any { (it.second as LinkCommand.Connect).host == "192.168.43.1" })
         assertTrue(a.paired.isEmpty() && b.paired.isEmpty())
+        // A9.1: uzaktan kullanım akışı eşin Wi-Fi adresine bağlanır (iki yönde de bilinir).
+        assertEquals("192.168.43.1", b.status.peerHost)
+        assertTrue(a.status.peerHost!!.startsWith("192.168.43."))
     }
 
     @Test
@@ -203,6 +206,7 @@ class LinkMachineTest {
         b.leaveLan()
         net.run(6_000)
         assertLinked(Transport.BT)
+        assertEquals(null, a.status.peerHost)
         assertEquals(listOf(b.btAddress), a.btLearned)
         assertEquals(listOf(a.btAddress), b.btLearned)
         assertEquals(SendResult.SENT, a.send("bt"))

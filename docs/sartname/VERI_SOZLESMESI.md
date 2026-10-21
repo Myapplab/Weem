@@ -156,7 +156,7 @@ Dosya `MODE_PRIVATE`, yazma eşzamanlı (`commit`). Yedeğe, dışa aktarmaya ve
 | `pin_salt`, `pin_hash` | String (hex): 16 bayt rastgele tuz; SHA-256(tuz ‖ 4 haneli PIN). PIN'in kendisi saklanmaz |
 | `sms_1`, `sms_2` | String: alarm SMS numaraları (yalnız rakam ve `+`); bağlantı yüküne, yedeğe ve dışa aktarmaya girmez |
 
-Dosya `MODE_PRIVATE`, yazma `apply`. Bildirim 7404 kanal `theft` (`NotificationIds.THEFT`).
+Dosya `MODE_PRIVATE`, yazma `apply`. Bildirim 7406 kanal `theft` (`NotificationIds.THEFT`).
 
 ### 5.4 YolGo — `FlutterSharedPreferences` (her anahtar `flutter.` önekli) — WEEM: **aktarılmaz** (S1: eski YolGo'ya dışa aktarma eki yok; WEEM başka paketin verisini okuyamaz)
 
@@ -288,9 +288,12 @@ Tam dosya yazımı `.tmp` + `rename`, ekleme dosyaları ekleme kipinde; okunamay
 
 Tek tablo `:core` `NotificationIds` (tam tablo `CORE.md` 3.3): her bildirim sabit numara ya da ayrılmış, çakışmayan aralık; test çakışmayı reddeder. Eski numaralar korunur; iki değişiklik: ekran okuma uyarısı **5103 → 5104** (5103 H4 vardiya kesintisinde kalır), nakit bahşiş **4000 + (h & 0xFFF) → 10000 + (h & 0xFFF)** (10000–14095). 7400 (YolGo gün kaydı servisi) kullanılmaz: vardiya servisiyle (1) birleşir. 7401 (YolGo veri seti servisi, `DATASET_FGS`) de kullanılmaz: veri seti `:orders`'ın teklif akışında, servissiz (A6.1; `MAP.md` 13.11). Aşama 6 numaraları ve kanalları `MAP.md` 14.6 (öneri: 7402 `NAV_ONLY_FGS`, kanal `navigation`, SORU-N4). Gün sonu iptali aralık değil açık liste. Kanal kimlikleri aynı kalır (kullanıcının kanal ayarları kanal kimliğine bağlı); yeni kanallar `yeni`.
 
+**A9.1 (yeni):** 7404 `REMOTE_FGS` (kanal `remote` "Uzaktan kullanım", DEFAULT; ekran paylaşımı servisi, ongoing, "Bitir"), 7405 `REMOTE_ASK` (aynı kanal, 60 sn; öteki telefon ekranı görmek istiyor). Uzaktan kullanım kalıcı veri yazmaz (anahtarlar yalnız bellekte; `REMOTE.md` 1.3).
+
 ## 9. Gizlilik sınırı (WEEM'de korunur)
 
 - Müşteri **telefonu** yalnız `courier.db` (`withPhone=true`), bellek, rozet/balon ve bildirim 12'de; JSONL ve ZIP yedekte yok (`PhoneK25Test`). İstisna (S22, 18 Ekim): N3 parolalı şifreli yedekte `courier.db` satırlarıyla birlikte durur.
 - Müşteri **adı** `courier.db`, `orders.jsonl` (`record`) ve `latest` gözleminde düz; dışa aktarmada `AnalysisExport`/`Redactor` gizler.
 - 2 telefon bağlantısı (A8.2): her ileti uçtan uca şifreli (Noise, `LINK.md` 3.5); anahtar, jeton, QR metni ve düz metin yük loga, `FailureSink`'e ya da çökme kaydına yazılmaz.
 - 2 telefon modunda Receiver'a gitmeyecekler: müşteri adı, telefonu, notlar, bildirim 12 içeriği. Gidebilecekler: aşama, saat, bölge (`Z1..Z4`), restoran adı/koordinatı, müşteri koordinatı ve adres metni (`dropoffAddress`; S5, 17 Ekim), rota hedefi (plan Bölüm 4.4).
+- Uzaktan kullanım (A9.1, S12): ekran görüntüsü yalnız eşleşmiş telefona, yerel ağda şifreli (AES-256-GCM, link üstünden geçici ECDH) gider; kaydedilmez, diske ve loga yazılmaz. S5 süzgeci görüntüye uygulanamaz (S12 bunu kapsar; `REMOTE.md` 1.1).
