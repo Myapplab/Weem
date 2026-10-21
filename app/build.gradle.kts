@@ -34,6 +34,8 @@ android {
         manifestPlaceholders["appLabel"] = "WEEM"
         resValue("string", "google_maps_key", googleMapsKey)
         buildConfigField("boolean", "MAPS_ENABLED", googleMapsKey.isNotEmpty().toString())
+        // Yalnız arm64 (kullanıcı kararı S30, A10.1): Pixel 10 Pro, Poco X3, S22 arm64; x86/x86_64/armeabi-v7a ≈62 MiB yer tutuyordu.
+        ndk { abiFilters += "arm64-v8a" }
     }
 
     buildFeatures {
@@ -61,7 +63,11 @@ android {
         }
         // com.kuryelog.app: Rawstats'ın yerini alır; WEEM 1.0'dan önce telefona kurulmaz.
         release {
-            isMinifyEnabled = false
+            // R8 + kaynak küçültme (S30, A10.1): dex ≈41 → ≈6 MiB. Kod yansıma kullanmaz; manifest servis adları R8'de korunur.
+            // Telefonda sorun çıkarsa isMinifyEnabled/isShrinkResources = false ile kapatılır (.dev küçültmesiz).
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.getByName("kuryelog")
         }
     }

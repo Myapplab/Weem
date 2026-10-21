@@ -15,8 +15,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.currentStateAsState
 import com.kuryelog.logic.map.geo.GeoPoint
 import com.kuryelog.logic.map.graph.RoadGraph
 import com.kuryelog.logic.map.ui.PuckFix
@@ -27,7 +31,7 @@ import com.kuryelog.logic.map.ui.PuckStep
 data class PuckView(val point: GeoPoint, val course: Double?, val beam: Double?, val accuracyM: Double?, val raw: GeoPoint, val turning: Boolean, val cameraHeading: Double?)
 
 /**
- * Harita görünürken GPS (1 sn; ilk konum için ağ) dinler ve işaret akışını (`ui.PuckMotion`, MAP.md 6.4) uygular: [graph] varsa yola oturtma, ileri tahmin, doğrusal kayma
+ * Harita görünürken GPS (1 sn; ilk konum için ağ) dinler; uygulama arka plandayken (Activity STARTED değil, ör. Wolt/Bolt önde) dinlemez (A10.1) ve işaret akışını (`ui.PuckMotion`, MAP.md 6.4) uygular: [graph] varsa yola oturtma, ileri tahmin, doğrusal kayma
  * (her karede). İzin yoksa null kalır (izni vardiya kartı ister). Pusula yönü (koni) Bölüm 7.6, A6.6.
  */
 @Composable
@@ -38,10 +42,12 @@ fun rememberMapPuck(enabled: Boolean, graph: RoadGraph?): State<PuckView?> {
         PuckMotion(graph?.let { g -> { lat, lon, d, h, tol -> g.nearestEdge(lat, lon, maxDist = d, heading = h, headingTol = tol) } })
     }
     val step = remember { mutableStateOf<PuckStep?>(null) }
-    DisposableEffect(enabled, motion) {
+    val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    val listen = enabled && lifecycle.isAtLeast(Lifecycle.State.STARTED)
+    DisposableEffect(listen, motion) {
         val lm = context.getSystemService(LocationManager::class.java)
         val listener = LocationListener { loc -> motion.onFix(loc.toPuckFix(), SystemClock.elapsedRealtime(), view.value?.point)?.let { step.value = it } }
-        val started = enabled && start(context, lm, listener)
+        val started = listen && start(context, lm, listener)
         onDispose { if (started) runCatching { lm?.removeUpdates(listener) } }
     }
     val s = step.value

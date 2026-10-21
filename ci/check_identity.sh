@@ -40,7 +40,13 @@ MANIFEST=$("$BT/aapt2" dump xmltree --file AndroidManifest.xml "$APK")
 for svc in com.kuryelog.app.WatchService com.kuryelog.app.NotifService; do
   grep -q "android:name(0x01010003)=\"$svc\"" <<<"$MANIFEST" || fail "manifestte $svc yok"
 done
+# R8 (release, S30): manifestteki servis sınıfları adlarıyla dex'te kalmalı (Rawstats izinleri bu adlara bağlı).
+DEX=$(unzip -p "$APK" 'classes*.dex' | LC_ALL=C grep -ao 'Lcom/kuryelog/app/\(WatchService\|NotifService\);' | sort -u | wc -l)
+[ "$DEX" -ge 2 ] || fail "dex'te WatchService/NotifService sınıfı yok (R8 kaldırmış ya da adını değiştirmiş olabilir)"
+# Yalnız arm64-v8a (S30): başka ABI klasörü APK'yı ≈62 MiB büyütür.
+ABIS=$(unzip -Z1 "$APK" 'lib/*' 2>/dev/null | cut -d/ -f2 | sort -u | tr '\n' ' ')
+[ "$ABIS" = "arm64-v8a " ] || fail "yerel kütüphane ABI'leri: '$ABIS', beklenen yalnız arm64-v8a"
 grep -q 'android:allowBackup(0x01010280)=false' <<<"$MANIFEST" || fail "allowBackup false değil"
 grep -q 'android:dataExtractionRules' <<<"$MANIFEST" || fail "dataExtractionRules yok"
 
-echo "Kimlik doğru: $pkg $name ($code), min $min / target $target, imza SHA-256 $GOT"
+echo "Kimlik doğru: $pkg $name ($code), min $min / target $target, imza SHA-256 $GOT, ABI $ABIS, $(stat -c %s "$APK") bayt"
