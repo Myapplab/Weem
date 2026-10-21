@@ -42,6 +42,10 @@ enum class LinkTopic(val type: String, val reliable: Boolean, val ttlMs: Long, v
     ENERGY_RESULT("EnergyResult", true, 24 * HOUR, LinkRole.RECEIVER),
     BATTERY("BatterySummary", false, 5 * MINUTE, LinkRole.RECEIVER),
     ROUTE("RouteStatus", false, MINUTE, LinkRole.RECEIVER),
+    /** Hırsızlık koruması durumu (LINK.md 5.2); alarmdayken 10 sn'de bir, son konumla. */
+    THEFT_STATE("TheftState", false, MINUTE, LinkRole.RECEIVER),
+    /** Pixel'den "Park" ya da kapatma (LINK.md 5.2). */
+    THEFT_COMMAND("TheftCommand", true, 2 * MINUTE, LinkRole.PROVIDER),
     /** İki yönde: öteki telefonun rolü (iki Provider ya da iki Receiver uyarısı). */
     ROLE("LinkRole", false, 24 * HOUR, null);
 
