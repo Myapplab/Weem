@@ -44,6 +44,8 @@ object NotificationIds {
     const val REMOTE_FGS = 7404
     /** `:remote` öteki telefon ekranı görmek istiyor: dokununca onay penceresi (kanal `remote`, 60 sn). */
     const val REMOTE_ASK = 7405
+    /** `:link` hırsızlık koruması (A8.4, LINK.md 5; kanal `theft`, HIGH): iki telefonda park/uyarı/alarm; alarmda tam ekran. */
+    const val THEFT = 7406
     /** Y14 yol kalibrasyonu (kanal `yolgo_calibration`). */
     const val CALIBRATION_FGS = 7435
     /** `:orders` nakit bahşiş onayı, yolculuk başına (kanal `cash_tips`, 15 sn). Eskiden 4000 + aynı ifade. */
@@ -64,7 +66,7 @@ object NotificationIds {
         "SHIFT_INTERRUPTED" to SHIFT_INTERRUPTED..SHIFT_INTERRUPTED, "SCREEN_READING_OFF" to SCREEN_READING_OFF..SCREEN_READING_OFF,
         "REMINDER" to REMINDER, "TASK_NEARBY" to TASK_NEARBY..TASK_NEARBY, "WEATHER" to WEATHER..WEATHER,
         "DATASET_FGS" to DATASET_FGS..DATASET_FGS, "NAV_ONLY_FGS" to NAV_ONLY_FGS..NAV_ONLY_FGS, "LINK_FGS" to LINK_FGS..LINK_FGS,
-        "REMOTE_FGS" to REMOTE_FGS..REMOTE_FGS, "REMOTE_ASK" to REMOTE_ASK..REMOTE_ASK, "CALIBRATION_FGS" to CALIBRATION_FGS..CALIBRATION_FGS, "CASH_TIP" to CASH_TIP,
+        "REMOTE_FGS" to REMOTE_FGS..REMOTE_FGS, "REMOTE_ASK" to REMOTE_ASK..REMOTE_ASK, "THEFT" to THEFT..THEFT, "CALIBRATION_FGS" to CALIBRATION_FGS..CALIBRATION_FGS, "CASH_TIP" to CASH_TIP,
     )
 
     /** Kanal kimlikleri (eski uygulamalarla aynı; kullanıcının kanal ayarları kalır). */
@@ -76,6 +78,8 @@ object NotificationIds {
     const val CHANNEL_LINK = "link"
     /** Uzaktan kullanım (yeni kanal, A9.1). */
     const val CHANNEL_REMOTE = "remote"
+    /** Hırsızlık koruması (yeni kanal, A8.4; HIGH, alarm sesi kodla çalınır). */
+    const val CHANNEL_THEFT = "theft"
     /** Hatırlatıcılar ve yakındaki görev (Y20; eski YolGo kanalı, HIGH, titreşim 0-350-200-350). */
     const val CHANNEL_REMINDER = "hatirlatici"
 }

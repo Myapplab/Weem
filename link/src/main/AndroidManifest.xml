@@ -10,11 +10,22 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <!-- connectedDevice ön plan servisinin ön koşulu (olağan izin; Android 14+). -->
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <!-- A8.4 hırsızlık koruması (LINK.md 5): alarmda konum SMS'i (Receiver), tam ekran alarm, titreşim, konum, bildirim. -->
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-feature android:name="android.hardware.telephony" android:required="false" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application>
         <service
             android:name="com.kuryelog.app.link.LinkService"
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
+        <receiver
+            android:name="com.kuryelog.app.link.TheftReceiver"
+            android:exported="false" />
     </application>
 </manifest>

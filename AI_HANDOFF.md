@@ -2,6 +2,12 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-21 — A8.4 bitti: hırsızlık koruması N6 (Claude Opus · high; PR #8, dal `ccr-23db5dd8-emcied`)
+- Yapılan: S10 kararı (scooter + Poco; otomatik + elle; alarm Pixel ses/titreşim + Poco siren + ekran; bağlantı koparsa Poco SMS'i). Saf `TheftGuard` (OFF→ARMING 20 sn→ARMED→WARNING 8 sn→ALARM; tetik hız ≥4 km/s 2 sn, ivme, GPS 25 m), `TheftPin`, `TheftSms`, `TheftState`/`TheftCommand` + `PhoneBridge`; `:link` `TheftRuntime`/`TheftReceiver`; `:app` `TheftCard`, `TheftOverlay`. `LINK.md` 5, `VERI_SOZLESMESI` 5.3d.
+- Not: A9.1 7404/7405'i aldı → `THEFT` = **7406**; main birleştirildi.
+- Doğrulama: PR #8 CI (test + lint + derleme). Bu oturumda Maven Central/Gradle indirmesi kapalıydı; `TheftGuardTest`/`TheftSmsTest` Gradle'ın Kotlin 2.0.21'iyle elle koşuldu. Telefonda denenmedi.
+- Açık kalan: AZ metin onayı (`TheftText`); Xiaomi'de servis SMS'i ve tam ekran bildirim izni; restoran yakınında uzun kırmızı ışıkta yanlış alarm riski (geri sayımda İptal, Pixel'den Kapat); tek telefon modunda koruma yok.
+
 ## 2026-10-21 — A9.1 bitti: uzaktan kullanım ekran akışı (Claude Opus · high; dal `ccr-f89752d7-vriy4p`)
 - Yapılan: saf `logic/remote` (akış çerçevesi, HKDF + AES-GCM akış uçları, `remote.ask/offer/end` + geçici P-256 ECDH, `CaptureGeometry`, `AnnexB`, `FlowControl`, `HostMachine`/`ViewerMachine`, `RemoteText`); `LinkStatus.peerHost`; `:link` `LinkHub.onRemote/publishReliable/onLan/bindToLan`; `:remote` `RemoteHub`, `CaptureService` (MediaProjection + H.264), `ConsentActivity`, `RemoteNotices`, `StreamNet`, `Player`; `:app` `RemoteScreen`. `REMOTE.md` 1.
 - Önemli karar: video `:link` kanalından geçmez (65 KiB ileti, onay kuyruğu, canlılık bekler) → ayrı TCP 47312, anahtar link üstünden geçici ECDH; paylaşım bir onayla açık kalır (izleyensiz 10 dk), cepteki telefonda her izlemede onay olmasın.

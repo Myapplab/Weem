@@ -279,3 +279,47 @@ Daha fazla → **2 telefon modu**: rol (Kapalı / Provider / Receiver) ve rol no
 ### 4.12 Metin onayı
 
 `LinkText` ve `NavText.FORWARDED` AZ metinleri onay bekler (M-L-1).
+
+## 5. Hırsızlık koruması (A8.4, N6)
+
+Kullanıcı kararı S10 (21 Ekim): scooter + Poco, otomatik + elle, alarm iki telefonda + Poco ekranı, bağlantı koparsa Poco SMS ile konum. Aşağıdaki sayılar ve kurallar ajanın varsayılanıdır (kullanıcıya bildirildi; değiştirmek kullanıcı kararı). WEEM scooter'a **salt okur** (`SCOOTER.md` 2): kilitleyemez, scooter alarmını çaldıramaz; koruma = algılama + alarm. Yalnız 2 telefon modunda ve **Receiver'da** çalışır; tek telefonda kapalı. Cihazda doğrulanmadı.
+
+### 5.1 Durumlar (saf `logic/link` `TheftGuard`, Receiver'da saniyede bir `tick`)
+
+`OFF` → `ARMING` → `ARMED` → `WARNING` → `ALARM`; her durumdan `disarm` → `OFF`.
+
+- **Devreye alma (otomatik, ayar açıksa):** (a) aşama: açık siparişlerden biri `AT_PICKUP` ya da `AT_DROPOFF` (`TripStages`); (b) Pixel uzak: bağlantı ≥ 60 sn kopuk. İkisinde de scooter durmuş olmalı: hız ≤ 2 km/s (ya da scooter karesi yok) ≥ 5 sn. Sonra `ARMING` 20 sn (iniş payı); bu sürede scooter > 2 km/s olursa geri sayım baştan.
+- **Elle:** "Park" — Pixel'den (`TheftCommand arm`) ya da Poco'dan; koşulsuz `ARMING` 20 sn.
+- **Kendiliğinden kapanma** (yalnız otomatik devreye alındıysa ve `WARNING`/`ALARM` değilken): (a) ile alındıysa o sipariş artık `AT_PICKUP`/`AT_DROPOFF` değil (aşama Pixel'den gelir = sahibin işlemi); (b) ile alındıysa bağlantı geri geldi. Elle alınan yalnız elle kapanır.
+- **Tetik (`ARMED`):** (T1) taze scooter karesinde hız ≥ 4 km/s, ≥ 2 sn; (T2) Poco hareketi: doğrusal ivme ≥ 1,2 m/s² olan en az 3 örnek, 5 sn pencerede ve ilk ile son arası ≥ 1 sn; (T3) GPS: doğruluk ≤ 20 m iken devreye alma noktasından ≥ 25 m. Scooter Bluetooth kopması tek başına tetik değil (scooter kendiliğinden kapanabilir).
+- **`WARNING` 8 sn:** Poco ekranında uyarı + kısa bip, Pixel'de titreşimli bildirim; süre dolunca (kapatılmadıysa) `ALARM`.
+- **`ALARM`:** Poco yüksek siren (alarm sesi kanalı, sessiz kipi aşar; 10 dk sürekli, sonra dakikada 30 sn), kırmızı tam ekran uyarı; Pixel yüksek alarm + titreşim + tam ekran bildirim. Kapatılana dek sürer.
+- **Kapatma:** Pixel'den her zaman (`TheftCommand disarm`; kanal kimlikli ve şifreli, hırsız taklit edemez). Poco'da 4 haneli PIN ile (PIN ayarlanmamışsa 3 sn basılı tutma; ayar ekranı uyarır). PIN Poco'da yalnız tuzlu SHA-256 özeti olarak saklanır.
+
+### 5.2 Mesajlar
+
+| Tür | Sınıf | TTL | Gönderen | Yük |
+|---|---|---|---|---|
+| `TheftState` | son durum | 60 sn | R | `schemaVersion` 1, `state`, `armedBy` (`stage`\|`away`\|`manual`\|null), `sinceMs`, `trigger` (`speed`\|`motion`\|`gps`\|null), `lat`, `lon`, `accuracyM`, `fixAtMs`; durum değişince ve `WARNING`/`ALARM`'da 10 sn'de bir |
+| `TheftCommand` | teslim zorunlu | 2 dk | P | `schemaVersion` 1, `commandId`, `action` (`arm`\|`disarm`), `atMs` |
+
+Pixel'de son `TheftState` ve son konum (saatiyle) bağlantı kopsa da gösterilir ("Son bilinen konum: … önce", haritada aç).
+
+### 5.3 SMS (Poco)
+
+- `ALARM` sürerken Pixel bağlantısı ≥ 15 sn kopuksa ilk SMS; sonra konum ≥ 50 m değiştiyse 3 dk'da bir, değişmediyse 10 dk'da bir; alarm başına en çok 20 SMS. Alarm kapanınca bir "kapatıldı" SMS'i (en az biri gittiyse).
+- Metin: `WEEM ALARM: scooter hareket etti. Konum: https://maps.google.com/?q=<lat>,<lon> (±<m> m, <SS:dd>)`; konum yoksa "konum yok".
+- Numara (en çok 2) yalnız Poco ayarında; bağlantı yüküne girmez (S5 süzgeci zaten `phone` anahtarını engeller). İzin `SEND_SMS` (Xiaomi'de ek "servis SMS" izni gerekebilir; ayar ekranı yönlendirir). SIM yoksa ya da izin yoksa SMS atlanır, hata kaydedilir, Poco ekranında not.
+
+### 5.4 Ayarlar
+
+Daha fazla → 2 telefon modu → **Hırsızlık koruması**: Açık/Kapalı (varsayılan kapalı), otomatik devreye alma (aşama / Pixel uzak, ikisi de açık), Poco'da: PIN, SMS numaraları, SMS izni, "Siren dene" (3 sn). Durum kartı iki telefonda: durum, kim aldı, son konum.
+
+### 5.5 Kod (A8.4)
+
+- Saf `logic/link`: `TheftGuard` (5.1), `TheftPin`, `TheftSms` (5.3), `TheftState`/`TheftCommand` (5.2; `LinkTopic.THEFT_STATE`/`THEFT_COMMAND`, `LinkPayloads`), `PhoneBridge.receiverTheft`/`sendTheft`/`theft`/`Local.theftCommand`, `TheftText` (TR/AZ; AZ onay bekler).
+- Android `:link` `TheftRuntime`: Receiver'da saniyede bir tik (aşamalar `PhoneBridge.orders.stages`, hız taze `ScooterLive.speedKmh`, bağlantı `LinkHub.status`), koruma açıkken `TYPE_LINEAR_ACCELERATION` + GPS 1 sn, siren (`RingtoneManager` alarm sesi, `USAGE_ALARM`, alarm kanalı en yükseğe, bitince eski düzey), uyarıda bip, SMS (`SmsManager`, `SEND_SMS`); Provider'da `theft` akışına göre titreşim/siren, bildirim düğmeleri Kapat ve Sesi kapat (`TheftReceiver`), haritada aç. Bildirim 7406 kanal `theft` (HIGH, kanal sessiz; ses kodla), uyarı/alarmda tam ekran.
+- `:app`: `TwoPhone` role göre bağlar (tek telefonda `stop`); `TheftCard` (2 telefon modu ekranı), `TheftOverlay` (Receiver'da geri sayım kartı, uyarı/alarmda kırmızı ekran + PIN ya da 3 sn basılı tutma).
+- Testler: `TheftGuardTest` 17, `TheftSmsTest` 6, `PhoneBridgeTest` +3, `LinkPayloadsTest` tür tablosu, `NotificationIdsTest` (20 girdi). Cihazda doğrulanmadı.
+- Açık: AZ metin onayı; Xiaomi'de "Servis SMS'i" ve tam ekran bildirim izni cihazda görülür; koruma tek telefon modunda yok; uzun kırmızı ışık restoran yakınında yanlış alarm riski (geri sayımda İptal, Pixel'den Kapat).
+

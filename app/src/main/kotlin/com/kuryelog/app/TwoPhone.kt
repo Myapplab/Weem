@@ -5,6 +5,7 @@ import com.kuryelog.app.core.ShiftHub
 import com.kuryelog.app.core.Store
 import com.kuryelog.app.economics.Economics
 import com.kuryelog.app.link.LinkHub
+import com.kuryelog.app.link.TheftRuntime
 import com.kuryelog.app.remote.RemoteHub
 import com.kuryelog.app.map.BatteryRuntime
 import com.kuryelog.app.map.DayRuntime
@@ -49,7 +50,11 @@ object TwoPhone {
     private fun local(app: Context, role: LinkRole): PhoneBridge.Local {
         val nav = NavRuntime.get(app)
         return when (role) {
-            LinkRole.RECEIVER -> PhoneBridge.Local(nav = nav.port, scooter = Scooter.bridge, shift = ShiftHub, navOpened = { nav.showMap() })
+            LinkRole.RECEIVER -> PhoneBridge.Local(
+                nav = nav.port, scooter = Scooter.bridge, shift = ShiftHub, navOpened = { nav.showMap() },
+                // A8.4: Pixel'den Park/Kapat (LINK.md 5.2).
+                theftCommand = { TheftRuntime.command(it) },
+            )
             LinkRole.PROVIDER -> PhoneBridge.Local(nav = nav.port)
             LinkRole.OFF -> PhoneBridge.Local()
         }
@@ -62,6 +67,12 @@ object TwoPhone {
         val events = Orders.events(app)
         val day = DayRuntime.get(app)
         nav.controller.forward = null
+        // A8.4: hırsızlık koruması role göre (Receiver korur, Provider alarmı gösterir; tek telefonda kapalı).
+        when (b?.role) {
+            LinkRole.RECEIVER -> TheftRuntime.receiver(app, b) { Scooter.bridge.live.value?.takeIf { it.fresh }?.scooter?.speedKmh }
+            LinkRole.PROVIDER -> TheftRuntime.provider(app, b)
+            else -> TheftRuntime.stop()
+        }
         when (b?.role) {
             LinkRole.PROVIDER -> {
                 Orders.bindScooter(app, b.scooter)

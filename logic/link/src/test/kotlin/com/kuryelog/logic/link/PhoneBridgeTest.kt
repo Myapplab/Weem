@@ -106,11 +106,13 @@ class PhoneBridgeTest {
     private val rShift = Shift()
     private val rScooter = Scooter()
     private val rOpened = ArrayList<NavTarget>()
+    private val rTheft = ArrayList<TheftCommand>()
     private val pOut = Wire()
     private val rOut = Wire()
     private var provider = newProvider()
     private val receiver = PhoneBridge(LinkRole.RECEIVER, rOut, { now }, scope,
-        PhoneBridge.Local(nav = rNav, scooter = rScooter, shift = rShift, navOpened = { rOpened += it }), energyWaitMs = 2_000)
+        PhoneBridge.Local(nav = rNav, scooter = rScooter, shift = rShift, navOpened = { rOpened += it }, theftCommand = { rTheft += it }),
+        energyWaitMs = 2_000)
 
     private fun newProvider() = PhoneBridge(LinkRole.PROVIDER, pOut, { now }, scope, PhoneBridge.Local(nav = pNav), energyWaitMs = 2_000)
 
@@ -442,5 +444,69 @@ class PhoneBridgeTest {
         provider.providerShift(ShiftState(true, startedAtMs = t0, generatedAtMs = t0))
         flush()
         assertEquals(t0 - 5_000, receiver.remoteShift.value!!.startedAtMs)
+    }
+
+    // ------------------------------------------------------------------ A8.4 hırsızlık koruması (LINK.md 5.2)
+
+    @Test
+    fun theftStateGoesToProviderOnChangeAndEveryTenSecondsWhileAlarming() {
+        val armed = TheftGuard.Status(TheftGuard.State.ARMED, TheftGuard.ArmedBy.STAGE, t0)
+        receiver.receiverTheft(armed, now)
+        receiver.receiverTheft(armed, now + 1_000)
+        receiver.receiverTheft(armed.copy(fix = TheftGuard.Fix(40.4, 49.8, 8.0, now)), now + 2_000)
+        assertEquals(1, rOut.count(LinkTopic.THEFT_STATE))
+        val fix = TheftGuard.Fix(40.41, 49.87, 6.0, now + 3_000)
+        val alarm = TheftGuard.Status(TheftGuard.State.ALARM, TheftGuard.ArmedBy.STAGE, now + 3_000, TheftGuard.Trigger.SPEED, fix)
+        receiver.receiverTheft(alarm, now + 3_000)
+        receiver.receiverTheft(alarm, now + 12_000)
+        receiver.receiverTheft(alarm, now + 13_000)
+        assertEquals(3, rOut.count(LinkTopic.THEFT_STATE))
+        flush()
+        val got = provider.theft.value!!
+        assertEquals(TheftGuard.State.ALARM, got.status.state)
+        assertEquals(TheftGuard.Trigger.SPEED, got.status.trigger)
+        assertEquals(40.41, got.status.fix!!.lat, 1e-9)
+        // Bağlantı kopsa da son durum (son bilinen konum) kalır.
+        provider.linkChanged(false, now)
+        assertEquals(TheftGuard.State.ALARM, provider.theft.value!!.status.state)
+    }
+
+    @Test
+    fun theftCommandReachesReceiverOnceAndOnlyFromProvider() {
+        assertTrue(provider.sendTheft(TheftCommand.Action.ARM, now))
+        assertFalse(receiver.sendTheft(TheftCommand.Action.DISARM, now))
+        flush()
+        assertEquals(listOf(TheftCommand.Action.ARM), rTheft.map { it.action })
+        val again = pOut.sent.last { it.first == LinkTopic.THEFT_COMMAND }
+        receiver.incoming(LinkTopic.THEFT_COMMAND.type, again.second, now)
+        assertEquals(1, rTheft.size)
+        // Yanlış yön: Receiver'ın yolladığı komut Provider'da da Receiver'da da işlenmez.
+        receiver.incoming(LinkTopic.THEFT_STATE.type, LinkPayloads.theftState(TheftState(TheftGuard.Status(), now)), now)
+        provider.incoming(LinkTopic.THEFT_COMMAND.type, again.second, now)
+        assertEquals(1, rTheft.size)
+        provider.receiverTheft(TheftGuard.Status(TheftGuard.State.ALARM), now)
+        assertEquals(0, pOut.count(LinkTopic.THEFT_STATE))
+    }
+
+    @Test
+    fun theftPayloadsRoundTripWithClockAndRejectBadInput() {
+        val fix = TheftGuard.Fix(40.409, 49.867, 9.0, t0 + 2_000)
+        val s = TheftState(TheftGuard.Status(TheftGuard.State.WARNING, TheftGuard.ArmedBy.AWAY, t0 + 1_000, TheftGuard.Trigger.MOTION, fix), t0 + 3_000)
+        val back = LinkPayloads.Decoder(1_000).theftState(LinkPayloads.theftState(s))!!
+        assertEquals(TheftGuard.State.WARNING, back.status.state)
+        assertEquals(TheftGuard.ArmedBy.AWAY, back.status.armedBy)
+        assertEquals(t0, back.status.sinceMs)
+        assertEquals(t0 + 1_000, back.status.fix!!.atMs)
+        assertEquals(t0 + 2_000, back.atMs)
+        val off = LinkPayloads.Decoder(0).theftState(LinkPayloads.theftState(TheftState(TheftGuard.Status(), t0)))!!
+        assertNull(off.status.armedBy); assertNull(off.status.fix)
+        val c = TheftCommand("c1", TheftCommand.Action.DISARM, t0 + 5_000)
+        assertEquals(c.copy(atMs = t0), LinkPayloads.Decoder(5_000).theftCommand(LinkPayloads.theftCommand(c)))
+        val d = LinkPayloads.Decoder(0)
+        assertNull(d.theftState("{}".toByteArray()))
+        assertNull(d.theftState("""{"schemaVersion":1,"state":"stolen","sinceMs":1,"atMs":1}""".toByteArray()))
+        assertNull(d.theftCommand("""{"schemaVersion":1,"commandId":"x","action":"open","atMs":1}""".toByteArray()))
+        assertNull(d.theftCommand("""{"schemaVersion":2,"commandId":"x","action":"arm","atMs":1}""".toByteArray()))
+        assertNull(d.theftCommand(byteArrayOf(-1, -2)))
     }
 }
