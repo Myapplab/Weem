@@ -18,6 +18,8 @@ data class RemoteConfig(
     val ackFastMs: Long = 50,
     val keyRequestGapMs: Long = 500,
     val reconnectMs: List<Long> = listOf(1_000, 2_000, 4_000),
+    /** Akışa bağlanırken eşin Wi-Fi adresi yoksa (link Bluetooth'ta) bu kadar beklenir; gelmezse oturum "Wi-Fi yok" ile biter. */
+    val hostWaitMs: Long = 15_000,
     val maxSide: Int = 1280,
     /** Dokunuş (REMOTE.md 2.3): parça gelmeden bu kadar geçerse basılı parmak kalkar; bir hareket en çok [maxGestureMs]. */
     val touchStallMs: Long = 1_000,

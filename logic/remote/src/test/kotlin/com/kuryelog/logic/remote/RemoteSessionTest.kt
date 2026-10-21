@@ -157,6 +157,20 @@ class RemoteSessionTest {
         assertEquals(State.PLAYING, r.viewerView.state)
     }
 
+    @Test fun waitingForWifiAddressEndsAfterFifteenSeconds() {
+        val r = playing()
+        // Link Bluetooth yedeğine geçti (eşin Wi-Fi adresi yok) ve akış koptu: yeniden bağlanma adres bekler, sonsuza dek değil.
+        r.viewer(VE.Link(null))
+        r.breakStream()
+        r.advance(15_000)
+        assertEquals(State.CONNECTING, r.viewerView.state)
+        r.advance(1_000)
+        assertEquals(EndReason.NO_WIFI, r.viewerView.ended)
+        // Paylaşana END gitti (izleyen bitirdi; paylaşım tasarım gereği izleyensiz 10 dk açık kalır).
+        assertTrue(r.linkLog.contains("v>remote.end"))
+        assertFalse(r.hostView.watched)
+    }
+
     @Test fun silentStreamIsDeadAfterFiveSeconds() {
         val r = playing()
         r.holdStream = true
