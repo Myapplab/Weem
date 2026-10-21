@@ -18,6 +18,14 @@ object BakuDay {
     fun of(atMs: Long): String = java.time.LocalDate.ofEpochDay(Math.floorDiv(atMs + 4 * 3_600_000L, 86_400_000L)).toString()
 }
 
+/** Bakü yerel saati (sabit UTC+4) `yyyy-MM-dd HH:mm[:ss]` (YolGo `bakuTime(...).toIso8601String().substring(...)`). */
+object BakuTime {
+    private val SEC = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
+    private val MIN = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", java.util.Locale.US)
+    private fun at(ms: Long) = java.time.LocalDateTime.ofEpochSecond(Math.floorDiv(ms, 1000L), 0, java.time.ZoneOffset.ofHours(4))
+    fun stamp(ms: Long, seconds: Boolean = true): String = at(ms).format(if (seconds) SEC else MIN)
+}
+
 fun median(values: Iterable<Double>): Double {
     val a = values.filter { it.isFinite() }.sorted()
     if (a.isEmpty()) return 0.0
