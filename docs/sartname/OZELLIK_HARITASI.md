@@ -501,7 +501,7 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 - **Testler:** **yok**
 - **Veri:** —
 - **Bağımlı:** N1 (eşleştirme)
-- **WEEM:** `:remote` · 9 — A9.1 **bitti (kod)** (21 Ekim): ekran akışı iki yönlü (`REMOTE.md` 1); dokunuş A9.2
+- **WEEM:** `:remote` · 9 — A9.1 **bitti (kod)** (21 Ekim): ekran akışı iki yönlü (`REMOTE.md` 1); A9.2 **bitti (kod)** (21 Ekim): dokunuş + sistem tuşları ayrı `TouchService`'le, oturum işareti, tek dokunuşla bitirme (`REMOTE.md` 2)
 
 ### N3 Otomatik şifreli yedek
 - **Eski kod:** yeni; temeli R17 (`BackupFiles`, ZIP)

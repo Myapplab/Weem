@@ -522,6 +522,10 @@ YolGo `duzyol-journal-v1` içe aktarma (`MAP.md` 12.17). YolGo'da içe aktarma y
 
 G5 ilk açılış kurulumu, G3 dil bütünlüğü, G4 az bildirim uçtan uca. Eski testler: `BrandingK26Test` 3 → 2 uyarlandı (`logic/core`, kaynak taraması: paket, `kuryelog` dosyası, başlatıcı adı "WEEM"), 1 çevrilmez (`homeHasNoTabBar…`: WEEM'de alt menü var); `I18nCoverageTest` karşılığı `TextCoverageTest` kurulum metinlerini de kapsar. **Yeni testler 19**: `logic/app` `SetupTest` 9 (adımlar, RS izin sırası ve "! n/m" sayacı, açık gelme, ev notu, pil satırı, `Vendor`, pil rehberi, eski ad yok), `logic/scooter` `ScooterStatusTextTest` 5 (TR değişmez, sayılı parçalar, uzun önce, özet + ölçüm metni AZ, kaynak taraması), `logic/core` `NotificationAuditTest` 5; `:app` `SetupScreenTest` 5 (Robolectric: dil anında, izin durumu okunur, geri/ileri, atla, pil rehberi Xiaomi/Pixel, `weem.setupDone`). `logic` toplam 1.786 + 2 (`BrandingK26Test`).
 
+## A9.2 kod durumu (21 Ekim 2026)
+
+N2 dokunuş, oturum işareti, bitirme (`REMOTE.md` 2). Eski kod ve test yok; **yeni testler 39**: `logic/remote` 38 (`TouchTest` 24 kayıt/tel biçimi/oynatıcı, `RemoteTouchSessionTest` 9 uçtan uca, `TouchRuleTest` 5 dokunuş yalnız `TouchService`'te, servis okumaz, yalnız `RemoteHub` besler, yapılandırma yalnız hareket), `:app` `RemoteScreenTest` +1 (dokunuş servisi durumu). `dispatchGesture`/`continueStroke` ve işaret penceresi **cihazda doğrulanmadı**.
+
 ## A9.1 kod durumu (21 Ekim 2026)
 
 N2 uzaktan kullanım (ekran akışı, `REMOTE.md` 1). Eski kod ve test yok; **yeni testler 45**: `logic/remote` 44 (`StreamWireTest` 5 çerçeve/HELLO/iç iletiler, `StreamCryptoTest` 6 el sıkışma, anahtarı bilmeyen bağlantı, değişmiş/tekrarlanmış/sırası bozuk ileti, bağlantı başına yeni anahtar, `RemoteControlTest` 3, `VideoTest` 6 boyut/bit hızı/Annex-B/akış denetimi, `RemoteSessionTest` 21 uçtan uca sahte link + sahte akış, `RemoteTextTest` 2, `RemoteModuleTest` 1), `logic/link` `LinkMachineTest` (+`peerHost` denetimi), `logic/core` `CrashGuardTest`/`NotificationIdsTest` (7404/7405) uyarlandı; `:app` `RemoteScreenTest` 1 (Robolectric). MediaProjection, kodlayıcı/çözücü ve soketler **cihazda doğrulanmadı**.
