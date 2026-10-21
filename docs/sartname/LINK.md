@@ -294,7 +294,7 @@ Kullanıcı kararı S10 (21 Ekim): scooter + Poco, otomatik + elle, alarm iki te
 - **Tetik (`ARMED`):** (T1) taze scooter karesinde hız ≥ 4 km/s, ≥ 2 sn; (T2) Poco hareketi: doğrusal ivme ≥ 1,2 m/s² olan en az 3 örnek, 5 sn pencerede ve ilk ile son arası ≥ 1 sn; (T3) GPS: doğruluk ≤ 20 m iken devreye alma noktasından ≥ 25 m. Scooter Bluetooth kopması tek başına tetik değil (scooter kendiliğinden kapanabilir).
 - **`WARNING` 8 sn:** Poco ekranında uyarı + kısa bip, Pixel'de titreşimli bildirim; süre dolunca (kapatılmadıysa) `ALARM`.
 - **`ALARM`:** Poco yüksek siren (alarm sesi kanalı, sessiz kipi aşar; 10 dk sürekli, sonra dakikada 30 sn), kırmızı tam ekran uyarı; Pixel yüksek alarm + titreşim + tam ekran bildirim. Kapatılana dek sürer.
-- **Kapatma:** Pixel'den her zaman (`TheftCommand disarm`; kanal kimlikli ve şifreli, hırsız taklit edemez). Poco'da 4 haneli PIN ile (PIN ayarlanmamışsa 3 sn basılı tutma; ayar ekranı uyarır). PIN Poco'da yalnız tuzlu SHA-256 özeti olarak saklanır.
+- **Kapatma:** Pixel'den her zaman (`TheftCommand disarm`; kanal kimlikli ve şifreli, hırsız taklit edemez). Poco'da 4 haneli PIN ile (PIN ayarlanmamışsa 3 sn basılı tutma; ayar ekranı uyarır). PIN Poco'da yalnız tuzlu SHA-256 özeti olarak saklanır. **Kilit (denetim düzeltmesi, 21 Ekim):** `ARMED`/`WARNING`/`ALARM`'da (`Status.guarding`) Poco'da korumayı kapatan her ayar kilitli: aç/kapa, rol, eşleştirme/eşleşmeyi kaldırma, PIN, SMS numaraları, otomatik devreye alma (`TheftRuntime`/`LinkHub` de reddeder); `ARMED`'da kartta PIN (ya da 3 sn) ile kapatma; uyarı/alarm ekranı alt menünün de üstünde, dokunuşu alttakine geçirmez. Rol değişince koruma ve SMS zamanlayıcısı sıfırdan başlar.
 
 ### 5.2 Mesajlar
 

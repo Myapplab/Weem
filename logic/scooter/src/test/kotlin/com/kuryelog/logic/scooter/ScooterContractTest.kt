@@ -54,7 +54,11 @@ class ScooterContractTest {
         // A8.3: köprü role göre `TwoPhone`'da bağlanır (tek telefon ve Receiver yerel, Provider uzak).
         assertTrue(app.contains("TwoPhone.start(this)"))
         val two = text("app/src/main/kotlin/com/kuryelog/app/TwoPhone.kt")
-        assertTrue(two.contains("Orders.bindScooter(app, Scooter.bridge)") && two.contains("Orders.bindScooter(app, b.scooter)"))
+        assertTrue(two.contains("if (b?.role == LinkRole.PROVIDER) b.scooter else Scooter.bridge"))
+        // Scooter ve batarya bağı kendi korumalı bloğunda: harita çalışma zamanı kalkmasa da kurulur (Aşama 8–9 denetimi).
+        assertTrue(two.contains("Store.guarded(app, \"two_phone_scooter\") { Orders.bindScooter(app, scooter) }"))
+        assertTrue(two.contains("Store.guarded(app, \"two_phone_battery\") { BatteryRuntime.get(app).bind(scooter) }"))
+        assertTrue(two.indexOf("two_phone_scooter") < two.indexOf("NavRuntime.get(app) }\n        val events"))
     }
 
     @Test fun ordersModuleKnowsOnlyTheBridgeInterface() {
