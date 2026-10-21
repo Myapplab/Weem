@@ -2,6 +2,7 @@ package com.kuryelog.app.remote
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
+import android.annotation.SuppressLint
 import android.graphics.Path
 import android.graphics.PixelFormat
 import android.graphics.Rect
@@ -218,6 +219,8 @@ class TouchService : AccessibilityService() {
         private const val MARKER_BG = 0xE6C62828.toInt()
         private const val MARKER_TEXT = 0xFFFFFFFF.toInt()
 
+        // Servis bağlıyken tutulur, kopunca (shutdown) silinir; işaret penceresi de o an kaldırılır.
+        @SuppressLint("StaticFieldLeak")
         @Volatile var current: TouchService? = null
             private set
     }

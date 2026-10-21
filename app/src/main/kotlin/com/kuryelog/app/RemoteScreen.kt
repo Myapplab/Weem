@@ -1,5 +1,6 @@
 package com.kuryelog.app
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
@@ -101,6 +102,8 @@ fun RemoteScreen(lang: Lang) {
     }
 }
 
+// Video tıklama değil, ham dokunuş taşır (öteki telefonda oynatılır); erişilebilirlik tıklaması anlamsız.
+@SuppressLint("ClickableViewAccessibility")
 @Composable
 private fun ColumnScope.Video(v: ViewerView) {
     val ratio = if (v.width > 0 && v.height > 0) v.width.toFloat() / v.height else 9f / 20f
@@ -141,10 +144,7 @@ private fun forward(v: View, e: MotionEvent) {
             for (i in 0 until e.pointerCount) send(PointerKind.MOVE, i)
         }
         MotionEvent.ACTION_POINTER_UP -> send(PointerKind.UP, e.actionIndex)
-        MotionEvent.ACTION_UP -> {
-            send(PointerKind.UP, e.actionIndex)
-            v.performClick()
-        }
+        MotionEvent.ACTION_UP -> send(PointerKind.UP, e.actionIndex)
         MotionEvent.ACTION_CANCEL -> RemoteHub.pointer(PointerKind.CANCEL, 0, 0, 0, e.eventTime)
     }
 }
