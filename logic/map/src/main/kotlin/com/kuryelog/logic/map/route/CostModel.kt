@@ -3,9 +3,13 @@ package com.kuryelog.logic.map.route
 import com.kuryelog.logic.map.graph.RoadClass
 import com.kuryelog.logic.map.graph.RoadGraph
 import com.kuryelog.logic.map.graph.WayFlag
+import com.kuryelog.logic.map.surface.Passability
+import com.kuryelog.logic.map.surface.SurfaceKey
 import com.kuryelog.logic.map.surface.SurfaceMark
+import com.kuryelog.logic.map.surface.SurfaceSummary
 import java.time.Instant
 import kotlin.math.abs
+import kotlin.math.max
 import kotlin.math.min
 
 /**
@@ -42,6 +46,15 @@ class CostModel(
     val wrongWayEdges: Set<Int> = emptySet(),
     /** E13: elle işaretlenmiş bisiklet yolları (OSM way id); OSM bayrağı gibi. */
     val bikeways: Set<Long> = emptySet(),
+    /**
+     * Y13 (A10.4b): ölçülmüş yüzey kesimleri. Anahtar çapası (kenar başı düğümünün koordinatı) grafla eşleşmeyen ya da yolda (≤ 25 m) olmayan
+     * kesim yok sayılır. `allowedAt` (kötüden kaçınırken kesin kötü kesim) ve `segmentCost` (yüzey cezası) bunları kullanır.
+     */
+    val surface: List<SurfaceSummary> = emptyList(),
+    /** E11 (C4): kesim anahtarı → sokak puanından kalite (0–1); varsa ceza onu tam güvenle kullanır, yoksa kesimin 0–100 puanı ve güveni. */
+    val surfaceQuality: Map<String, Double> = emptyMap(),
+    /** 1.7.2: ölçülmüş yüzey cezasının çarpanı. 0: yalnız kesin kötü kesim dışlaması kalır; [Planner.QUALITY_SEEK_SCALE]: düzgün yol arayan aday. */
+    val surfaceScale: Double = 1.0,
     val departure: Instant = Instant.now(),
 ) {
     val cost = DoubleArray(g.edgeCount * 2)
@@ -78,6 +91,12 @@ class CostModel(
     private val wayRatio = DoubleArray(wayCount)
     private val wayHours: Array<ReverseHours?> = arrayOfNulls(if (reverseHours.isEmpty()) 0 else wayCount)
     private val ghostEdge = edgeMask(ghost)
+
+    /** "Geçilebilirlik: kapalı" işaretli kenarlar (yalnız Y13 yüzey menüsünden doğar): iki yön de kapalı, yürünmez. */
+    private val closedEdge = BooleanArray(g.edgeCount)
+
+    /** Ölçülmüş kesimler: `kenar·2 + yön` → kesimler (yok ise null). */
+    private val surfaceCells = HashMap<Int, ArrayList<SurfaceSummary>>()
     private val wwEdge = edgeMask(wrongWayEdges)
 
     init {
@@ -94,6 +113,16 @@ class CostModel(
         for ((osm, ratio) in wwRatio) tables.waysOf(osm)?.forEach { wayRatio[it] = ratio }
         for ((osm, h) in reverseHours) tables.waysOf(osm)?.forEach { wayHours[it] = h }
         for (e in 0 until g.edgeCount) quality[e] = wayQ[g.edgeWay[e]]
+        for (summary in surface) {
+            val hit = g.nearestEdge(summary.lat, summary.lon, maxDist = 25.0, accept = { e -> g.osmIdOf(e) == summary.way }) ?: continue
+            val node = g.edgeFrom[hit.edge]
+            if (SurfaceKey.anchorOf(summary.key) != SurfaceKey.anchor(g.nodeLat[node].toDouble(), g.nodeLon[node].toDouble())) continue
+            surfaceCells.getOrPut(hit.edge * 2 + summary.direction) { ArrayList() }.add(summary)
+        }
+        for (mark in marks) {
+            if (mark.removed || mark.source != "user" || mark.access != Passability.CLOSED) continue
+            g.nearestEdge(mark.lat, mark.lon, maxDist = 25.0, accept = { e -> g.osmIdOf(e) == mark.way })?.let { closedEdge[it.edge] = true }
+        }
         // Kötü noktalar yalnız kendi ±25 m aralığını etkiler (segmentCost/allowedAt).
         for (span in BadSpots.spans(g, marks)) (spots[span.edge] ?: ArrayList<SpotSpan>().also { spots[span.edge] = it }).add(span)
         for (e in 0 until g.edgeCount) {
@@ -144,7 +173,7 @@ class CostModel(
     /** Son yürüyüş ve yaya çıkışı (MAP.md 3.5): `service` ve `sidewalk` yürünür; tek yön yürüyüşte geçerli değil. */
     fun walkable(e: Int, dir: Int): Boolean {
         val w = g.edgeWay[e]
-        if (ghostEdge[e] || wayBlocked[w]) return false
+        if (ghostEdge[e] || closedEdge[e] || wayBlocked[w]) return false
         val flags = g.wayFlags[w].toInt() and 0xFFFF
         if ((flags and WayFlag.RESTRICTED) != 0 || (avoidBad && (wayBad[w] || (flags and WayFlag.UNPAVED) != 0))) return false
         val cls = classOfWay(w)
@@ -165,6 +194,8 @@ class CostModel(
      */
     fun allowedAt(e: Int, dir: Int, elapsedS: Double, portion: Double = 1.0, f0: Double = 0.0, f1: Double = 1.0): Boolean {
         if (!allowed(e, dir)) return false
+        // Y13: yeterince güvenli, kalibre ve kesin kötü ölçülmüş kesim (bu yönün) aralığa değiyorsa dışlanır.
+        if (avoidBad && surfaceCells[e * 2 + dir]?.any { it.calibrated && it.confidence >= .65 && it.score < 30 && overlap(e, it, f0, f1) > 0 } == true) return false
         // Farklı günlerde doğrulanmış kötü nokta: yalnız o kesim dışlanır.
         if (avoidBad) {
             val list = spotsOf(e)
@@ -181,15 +212,34 @@ class CostModel(
         val portion = abs(f1 - f0)
         if (!base.isFinite()) return Double.POSITIVE_INFINITY
         var total = base * portion
+        // Fiziksel yüzey cezası yalnız ölçülmüş kesime ve yöne uygulanır; sokağın ölçülmemiş kalanı eski maliyetini korur.
+        surfaceCells[e * 2 + dir]?.let { cells ->
+            for (s in cells) {
+                val overlap = overlap(e, s, f0, f1)
+                val street = surfaceQuality[s.key]
+                val q = street ?: (s.score / 100)
+                val confidence = if (street == null) s.confidence else 1.0
+                total += base * overlap * (1 - q) * confidence * (if (q < .3) 3.0 else params.qualityWeight) * surfaceScale
+            }
+        }
         val list = spotsOf(e) ?: return total
         for (s in list) total += base * s.overlap(f0, f1) * (if (s.confirmed) 6 else 3)
         return total
     }
 
+    /** Kesimin kenarın [f0]–[f1] aralığıyla örtüşmesi (kesim kapsamıyla çarpılmış kesir). */
+    private fun overlap(e: Int, s: SurfaceSummary, f0: Double, f1: Double): Double {
+        val len = g.edgeLen[e].toDouble()
+        if (len <= 0) return 0.0
+        val start = s.segmentIndex * s.segmentGridM / len
+        val end = min(1.0, (s.segmentIndex * s.segmentGridM + s.segmentLength) / len)
+        return max(0.0, min(max(f0, f1), end) - max(min(f0, f1), start)) * s.coverage
+    }
+
     private fun eval(e: Int, dir: Int) {
         val i = e * 2 + dir
         cost[i] = Double.POSITIVE_INFINITY
-        if (ghostEdge[e]) return // haritada var, gerçekte yok
+        if (ghostEdge[e] || closedEdge[e]) return // haritada var, gerçekte yok (ya da elle "kapalı")
         val w = g.edgeWay[e]
         val cls = classOfWay(w)
         val flags = g.wayFlags[w].toInt() and 0xFFFF
