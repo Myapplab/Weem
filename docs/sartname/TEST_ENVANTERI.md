@@ -533,3 +533,7 @@ N2 dokunuş, oturum işareti, bitirme (`REMOTE.md` 2). Eski kod ve test yok; **y
 ## A9.1 kod durumu (21 Ekim 2026)
 
 N2 uzaktan kullanım (ekran akışı, `REMOTE.md` 1). Eski kod ve test yok; **yeni testler 45**: `logic/remote` 44 (`StreamWireTest` 5 çerçeve/HELLO/iç iletiler, `StreamCryptoTest` 6 el sıkışma, anahtarı bilmeyen bağlantı, değişmiş/tekrarlanmış/sırası bozuk ileti, bağlantı başına yeni anahtar, `RemoteControlTest` 3, `VideoTest` 6 boyut/bit hızı/Annex-B/akış denetimi, `RemoteSessionTest` 21 uçtan uca sahte link + sahte akış, `RemoteTextTest` 2, `RemoteModuleTest` 1), `logic/link` `LinkMachineTest` (+`peerHost` denetimi), `logic/core` `CrashGuardTest`/`NotificationIdsTest` (7404/7405) uyarlandı; `:app` `RemoteScreenTest` 1 (Robolectric). MediaProjection, kodlayıcı/çözücü ve soketler **cihazda doğrulanmadı**.
+
+## A10.4a — Siparişler: çevrimiçi oturumlar ve Araçlar (S20, WEEM 1.1)
+
+Eski testi yok (Rawstats'ta `renderSessions`/Araçlar ekran koduydu; `YolGoButtonE5Test` yalnız Araçlar satırlarını tarıyordu): `OrdersSessionsTest` (7: boş gün, platform grupları ve süre toplamı, ≈ ve "devam ediyor", çevrimdışı boşluk, kabul sırasıyla siparişler, AZ, kartlar), `OrdersToolsTest` (7: vardiya kapısı, bölünmüş ekran hedefleri, platform başına iptal satırı ve en taze paket, onay metni, kaydedilemedi, YolGo düğmesi yok, `OrderFlow` vardiya kapısı), `OrdersTabWiringTest` +1, `:app` `OrdersTabTest` +3. Ayrıntı `ORDERS.md` 16.7.

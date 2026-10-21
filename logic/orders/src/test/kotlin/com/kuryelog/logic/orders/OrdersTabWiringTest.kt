@@ -31,10 +31,24 @@ class OrdersTabWiringTest {
     }
 
     @Test fun theTabNeverTouchesTheCourierApps() {
-        for (f in listOf("OrdersTab.kt", "OrdersBlocks.kt", "OrdersAccess.kt", "RecordsScreen.kt")) {
+        for (f in listOf("OrdersTab.kt", "OrdersBlocks.kt", "OrdersAccess.kt", "RecordsScreen.kt", "OrdersTools.kt", "SplitScreen.kt")) {
             val text = RepoSource.text("app/src/main/kotlin/com/kuryelog/app/$f")
             for (banned in listOf("performAction", "dispatchGesture", "AccessibilityNodeInfo", "ACTION_CLICK")) assertFalse("$f $banned", text.contains(banned))
         }
+    }
+
+    @Test fun toolsAndSessionsAreWiredAndSplitScreenOnlyLaunchesFromTheButton() {
+        // A10.4a (S20): izlenen uygulamalar ve son görülme anı `:app` bağında; Araçlar yalnız vardiya açıkken; bölünmüş ekranı yalnız düğme başlatır.
+        assertTrue(access.contains("withTools(") && access.contains("Store.targets(ctx)") && access.contains("CaptureState.seen"))
+        val tab = RepoSource.text("app/src/main/kotlin/com/kuryelog/app/OrdersTab.kt")
+        assertTrue(tab.contains("if (tools.visible) ToolsCard(tools)") && tab.contains("SessionsPageView(OrdersSessions(src, lang)"))
+        val ui = RepoSource.text("app/src/main/kotlin/com/kuryelog/app/OrdersTools.kt")
+        assertEquals(1, Regex("SplitScreen\\.open\\(").findAll(ui).count())
+        assertTrue(ui.contains("onClick = { SplitScreen.open(ctx, tools) }"))
+        val split = RepoSource.text("app/src/main/kotlin/com/kuryelog/app/SplitScreen.kt")
+        assertTrue(split.contains("FLAG_ACTIVITY_LAUNCH_ADJACENT"))
+        // Başka hiçbir dosya kurye uygulamasını başlatmaz (bu özellik dışında Wolt/Bolt'a dokunulmaz).
+        assertEquals(0, Regex("getLaunchIntentForPackage").findAll(tab + ui + access).count())
     }
 
     @Test fun deleteIsOffUnlessTheFlowCanRebuildTheDatabase() {

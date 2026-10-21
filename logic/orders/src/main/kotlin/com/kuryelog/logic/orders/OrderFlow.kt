@@ -689,10 +689,12 @@ class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
         reminder?.takeIf { it.kind == "restaurant" }?.let { bubbleDismissed += it.trip + ":" + it.customer.removePrefix("pickup-") }
         reminder = null
     }
-    @Synchronized fun markCancellationObservation(pkg: String) {
-        if (!canRecordScreen()) return
+    /** False: the shift is not on (or a record import runs), nothing was written. */
+    @Synchronized fun markCancellationObservation(pkg: String): Boolean {
+        if (!canRecordScreen()) return false
         env.observer.cancellation(pkg)
         env.log.event("cancellation_user_reported", JSONObject().put("pkg", pkg).put("platformActionPerformed", false))
+        return true
     }
     /** E16: when the leg to the current customer began: the order's Collect, or the previous customer's handover (a bundle). */
     private fun legStart(t: TripRecord): Long? = (listOfNotNull(OrderHistory.pickedAt(t)) + t.customers.values.mapNotNull { it.deliveredAt }).maxOrNull()
