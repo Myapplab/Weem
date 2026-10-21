@@ -26,6 +26,14 @@ interface OrdersSource {
     /** "ŞU AN" metni: açık teklif ve siparişler, platform durumları (bugün sayacı satırı hariç); boşsa "". */
     fun nowLines(): String
     fun onlineToday(): List<OnlineSessions.Closed>
+    /** Bugünün siparişleri (canlı akış varsa canlı, yoksa saklı); "Çevrimiçi oturumlar" listesi oturum kimliğiyle eşler (S20). */
+    fun todayTrips(): List<TripRecord> = live()
+    /** İzlenen uygulamalar (tercih `targets`); Araçlar bölünmüş ekran ve iptal gözlemi için (S20). Android'de `:app` bağlar. */
+    fun targets(): Set<String> = emptySet()
+    /** Paketin ekranda en son görüldüğü an (0 = hiç); iptal gözlemi platformun en taze paketine yazılır. */
+    fun lastSeen(pkg: String): Long = 0L
+    /** Araçlar → "<platform>: iptal gözlemi kaydet": yalnız istatistik notu, platformda işlem yapmaz. False: kaydedilemedi. */
+    fun markCancellationObservation(pkg: String): Boolean = false
 
     fun platformTotals(day: String): List<PlatformTotals.Total>
     fun platformHistoryRows(day: String): List<JSONObject>
@@ -77,7 +85,7 @@ class LogOrdersSource(
     override fun live(): List<TripRecord> = flow?.today().orEmpty()
 
     /** Bugünün siparişleri: canlı varsa canlı, yoksa saklı (courier.db her ~1,5 sn'de bir güncellenir). */
-    private fun todayTrips(): List<TripRecord> {
+    override fun todayTrips(): List<TripRecord> {
         val day = today()
         val live = live()
         return if (flow != null) live else stored().filter { day(it.acceptedAt) == day }
@@ -138,6 +146,7 @@ class LogOrdersSource(
     override fun recordCashTip(id: String, received: Double): JSONObject? = flow?.recordCashTip(id, received, CashTips.VIA_CARD)
     override fun confirmDelivered(id: String): Boolean = flow?.let { it.confirmDelivered(id); true } ?: false
     override fun showCustomerCard(id: String): Boolean = flow?.let { it.showDetails(id); true } ?: false
+    override fun markCancellationObservation(pkg: String): Boolean = flow?.markCancellationObservation(pkg) ?: false
 
     private companion object { const val EVENTS_FILE = "events.jsonl" }
 }
