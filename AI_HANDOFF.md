@@ -2,9 +2,9 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
-## 2026-10-21 — Aşama 8–9 sonu denetimi: `/code-review high`, 10 bulgu düzeltildi (Claude Opus · high; dal `claude/weem-a8-a9-code-review-62nkdo`)
+## 2026-10-21 — Aşama 8–9 sonu denetimi: `/code-review high`, 10 bulgu düzeltildi (Claude Opus · high; PR #10 → `main` `e66aafa`)
 - Yapılan: uzaktan akış döndürmede donmuyor (`FlowControl.restart`, sayaçlar bağlantının); izleyen Wi-Fi adresini en çok 15 sn bekler; geç `NavTarget` Receiver'da açılmaz (zarf gönderiminden 6 sn, `NAV_OPEN_WITHIN_MS`); duran teklif tikten yenilenir; hırsızlık koruması devredeyken Poco'da PIN'siz kapatma yolu yok (`Status.guarding` kilidi: aç/kapa, rol, eşleşme, PIN, SMS; `TheftAlarm` tam ekran ve dokunuşu yutar; `ARMED`'da kartta PIN/3 sn); rol değişince koruma/SMS sıfırlanır; siren denemesi 3 sn; `LinkService` bayrağı reddedilince düşer; yeni köprü son saat farkıyla başlar; `TwoPhone` parçaları ayrı `Store.guarded`.
-- Doğrulama: `-p logic test` 1.941 test, 0 kırmızı (+5 regresyon); `:app` 84 test; `:app`/`:link`/`:remote` lint 0 hata (yerelde, Maven Central 429 sonrası); PR CI ve APK aşağıda. Telefonda denenmedi.
+- Doğrulama: `-p logic test` 1.941 test, 0 kırmızı (+5 regresyon); `:app` 84 test; `:app`/`:link`/`:remote` lint 0 hata (yerelde, Maven Central 429 sonrası); PR #10 CI yeşil; APK `apk.yml` #4 yeşil → Release `weem-dev-4` (`weem-0.1.0-dev.apk`, ≈154,4 MiB). Telefonda denenmedi.
 - Açık kalan: PIN 4 hane ve deneme sınırı yok (alarm ekranında kaba deneme mümkün; S10 varsayılanı); Android katmanı düzeltmeleri birim testsiz; yeni AZ metni `TheftText.LOCKED` onay bekler.
 - Sıradaki: A10.1 (optimizasyon).
 
