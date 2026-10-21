@@ -54,6 +54,7 @@ enum class TheftText(override val tr: String, override val az: String) : Bilingu
     SMS_FAILED("SMS gönderilemedi", "SMS göndərilmədi"),
     TEST_SIREN("Siren dene (3 sn)", "Sireni yoxla (3 san)"),
     OVERLAY_WATCHED("Bu scooter izleniyor", "Bu skuter izlənilir"),
+    LOCKED("Koruma açıkken ayarlar kilitli: önce PIN'le ya da Pixel'den kapatın", "Qoruma açıq olanda ayarlar kilidlidir: əvvəlcə PIN ilə və ya Pixel-dən söndürün"),
     ;
 
     companion object {

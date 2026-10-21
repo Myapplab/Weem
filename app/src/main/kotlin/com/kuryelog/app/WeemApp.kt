@@ -89,6 +89,7 @@ fun WeemApp(
         GuardedPage("scooter_pip", lang, build = {}) { ScooterPip(lang, dark) }
         return
     }
+    Box(Modifier.fillMaxSize()) {
     Scaffold(
         bottomBar = {
             if (!(selected == Tab.SCOOTER && scooterImmersive)) NavigationBar {
@@ -137,9 +138,12 @@ fun WeemApp(
             }
         }
         TaskAlertCard(tasks.alerts, tasks.lastPoint, lang, onRoute = { t -> taskRt.openRoute(t) }, onDismiss = { t -> taskRt.dismiss(t.id) })
-        // A8.4: Receiver'da hırsızlık koruması geri sayımı / alarm ekranı (LINK.md 5.1).
+        // A8.4: Receiver'da hırsızlık koruması geri sayımı (LINK.md 5.1).
         TheftOverlay(lang)
         }
+    }
+    // A8.4: uyarı/alarm ekranı alt menünün de üstünde; dokunuş alttakine geçmez (LINK.md 5.1).
+    TheftAlarm(lang)
     }
 }
 

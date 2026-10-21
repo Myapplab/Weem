@@ -44,6 +44,7 @@ import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import com.kuryelog.app.link.LinkHub
+import com.kuryelog.app.link.TheftRuntime
 import com.kuryelog.logic.app.Text as Str
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.link.LinkRole
@@ -51,6 +52,7 @@ import com.kuryelog.logic.link.LinkStatus
 import com.kuryelog.logic.link.LinkText
 import com.kuryelog.logic.link.LinkView
 import com.kuryelog.logic.link.QrResult
+import com.kuryelog.logic.link.TheftText
 import kotlinx.coroutines.delay
 import java.util.Locale
 
@@ -68,6 +70,9 @@ fun TwoPhoneScreen(lang: Lang, version: String, onBack: () -> Unit) {
     val bridge by LinkHub.bridge.collectAsState()
     val peerRole = bridge?.peerRole?.collectAsState()?.value
     val until by LinkHub.pairingUntil.collectAsState()
+    val theft by TheftRuntime.status.collectAsState()
+    // Receiver'da koruma devredeyken rol, eşleştirme ve eşleşmeyi kaldırma kilitli (LinkHub.locked; LINK.md 5.1).
+    val locked = role == LinkRole.RECEIVER && theft.guarding
     var qr by remember { mutableStateOf<String?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
     var confirmUnpair by remember { mutableStateOf(false) }
@@ -92,8 +97,9 @@ fun TwoPhoneScreen(lang: Lang, version: String, onBack: () -> Unit) {
 
         Text(LinkText.ROLE_TITLE.get(lang), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 16.dp, bottom = 4.dp))
         Column(Modifier.selectableGroup()) {
-            for (r in LinkRole.entries) RoleChoice(LinkView.role(r, lang), r == role) { LinkHub.setRole(ctx, r) }
+            for (r in LinkRole.entries) RoleChoice(LinkView.role(r, lang), r == role, enabled = !locked) { LinkHub.setRole(ctx, r) }
         }
+        if (locked) Text(TheftText.LOCKED.get(lang), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
         when (role) {
             LinkRole.PROVIDER -> Hint(LinkText.HINT_PROVIDER.get(lang))
             LinkRole.RECEIVER -> Hint(LinkText.HINT_RECEIVER.get(lang))
@@ -127,7 +133,7 @@ fun TwoPhoneScreen(lang: Lang, version: String, onBack: () -> Unit) {
             Text(LinkText.PAIR_WAIT.get(lang).format(LinkView.remaining((until ?: now) - now)), modifier = Modifier.padding(top = 8.dp))
             if (qr != null) Hint(LinkText.PAIR_HINT.get(lang))
             OutlinedButton(onClick = { qr = null; LinkHub.cancelPairing(ctx) }, modifier = Modifier.padding(top = 8.dp)) { Text(LinkText.PAIR_CANCEL.get(lang)) }
-        } else {
+        } else if (!locked) {
             Row(Modifier.padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = {
                     message = null
@@ -177,12 +183,12 @@ private fun ColumnScope.QrImage(text: String) {
 }
 
 @Composable
-private fun RoleChoice(label: String, selected: Boolean, onClick: () -> Unit) {
+private fun RoleChoice(label: String, selected: Boolean, enabled: Boolean, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().selectable(selected = selected, onClick = onClick, role = Role.RadioButton).padding(vertical = 8.dp),
+        Modifier.fillMaxWidth().selectable(selected = selected, enabled = enabled, onClick = onClick, role = Role.RadioButton).padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        RadioButton(selected = selected, onClick = null)
+        RadioButton(selected = selected, onClick = null, enabled = enabled)
         Text(label, modifier = Modifier.padding(start = 12.dp))
     }
 }

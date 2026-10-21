@@ -45,7 +45,6 @@ import com.kuryelog.app.link.LinkHub
 import com.kuryelog.app.link.TheftRuntime
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.link.LinkRole
-import com.kuryelog.logic.link.TheftGuard
 import com.kuryelog.logic.link.TheftGuard.State
 import com.kuryelog.logic.link.TheftText
 import kotlinx.coroutines.delay
@@ -87,19 +86,27 @@ private fun ReceiverTheft(lang: Lang) {
     val askSms = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { smsAsked++ }
     val smsAllowed = remember(smsAsked) { TheftRuntime.smsAllowed(ctx) }
 
+    // Koruma devredeyken korumayı kapatan ayarlar kilitli; kapatma PIN'le (ya da 3 sn) ya da Pixel'den (LINK.md 5.1).
+    val locked = status.guarding
+
     Small(TheftText.HINT.get(lang))
     Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(TheftText.ENABLE.get(lang), Modifier.weight(1f))
-        Switch(enabled, { enabled = it; TheftRuntime.setEnabled(ctx, it) })
+        Switch(enabled, { if (TheftRuntime.setEnabled(ctx, it)) enabled = it }, enabled = !locked)
     }
     if (!enabled) return
-    Check(TheftText.AUTO_STAGE.get(lang), autoStage) { autoStage = it; TheftRuntime.setAutoStage(ctx, it) }
-    Check(TheftText.AUTO_AWAY.get(lang), autoAway) { autoAway = it; TheftRuntime.setAutoAway(ctx, it) }
+    Check(TheftText.AUTO_STAGE.get(lang), autoStage, !locked) { autoStage = it; TheftRuntime.setAutoStage(ctx, it) }
+    Check(TheftText.AUTO_AWAY.get(lang), autoAway, !locked) { autoAway = it; TheftRuntime.setAutoAway(ctx, it) }
     Text(TheftText.state(status, lang, now), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
     Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         if (status.state == State.OFF) Button(onClick = { TheftRuntime.parkLocal() }) { Text(TheftText.PARK.get(lang)) }
         if (status.state == State.ARMING) OutlinedButton(onClick = { TheftRuntime.cancelArmingLocal() }) { Text(TheftText.CANCEL.get(lang)) }
-        OutlinedButton(onClick = { TheftRuntime.testSiren(ctx) }) { Text(TheftText.TEST_SIREN.get(lang)) }
+        if (!locked) OutlinedButton(onClick = { TheftRuntime.testSiren(ctx) }) { Text(TheftText.TEST_SIREN.get(lang)) }
+    }
+    if (locked) {
+        Text(TheftText.LOCKED.get(lang), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
+        Disarm(lang, MaterialTheme.colorScheme.onSurface) { p -> TheftRuntime.disarmLocal(ctx, p) }
+        return
     }
 
     Text(TheftText.PIN.get(lang), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 12.dp))
@@ -151,58 +158,72 @@ private fun ProviderTheft(lang: Lang) {
     note?.let { Small(it) }
 }
 
-/**
- * Receiver'da her sekmenin üstü: geri sayımda küçük kart ("İptal"), uyarı/alarmda kırmızı tam ekran. Kapatma PIN'le; PIN yoksa
- * 3 sn basılı tutarak (LINK.md 5.1).
- */
+/** Receiver'da her sekmenin üstü: geri sayımda küçük kart ("İptal"; LINK.md 5.1). Uyarı/alarm ekranı [TheftAlarm]. */
 @Composable
 fun TheftOverlay(lang: Lang) {
     val role by LinkHub.role.collectAsState()
     if (role != LinkRole.RECEIVER) return
-    val ctx = LocalContext.current
     val s by TheftRuntime.status.collectAsState()
     val now = rememberNow()
-    when (s.state) {
-        State.OFF, State.ARMED -> {}
-        State.ARMING -> Card(Modifier.fillMaxWidth().padding(8.dp)) {
-            Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(TheftText.state(s, lang, now), Modifier.weight(1f))
-                TextButton(onClick = { TheftRuntime.cancelArmingLocal() }) { Text(TheftText.CANCEL.get(lang)) }
-            }
+    if (s.state == State.ARMING) Card(Modifier.fillMaxWidth().padding(8.dp)) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(TheftText.state(s, lang, now), Modifier.weight(1f))
+            TextButton(onClick = { TheftRuntime.cancelArmingLocal() }) { Text(TheftText.CANCEL.get(lang)) }
         }
-        State.WARNING, State.ALARM -> AlarmScreen(lang, s, now) { pin -> TheftRuntime.disarmLocal(ctx, pin) }
     }
 }
 
+/**
+ * Receiver'da uyarı/alarmda kırmızı tam ekran: kabuğun (alt menü dahil) üstünde, dokunuşu alttakine geçirmez. Kapatma PIN'le; PIN
+ * yoksa 3 sn basılı tutarak (LINK.md 5.1).
+ */
 @Composable
-private fun AlarmScreen(lang: Lang, s: TheftGuard.Status, now: Long, disarm: (String?) -> Boolean) {
+fun TheftAlarm(lang: Lang) {
+    val role by LinkHub.role.collectAsState()
+    if (role != LinkRole.RECEIVER) return
+    val ctx = LocalContext.current
+    val s by TheftRuntime.status.collectAsState()
+    if (!s.alarming) return
+    val now = rememberNow()
+    Box(
+        Modifier.fillMaxSize().background(Color(0xFFB71C1C))
+            // Boş dokunuş yakalayıcı: alttaki sekmeler ve alt menü dokunuş almaz.
+            .pointerInput(Unit) { detectTapGestures { } }
+            .padding(24.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(TheftText.OVERLAY_WATCHED.get(lang), color = Color.White, style = MaterialTheme.typography.headlineMedium)
+            Text(TheftText.state(s, lang, now), color = Color.White, modifier = Modifier.padding(top = 8.dp))
+            Disarm(lang, Color.White) { pin -> TheftRuntime.disarmLocal(ctx, pin) }
+        }
+    }
+}
+
+/** Poco'da kapatma: PIN ayarlıysa PIN, yoksa 3 sn basılı tutma (alarm ekranı ve devredeki koruma kartı). */
+@Composable
+private fun Disarm(lang: Lang, color: Color, disarm: (String?) -> Boolean) {
     val ctx = LocalContext.current
     val hasPin = remember { TheftRuntime.hasPin(ctx) }
     var pin by remember { mutableStateOf("") }
     var wrong by remember { mutableStateOf(false) }
-    Box(Modifier.fillMaxSize().background(Color(0xFFB71C1C)).padding(24.dp), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(TheftText.OVERLAY_WATCHED.get(lang), color = Color.White, style = MaterialTheme.typography.headlineMedium)
-            Text(TheftText.state(s, lang, now), color = Color.White, modifier = Modifier.padding(top = 8.dp))
-            if (hasPin) {
-                OutlinedTextField(pin, { v -> pin = v.filter(Char::isDigit).take(4); wrong = false }, Modifier.padding(top = 16.dp), singleLine = true,
-                    label = { Text(TheftText.PIN_ENTER.get(lang)) }, visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
-                Button(onClick = { wrong = !disarm(pin); pin = "" }, enabled = pin.length == 4, modifier = Modifier.padding(top = 8.dp)) { Text(TheftText.DISARM.get(lang)) }
-                if (wrong) Text(TheftText.PIN_WRONG.get(lang), color = Color.White)
-            } else {
-                Box(
-                    Modifier.padding(top = 16.dp).background(Color.White.copy(alpha = 0.2f)).padding(24.dp)
-                        .pointerInput(Unit) {
-                            detectTapGestures(onPress = {
-                                val start = System.currentTimeMillis()
-                                tryAwaitRelease()
-                                if (System.currentTimeMillis() - start >= HOLD_MS) disarm(null)
-                            })
-                        },
-                ) { Text(TheftText.HOLD.get(lang), color = Color.White) }
-            }
-        }
+    if (hasPin) {
+        OutlinedTextField(pin, { v -> pin = v.filter(Char::isDigit).take(4); wrong = false }, Modifier.padding(top = 16.dp), singleLine = true,
+            label = { Text(TheftText.PIN_ENTER.get(lang)) }, visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
+        Button(onClick = { wrong = !disarm(pin); pin = "" }, enabled = pin.length == 4, modifier = Modifier.padding(top = 8.dp)) { Text(TheftText.DISARM.get(lang)) }
+        if (wrong) Text(TheftText.PIN_WRONG.get(lang), color = color)
+    } else {
+        Box(
+            Modifier.padding(top = 16.dp).background(color.copy(alpha = 0.2f)).padding(24.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures(onPress = {
+                        val start = System.currentTimeMillis()
+                        tryAwaitRelease()
+                        if (System.currentTimeMillis() - start >= HOLD_MS) disarm(null)
+                    })
+                },
+        ) { Text(TheftText.HOLD.get(lang), color = color) }
     }
 }
 
@@ -216,9 +237,9 @@ private fun rememberNow(): Long {
 }
 
 @Composable
-private fun Check(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+private fun Check(label: String, checked: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Checkbox(checked, onChange)
+        Checkbox(checked, onChange, enabled = enabled)
         Text(label, style = MaterialTheme.typography.bodyMedium)
     }
 }

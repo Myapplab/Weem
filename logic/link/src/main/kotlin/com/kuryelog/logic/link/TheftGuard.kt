@@ -40,6 +40,11 @@ class TheftGuard(private val cfg: Config = Config()) {
     ) {
         /** Siren/alarm sesi gereken durum. */
         val alarming: Boolean get() = state == State.WARNING || state == State.ALARM
+        /**
+         * Koruma devrede: Poco'da korumayı kapatan ayarlar (aç/kapa, rol, eşleşmeyi kaldırma, PIN, SMS numaraları) kilitli; kapatma
+         * yalnız PIN ya da 3 sn basılı tutma (PIN yoksa) ve Pixel'den. Geri sayım (`ARMING`) kilitli değil: PIN'siz iptal edilir.
+         */
+        val guarding: Boolean get() = state == State.ARMED || alarming
     }
 
     /**
