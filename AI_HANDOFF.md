@@ -4,7 +4,7 @@ Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 
 
 ## 2026-10-21 — A10.3 geçiş rehberi + WEEM 1.0 release APK (Claude Sonnet · high; dal `claude/a10-3-u-yap-olz20w`)
 - Yapılan: `docs/GECIS_REHBERI.md` (arşiv ZIP'leri → kaldırma → kurulum → kurulum sihirbazı/izinler → Ninebot ve 2 telefon eşleşmesi → ilk vardiya listesi; menü yolları eski uygulamaların kaynağından). Sürüm 1.0.0 (kod 35). `apk.yml`: `weem-v*` etiketi = release APK (`weem-<sürüm>.apk` + SHA-256) Release'te; elle çalıştırma `release` girdisiyle release APK'yı da ekler; etiket ≠ `weem.versionName` ise hata.
-- Doğrulama: yerelde `:app:assembleRelease` (32,0 MB) + `ci/check_identity.sh` yeşil; telefonda denenmedi.
+- Doğrulama: yerelde `:app:assembleRelease` (32,0 MB, haritasız) + `ci/check_identity.sh` yeşil; `apk.yml` elle çalıştırma (release=true) yeşil → `weem-dev-6` (release APK 57 MB, harita dahil); telefonda denenmedi.
 - Açık kalan: rehber cihazda izlenmedi (A10.4); "Kısıtlanmış ayarlara izin ver" menü adı üreticiye göre değişebilir; WEEM 1.0 Rawstats'la aynı paket+imza olduğundan kaldırmadan kurulursa üstüne yazar.
 - Sıradaki: A10.4 (K, kullanıcı) → A10.5.
 
