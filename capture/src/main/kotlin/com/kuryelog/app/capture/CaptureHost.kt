@@ -26,6 +26,11 @@ interface CaptureHost {
 /** Süreç içi `:capture` durumu (RS `Store.seen/seenAccept`, `WatchService.running`). Diske yazılmaz (CAPTURE.md 6.4). */
 object CaptureState {
     @Volatile var host: CaptureHost = CaptureHost.NONE
+    /**
+     * 2 telefon modunda Receiver (scooter telefonu; plan 4.5, S5): ekran ve bildirim okunmaz, müşteri adı/telefonu orada saklanmaz.
+     * `:app` (`TwoPhone`) takar; vardiya Provider'dan aynalansa da okuma kapalı kalır (A10.2).
+     */
+    @Volatile var receiverRole: () -> Boolean = { false }
     /** E7: ekran okuma şu an bağlı (uyarı bunu okur, [ScreenReadingWarning]). */
     @Volatile var running = false
     /** Tanı kartı: her izlenen uygulamanın son okuma ve son "Accept" görülme anı (CAPTURE.md 1.9). */

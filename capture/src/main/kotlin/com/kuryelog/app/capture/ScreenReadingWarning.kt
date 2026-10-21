@@ -54,7 +54,8 @@ class ScreenReadingWarning(ctx: Context) : ShiftMachine.Hooks {
 
     /** E7: one check of screen reading; the warning appears after [ScreenReadingGuard.GRACE_MS] off and goes when it is back. */
     private fun checkScreenReading() {
-        if (!guard.check(CaptureStatus.screenReadingOn(app), Store.shiftOn(app), System.currentTimeMillis())) return
+        // Receiver'da ekran okuma bilerek kapalı (A10.2): uyarı çıkmaz.
+        if (!guard.check(CaptureStatus.screenReadingOn(app), Store.shiftOn(app) && !CaptureState.receiverRole(), System.currentTimeMillis())) return
         if (guard.warning) warnScreenReading() else clearScreenReadingWarning()
         Store.event(app, if (guard.warning) "screen_reading_off" else "screen_reading_on")
     }
@@ -104,9 +105,9 @@ object CaptureStatus {
     fun screenReadingOn(ctx: Context): Boolean =
         ScreenReading.on(Settings.Secure.getString(ctx.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES), ctx.packageName, CaptureState.running)
 
-    /** Vardiya kartının kırmızı satırı: vardiya açık ve ekran okuma çalışmıyorsa başlık (RS `MainActivity.kt:543`), değilse null. */
+    /** Vardiya kartının kırmızı satırı: vardiya açık ve ekran okuma çalışmıyorsa başlık (RS `MainActivity.kt:543`), değilse null; Receiver'da hiç. */
     fun offWarning(ctx: Context, lang: Lang, shiftOn: Boolean): String? =
-        if (shiftOn && !screenReadingOn(ctx)) CaptureText.SCREEN_READING_OFF_TITLE.get(lang) else null
+        if (shiftOn && !CaptureState.receiverRole() && !screenReadingOn(ctx)) CaptureText.SCREEN_READING_OFF_TITLE.get(lang) else null
 
     /** K39: erişilebilirlik ayarı, destekleyen telefonda WEEM servisi vurgulu (RS `GpsService.accessibilitySettings`). */
     fun accessibilitySettings(ctx: Context): Intent {

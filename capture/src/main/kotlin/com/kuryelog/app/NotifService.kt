@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import com.kuryelog.app.capture.CaptureState
 import com.kuryelog.app.core.HomeWatch
 import com.kuryelog.app.core.Store
 import com.kuryelog.logic.capture.Capture
@@ -51,7 +52,8 @@ class NotifService : NotificationListenerService() {
         val big = ex.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString()
         val sub = ex.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString()
         // Aynı bildirim güncellenip duruyorsa tekrar yazma; izin yokken süzgeç boşalır.
-        if (!dedup.posted(sbn.key, title, text, big, sub, Store.canRecordScreen(this))) return
+        // Receiver'da (2 telefon) bildirim okunmaz (CaptureState.receiverRole, A10.2).
+        if (!dedup.posted(sbn.key, title, text, big, sub, Store.canRecordScreen(this) && !CaptureState.receiverRole())) return
         val o = CaptureRows.posted(Store.log(this), System.currentTimeMillis(), sbn.postTime, sbn.packageName, sbn.key, sbn.isOngoing,
             sbn.notification.channelId, title, text, big, sub)
         Store.append(this, "notifs.jsonl", o.toString())
@@ -63,7 +65,7 @@ class NotifService : NotificationListenerService() {
     }
     private fun removed(sbn: StatusBarNotification) {
         if (sbn.packageName !in Store.targets(this)) return
-        if (!dedup.removed(sbn.key, Store.canRecordScreen(this))) return
+        if (!dedup.removed(sbn.key, Store.canRecordScreen(this) && !CaptureState.receiverRole())) return
         Store.append(this, "notifs.jsonl", CaptureRows.removed(Store.log(this), System.currentTimeMillis(), sbn.packageName, sbn.key).toString())
     }
 }

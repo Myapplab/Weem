@@ -83,7 +83,7 @@ Her olay korumalıdır (kaynak `event`). Sıra:
 
 ### 1.7 Olay kapsamı (`syncEventScope`, RS `WatchService.kt:332-346`)
 
-- Kayıt izni varken `serviceInfo.packageNames = null` (tüm uygulamalar), yokken `[kendi paketi]` (vardiya dışında başka uygulamaların her içerik değişimi servisi uyandırmasın). Yalnız değişince yazılır; hata `event_scope`.
+- Kayıt izni varken `serviceInfo.packageNames` = izlenen uygulamalar + arama uygulamaları (`Dialer.eventScope`: bilinen paketler + telefonun varsayılanı; A10.2, eskiden `null` = tüm uygulamalar), yokken ya da Receiver'da `[kendi paketi]` (başka uygulamaların her içerik değişimi servisi uyandırmasın). Yalnız değişince yazılır; hata `event_scope`. `packageNames` yalnız olayları süzer, pencere okumayı (`windows`) değil (Android belgesi; cihazda doğrulanmadı): okunan pencereler yine izlenenler + arama uygulaması.
 - WEEM: aynı; kendi paketi `.dev` yapıda `com.kuryelog.app.dev`.
 
 ### 1.8 Hata kaynakları ve son hata

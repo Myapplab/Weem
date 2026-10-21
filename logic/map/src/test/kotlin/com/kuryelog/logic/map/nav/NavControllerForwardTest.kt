@@ -69,6 +69,30 @@ class NavControllerForwardTest {
         assertEquals(T0 + 5, s.copy(requestedAtMs = null).navTarget("r2", T0 + 5).requestedAtMs)
     }
 
+    /** A10.2 (S5): kopyalanan metindeki ad, telefon ve not Receiver'a gitmez, geokod sorgusuna da girmez. Yapay veri. */
+    @Test
+    fun copiedTextSendsOnlyTheAddressToThePeerAndTheGeocoder() = runBlocking {
+        val queries = ArrayList<String>()
+        val geocoder = object : Geocoder {
+            override suspend fun search(query: String, near: GeoPoint?): GeocodeHit {
+                queries += query
+                return GeocodeHit(GeoPoint(40.4091, 49.8673), "", GeoConfidence.HIGH, "test")
+            }
+        }
+        val nav = NavController(engine, scope, FakeClock(T0), DestinationResolver(http, geocoder)).apply {
+            setGraph(null)
+            setOrigin(GeoPoint(LAT0, LON0))
+        }
+        val sent = ArrayList<Stop>()
+        nav.forward = { sent += it; true }
+        nav.onExternalText("Test Müştəri +994 50 123 45 67 Not: zəngi basmayın 9RQW+344 Baku\nqapıda gözləyin", "clipboard")
+        nav.onExternalText("Test Müştəri\nNizami küç. 5\nqapıda gözləyin\n+994 50 123 45 67", "clipboard")
+        assertEquals(listOf("9RQW+344 Baku", "Nizami küçəsi 5, Bakı"), sent.map { it.navTarget("r", T0).label })
+        assertEquals(listOf("Nizami küçəsi 5, Bakı"), queries)
+        // Etikette kalmış telefon (`geo:…(etiket)`) öteki telefona gizli gider.
+        assertEquals("Restoran [tel]", Stop(GeoPoint(40.4, 49.8), "Restoran +994 50 123 45 67").navTarget("r", T0).label)
+    }
+
     @Test
     fun unreachablePeerKeepsTheLocalRoute() = runBlocking {
         val nav = nav()

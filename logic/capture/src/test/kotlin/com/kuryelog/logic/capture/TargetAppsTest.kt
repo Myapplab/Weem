@@ -25,4 +25,15 @@ class TargetAppsTest {
         assertEquals(listOf("Bolt", "Bolt Driver", "Bolt Food Courier", "Kuryer", "Wolt", "Wolt Courier", "Wolt Partner", "WhatsApp"),
             TargetApps.pickOrder(apps).map { it.second })
     }
+
+    /** A10.2: vardiyada erişilebilirlik olayları yalnız izlenen uygulamalardan ve arama uygulamalarından gelir; başka uygulamadan hiç. */
+    @Test fun eventScopeIsTheWatchedAppsAndTheDialers() {
+        val scope = Dialer.eventScope(setOf("com.wolt.courierapp"), "com.example.dialer", "com.kuryelog.app")
+        assertTrue(scope.containsAll(setOf("com.wolt.courierapp", "com.example.dialer", "com.google.android.dialer", "com.android.incallui", "com.miui.contacts")))
+        assertFalse(scope.contains("com.whatsapp"))
+        assertFalse(scope.contains("com.kuryelog.app"))
+        assertTrue(scope.all { it == "com.wolt.courierapp" || Dialer.isDialer(it) })
+        assertEquals(setOf("com.kuryelog.app"), Dialer.eventScope(emptySet(), "com.google.android.dialer", "com.kuryelog.app"))
+        assertEquals(Dialer.eventScope(setOf("w"), null, "o"), Dialer.eventScope(setOf("w"), " ", "o"))
+    }
 }

@@ -41,7 +41,7 @@ Ayrıntılı alan listeleri ve satır başvuruları: `docs/sartname/bulgular/` (
 | YG `.HomePickActivity` / `.HomePickMapActivity` | action `com.myapplab.yolgo.PICK_HOME` | YG manifest:123-130 | kalkar |
 | YG `.TelemetryService` (location), `.RoadCalibrationService` (location, Y14), `.DatasetRecordingService` (specialUse) | FGS | YG manifest:139-143 | vardiya servisiyle birleşir; Y14 sonra |
 | YG `.WeatherFeedProvider` `az.duzyol.app.weather`, `.NavFeedProvider` `az.duzyol.app.nav` | exported=false, grant | YG manifest:145-153 | kalkar (iç arayüz) |
-| YG `.MotionReceiver` | ActivityRecognition (yürüme güveni) | YG manifest:138 | `yeni` değil: korunur (`:map`) |
+| YG `.MotionReceiver` | ActivityRecognition (yürüme güveni) | YG manifest:138 | WEEM 1.0'da yok (Y13 ile; A10.2) |
 
 ## 3. İzinler
 
@@ -55,7 +55,7 @@ Ayrıntılı alan listeleri ve satır başvuruları: `docs/sartname/bulgular/` (
 | `POST_NOTIFICATIONS`, `WAKE_LOCK`, `VIBRATE` | var | var | var | var |
 | `BLUETOOTH_SCAN`, `BLUETOOTH_CONNECT` (+ `BLUETOOTH`/`_ADMIN` maxSdk 30), feature `bluetooth_le` required=false | — | var | — | var |
 | `SYSTEM_ALERT_WINDOW` | — | var (yüzen panel) | var | var |
-| `ACTIVITY_RECOGNITION` | — | — | var | var |
+| `ACTIVITY_RECOGNITION` | — | — | var | **yok** (A10.2: kod kullanmıyordu; Y13 gelirse eklenir; `PrivacyAuditTest`) |
 | 2 telefon / uzaktan | — | — | — | A8.1: `ACCESS_NETWORK_STATE` (`yeni`; taşıma `INTERNET` + `BLUETOOTH_CONNECT` ile; klasik Bluetooth olduğundan `BLUETOOTH_ADVERTISE` ve `NEARBY_WIFI_DEVICES` gerekmez, S23). targetSdk 37'de `ACCESS_LOCAL_NETWORK` (Android 17). A8.2/A9'da: `CAMERA` (QR), `FOREGROUND_SERVICE_MEDIA_PROJECTION` |
 
 ## 4. Sağlayıcılar, intent'ler, URI'ler (iki uygulama sözleşmesi)
@@ -293,8 +293,12 @@ Tek tablo `:core` `NotificationIds` (tam tablo `CORE.md` 3.3): her bildirim sabi
 
 ## 9. Gizlilik sınırı (WEEM'de korunur)
 
-- Müşteri **telefonu** yalnız `courier.db` (`withPhone=true`), bellek, rozet/balon ve bildirim 12'de; JSONL ve ZIP yedekte yok (`PhoneK25Test`). İstisna (S22, 18 Ekim): N3 parolalı şifreli yedekte `courier.db` satırlarıyla birlikte durur.
+- Müşteri **telefonu** yalnız `courier.db` (`withPhone=true`), bellek, rozet/balon ve bildirim 12'de; JSONL ve ZIP yedekte yok (`PhoneK25Test`). İstisna (S22, 18 Ekim): N3 parolalı şifreli yedekte `courier.db` satırlarıyla birlikte durur. Hata günlüğü (`errors.jsonl`, `lastError`) ve çökme kaydı (`crashes.jsonl`, kopyala/paylaş) istisna mesajını ilk satır, telefon `[tel]`, en çok 200 karakter yazar (`Phones.safeMessage`, A10.2).
+- Bildirim 12 kilit ekranında gizli (kanal `lockscreenVisibility` ve bildirim `VISIBILITY_PRIVATE`; kilit ekranında yalnız "Müşteri teslimat notu"; A10.2). Kanal ayarı yalnız kanal ilk kurulurken yazılır: eski `.dev` kurulumunda değişmez, temiz kurulumda (S31) geçerli.
 - Müşteri **adı** `courier.db`, `orders.jsonl` (`record`) ve `latest` gözleminde düz; dışa aktarmada `AnalysisExport`/`Redactor` gizler.
 - 2 telefon bağlantısı (A8.2): her ileti uçtan uca şifreli (Noise, `LINK.md` 3.5); anahtar, jeton, QR metni ve düz metin yük loga, `FailureSink`'e ya da çökme kaydına yazılmaz.
-- 2 telefon modunda Receiver'a gitmeyecekler: müşteri adı, telefonu, notlar, bildirim 12 içeriği. Gidebilecekler: aşama, saat, bölge (`Z1..Z4`), restoran adı/koordinatı, müşteri koordinatı ve adres metni (`dropoffAddress`; S5, 17 Ekim), rota hedefi (plan Bölüm 4.4).
+- 2 telefon modunda Receiver'a gitmeyecekler: müşteri adı, telefonu, notlar, bildirim 12 içeriği. Gidebilecekler: aşama, saat, bölge (`Z1..Z4`), restoran adı/koordinatı, müşteri koordinatı ve adres metni (`dropoffAddress`; S5, 17 Ekim), rota hedefi (plan Bölüm 4.4). Rota hedefinin etiketi (`NavTarget.label`) kopyalanan/paylaşılan metinden gelirse yalnız adres satırları ya da Plus Code satırı kalır, telefon gizlenir (A10.2). S5 süzgecinin yakaladığı yük düşer ve `errors.jsonl`'e geçer, uygulama kapanmaz.
+- Receiver (scooter telefonu) ekranı ve bildirimleri okumaz (`CaptureState.receiverRole`, plan 4.5): erişilebilirlik ya da bildirim izni orada açık kalsa da `screens.jsonl`, `notifs.jsonl`, `courier.db` dolmaz; vardiya Provider'dan aynalansa da. "Ekran okuma kapalı" uyarısı Receiver'da çıkmaz.
+- Ekran okuma servisi vardiyada yalnız izlenen uygulamaların ve arama uygulamalarının olaylarını alır (`Dialer.eventScope`: izlenenler + bilinen arama paketleri + telefonun varsayılanı; vardiya dışında yalnız WEEM). Başka uygulamanın (banka, mesaj) olayı servise gelmez (A10.2).
+- Geokod: `:map` (Google, ORS, Nominatim) yalnız kullanıcı/uygulama isteğiyle çalışır (Wolt/Bolt bağlantısı, paylaşım, pano, arama); çok satırlı metinde ad ve not satırları sorguya girmez (A10.2; adla aynı satırdaki adres ayrılamaz, kalan risk). Ekrandan okunan restoran/müşteri **adresi** (ad, telefon değil) yalnız Android `Geocoder` sistem servisine gider (`ORDERS.md` 4.10, Rawstats ile aynı, S9); `:capture` ağsız.
 - Uzaktan kullanım (A9.1, S12): ekran görüntüsü yalnız eşleşmiş telefona, yerel ağda şifreli (AES-256-GCM, link üstünden geçici ECDH) gider; kaydedilmez, diske ve loga yazılmaz. S5 süzgeci görüntüye uygulanamaz (S12 bunu kapsar; `REMOTE.md` 1.1).

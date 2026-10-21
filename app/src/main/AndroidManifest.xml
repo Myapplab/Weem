@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
 
     <!-- İzinler: docs/sartname/VERI_SOZLESMESI.md Bölüm 3 (Rawstats + Sürüş Paneli + YolGo birleşimi).
-         İnternet var; ekran okuma (:capture) ağ kullanmaz, test denetler. -->
+         İnternet var; ekran okuma (:capture) ağ kullanmaz, test denetler. ACTIVITY_RECOGNITION yok: Y13 1.0'da yok (A10.2). -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -14,7 +14,6 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
 
     <!-- Scooter (Sürüş Paneli ile aynı). -->
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />

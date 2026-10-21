@@ -5,7 +5,7 @@ import org.json.JSONObject
 /**
  * R20 çökme raporu (CORE.md 4.1): süreci kapatan her istisna ve çizilemeyen sayfa tek satır JSON olarak yazılır; ana sayfa
  * gizlenene dek son çökmeyi gösterir (kopyala/paylaş). Yalnız istisna girer: mesajlar ayrıştırılan şeyi (ekran satırı, JSON) alıntılayabilir,
- * bu yüzden her mesaj satırı kısaltılır.
+ * bu yüzden her mesaj satırı kısaltılır ve telefonu gizlenir (A10.2, [Phones]).
  */
 object CrashReport {
     const val STACK_CHARS = 8_000
@@ -13,12 +13,12 @@ object CrashReport {
 
     fun json(at: Long, version: String, thread: String, e: Throwable): JSONObject = JSONObject()
         .put("at", at).put("version", version).put("thread", thread)
-        .put("error", e.javaClass.name).put("message", (e.message ?: "").lineSequence().first().take(MESSAGE_CHARS))
+        .put("error", e.javaClass.name).put("message", Phones.safeMessage(e.message, MESSAGE_CHARS))
         .put("stack", stack(e))
 
     /** The stack with its causes; the header lines ("X: message", "Caused by: …") are cut to [MESSAGE_CHARS]. */
     fun stack(e: Throwable): String = e.stackTraceToString().lineSequence()
-        .map { if (it.startsWith("\t") || it.startsWith(" ")) it else it.take(MESSAGE_CHARS) }
+        .map { if (it.startsWith("\t") || it.startsWith(" ")) it else Phones.redact(it).take(MESSAGE_CHARS) }
         .joinToString("\n").take(STACK_CHARS)
 
     private val appFrame = Regex("""at (?:com\.kuryelog\.(?:app|logic)|az\.ninebot\.logger)\.[^(\s]*\(([^)]+)\)""")
@@ -50,7 +50,7 @@ object CrashReport {
     fun exitShown(reason: Int, at: Long, now: Long): Boolean = exitLabel(reason) != null && now - at in 0..EXIT_MAX_AGE_MS
     /** The same shape as [json], so the card and the copied text treat both alike. */
     fun exitJson(at: Long, version: String, reason: Int, description: String?, process: String?): JSONObject {
-        val message = (description ?: "").lineSequence().first().take(MESSAGE_CHARS)
+        val message = Phones.safeMessage(description, MESSAGE_CHARS)
         return JSONObject().put("at", at).put("version", version).put("thread", "android").put("exit", reason)
             .put("error", exitLabel(reason) ?: "Exit$reason").put("message", message)
             .put("stack", "Android exit reason $reason (${exitLabel(reason)}) · ${process ?: "?"}\n$message")
