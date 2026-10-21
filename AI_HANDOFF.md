@@ -2,7 +2,7 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
-## 2026-10-21 — A10.2 geçiş öncesi güvenlik kontrolü bitti (Claude Opus · high; dal `ccr-c2b5a357-2grx9a`, PR #12)
+## 2026-10-21 — A10.2 geçiş öncesi güvenlik kontrolü bitti (Claude Opus · high; PR #12 CI yeşil → `main` `652cc0b`)
 - Yapılan: `/code-review high` (gizlilik/izin odaklı) 8 bulgu, hepsi doğrulandı ve düzeltildi: Plus Code/çok satırlı kopyalanan metinden Receiver'a ve geokoda ad-telefon-not gitmez (`AddressParser.addressLines`, `Stop.navTarget` telefonu gizler); bildirim 12 kilit ekranında gizli; Receiver ekran/bildirim okumaz (`CaptureState.receiverRole`, TwoPhone takar); `errors.jsonl`/çökme kaydında telefon `[tel]` + 200 karakter (`:core` `Phones`, `NoteFields` ona bağlı); S5 süzgeci çökertmez (`PhoneBridge.publish` yükü `try`'da kurar); `ACTIVITY_RECOGNITION` kaldırıldı; vardiyada erişilebilirlik olayları yalnız izlenenler + arama uygulamaları (`Dialer.eventScope`).
 - Kendi taramam: birleşik release manifesti (izinlerin hepsi kullanılıyor; `ACCESS_WIFI_STATE` MapLibre'den), dışa açık bileşenler, PendingIntent bayrakları (değişken olanlar açık hedefli), logcat yok, pano yalnız çökme kaydı, ağ: geokod yalnız kullanıcı/uygulama isteğiyle; ekrandan okunan adres yalnız Android `Geocoder`'a (S9, Rawstats ile aynı).
 - Doğrulama: `-p logic test` 1.950 test, 0 kırmızı; Android: `:capture`, `:orders`, `:app` derlendi; `:app` 84 + `:map` 9 test yeşil (bir Robolectric testi ilk koşuda indirme hatası verdi, tek başına yeşil); `:app`/`:capture`/`:orders`/`:link` lint 0 hata; birleşik release manifesti incelendi. Telefonda denenmedi.
