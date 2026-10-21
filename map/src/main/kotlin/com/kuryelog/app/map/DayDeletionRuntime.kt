@@ -19,6 +19,9 @@ class DayDeletionRuntime private constructor(private val app: Context) {
     /** Y12 gün katkılarını siler, silinen gün kimliklerini döner (A6.11'de `RoadsRuntime` bağlanır). */
     @Volatile var deleteContributions: (String) -> Set<String> = { emptySet() }
 
+    /** Y13 (A10.4b): o tarihin yüzey ölçümlerini siler, silinen gün kimliklerini döner (`NavRuntime.surface`). */
+    @Volatile var deleteSurface: (String) -> Set<String> = { emptySet() }
+
     private var running = false
 
     /** Açık gün [date] tarihindeyse silme onayında "aktif gün durdurulacak" uyarısı gerekir mi. */
@@ -40,7 +43,7 @@ class DayDeletionRuntime private constructor(private val app: Context) {
                         NavRuntime.get(app).controller.clearRoute()
                     }
                     DeletionStep.FlushLogs -> log.flush()
-                    is DeletionStep.DeleteContributions -> extra = runCatching { deleteContributions(step.date) }.getOrDefault(emptySet())
+                    is DeletionStep.DeleteContributions -> extra = runCatching { deleteContributions(step.date) }.getOrDefault(emptySet()) + runCatching { deleteSurface(step.date) }.getOrDefault(emptySet())
                     is DeletionStep.ForgetDay -> {
                         val writer = DayReportWriter.get(app)
                         val last = day.lastDay()

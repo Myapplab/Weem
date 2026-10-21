@@ -79,6 +79,18 @@ class SurfaceFeed(
         mountUp = p.mount.takeIf { it.size == 3 }?.toDoubleArray()
     }
 
+    /**
+     * "Montaj yönünü kaydet": telefon sabit gidonda ve scooter dururken son güvenilir dünya "yukarı" vektörü (YolGo `SurfaceSetupScreen`:
+     * yönelim güvenilir, hız < 0,5 m/s, GPS doğruluğu ≤ 20 m); koşul sağlanmıyorsa null.
+     */
+    @Synchronized fun mountCandidate(): DoubleArray? {
+        val u = up ?: return null
+        val f = gps ?: return null
+        if (elapsedRealtimeNs() - orientationAt >= 500_000_000) return null
+        if (f.speed >= .5 || f.accuracy > 20) return null
+        return u.copyOf()
+    }
+
     @Synchronized fun setActivity(atMs: Long, confidence: Int) { activityAt = atMs; walkConfidence = confidence }
 
     @Synchronized fun reset() { signal.reset(); gps = null; lastWindowLocation = null; lastWindowEnd = 0; activityAt = 0; walkConfidence = 0; steps.clear() }

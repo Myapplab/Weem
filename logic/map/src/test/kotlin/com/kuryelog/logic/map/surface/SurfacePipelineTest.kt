@@ -114,6 +114,17 @@ class SurfacePipelineTest {
         assertTrue(w.all { it.id.startsWith("boot-1:") && it.leg == "yolgo-1:free" })
     }
 
+    @Test fun mountCandidateNeedsAStillPhoneWithReliableOrientationAndGps() {
+        val r = Rig(); r.feed.configure(config())
+        assertNull(r.feed.mountCandidate()) // konum ve yönelim yok
+        r.run(1.0, 0.0)
+        assertArrayEquals(doubleArrayOf(0.0, 0.0, 1.0), r.feed.mountCandidate(), 0.0)
+        r.run(1.0, 5.0)
+        assertNull("scooter giderken kaydedilmez", r.feed.mountCandidate())
+        val bad = Rig(); bad.feed.configure(config()); bad.run(1.0, 0.0, accuracy = 30.0)
+        assertNull("GPS doğruluğu > 20 m", bad.feed.mountCandidate())
+    }
+
     @Test fun pausedOrIneligibleFeedsProduceNoWindows() {
         for (cfg in listOf(config(paused = true), config(eligible = false), config(leg = null))) {
             val r = Rig(); r.feed.configure(cfg); r.run(6.0, 5.0)
