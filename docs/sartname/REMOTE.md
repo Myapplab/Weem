@@ -62,6 +62,8 @@ JSON (UTF-8), `schemaVersion` 1; bilinmeyen alan yok sayılır, bozuk yük atıl
 
 Çerçeve (gidiş-dönüş, parça parça, sınır, bozuk), anahtar türetme ve şifreli iletim (iki yön ayrı, tekrar/değişiklik reddi, yeniden bağlanmada yeni anahtar), denetim iletileri (JSON, bozuk, eski), `CaptureGeometry` (oran, 16'nın katı, döndürme, yedek boyutlar), `FlowControl` (atma, anahtar kare bekleme, bit hızı azalt/artır), Annex-B (SPS/PPS ayırma), `HostMachine` + `ViewerMachine` uçtan uca sahte link ve sahte akışla: istek → onay → oynatma, onay reddi, paylaşım açıkken onaysız ikinci izleme, yanlış anahtarlı bağlantı, kopma ve yeniden bağlanma, kare atılınca `KEY`, Bluetooth'ta istek yok, boşta 10 dk sonra paylaşım kapanır, iki yön aynı anda.
 
+Durum (21 Ekim): `logic/remote` 44 test yeşil; `:app` `RemoteScreenTest` 1; `:remote`/`:link`/`:app` lint 0 sorun. Android katmanı derlenir; telefonda denenmedi.
+
 ### 1.9 Açık kalan ve riskler (cihazda doğrulanmadı)
 
-- Android 15+'ta kilit ekranında sistem paylaşımı durdurabilir ya da kilit ekranı görünür; cepteki telefon kilitliyse yeniden onay gerekebilir. Wolt/Bolt `FLAG_SECURE` kullanırsa onların ekranı siyah görünür. Gecikme ve bit hızı hotspot'ta ölçülmedi. Bazı kodlayıcılar 16'nın katı olmayan boyutu reddeder (yedek boyutlar).
+- Android 15+'ta kilit ekranında sistem paylaşımı durdurabilir ya da kilit ekranı görünür; cepteki telefon kilitliyse yeniden onay gerekebilir. Wolt/Bolt `FLAG_SECURE` kullanırsa onların ekranı siyah görünür. Gecikme ve bit hızı hotspot'ta ölçülmedi. Bazı kodlayıcılar 16'nın katı olmayan boyutu reddeder (yedek boyutlar). API 29–30'da paylaşım bildirimi ilk çıkışta ses verebilir (kanal `remote` DEFAULT; izin isteği duyulsun diye). AZ metin onayı M-R-1 (`RemoteText`).
