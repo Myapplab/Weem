@@ -3,6 +3,7 @@ package com.kuryelog.logic.link
 import com.kuryelog.logic.core.CourierPlatform
 import com.kuryelog.logic.core.DaySummary
 import com.kuryelog.logic.core.EnergyBlock
+import com.kuryelog.logic.core.EnergyRequest
 import com.kuryelog.logic.core.EnergyStep
 import com.kuryelog.logic.core.LateEnergy
 import com.kuryelog.logic.core.NavKind
@@ -16,10 +17,12 @@ import com.kuryelog.logic.core.ScooterLive
 import com.kuryelog.logic.core.ShiftPort
 import com.kuryelog.logic.core.ShiftState
 import com.kuryelog.logic.core.TripStages
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -539,5 +542,21 @@ class PhoneBridgeTest {
         assertNull(d.theftCommand("""{"schemaVersion":1,"commandId":"x","action":"open","atMs":1}""".toByteArray()))
         assertNull(d.theftCommand("""{"schemaVersion":2,"commandId":"x","action":"arm","atMs":1}""".toByteArray()))
         assertNull(d.theftCommand(byteArrayOf(-1, -2)))
+    }
+
+    /** A10.2: S5 süzgecinin yakaladığı yük (burada scooter enerji bloğunda bir "not" alanı) düşer, kayda geçer; süreç kapanmaz. */
+    @Test
+    fun unsafePayloadIsDroppedNotThrown() = runBlocking {
+        val thrown = ArrayList<Throwable>()
+        val failed = ArrayList<String>()
+        val s = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, e -> synchronized(thrown) { thrown += e } })
+        val out = Wire()
+        val scooter = Scooter().apply { block = EnergyBlock(JSONObject().put("source", "surus_paneli").put("customerNote", "x")) }
+        val r = PhoneBridge(LinkRole.RECEIVER, out, { now }, s, PhoneBridge.Local(scooter = scooter), failures = { src, _ -> synchronized(failed) { failed += src } })
+        r.incoming(LinkTopic.ENERGY_REQUEST.type, LinkPayloads.energyRequest(EnergyRequest("q1", "seg", EnergyRequest.Kind.LEG, now - 60_000, now)), now)
+        withTimeout(5_000) { while (synchronized(failed) { failed.isEmpty() } && synchronized(thrown) { thrown.isEmpty() }) delay(10) }
+        assertEquals(emptyList<Throwable>(), thrown)
+        assertEquals(listOf("link_publish_EnergyResult"), failed)
+        assertEquals(0, out.count(LinkTopic.ENERGY_RESULT))
     }
 }

@@ -171,7 +171,7 @@ class PhoneBridge(
     /** Bağlantı açıldı/koptu. Açılınca rol yollanır (son durumları `Messenger` kanal değişiminde kendisi yeniden yollar). */
     fun linkChanged(linked: Boolean, now: Long = wall()) {
         up = linked
-        if (linked) publish(LinkTopic.ROLE, LinkPayloads.role(role))
+        if (linked) publish(LinkTopic.ROLE) { LinkPayloads.role(role) }
         else synchronized(lock) {
             _peerRole.value = null
             if (role == LinkRole.RECEIVER) _offers.value = emptyList()
@@ -185,7 +185,7 @@ class PhoneBridge(
     fun providerShift(s: ShiftState) {
         if (role != LinkRole.PROVIDER) return
         val send = synchronized(lock) { if (sentShift?.copy(generatedAtMs = 0) == s.copy(generatedAtMs = 0)) false else { sentShift = s; true } }
-        if (send) publish(LinkTopic.SHIFT, LinkPayloads.shift(s))
+        if (send) publish(LinkTopic.SHIFT) { LinkPayloads.shift(s) }
     }
 
     /**
@@ -205,14 +205,14 @@ class PhoneBridge(
                 else -> { markOffers(list, now); list }
             }
         }
-        send?.let { publish(LinkTopic.OFFERS, LinkPayloads.offers(it)) }
+        send?.let { publish(LinkTopic.OFFERS) { LinkPayloads.offers(it) } }
     }
 
     /** Aşamalar: her değişimde teslim zorunlu (plan 4.5). */
     fun providerStages(s: TripStages) {
         if (role != LinkRole.PROVIDER) return
         val send = synchronized(lock) { if (s == sentStages) false else { sentStages = s; true } }
-        if (send) publish(LinkTopic.STAGES, LinkPayloads.stages(s))
+        if (send) publish(LinkTopic.STAGES) { LinkPayloads.stages(s) }
     }
 
     /** Gün özeti: değişince, en çok dakikada bir (gün değişince hemen). */
@@ -225,7 +225,7 @@ class PhoneBridge(
                 else -> { sentDay = d; sentDayAt = now; pendingDay = null; true }
             }
         }
-        if (send) publish(LinkTopic.DAY, LinkPayloads.day(d))
+        if (send) publish(LinkTopic.DAY) { LinkPayloads.day(d) }
     }
 
     /**
@@ -234,7 +234,7 @@ class PhoneBridge(
      */
     fun forwardNav(target: NavTarget, now: Long = wall()): Boolean {
         if (role != LinkRole.PROVIDER || !link.linked() || conflict()) return false
-        val id = publish(LinkTopic.NAV_TARGET, LinkPayloads.navTarget(target)) ?: return false
+        val id = publish(LinkTopic.NAV_TARGET) { LinkPayloads.navTarget(target) } ?: return false
         synchronized(lock) {
             navWaiting[id] = target to now
             while (navWaiting.size > 16) navWaiting.remove(navWaiting.keys.first())
@@ -261,7 +261,7 @@ class PhoneBridge(
             while (energyWaiting.size > MAX_ENERGY_WAITING) energyWaiting.remove(energyWaiting.keys.first())
         }
         val req = EnergyRequest(id, "w:$fromWallMs-$toWallMs", EnergyRequest.Kind.LEG, fromWallMs, toWallMs)
-        if (publish(LinkTopic.ENERGY_REQUEST, LinkPayloads.energyRequest(req)) == null) {
+        if (publish(LinkTopic.ENERGY_REQUEST) { LinkPayloads.energyRequest(req) } == null) {
             synchronized(lock) { energyWaiting.remove(id) }
             return null
         }
@@ -283,7 +283,7 @@ class PhoneBridge(
         val send = synchronized(lock) {
             if (b.due(sentBattery) || fresh != sentFresh) { sentBattery = b; sentFresh = fresh; true } else false
         }
-        if (send) publish(LinkTopic.BATTERY, LinkPayloads.battery(b))
+        if (send) publish(LinkTopic.BATTERY) { LinkPayloads.battery(b) }
     }
 
     /** Hırsızlık koruması: durum değişince; uyarı/alarmdayken [THEFT_ALARM_EVERY_MS]'de bir (son konumla). */
@@ -293,13 +293,13 @@ class PhoneBridge(
             val changed = sentTheft?.copy(fix = null) != s.copy(fix = null)
             if (changed || s.alarming && now - sentTheftAt >= THEFT_ALARM_EVERY_MS) { sentTheft = s; sentTheftAt = now; true } else false
         }
-        if (send) publish(LinkTopic.THEFT_STATE, LinkPayloads.theftState(TheftState(s, now)))
+        if (send) publish(LinkTopic.THEFT_STATE) { LinkPayloads.theftState(TheftState(s, now)) }
     }
 
     /** Provider'da "Park" ya da kapatma; teslim zorunlu. Yayınlanamadıysa false. */
     fun sendTheft(action: TheftCommand.Action, now: Long = wall()): Boolean {
         if (role != LinkRole.PROVIDER) return false
-        return publish(LinkTopic.THEFT_COMMAND, LinkPayloads.theftCommand(TheftCommand(UUID.randomUUID().toString(), action, now))) != null
+        return publish(LinkTopic.THEFT_COMMAND) { LinkPayloads.theftCommand(TheftCommand(UUID.randomUUID().toString(), action, now)) } != null
     }
 
     /** Rota: değişince, en çok saniyede bir. Rota yoksa hedefsiz ve ölçümsüz durum. Ev rotasının hedefi zaten null. */
@@ -314,7 +314,7 @@ class PhoneBridge(
                 else -> { sentRoute = v; sentRouteAt = now; routeDirty = false; v }
             }
         }
-        send?.let { publish(LinkTopic.ROUTE, LinkPayloads.route(it)) }
+        send?.let { publish(LinkTopic.ROUTE) { LinkPayloads.route(it) } }
     }
 
     // ------------------------------------------------------------------ gelen
@@ -411,7 +411,7 @@ class PhoneBridge(
     private fun answerEnergy(r: EnergyRequest) {
         if (role != LinkRole.RECEIVER) return
         val cached = synchronized(lock) { answered[r.requestId] ?: run { if (!answering.add(r.requestId)) return; null } }
-        if (cached != null) { publish(LinkTopic.ENERGY_RESULT, LinkPayloads.energyResult(cached)); return }
+        if (cached != null) { publish(LinkTopic.ENERGY_RESULT) { LinkPayloads.energyResult(cached) }; return }
         scope.launch {
             val block = runCatching { local.scooter.energy(r.fromWallMs, r.toWallMs) }.getOrNull() ?: EnergyBlock.notMeasured()
             val res = EnergyResult(r.requestId, block)
@@ -420,7 +420,7 @@ class PhoneBridge(
                 answered[r.requestId] = res
                 while (answered.size > 64) answered.remove(answered.keys.first())
             }
-            publish(LinkTopic.ENERGY_RESULT, LinkPayloads.energyResult(res))
+            publish(LinkTopic.ENERGY_RESULT) { LinkPayloads.energyResult(res) }
         }
     }
 
@@ -465,9 +465,9 @@ class PhoneBridge(
             if (role == LinkRole.RECEIVER && _offers.value.isNotEmpty() && now - offersAt > OFFERS_STALE_MS) _offers.value = emptyList()
             refreshLive(now)
         }
-        offers?.let { publish(LinkTopic.OFFERS, LinkPayloads.offers(it)) }
-        day?.let { publish(LinkTopic.DAY, LinkPayloads.day(it)) }
-        route?.let { publish(LinkTopic.ROUTE, LinkPayloads.route(it)) }
+        offers?.let { publish(LinkTopic.OFFERS) { LinkPayloads.offers(it) } }
+        day?.let { publish(LinkTopic.DAY) { LinkPayloads.day(it) } }
+        route?.let { publish(LinkTopic.ROUTE) { LinkPayloads.route(it) } }
         for (t in fallback) local.nav.open(t)
     }
 
@@ -496,8 +496,13 @@ class PhoneBridge(
 
     private fun norm(l: List<OfferSummary>) = l.map { it.copy(lastSeenAtMs = Math.floorDiv(it.lastSeenAtMs, OFFERS_REFRESH_MS)) }
 
-    private fun publish(t: LinkTopic, payload: ByteArray): UUID? = try {
-        if (t.reliable) link.publishReliable(t.type, payload, t.ttlMs) else link.publishLatest(t.type, payload, t.ttlMs)
+    /**
+     * Yük [payload] burada, `try` içinde kurulur: S5 süzgeci ([UnsafePayload]) ya da JSON'a yazılamayan değer (NaN) iletiyi düşürür,
+     * süreci kapatmaz (A10.2; çağıranlar `TwoPhone`'un işleyicisiz kapsamında).
+     */
+    private fun publish(t: LinkTopic, payload: () -> ByteArray): UUID? = try {
+        val bytes = payload()
+        if (t.reliable) link.publishReliable(t.type, bytes, t.ttlMs) else link.publishLatest(t.type, bytes, t.ttlMs)
     } catch (e: Exception) {
         failures.failure("link_publish_${t.type}", e)
         null
