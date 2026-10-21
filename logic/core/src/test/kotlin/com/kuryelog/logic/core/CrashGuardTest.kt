@@ -83,6 +83,8 @@ class CrashGuardTest {
                 if (f.name == "NavOnlyService.kt") return@forEach
                 // 2 telefon bağlantı servisi (A8.3) vardiya servisi değil; her başlatışı startForeground'a varır (aşağıda).
                 if (f.name == "LinkService.kt") return@forEach
+                // Ekran paylaşımı servisi (A9.1) vardiya servisi değil; her başlatışı startForeground'a varır (aşağıda).
+                if (f.name == "CaptureService.kt") return@forEach
                 calls++
                 assertTrue("${f.name}: $call", call.contains("ACTION_START") || call.contains("Home.startIntent(") || call.contains("ScooterService.startIntent("))
             }
@@ -103,6 +105,12 @@ class CrashGuardTest {
         val linkStart = RepoSource.body(link, "override fun onStartCommand(", "companion object")
         assertTrue(linkStart.contains("startForeground(NotificationIds.LINK_FGS"))
         assertEquals(1, Regex("""stopSelf\(\)""").findAll(linkStart.substringBefore("startForeground(")).count())
+        // A9.1: ekran paylaşımı; yalnız ACTION_STOP (startService ile gelir) startForeground'dan önce durur.
+        val capture = RepoSource.text("remote/src/main/kotlin/com/kuryelog/app/remote/CaptureService.kt")
+        val captureStart = RepoSource.body(capture, "override fun onStartCommand(", "private fun refuse(")
+        assertTrue(captureStart.contains("startForeground(NotificationIds.REMOTE_FGS"))
+        assertEquals(1, Regex("""stopSelf\(\)""").findAll(captureStart.substringBefore("startForeground(")).count())
+        assertTrue(capture.contains("ctx.startService(Intent(ctx, CaptureService::class.java).setAction(ACTION_STOP))"))
         assertTrue(RepoSource.text(core + "Home.kt").contains("Intent(ctx, ShiftService::class.java).setAction(ShiftMachine.ACTION_HOME_START)"))
     }
 }

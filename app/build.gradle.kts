@@ -104,6 +104,8 @@ dependencies {
     implementation("com.kuryelog.logic:map")
     // 2 telefon ekranı (A8.3): logic/link LinkText, LinkView, LinkRole, PhoneBridge.
     implementation("com.kuryelog.logic:link")
+    // Uzaktan sekmesi (A9.1): logic/remote RemoteText, RemoteLines, HostView, ViewerView.
+    implementation("com.kuryelog.logic:remote")
     implementation("com.kuryelog.logic:core")
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)

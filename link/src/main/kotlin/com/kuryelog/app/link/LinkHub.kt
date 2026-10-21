@@ -53,6 +53,8 @@ object LinkHub {
     @Volatile var localFor: (LinkRole) -> PhoneBridge.Local = { PhoneBridge.Local() }
     /** Köprü değişti (rol değişimi ya da açılış): `:app` portları yeniden bağlar. Kapalıyken `null`. */
     @Volatile var onBridge: (PhoneBridge?) -> Unit = {}
+    /** `remote.*` iletileri (A9.1, REMOTE.md 1.3): köprüye değil `:remote`'a gider. */
+    @Volatile var onRemote: (Incoming) -> Unit = {}
 
     private val _role = MutableStateFlow(LinkRole.OFF)
     val role: StateFlow<LinkRole> = _role.asStateFlow()
@@ -127,6 +129,18 @@ object LinkHub {
         apply(a)
     }
 
+    /** Uzaktan kullanım denetim iletisi (teslim zorunlu); bağlantı kapalıysa null. */
+    fun publishReliable(type: String, payload: ByteArray, ttlMs: Long): UUID? =
+        runtime?.takeIf { _role.value != LinkRole.OFF }?.let { rt -> runCatching { rt.publishReliable(type, payload, ttlMs) }.getOrNull() }
+
+    /** Adres yerel ağ (hotspot/Wi-Fi) alt ağında mı (REMOTE.md 1.4: akış yalnız oradan kabul edilir). */
+    fun onLan(host: String): Boolean = runtime?.onLan(host) ?: false
+
+    /** Hedef Wi-Fi istemci ağındaysa soketi o ağa bağlar (mobil veri varsayılan ağ olsa da). */
+    fun bindToLan(s: java.net.Socket, host: String) {
+        runtime?.bindToLan(s, host)
+    }
+
     fun fingerprint(ctx: Context): String? = runCatching { runtime(ctx.applicationContext).fingerprint() }.getOrNull()
     fun peerFingerprint(): String? = _peer.value?.let { Fingerprint.of(it.publicKey) }
 
@@ -177,6 +191,10 @@ object LinkHub {
         }
 
         override fun onMessage(message: Incoming) {
+            if (message.type.startsWith(REMOTE_PREFIX)) {
+                app?.let { a -> Store.guarded(a, "link_remote") { onRemote(message) } }
+                return
+            }
             _bridge.value?.incoming(message.type, message.payload)
         }
 
@@ -204,6 +222,8 @@ object LinkHub {
         override fun onAcked(type: String, id: UUID) { _bridge.value?.acked(type, id) }
         override fun onClock(offsetMs: Long, uncertaintyMs: Long) { _bridge.value?.clock(offsetMs) }
     }
+
+    private const val REMOTE_PREFIX = "remote."
 
     private fun prefs(a: Context) = a.getSharedPreferences(IdentityVault.PREFS, Context.MODE_PRIVATE)
 }

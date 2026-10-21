@@ -40,6 +40,10 @@ object NotificationIds {
     const val NAV_ONLY_FGS = 7402
     /** `:link` 2 telefon bağlantısı ön plan servisi (A8.3, LINK.md 4.7; kanal `link`, LOW, ongoing): mod açık ve eşleşmişken. */
     const val LINK_FGS = 7403
+    /** `:remote` ekran paylaşımı ön plan servisi (A9.1, REMOTE.md 1.2; kanal `remote`, sessiz, ongoing, "Bitir" eylemi). */
+    const val REMOTE_FGS = 7404
+    /** `:remote` öteki telefon ekranı görmek istiyor: dokununca onay penceresi (kanal `remote`, 60 sn). */
+    const val REMOTE_ASK = 7405
     /** Y14 yol kalibrasyonu (kanal `yolgo_calibration`). */
     const val CALIBRATION_FGS = 7435
     /** `:orders` nakit bahşiş onayı, yolculuk başına (kanal `cash_tips`, 15 sn). Eskiden 4000 + aynı ifade. */
@@ -59,7 +63,8 @@ object NotificationIds {
         "HOME_AUTO_START" to HOME_AUTO_START..HOME_AUTO_START, "SCOOTER_AUTO_START" to SCOOTER_AUTO_START..SCOOTER_AUTO_START,
         "SHIFT_INTERRUPTED" to SHIFT_INTERRUPTED..SHIFT_INTERRUPTED, "SCREEN_READING_OFF" to SCREEN_READING_OFF..SCREEN_READING_OFF,
         "REMINDER" to REMINDER, "TASK_NEARBY" to TASK_NEARBY..TASK_NEARBY, "WEATHER" to WEATHER..WEATHER,
-        "DATASET_FGS" to DATASET_FGS..DATASET_FGS, "NAV_ONLY_FGS" to NAV_ONLY_FGS..NAV_ONLY_FGS, "LINK_FGS" to LINK_FGS..LINK_FGS, "CALIBRATION_FGS" to CALIBRATION_FGS..CALIBRATION_FGS, "CASH_TIP" to CASH_TIP,
+        "DATASET_FGS" to DATASET_FGS..DATASET_FGS, "NAV_ONLY_FGS" to NAV_ONLY_FGS..NAV_ONLY_FGS, "LINK_FGS" to LINK_FGS..LINK_FGS,
+        "REMOTE_FGS" to REMOTE_FGS..REMOTE_FGS, "REMOTE_ASK" to REMOTE_ASK..REMOTE_ASK, "CALIBRATION_FGS" to CALIBRATION_FGS..CALIBRATION_FGS, "CASH_TIP" to CASH_TIP,
     )
 
     /** Kanal kimlikleri (eski uygulamalarla aynı; kullanıcının kanal ayarları kalır). */
@@ -69,6 +74,8 @@ object NotificationIds {
     const val CHANNEL_NAVIGATION = "navigation"
     /** 2 telefon bağlantısı (yeni kanal, A8.3). */
     const val CHANNEL_LINK = "link"
+    /** Uzaktan kullanım (yeni kanal, A9.1). */
+    const val CHANNEL_REMOTE = "remote"
     /** Hatırlatıcılar ve yakındaki görev (Y20; eski YolGo kanalı, HIGH, titreşim 0-350-200-350). */
     const val CHANNEL_REMINDER = "hatirlatici"
 }
