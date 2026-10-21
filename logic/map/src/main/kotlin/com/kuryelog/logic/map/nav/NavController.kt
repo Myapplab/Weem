@@ -25,6 +25,7 @@ import com.kuryelog.logic.map.route.RouteTimeout
 import com.kuryelog.logic.map.route.StreetPrefs
 import com.kuryelog.logic.map.settings.MapSettings
 import com.kuryelog.logic.map.surface.SurfaceMark
+import com.kuryelog.logic.map.surface.SurfaceSummary
 import java.io.IOException
 import java.net.SocketTimeoutException
 import java.time.Instant
@@ -122,6 +123,14 @@ data class RoadInputs(
 )
 
 /**
+ * Rota maliyetine giren ölçülmüş yüzey (Y13, A10.4b): kesim özetleri ve sokak puanından 0–1 kalite (kesim anahtarı → kalite). Rota hesaplanırken her
+ * seferinde okunur ([NavController.surfaceInputs]); yüzey değişince açık rota kendiliğinden yeniden hesaplanmaz (YolGo gibi).
+ */
+class SurfaceInputs(val summaries: List<SurfaceSummary> = emptyList(), val quality: Map<String, Double> = emptyMap()) {
+    companion object { val NONE = SurfaceInputs() }
+}
+
+/**
  * Saf navigasyon durum makinesi (`nav_controller.dart`; MAP.md 7, 8.7). Girdiler: hedefler ([goTo], [addStop], [onExternalText], [search], [openTarget]),
  * fix'ler ([onFix]), ayar/sokak/öğrenme ([setSettings], [setStreetPrefs], [setBikewayMarks], [setRoadInputs]), batarya ([onBattery]), vardiya ([setOrder]);
  * saat [tick] ile ilerler (90 sn varış kartı, 15 sn ters yön önerisi, 5 sn saatli izin denetimi). Çıktılar: [state], canlı ölçüm [progress],
@@ -176,6 +185,9 @@ class NavController(
     private var bikeways = BikewayMarks()
     private var prefs = StreetPrefs()
     private var road = RoadInputs()
+
+    /** Y13: rota hesabı sırasında çağrılır (kilit dışında, [scope]'ta; ağır olabilir). Bağlı değilse yüzey yok. */
+    @Volatile var surfaceInputs: () -> SurfaceInputs = { SurfaceInputs.NONE }
     private var battery: Double? = null
     private var dayActive = false
     private var currentOrder: Int? = null
@@ -550,6 +562,7 @@ class NavController(
         var origin: GeoPoint? = null
         try {
             origin = currentOrigin()
+            val surface = runCatching { surfaceInputs() }.getOrDefault(SurfaceInputs.NONE)
             val req = synchronized(lock) {
                 if (id != planSeq) return
                 val g = graph ?: return
@@ -567,6 +580,8 @@ class NavController(
                     ghost = road.ghost,
                     learned = road.learned,
                     marks = road.marks,
+                    surface = surface.summaries,
+                    surfaceQuality = surface.quality,
                     wwRatio = road.wwRatio,
                     wwAvoid = road.wwAvoid,
                     reverseHours = prefs.reverseHours,

@@ -147,7 +147,7 @@ class NavRuntime private constructor(private val app: Context) {
     val roads = RoadsRuntime(app, controller, scope, settings, lang, streets) { reloadStreetPrefs() }
 
     /** Y13 yüzey ve titreşim ölçümü (A10.4b): sensörler gün açık ve etap uygunken; depo `files/surface-v2/`. */
-    val surface = SurfaceRuntime(app, controller, scope) { settings.value.vehicleId }
+    val surface = SurfaceRuntime(app, controller, scope, { settings.value.vehicleId }, { roads.book.state.k.names })
 
     init {
         controller.setBikewayMarks(bikeway.marks)

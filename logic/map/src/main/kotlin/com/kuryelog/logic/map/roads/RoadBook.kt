@@ -414,6 +414,14 @@ class RoadBook(
         spots
     }
 
+    /** Y13 (A10.4b) yüzey kaydı: Yüzey ayrıntısından türü/kapanışı olan elle işaret ("kapalı" rota tarafından hiç kullanılmaz); açık rota yeniden hesaplanır. */
+    fun saveMark(mark: SurfaceMark) = synchronized(lock) {
+        markStore.save(mark)
+        log("surface_mark", mapOf("way" to mark.way, "label" to mark.label.name, "access" to mark.access.name))
+        routeRev++
+        emit()
+    }
+
     /** Kalite sekmesi: sil / geri al. */
     fun setSpotRemoved(id: String, removed: Boolean) = synchronized(lock) {
         markStore.setRemoved(id, removed)

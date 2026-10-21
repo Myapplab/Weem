@@ -5,6 +5,9 @@ import android.os.SystemClock
 import com.kuryelog.app.core.ShiftHub
 import com.kuryelog.logic.map.day.DayState
 import com.kuryelog.logic.map.nav.NavController
+import com.kuryelog.logic.map.calibration.RoadCalibrationRecord
+import com.kuryelog.logic.map.nav.SurfaceInputs
+import com.kuryelog.logic.map.roads.StreetScores
 import com.kuryelog.logic.map.surface.SurfaceFeed
 import com.kuryelog.logic.map.surface.SurfaceFeedConfig
 import com.kuryelog.logic.map.surface.SurfaceLeg
@@ -35,6 +38,8 @@ class SurfaceRuntime internal constructor(
     private val nav: NavController,
     private val scope: CoroutineScope,
     private val vehicleId: () -> String,
+    /** Yol adları (OSM way id → ad; boş = adsız): sokak puanı için. */
+    private val names: () -> Map<Long, String>,
 ) {
     val store = SurfaceStore(File(app.filesDir, "surface-v2"))
     private val prefs = MapPrefsStore(app)
@@ -71,12 +76,25 @@ class SurfaceRuntime internal constructor(
         summariesFlow.value = store.summaries
         store.onChanged { summariesFlow.value = it }
         DayDeletionRuntime.get(app).deleteSurface = ::deleteDate
+        nav.surfaceInputs = ::routeInputs
         scope.launch {
             while (isActive) {
                 evaluate()
                 delay(EVAL_MS)
             }
         }
+    }
+
+    /** Kayıtlı kalibrasyon sürüşleri (bozuk kayıt atlanır). */
+    fun calibrationRecords(): List<RoadCalibrationRecord> =
+        runCatching { RoadCalibrationService.store(app).sessions() }.getOrDefault(emptyList()).mapNotNull { runCatching { RoadCalibrationRecord.fromJson(it) }.getOrNull() }
+
+    /** Rota hesabının yüzey girdisi: kesim özetleri ve sokak puanından 0–1 kalite (E11); ölçüm yoksa boş. */
+    fun routeInputs(): SurfaceInputs {
+        val pieces = store.summaries
+        if (pieces.isEmpty()) return SurfaceInputs.NONE
+        val n = names()
+        return SurfaceInputs(pieces, StreetScores.routeQuality(pieces, calibrationRecords()) { n[it] })
     }
 
     private fun onRow(row: SurfaceRow) {
