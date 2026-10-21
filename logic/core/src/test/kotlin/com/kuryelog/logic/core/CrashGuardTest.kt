@@ -85,6 +85,8 @@ class CrashGuardTest {
                 if (f.name == "LinkService.kt") return@forEach
                 // Ekran paylaşımı servisi (A9.1) vardiya servisi değil; her başlatışı startForeground'a varır (aşağıda).
                 if (f.name == "CaptureService.kt") return@forEach
+                // Yol kalibrasyonu servisi (A10.4b) vardiya servisi değil; her başlatışı startForeground'a varır (aşağıda).
+                if (f.name == "RoadCalibrationService.kt") return@forEach
                 calls++
                 assertTrue("${f.name}: $call", call.contains("ACTION_START") || call.contains("Home.startIntent(") || call.contains("ScooterService.startIntent("))
             }
@@ -101,6 +103,11 @@ class CrashGuardTest {
         val navStart = RepoSource.body(navOnly, "override fun onStartCommand(", "companion object")
         assertTrue(navStart.contains("startForeground(NotificationIds.NAV_ONLY_FGS"))
         assertEquals(1, Regex("""stopSelf\(\)""").findAll(navStart.substringBefore("startForeground(")).count())
+        // A10.4b: yol kalibrasyonu servisi — hiçbir ret yolu startForeground'dan önce stopSelf yapmaz.
+        val calibration = RepoSource.text("map/src/main/kotlin/com/kuryelog/app/map/RoadCalibrationService.kt")
+        val calStart = RepoSource.body(calibration, "override fun onStartCommand(", "fun command(")
+        assertTrue(calStart.contains("startForeground(\n                NotificationIds.CALIBRATION_FGS"))
+        assertEquals(0, Regex("""stopSelf\(\)""").findAll(calStart.substringBefore("startForeground(")).count())
         val link = RepoSource.text("link/src/main/kotlin/com/kuryelog/app/link/LinkService.kt")
         val linkStart = RepoSource.body(link, "override fun onStartCommand(", "companion object")
         assertTrue(linkStart.contains("startForeground(NotificationIds.LINK_FGS"))

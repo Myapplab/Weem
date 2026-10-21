@@ -183,9 +183,9 @@ class RoadCalibrationService : Service(), SensorEventListener {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent == null || !permitted(this) || !overlayPermitted(this)) { stopSelf(); return START_NOT_STICKY }
-        try {
-            val nm = getSystemService(NotificationManager::class.java)
+        // Android: startForegroundService ile başlayan servis startForeground'a varmadan durursa uygulama kapanır (CrashGuardTest); bu yüzden her ret yolu önce buraya gelir.
+        val nm = getSystemService(NotificationManager::class.java)
+        val started = try {
             nm.createNotificationChannel(NotificationChannel(CHANNEL, "Yol kalitesi kalibrasyonu", NotificationManager.IMPORTANCE_LOW))
             val open = packageManager.getLaunchIntentForPackage(packageName)?.let { PendingIntent.getActivity(this, 0, it, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE) }
             val close = PendingIntent.getService(this, 1, Intent(this, RoadCalibrationService::class.java).putExtra("close", true), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
@@ -196,11 +196,22 @@ class RoadCalibrationService : Service(), SensorEventListener {
                     .addAction(Notification.Action.Builder(null, "Paneli kapat", close).build()).build(),
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION,
             )
-            if (intent.getBooleanExtra("close", false)) { command("hide"); return START_NOT_STICKY }
-            if (overlay == null) overlay = RoadCalibrationOverlay(this) { action, args -> command(action, args) }.also { it.show() }
-        } catch (_: Exception) {
+            true
+        } catch (_: Exception) { false }
+        if (!started) {
             stateFlow.value = CalibrationState(CalibrationPhase.ERROR, false, message = "Panel/ön plan servisi açılamadı; izinleri kontrol et")
             stopSelf(); return START_NOT_STICKY
+        }
+        if (intent == null || !permitted(this) || !overlayPermitted(this)) {
+            stateFlow.value = CalibrationState(CalibrationPhase.ERROR, false, message = "Konum ve diğer uygulamaların üzerinde gösterme izni gerekli")
+            stopForeground(STOP_FOREGROUND_REMOVE); stopSelf(); return START_NOT_STICKY
+        }
+        if (intent.getBooleanExtra("close", false)) { command("hide"); return START_NOT_STICKY }
+        try {
+            if (overlay == null) overlay = RoadCalibrationOverlay(this) { action, args -> command(action, args) }.also { it.show() }
+        } catch (_: Exception) {
+            stateFlow.value = CalibrationState(CalibrationPhase.ERROR, false, message = "Panel açılamadı; izinleri kontrol et")
+            stopForeground(STOP_FOREGROUND_REMOVE); stopSelf(); return START_NOT_STICKY
         }
         val args = mapOf<String, Any?>("qualityLevel" to intent.getIntExtra("qualityLevel", 0), "seconds" to intent.getIntExtra("seconds", 0), "mode" to intent.getStringExtra("mode"), "profile" to intent.getStringExtra("profile"))
         val startNow = intent.getBooleanExtra("start", false)
