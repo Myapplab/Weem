@@ -4,7 +4,7 @@ Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 
 
 ## 2026-10-21 — A10.4a Siparişler: çevrimiçi oturumlar + Araçlar (Claude Sonnet · high; dal `ccr-03d281e4-dglbwh`)
 - Yapılan: S20/S32 (WEEM 1.1). `logic/orders` `OrdersSessions` (+ `SessionsPage.cards()`) ve `OrdersTools`; `OrdersSource` `todayTrips/targets/lastSeen/markCancellationObservation`; `OrderFlow.markCancellationObservation` Boolean. `:app` `SessionsPageView`, `ToolsCard`, `SplitScreen` (350 ms sonra `LAUNCH_ADJACENT`), `OrdersAccess.withTools` (`Store.targets` + `CaptureState.seen`). Araçlar yalnız vardiya açıkken; müşteri verisi sayfada yok.
-- Doğrulama: yeni testler `OrdersSessionsTest` 7, `OrdersToolsTest` 7, `OrdersTabWiringTest` +1, `:app` `OrdersTabTest` +3; `-p logic test` yeşil; `:app` lint 0 hata; CI: PR sonucu aşağıda/ISLER. Telefonda denenmedi.
+- Doğrulama: yeni testler `OrdersSessionsTest` 7, `OrdersToolsTest` 7, `OrdersTabWiringTest` +1, `:app` `OrdersTabTest` +3; `-p logic test` yeşil; `:app` lint 0 hata; CI: PR checks (logic + Android testleri, lint, APK). Telefonda denenmedi.
 - Açık kalan: bölünmüş ekran üretici/Android sürümüne bağlı (bazı telefonlar `LAUNCH_ADJACENT`'i yok sayar → yönerge metni çıkar); AZ metinleri Rawstats'tan alındı (onay M-S20-1 yok, yeni metin "Gözlem kaydedilemedi. Vardiya açık olmalı." AZ onayı bekler).
 - Sıradaki: A10.4 (K, kullanıcı geçişi) → A10.4b (Y13 + Y14, Opus · high) → A10.5.
 
