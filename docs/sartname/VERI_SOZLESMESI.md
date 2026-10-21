@@ -27,6 +27,7 @@ Ayrıntılı alan listeleri ve satır başvuruları: `docs/sartname/bulgular/` (
 | `com.kuryelog.app.RawstatsApp` | Application; çökme kaydı kurulumu | RS manifest:30 | ad serbest (önerilen `WeemApp`) |
 | `.MainActivity` | exported, MAIN/LAUNCHER | RS manifest:40-46 | ad serbest; tek Activity (Compose); YolGo intent filtreleri buraya (Bölüm 4) |
 | **`com.kuryelog.app.WatchService`** | AccessibilityService, exported, `BIND_ACCESSIBILITY_SERVICE`, meta-data `android.accessibilityservice` → `@xml/accessibility_config` | RS manifest:52-62 | **aynı ad** (izin bileşen adına bağlı) |
+| **`com.kuryelog.app.remote.TouchService`** (yeni, A9.2) | AccessibilityService ("WEEM uzaktan dokunuş"), exported, `BIND_ACCESSIBILITY_SERVICE`, meta-data → `@xml/remote_touch_config` (yalnız `canPerformGestures`) | — (N2 yeni) | **bundan sonra aynı ad** (izin bileşen adına bağlı; `REMOTE.md` 2.1) |
 | **`com.kuryelog.app.NotifService`** | NotificationListenerService, exported, `BIND_NOTIFICATION_LISTENER_SERVICE` | RS manifest:65-72 | **aynı ad** |
 | `.GpsService` | exported=false, `foregroundServiceType="location"` (vardiya) | RS manifest:75-77 | ad serbest; tür aynı |
 | `.OfferFeedProvider` | authority `com.kuryelog.app.economics`, exported=false, grant yolları `/offers/current`, `/offers/v2/current`, `/logs/v3/day/*`, `/scooter/v1/live`, `/shift/v1/state` | RS manifest:78-88 | kalkar (S7) |
@@ -288,7 +289,7 @@ Tam dosya yazımı `.tmp` + `rename`, ekleme dosyaları ekleme kipinde; okunamay
 
 Tek tablo `:core` `NotificationIds` (tam tablo `CORE.md` 3.3): her bildirim sabit numara ya da ayrılmış, çakışmayan aralık; test çakışmayı reddeder. Eski numaralar korunur; iki değişiklik: ekran okuma uyarısı **5103 → 5104** (5103 H4 vardiya kesintisinde kalır), nakit bahşiş **4000 + (h & 0xFFF) → 10000 + (h & 0xFFF)** (10000–14095). 7400 (YolGo gün kaydı servisi) kullanılmaz: vardiya servisiyle (1) birleşir. 7401 (YolGo veri seti servisi, `DATASET_FGS`) de kullanılmaz: veri seti `:orders`'ın teklif akışında, servissiz (A6.1; `MAP.md` 13.11). Aşama 6 numaraları ve kanalları `MAP.md` 14.6 (öneri: 7402 `NAV_ONLY_FGS`, kanal `navigation`, SORU-N4). Gün sonu iptali aralık değil açık liste. Kanal kimlikleri aynı kalır (kullanıcının kanal ayarları kanal kimliğine bağlı); yeni kanallar `yeni`.
 
-**A9.1 (yeni):** 7404 `REMOTE_FGS` (kanal `remote` "Uzaktan kullanım", DEFAULT; ekran paylaşımı servisi, ongoing, "Bitir"), 7405 `REMOTE_ASK` (aynı kanal, 60 sn; öteki telefon ekranı görmek istiyor). Uzaktan kullanım kalıcı veri yazmaz (anahtarlar yalnız bellekte; `REMOTE.md` 1.3).
+**A9.1 (yeni):** 7404 `REMOTE_FGS` (kanal `remote` "Uzaktan kullanım", DEFAULT; ekran paylaşımı servisi, ongoing, "Bitir"), 7405 `REMOTE_ASK` (aynı kanal, 60 sn; öteki telefon ekranı görmek istiyor). Uzaktan kullanım kalıcı veri yazmaz (anahtarlar yalnız bellekte; `REMOTE.md` 1.3). A9.2: yeni bildirim yok; oturum işareti erişilebilirlik üst penceresi (`TouchService`, `REMOTE.md` 2.4); dokunuş kaydedilmez.
 
 ## 9. Gizlilik sınırı (WEEM'de korunur)
 

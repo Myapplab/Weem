@@ -5,7 +5,7 @@ import com.kuryelog.logic.link.P256
 import java.security.SecureRandom
 import java.util.UUID
 
-/** İzleyen tarafın görünümü (REMOTE.md 1.6). */
+/** İzleyen tarafın görünümü (REMOTE.md 1.6, 2.4); [control]: oynarken paylaşanda dokunuş açık (dokunuş ve sistem tuşları gider). */
 data class ViewerView(
     val state: State,
     val width: Int = 0,
@@ -13,6 +13,7 @@ data class ViewerView(
     val fps: Int = 0,
     val kbps: Int = 0,
     val ended: EndReason? = null,
+    val control: Boolean = false,
 ) {
     enum class State { IDLE, ASKING, CONSENT, CONNECTING, PLAYING, ENDED }
     enum class EndReason { REFUSED, UNAVAILABLE, NO_ANSWER, NO_WIFI, HOST, LOST }
@@ -39,6 +40,9 @@ class ViewerMachine(private val cfg: RemoteConfig = RemoteConfig(), private val 
         class Bytes(val conn: Int, val bytes: ByteArray, val len: Int = bytes.size) : Event
         class Closed(val conn: Int) : Event
         object DecoderError : Event
+        /** Görüntüye dokunuş; [x], [y] görüntüye göre 0..[TouchLimits.NORM]; [atMs] olay zamanı (Tick ile aynı saat). */
+        class Pointer(val kind: PointerKind, val id: Int, val x: Int, val y: Int, val atMs: Long) : Event
+        class Action(val action: GlobalAction) : Event
         object Tick : Event
     }
 
@@ -55,7 +59,11 @@ class ViewerMachine(private val cfg: RemoteConfig = RemoteConfig(), private val 
         class State(val view: ViewerView) : Command
     }
 
+    enum class PointerKind { DOWN, MOVE, UP, CANCEL }
+
     private val out = ArrayList<Command>()
+    private val recorder = TouchRecorder()
+    private var hostTouch = false
     private var nowMs = 0L
     private var peerHost: String? = null
     private var maxSide = cfg.maxSide
@@ -109,6 +117,8 @@ class ViewerMachine(private val cfg: RemoteConfig = RemoteConfig(), private val 
             is Event.Bytes -> onBytes(e)
             is Event.Closed -> if (e.conn == conn) lost()
             Event.DecoderError -> if (configured) { needKey = true; requestKey(force = true) }
+            is Event.Pointer -> onPointer(e)
+            is Event.Action -> if (canControl()) endpoint?.send(StreamMsg.Action(e.action.code))
             Event.Tick -> onTick()
         }
         emitView()
@@ -213,6 +223,10 @@ class ViewerMachine(private val cfg: RemoteConfig = RemoteConfig(), private val 
             when (m) {
                 is StreamMsg.Config -> onConfig(m)
                 is StreamMsg.Frame -> onFrame(m)
+                is StreamMsg.Control -> {
+                    hostTouch = m.touch
+                    if (!m.touch) recorder.reset()
+                }
                 is StreamMsg.Bye -> {
                     if (m.reason == StreamMsg.BYE_ENDED) finish(ViewerView.EndReason.HOST, sendEnd = false) else lost()
                     return
@@ -251,6 +265,28 @@ class ViewerMachine(private val cfg: RemoteConfig = RemoteConfig(), private val 
         failures = 0
         reasked = false
         if (state != ViewerView.State.PLAYING) set(ViewerView.State.PLAYING)
+    }
+
+    /** Dokunuş yalnız görüntü oynarken ve paylaşan dokunuşu açmışken gider. */
+    private fun canControl() = state == ViewerView.State.PLAYING && endpoint?.authenticated == true && hostTouch
+
+    private fun onPointer(e: Event.Pointer) {
+        if (!canControl()) {
+            recorder.reset()
+            return
+        }
+        val parts = when (e.kind) {
+            PointerKind.DOWN -> recorder.down(e.id, e.x, e.y, e.atMs, width, height)
+            PointerKind.MOVE -> recorder.move(e.id, e.x, e.y, e.atMs)
+            PointerKind.UP -> recorder.up(e.id, e.x, e.y, e.atMs)
+            PointerKind.CANCEL -> recorder.cancel(e.atMs)
+        }
+        sendTouch(parts)
+    }
+
+    private fun sendTouch(parts: List<TouchPart>) {
+        val ep = endpoint ?: return
+        for (p in parts) ep.send(StreamMsg.Touch(p))
     }
 
     private fun requestKey(force: Boolean = false) {
@@ -292,6 +328,8 @@ class ViewerMachine(private val cfg: RemoteConfig = RemoteConfig(), private val 
         conn?.let { out += Command.Close(it) }
         conn = null
         endpoint = null
+        hostTouch = false
+        recorder.reset()
         waitingHost = false
         receivedBytes = 0
         expectedSeq = null
@@ -324,6 +362,7 @@ class ViewerMachine(private val cfg: RemoteConfig = RemoteConfig(), private val 
         }
         if (conn != null && nowMs - lastRxMs >= cfg.deadAfterMs) lost()
         reconnectAtMs?.let { if (nowMs >= it) connect() }
+        if (canControl()) sendTouch(recorder.tick(nowMs))
         if (endpoint?.authenticated == true && nowMs - lastAckMs >= cfg.ackEveryMs) ack()
         if (nowMs - secondStartMs >= 1_000) {
             val span = maxOf(1L, nowMs - secondStartMs)
@@ -343,7 +382,8 @@ class ViewerMachine(private val cfg: RemoteConfig = RemoteConfig(), private val 
 
     private fun emitView() {
         val playing = state == ViewerView.State.PLAYING
-        val v = ViewerView(state, if (playing) width else 0, if (playing) height else 0, if (playing) fps else 0, if (playing) kbps else 0, endReason)
+        val v = ViewerView(state, if (playing) width else 0, if (playing) height else 0, if (playing) fps else 0, if (playing) kbps else 0, endReason,
+            control = playing && hostTouch)
         if (v != lastView) {
             lastView = v
             out += Command.State(v)

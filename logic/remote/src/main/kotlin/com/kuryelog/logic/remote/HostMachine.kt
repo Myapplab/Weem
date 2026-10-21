@@ -5,8 +5,8 @@ import com.kuryelog.logic.link.P256
 import java.security.SecureRandom
 import java.util.UUID
 
-/** Paylaşan tarafın görünümü (REMOTE.md 1.6). */
-data class HostView(val state: State, val watched: Boolean = false, val kbps: Int = 0) {
+/** Paylaşan tarafın görünümü (REMOTE.md 1.6, 2.4); [touch]: dokunuş servisi (`TouchService`) açık. */
+data class HostView(val state: State, val watched: Boolean = false, val kbps: Int = 0, val touch: Boolean = false) {
     enum class State { OFF, CONSENT, SHARING }
 
     companion object {
@@ -44,6 +44,8 @@ class HostMachine(private val cfg: RemoteConfig = RemoteConfig(), private val ra
         class EncoderConfig(val width: Int, val height: Int, val csd: ByteArray) : Event
         class EncoderFrame(val data: ByteArray, val ptsUs: Long, val key: Boolean) : Event
         object EncoderFailed : Event
+        /** Dokunuş servisi bağlandı / kalktı (kullanıcı Erişilebilirlik ayarından açar). */
+        class TouchAvailable(val on: Boolean) : Event
         object Tick : Event
     }
 
@@ -62,6 +64,9 @@ class HostMachine(private val cfg: RemoteConfig = RemoteConfig(), private val ra
         class Write(val conn: Int, val bytes: ByteArray) : Command
         class Close(val conn: Int) : Command
         object StopProjection : Command
+        /** Dokunuş servisi bu parçayı oynatsın (önceki bitince; REMOTE.md 2.3). */
+        class Gesture(val part: GesturePart) : Command
+        class Global(val action: GlobalAction) : Command
         class State(val view: HostView) : Command
     }
 
@@ -99,6 +104,8 @@ class HostMachine(private val cfg: RemoteConfig = RemoteConfig(), private val ra
     private var bytesThisSecond = 0L
     private var secondStartMs = 0L
     private var lastView = HostView.OFF
+    private var touch = false
+    private val player = TouchPlayer(cfg.touchStallMs, cfg.maxGestureMs)
 
     fun drain(): List<Command> = ArrayList(out).also { out.clear() }
 
@@ -126,6 +133,7 @@ class HostMachine(private val cfg: RemoteConfig = RemoteConfig(), private val ra
             is Event.EncoderConfig -> onConfig(e)
             is Event.EncoderFrame -> onFrame(e)
             Event.EncoderFailed -> onEncoderFailed()
+            is Event.TouchAvailable -> onTouchAvailable(e.on)
             Event.Tick -> onTick()
         }
         emitView()
@@ -251,6 +259,8 @@ class HostMachine(private val cfg: RemoteConfig = RemoteConfig(), private val ra
                     flow?.ack(m.bytes)
                 }
                 StreamMsg.KeyRequest -> requestKey()
+                is StreamMsg.Touch -> if (touch) gestures(player.part(m.part, screenW, screenH, nowMs))
+                is StreamMsg.Action -> if (touch) GlobalAction.of(m.code)?.let { out += Command.Global(it) }
                 is StreamMsg.Bye -> { closeConn(c, null); return }
                 else -> Unit
             }
@@ -260,6 +270,7 @@ class HostMachine(private val cfg: RemoteConfig = RemoteConfig(), private val ra
     private fun onAuthenticated(c: Conn) {
         active?.let { if (it !== c) closeConn(it, StreamMsg.BYE_REPLACED) }
         active = c
+        c.endpoint.send(StreamMsg.Control(touch))
         flow = FlowControl(encoding?.bitrate ?: session?.let { s -> CaptureGeometry.of(screenW, screenH, s.maxSide, attempt)?.bitrate } ?: CaptureGeometry.MIN_BPS)
             .also { it.reset(nowMs) }
         if (encoding == null) {
@@ -283,6 +294,7 @@ class HostMachine(private val cfg: RemoteConfig = RemoteConfig(), private val ra
     }
 
     private fun detach() {
+        releaseTouch()
         active = null
         flow = null
         stopEncoder()
@@ -346,7 +358,26 @@ class HostMachine(private val cfg: RemoteConfig = RemoteConfig(), private val ra
         out += Command.RequestKey
     }
 
+    private fun onTouchAvailable(on: Boolean) {
+        if (on == touch) return
+        // Kapanınca dokunulamaz, açılınca basılı parmak yok: durum yalnız silinir.
+        player.reset()
+        touch = on
+        active?.endpoint?.send(StreamMsg.Control(on))
+    }
+
+    /** Basılı parmaklar kalkar (akış bitti); servis yoksa yalnız durum silinir. */
+    private fun releaseTouch() {
+        val lift = player.reset()
+        if (touch) gestures(lift)
+    }
+
+    private fun gestures(parts: List<GesturePart>) {
+        for (p in parts) out += Command.Gesture(p)
+    }
+
     private fun onTick() {
+        if (touch) gestures(player.tick(nowMs))
         for (c in conns.values.toList()) {
             when {
                 !c.endpoint.authenticated && nowMs - c.openedMs >= cfg.authTimeoutMs -> closeConn(c, null)
@@ -370,9 +401,9 @@ class HostMachine(private val cfg: RemoteConfig = RemoteConfig(), private val ra
 
     private fun emitView() {
         val v = when (projection) {
-            Projection.NONE -> HostView.OFF
-            Projection.PENDING -> HostView(HostView.State.CONSENT)
-            Projection.ACTIVE -> HostView(HostView.State.SHARING, watched = active != null, kbps = if (active != null) kbps else 0)
+            Projection.NONE -> HostView(HostView.State.OFF, touch = touch)
+            Projection.PENDING -> HostView(HostView.State.CONSENT, touch = touch)
+            Projection.ACTIVE -> HostView(HostView.State.SHARING, watched = active != null, kbps = if (active != null) kbps else 0, touch = touch)
         }
         if (v != lastView) {
             lastView = v

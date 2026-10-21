@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Uzaktan dokunuş (REMOTE.md 2.3): yalnız dokunuş yetkisi. Ekran içeriği okumaz (canRetrieveWindowContent yok), olay dinlemez,
+     ekran görüntüsü almaz. Okuma servisi (capture: accessibility_config.xml) dokunuş yetkisi almaz (NoGestureTest). -->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:canPerformGestures="true"
+    android:description="@string/remote_touch_desc"
+    android:notificationTimeout="0" />

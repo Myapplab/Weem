@@ -86,8 +86,9 @@ class StreamHello(val session: UUID, nonce: ByteArray) {
 }
 
 /**
- * Şifreli iç iletiler (`tür u8 · gövde`; REMOTE.md 1.4). Paylaşan → izleyen: [Config], [Frame], [Ping], [Bye]; izleyen → paylaşan:
- * [Ack], [KeyRequest], [Bye]. Bilinmeyen tür [Unknown] olur (yeni sürüm iletisi, ör. A9.2 dokunuşu) ve yok sayılır.
+ * Şifreli iç iletiler (`tür u8 · gövde`; REMOTE.md 1.4, 2.2). Paylaşan → izleyen: [Config], [Frame], [Ping], [Bye], [Control];
+ * izleyen → paylaşan: [Ack], [KeyRequest], [Bye], [Touch], [Action]. Bilinmeyen tür [Unknown] olur (yeni sürüm iletisi; A9.1 sürümü
+ * A9.2'nin dokunuşunu böyle yok sayar).
  */
 sealed interface StreamMsg {
     class Config(val width: Int, val height: Int, val csd: ByteArray) : StreamMsg
@@ -96,6 +97,11 @@ sealed interface StreamMsg {
     class Bye(val reason: Int) : StreamMsg
     class Ack(val seq: Long, val bytes: Long) : StreamMsg
     object KeyRequest : StreamMsg
+    /** Paylaşanda dokunuş servisi açık mı (izleyen düğmeleri buna göre gösterir). */
+    class Control(val touch: Boolean) : StreamMsg
+    class Touch(val part: TouchPart) : StreamMsg
+    /** Sistem tuşu; [code] [GlobalAction] (bilinmeyen kod paylaşanda yok sayılır). */
+    class Action(val code: Int) : StreamMsg
     class Unknown(val type: Int) : StreamMsg
 
     companion object {
@@ -103,9 +109,12 @@ sealed interface StreamMsg {
         const val FRAME = 11
         const val PING = 12
         const val BYE = 13
+        const val CONTROL = 14
         const val ACK = 20
         const val KEY = 21
         const val VIEWER_BYE = 22
+        const val TOUCH = 23
+        const val ACTION = 24
 
         /** [Bye] nedenleri. */
         const val BYE_ENDED = 1
@@ -121,6 +130,9 @@ sealed interface StreamMsg {
             is Bye -> byteArrayOf((if (fromHost) BYE else VIEWER_BYE).toByte(), m.reason.toByte())
             is Ack -> ByteBuffer.allocate(13).put(ACK.toByte()).putInt(m.seq.toInt()).putLong(m.bytes).array()
             KeyRequest -> byteArrayOf(KEY.toByte())
+            is Control -> byteArrayOf(CONTROL.toByte(), (if (m.touch) 1 else 0).toByte())
+            is Touch -> encodeTouch(m.part)
+            is Action -> byteArrayOf(ACTION.toByte(), m.code.toByte())
             is Unknown -> byteArrayOf(m.type.toByte())
         }
 
@@ -144,11 +156,55 @@ sealed interface StreamMsg {
                 fromHost && t == BYE || !fromHost && t == VIEWER_BYE -> if (b.size == 2) Bye(b[1].toInt() and 0xFF) else null
                 !fromHost && t == ACK -> if (b.size != 13) null else Ack(bb.int.toLong() and 0xFFFFFFFFL, bb.long)
                 !fromHost && t == KEY -> if (b.size == 1) KeyRequest else null
+                fromHost && t == CONTROL -> if (b.size == 2) Control((b[1].toInt() and 1) == 1) else null
+                !fromHost && t == TOUCH -> decodeTouch(bb)?.let(::Touch)
+                !fromHost && t == ACTION -> if (b.size == 2) Action(b[1].toInt() and 0xFF) else null
                 t in KNOWN -> null
                 else -> Unknown(t)
             }
         }
 
-        private val KNOWN = setOf(CONFIG, FRAME, PING, BYE, ACK, KEY, VIEWER_BYE)
+        private val KNOWN = setOf(CONFIG, FRAME, PING, BYE, CONTROL, ACK, KEY, VIEWER_BYE, TOUCH, ACTION)
+
+        /**
+         * `TOUCH` (REMOTE.md 2.2): hareket u16 · parça u16 · görüntü G u16 · Y u16 · süre ms u16 · çizgi sayısı u8, her çizgi:
+         * kimlik u8 · bayrak u8 (bit 0 başlar, bit 1 biter) · nokta sayısı u8 · noktalar (x u16, y u16, t u16).
+         */
+        private fun encodeTouch(p: TouchPart): ByteArray {
+            val size = 1 + 11 + p.strokes.sumOf { 3 + 6 * it.points.size }
+            val bb = ByteBuffer.allocate(size).put(TOUCH.toByte()).putShort(p.gesture.toShort()).putShort(p.index.toShort())
+                .putShort(p.frameW.toShort()).putShort(p.frameH.toShort()).putShort(p.durationMs.toShort()).put(p.strokes.size.toByte())
+            for (s in p.strokes) {
+                bb.put(s.id.toByte()).put(((if (s.begins) 1 else 0) or (if (s.ends) 2 else 0)).toByte()).put(s.points.size.toByte())
+                for (pt in s.points) bb.putShort(pt.x.toShort()).putShort(pt.y.toShort()).putShort(pt.t.toShort())
+            }
+            return bb.array()
+        }
+
+        /** Yapı bozuksa null (anlam denetimi paylaşanda, [TouchPlayer]). */
+        private fun decodeTouch(bb: ByteBuffer): TouchPart? {
+            if (bb.remaining() < 11) return null
+            fun u16() = bb.short.toInt() and 0xFFFF
+            fun u8() = bb.get().toInt() and 0xFF
+            val gesture = u16()
+            val index = u16()
+            val w = u16()
+            val h = u16()
+            val duration = u16()
+            val n = u8()
+            if (n == 0 || n > TouchLimits.MAX_POINTERS) return null
+            val strokes = ArrayList<TouchStroke>(n)
+            repeat(n) {
+                if (bb.remaining() < 3) return null
+                val id = u8()
+                val flags = u8()
+                val count = u8()
+                if (count == 0 || count > TouchLimits.MAX_POINTS || bb.remaining() < 6 * count) return null
+                val pts = List(count) { TouchPoint(u16(), u16(), u16()) }
+                strokes += TouchStroke(id, flags and 1 != 0, flags and 2 != 0, pts)
+            }
+            if (bb.hasRemaining()) return null
+            return TouchPart(gesture, index, w, h, duration, strokes)
+        }
     }
 }
