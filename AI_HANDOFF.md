@@ -5,7 +5,7 @@ Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 
 ## 2026-10-21 — A9.2 bitti: uzaktan dokunuş, oturum işareti, bitirme (Claude Opus · high; dal `ccr-23fdbfa6-pw6gzn`)
 - Yapılan: saf `logic/remote/Touch.kt` (`TouchRecorder`, `TouchPlayer`, `GlobalAction`), akışa `TOUCH`/`ACTION`/`CONTROL`, `HostMachine`/`ViewerMachine` dokunuş; `:remote` `TouchService` (ayrı erişilebilirlik servisi, yalnız `canPerformGestures`; parçalar `dispatchGesture` + `continueStroke` ile sırayla; üstte kırmızı oturum işareti, tek dokunuş paylaşımı bitirir); `RemoteHub.pointer/action/touchAvailable`; `:app` Uzaktan sekmesinde dokunuş + tuş satırı + servis durumu. `REMOTE.md` 2, `VERI_SOZLESMESI` (yeni sabit ad `com.kuryelog.app.remote.TouchService`).
 - Önemli karar: dokunuş parmak kalkmadan 100 ms'lik parçalarla akar (sürükleme canlı); paylaşan bozuk/sırası kaçmış/yön değişmiş parçada ve 1 sn sessizlikte parmağı kaldırır; dokunuş yalnız paylaşım açık + doğrulanmış izleyen + oynayan görüntü + servis açıkken.
-- Doğrulama: `-p logic test` 1.910 test, 0 kırmızı (`logic/remote` 82); `:app` 84 test; `:remote`/`:app` lint 0 hata (yerelde). Telefonda denenmedi.
+- Doğrulama: `-p logic test` 1.936 test (A8.4 ile birleşik), 0 kırmızı (`logic/remote` 82); `:app` 84 test; `:remote`/`:app` lint 0 hata (yerelde). Telefonda denenmedi.
 - Açık kalan: `REMOTE.md` 2.6 (`continueStroke` cihaz farkları, Android 13+ kısıtlı ayar, işaret konumu), AZ metin onayı M-R-2; `TouchService` kurulum izin listesinde yok.
 - Sıradaki: Aşama 9 sonu `/code-review high` + APK bir kez; sonra A10.1.
 
