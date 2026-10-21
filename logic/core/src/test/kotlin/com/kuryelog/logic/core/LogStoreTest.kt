@@ -91,4 +91,16 @@ class LogStoreTest {
         assertEquals("tick: NoClassDefFoundError: X", s.lastError)
     }
 
+    /** A10.2: `errors.jsonl` tam yedeğe girer; Android `JSONException` ayrıştırılan satırın tamamını alıntılar. Yapay numara. */
+    @Test fun errorLogNeverCarriesACustomerPhoneOrTheWholeParsedLine() {
+        val s = store()
+        val line = "{\"name\":\"Test Müştəri\",\"phone\":\"+994 50 123 45 67\",\"note\":\"" + "x".repeat(400)
+        s.failure("courier_db", RuntimeException("Unterminated string at character 400 of $line\nnext line"))
+        val error = JSONObject(File(temp.root, "logs/2026-10-17/errors.jsonl").readText().trim()).getString("error")
+        assertFalse(error, error.contains("123 45 67"))
+        assertTrue(error, error.contains("[tel]"))
+        assertFalse(error.contains("next line"))
+        assertTrue(error, error.length <= "courier_db: RuntimeException: ".length + 200)
+        assertEquals(error, s.lastError)
+    }
 }

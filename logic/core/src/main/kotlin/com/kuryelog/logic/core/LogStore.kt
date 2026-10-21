@@ -59,9 +59,12 @@ class LogStore(
         return JSONObject().put("lat", l.lat).put("lon", l.lon).put("acc", l.accM).put("age_s", (now() - l.atMs) / 1000)
     }
 
-    /** Çökmeyen hata: [lastError] ve `errors.jsonl` satırı `{t, source, error}` (CORE.md 4.2). */
+    /**
+     * Çökmeyen hata: [lastError] ve `errors.jsonl` satırı `{t, source, error}` (CORE.md 4.2). `errors.jsonl` tam yedeğe girer: mesaj
+     * [Phones.safeMessage] ile kısaltılır ve telefonu gizlenir (A10.2).
+     */
     override fun failure(source: String, e: Throwable) {
-        val error = "$source: ${e.javaClass.simpleName}: ${e.message}"
+        val error = "$source: ${e.javaClass.simpleName}: ${Phones.safeMessage(e.message)}"
         lastError = error
         append("errors.jsonl", JSONObject().put("t", ts()).put("source", source).put("error", error).toString())
     }

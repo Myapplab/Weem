@@ -92,4 +92,13 @@ class CrashReportTest {
         assertEquals(10, kept.size)
         assertEquals(big.last(), kept.last())
     }
+
+    /** A10.2: çökme kaydı paylaşılır; mesajdaki ve neden satırlarındaki telefon gizlenir. Yapay numara. */
+    @Test fun crashReportHidesPhoneNumbers() {
+        val e = RuntimeException("wrap", NumberFormatException("For input string: \"+994 50 123 45 67\""))
+        val j = CrashReport.json(1L, "v", "main", NumberFormatException("For input string: \"0501234567\"").apply { initCause(e) })
+        assertEquals("For input string: \"[tel]\"", j.getString("message"))
+        assertFalse(j.getString("stack"), j.getString("stack").contains("123 45 67"))
+        assertFalse(j.getString("stack").contains("0501234567"))
+    }
 }

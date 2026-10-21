@@ -1,5 +1,7 @@
 package com.kuryelog.logic.capture
 
+import com.kuryelog.logic.core.Phones
+
 /**
  * Customers often leave the structured address fields empty and type everything
  * into a free-text note ("BLOCK B (Domofon kodu: 68) Mertebe 6 ..."). These rules
@@ -48,45 +50,11 @@ object NoteFields {
         rx("${B}bina\\s*[:=\\-–]?\\s*(\\d{1,3}[a-z]?|[a-z])$E")
     )
 
-    // Azerbaijani mobile/landline prefixes; a number must be 9 digits after the country/trunk code.
-    private val azPhone = Regex("(?<![\\d+])\\(?\\s*(?:\\+?\\s*994\\s*|0)?\\s*\\(?\\s*(10|12|50|51|55|60|70|77|99)\\s*\\)?[\\s.\\-]*(\\d{3})[\\s.\\-]*(\\d{2})[\\s.\\-]*(\\d{2})(?!\\d)")
-    private val intlPhone = Regex("(?<![\\d])\\+\\s*(?!994)(\\d[\\d\\s().\\-]{8,16}\\d)")
+    /** Phone numbers in display form (+994 55 123 45 67); the rules live in [Phones] (`:core`, shared with the error log). */
+    fun phones(raw: String?): List<String> = Phones.find(raw)
 
-    /** Phone numbers in display form (+994 55 123 45 67). Short codes and IDs are ignored. */
-    /** Dialers wrap numbers in direction marks and may use no-break spaces ("\u202A+994 50 …\u202C"). */
-    private fun plain(s: String) = s.replace(Regex("[\u200E\u200F\u202A-\u202E\u2066-\u2069]"), "").replace(Regex("[\u00A0\u2007\u202F]"), " ")
-    fun phones(raw: String?): List<String> {
-        if (raw.isNullOrBlank()) return emptyList()
-        val text = plain(raw)
-        val out = LinkedHashSet<String>()
-        for (m in azPhone.findAll(text)) {
-            val raw = m.value
-            val digits = raw.filter(Char::isDigit)
-            // Bare 9 digits are accepted only when written with a recognised operator code.
-            val prefixed = raw.trimStart().let { it.startsWith("+") || it.startsWith("994") || it.startsWith("0") || it.startsWith("(") }
-            if (!prefixed && digits.length != 9) continue
-            val (op, a, b, c) = m.destructured
-            out += "+994 $op $a $b $c"
-        }
-        for (m in intlPhone.findAll(text)) {
-            val digits = m.groupValues[1].filter(Char::isDigit)
-            if (digits.length in 9..15) out += "+$digits"
-        }
-        return out.toList()
-    }
-
-    /** Replaces phone numbers before anything is written to disk. */
-    fun redact(raw: String?): String? {
-        if (raw == null) return null
-        val text = plain(raw)
-        var s = azPhone.replace(text) { m ->
-            val digits = m.value.filter(Char::isDigit)
-            val prefixed = m.value.trimStart().let { it.startsWith("+") || it.startsWith("994") || it.startsWith("0") || it.startsWith("(") }
-            if (!prefixed && digits.length != 9) m.value else m.value.takeWhile { it.isWhitespace() } + "[tel]"
-        }
-        s = intlPhone.replace(s) { m -> if (m.groupValues[1].count(Char::isDigit) in 9..15) "[tel]" else m.value }
-        return s
-    }
+    /** Replaces phone numbers before anything is written to disk ([Phones.redact]). */
+    fun redact(raw: String?): String? = raw?.let(Phones::redact)
 
     private fun first(rules: List<Regex>, n: String): String? = rules.firstNotNullOfOrNull { it.find(n)?.groupValues?.get(1)?.trim() }
 
