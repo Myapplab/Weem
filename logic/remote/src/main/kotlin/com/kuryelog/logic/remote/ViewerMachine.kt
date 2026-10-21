@@ -76,6 +76,7 @@ class ViewerMachine(private val cfg: RemoteConfig = RemoteConfig(), private val 
     private var port = 0
     private var reasked = false
     private var waitingHost = false
+    private var waitingHostSinceMs = 0L
 
     private var nextConn = 0
     private var conn: Int? = null
@@ -187,6 +188,7 @@ class ViewerMachine(private val cfg: RemoteConfig = RemoteConfig(), private val 
         val host = peerHost
         if (state != ViewerView.State.PLAYING) set(ViewerView.State.CONNECTING)
         if (host == null) {
+            if (!waitingHost) waitingHostSinceMs = nowMs
             waitingHost = true
             return
         }
@@ -361,6 +363,8 @@ class ViewerMachine(private val cfg: RemoteConfig = RemoteConfig(), private val 
             else -> Unit
         }
         if (conn != null && nowMs - lastRxMs >= cfg.deadAfterMs) lost()
+        // Link Bluetooth'a geçti, Wi-Fi adresi gelmiyor: bekleme sonsuz olmasın; paylaşan da oturumu kapatsın (END link'ten gider).
+        if (waitingHost && nowMs - waitingHostSinceMs >= cfg.hostWaitMs) finish(ViewerView.EndReason.NO_WIFI, sendEnd = true)
         reconnectAtMs?.let { if (nowMs >= it) connect() }
         if (canControl()) sendTouch(recorder.tick(nowMs))
         if (endpoint?.authenticated == true && nowMs - lastAckMs >= cfg.ackEveryMs) ack()

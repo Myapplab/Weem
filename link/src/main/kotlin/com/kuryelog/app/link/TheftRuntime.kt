@@ -69,13 +69,17 @@ object TheftRuntime {
     /** Alarm 10 dk sürekli, sonra dakikada 30 sn (LINK.md 5.1). */
     private const val SIREN_FULL_MS = 10 * 60_000L
     private const val SIREN_ON_MS = 30_000L
+    private const val SIREN_TEST_MS = 3_000L
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     @Volatile private var app: Context? = null
     @Volatile private var bridge: PhoneBridge? = null
     private var job: Job? = null
-    private val guard = TheftGuard()
-    private val sms = TheftSms()
+    // Rol değişince ([stop]) yenilenir: eski geri sayım/alarm ve SMS zamanlayıcısı yeni Receiver oturumuna taşınmaz.
+    @Volatile private var guard = TheftGuard()
+    @Volatile private var sms = TheftSms()
+    /** "Siren dene" bitişi: o ana dek saniyelik tik (koruma kapalıyken) sesi kesmez. */
+    @Volatile private var sirenTestUntil = 0L
 
     private val _status = MutableStateFlow(TheftGuard.Status())
     /** Receiver'da bu telefonun koruma durumu. */
@@ -138,6 +142,9 @@ object TheftRuntime {
                 a.getSystemService(NotificationManager::class.java).cancel(NotificationIds.THEFT)
             }
         }
+        guard = TheftGuard()
+        sms = TheftSms()
+        sirenTestUntil = 0L
         _status.value = TheftGuard.Status()
     }
 
@@ -207,14 +214,22 @@ object TheftRuntime {
     fun enabled(ctx: Context) = prefs(ctx).getBoolean(K_ENABLED, false)
     fun autoStage(ctx: Context) = prefs(ctx).getBoolean(K_AUTO_STAGE, true)
     fun autoAway(ctx: Context) = prefs(ctx).getBoolean(K_AUTO_AWAY, true)
-    fun setEnabled(ctx: Context, v: Boolean) = prefs(ctx).edit().putBoolean(K_ENABLED, v).apply()
+    /** Koruma devredeyken ([TheftGuard.Status.guarding]) kapatılamaz: önce PIN'le ya da Pixel'den kapatılır. Kapatılamadıysa false. */
+    fun setEnabled(ctx: Context, v: Boolean): Boolean {
+        if (!v && guarding()) return false
+        prefs(ctx).edit().putBoolean(K_ENABLED, v).apply()
+        return true
+    }
+
+    /** Bu telefonda koruma devrede (Poco'da ayarlar ve rol kilitli). */
+    fun guarding(): Boolean = _status.value.guarding
     fun setAutoStage(ctx: Context, v: Boolean) = prefs(ctx).edit().putBoolean(K_AUTO_STAGE, v).apply()
     fun setAutoAway(ctx: Context, v: Boolean) = prefs(ctx).edit().putBoolean(K_AUTO_AWAY, v).apply()
     fun hasPin(ctx: Context) = prefs(ctx).getString(K_PIN_HASH, null) != null
 
-    /** PIN'i değiştirir (yalnız tuzlu özet saklanır). Geçersizse false. */
+    /** PIN'i değiştirir (yalnız tuzlu özet saklanır). Geçersizse ya da koruma devredeyse false. */
     fun setPin(ctx: Context, pin: String): Boolean {
-        if (!TheftPin.valid(pin)) return false
+        if (!TheftPin.valid(pin) || guarding()) return false
         val salt = ByteArray(16).also { SecureRandom().nextBytes(it) }
         prefs(ctx).edit().putString(K_PIN_SALT, hex(salt)).putString(K_PIN_HASH, TheftPin.hash(pin, salt)).apply()
         return true
@@ -222,10 +237,13 @@ object TheftRuntime {
 
     fun smsNumbers(ctx: Context): List<String> = K_SMS.map { prefs(ctx).getString(it, "").orEmpty() }
 
-    fun setSmsNumbers(ctx: Context, numbers: List<String>) {
+    /** Koruma devredeyken değişmez (false). */
+    fun setSmsNumbers(ctx: Context, numbers: List<String>): Boolean {
+        if (guarding()) return false
         val e = prefs(ctx).edit()
         K_SMS.forEachIndexed { i, k -> e.putString(k, numbers.getOrNull(i)?.filter { it.isDigit() || it == '+' }.orEmpty()) }
         e.apply()
+        return true
     }
 
     fun smsAllowed(ctx: Context) = ctx.checkSelfPermission(Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED
@@ -233,8 +251,9 @@ object TheftRuntime {
     /** "Siren dene": 3 sn alarm sesi. */
     fun testSiren(ctx: Context) {
         val a = ctx.applicationContext
+        sirenTestUntil = System.currentTimeMillis() + SIREN_TEST_MS
         Sound.siren(a)
-        scope.launch { delay(3_000); if (!_status.value.alarming) Sound.stop(a) }
+        scope.launch { delay(SIREN_TEST_MS); if (!_status.value.alarming) Sound.stop(a) }
     }
 
     // ------------------------------------------------------------------ ses
@@ -246,7 +265,7 @@ object TheftRuntime {
                 val over = now - s.sinceMs - SIREN_FULL_MS
                 if (over < 0 || over % 60_000L < SIREN_ON_MS) Sound.siren(a) else Sound.stop(a)
             }
-            else -> Sound.stop(a)
+            else -> if (now >= sirenTestUntil) Sound.stop(a)
         }
     }
 

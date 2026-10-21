@@ -157,6 +157,20 @@ class RemoteSessionTest {
         assertEquals(State.PLAYING, r.viewerView.state)
     }
 
+    @Test fun waitingForWifiAddressEndsAfterFifteenSeconds() {
+        val r = playing()
+        // Link Bluetooth yedeğine geçti (eşin Wi-Fi adresi yok) ve akış koptu: yeniden bağlanma adres bekler, sonsuza dek değil.
+        r.viewer(VE.Link(null))
+        r.breakStream()
+        r.advance(15_000)
+        assertEquals(State.CONNECTING, r.viewerView.state)
+        r.advance(1_000)
+        assertEquals(EndReason.NO_WIFI, r.viewerView.ended)
+        // Paylaşana END gitti (izleyen bitirdi; paylaşım tasarım gereği izleyensiz 10 dk açık kalır).
+        assertTrue(r.linkLog.contains("v>remote.end"))
+        assertFalse(r.hostView.watched)
+    }
+
     @Test fun silentStreamIsDeadAfterFiveSeconds() {
         val r = playing()
         r.holdStream = true
@@ -240,6 +254,25 @@ class RemoteSessionTest {
         val n = r.decoded.size
         r.frame(key = true)
         assertEquals(n + 1, r.decoded.size)
+    }
+
+    @Test fun rotationMidStreamKeepsAcksCountingAndFramesFlowing() {
+        // Döndürmeden sonra izleyenin ACK toplamı bağlantı başından sayar; paylaşan sayacı sıfırlarsa her onay reddedilir,
+        // yolda bayt sınırı dolar ve akış donar.
+        val r = playing()
+        repeat(100) {
+            r.frame(key = false, size = 5_000)
+            r.advance(33, step = 33)
+        }
+        r.host(HE.ScreenSize(2400, 1080))
+        r.frame(key = true, size = 5_000)
+        val n = r.decoded.size
+        repeat(200) {
+            r.frame(key = false, size = 5_000)
+            r.advance(33, step = 33)
+        }
+        assertEquals(n + 200, r.decoded.size)
+        assertFalse(r.hostCommands.any { it is H.SetBitrate && it.bps < 2_211_840 })
     }
 
     @Test fun encoderFailureFallsBackToSmallerSizesThenUnavailable() {

@@ -35,6 +35,16 @@ class TheftGuardTest {
         return run(20, atPickup())
     }
 
+    @Test fun settingsAreLockedOnlyWhileGuarding() {
+        // Hırsız Poco'da korumayı ayardan kapatamasın: ARMED, WARNING, ALARM kilitli; kapalı ve geri sayım değil.
+        assertFalse(g.status.guarding)
+        run(6, atPickup())
+        assertEquals(State.ARMING, g.status.state)
+        assertFalse(g.status.guarding)
+        assertTrue(run(20, atPickup()).guarding)
+        for (st in listOf(State.WARNING, State.ALARM)) assertTrue(TheftGuard.Status(st).guarding)
+    }
+
     @Test fun stageArmsAfterStillnessAndGrace() {
         assertEquals(State.OFF, run(4, atPickup()).state)
         val s = run(2, atPickup())

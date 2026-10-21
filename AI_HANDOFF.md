@@ -2,6 +2,12 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-21 — Aşama 8–9 sonu denetimi: `/code-review high`, 10 bulgu düzeltildi (Claude Opus · high; dal `claude/weem-a8-a9-code-review-62nkdo`)
+- Yapılan: uzaktan akış döndürmede donmuyor (`FlowControl.restart`, sayaçlar bağlantının); izleyen Wi-Fi adresini en çok 15 sn bekler; geç `NavTarget` Receiver'da açılmaz (zarf gönderiminden 6 sn, `NAV_OPEN_WITHIN_MS`); duran teklif tikten yenilenir; hırsızlık koruması devredeyken Poco'da PIN'siz kapatma yolu yok (`Status.guarding` kilidi: aç/kapa, rol, eşleşme, PIN, SMS; `TheftAlarm` tam ekran ve dokunuşu yutar; `ARMED`'da kartta PIN/3 sn); rol değişince koruma/SMS sıfırlanır; siren denemesi 3 sn; `LinkService` bayrağı reddedilince düşer; yeni köprü son saat farkıyla başlar; `TwoPhone` parçaları ayrı `Store.guarded`.
+- Doğrulama: `-p logic test` 1.941 test, 0 kırmızı (+5 regresyon); `:app` 84 test; `:app`/`:link`/`:remote` lint 0 hata (yerelde, Maven Central 429 sonrası); PR CI ve APK aşağıda. Telefonda denenmedi.
+- Açık kalan: PIN 4 hane ve deneme sınırı yok (alarm ekranında kaba deneme mümkün; S10 varsayılanı); Android katmanı düzeltmeleri birim testsiz; yeni AZ metni `TheftText.LOCKED` onay bekler.
+- Sıradaki: A10.1 (optimizasyon).
+
 ## 2026-10-21 — A9.2 bitti: uzaktan dokunuş, oturum işareti, bitirme (Claude Opus · high; dal `ccr-23fdbfa6-pw6gzn`)
 - Yapılan: saf `logic/remote/Touch.kt` (`TouchRecorder`, `TouchPlayer`, `GlobalAction`), akışa `TOUCH`/`ACTION`/`CONTROL`, `HostMachine`/`ViewerMachine` dokunuş; `:remote` `TouchService` (ayrı erişilebilirlik servisi, yalnız `canPerformGestures`; parçalar `dispatchGesture` + `continueStroke` ile sırayla; üstte kırmızı oturum işareti, tek dokunuş paylaşımı bitirir); `RemoteHub.pointer/action/touchAvailable`; `:app` Uzaktan sekmesinde dokunuş + tuş satırı + servis durumu. `REMOTE.md` 2, `VERI_SOZLESMESI` (yeni sabit ad `com.kuryelog.app.remote.TouchService`).
 - Önemli karar: dokunuş parmak kalkmadan 100 ms'lik parçalarla akar (sürükleme canlı); paylaşan bozuk/sırası kaçmış/yön değişmiş parçada ve 1 sn sessizlikte parmağı kaldırır; dokunuş yalnız paylaşım açık + doğrulanmış izleyen + oynayan görüntü + servis açıkken.
@@ -137,9 +143,3 @@ Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 
 - Yapılan: `logic/economics` (Rawstats 8 dosya satır satır, `EconomicsObserver` kancaları, `OfferScorePage`, `OfferScoreBook`); Android `:economics` `Economics` (ortam: `Store`, `Shift.AndroidClock`, `elapsedRealtimeNanos`, scooter `Orders.scooter`); `Orders.bindEconomics` + `WeemApplication` (`Orders.bind`'dan önce); `:app` `OfferScoresPage.kt` (seçici, gün sayfası, 1–10 sorusu), `OrdersAccess.withOfferScores` (kart satırı). Ayrıntı `ECONOMICS.md`.
 - Doğrulama: `./gradlew -p logic test` 1083 yeşil (economics 116: altın vektörler, `SahaEconomicsTest` 16 dosya Rawstats'la satır satır aynı); kök `test lintDebug assembleDebug` yeşil (`OrdersTabTest.offerScoreTabRatesAnOrder`). CI koşusu yok; **telefonda denenmedi**.
 - Açık kalan: gerçek vardiyada ekonomi satırları ve E4 ekranı (A3.10 gölge modda bakılabilir); hava A6'ya dek `not_observed`; `OfferSummary.score` görünür kullanımı A6/A8'de kullanıcı kararı. Sıradaki A4.2.
-
-## 2026-10-18 — A5.4 Scooter sekmesi, yüzen panel, tanı, ZIP paylaşımı (Claude Opus · high; dal `claude/a5-4-scooter-compose-tools-3urwtl` → `main`)
-- Yapılan: `logic/scooter` `ScooterUiText` (TR/AZ), `ScooterPanel`, `FloatRules`, `ScooterSettings`, `PanelField` AZ + `ScooterUiTest` 23; `:scooter` `DashboardView` (NB çizimi), `FloatPainter`, `FloatingPanel` (düz View overlay, `OwnOverlays`), `BleScan`, `Scooter.export` (İndirilenler/WEEM + paylaş)/`cleanOld`; bildirimler TR/AZ; `:app` `ScooterTab`, `ScooterSettingsScreen` (Tanı dahil), `ScooterPip`, `MainActivity` top sayacı + PiP. Ayrıntı `SCOOTER.md` 13.6, farklar F-S9…F-S14.
-- Düzeltme: `ScooterService` reddedilen ön plan başlatması `refuseStart()` (önce `startForeground`); `CrashGuardTest` A5.3 birleşmesinden beri `main`'de kırmızıydı, test genişletildi.
-- Doğrulama: `./gradlew -p logic test` 967 yeşil; kök `test lintDebug assembleDebug` yeşil. CI koşusu yok; **telefonda hiçbir şey denenmedi** (tarama, eşleştirme, top dokunuşları, PiP, ZIP, Keystore anahtarı).
-- Açık kalan: A5.5 (K) yedek telefonda; Scooter sekmesi göstergesi Sürüş Paneli renklerinde (OverlayPalette), WEEM mavi teması değil (bilinçli: top ve panel aynı görünüm); S18 açık.

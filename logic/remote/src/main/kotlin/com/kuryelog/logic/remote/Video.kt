@@ -18,6 +18,8 @@ data class RemoteConfig(
     val ackFastMs: Long = 50,
     val keyRequestGapMs: Long = 500,
     val reconnectMs: List<Long> = listOf(1_000, 2_000, 4_000),
+    /** Akışa bağlanırken eşin Wi-Fi adresi yoksa (link Bluetooth'ta) bu kadar beklenir; gelmezse oturum "Wi-Fi yok" ile biter. */
+    val hostWaitMs: Long = 15_000,
     val maxSide: Int = 1280,
     /** Dokunuş (REMOTE.md 2.3): parça gelmeden bu kadar geçerse basılı parmak kalkar; bir hareket en çok [maxGestureMs]. */
     val touchStallMs: Long = 1_000,
@@ -124,6 +126,14 @@ class FlowControl(startBitrate: Int, private val minBps: Int = CaptureGeometry.M
         waitingKey = true
         lastDropMs = now
         lastIncreaseMs = now
+    }
+
+    /**
+     * Aynı bağlantıda yeni kodlayıcı (döndürme, kodlayıcı hatası): ilk kare anahtar kare olmalı. Bayt sayaçları bağlantınındır,
+     * sıfırlanmaz; izleyenin `ACK`'teki toplamı bağlantı açıldığından beri sayar.
+     */
+    fun restart() {
+        waitingKey = true
     }
 
     fun admit(key: Boolean, bytes: Int, now: Long): Decision {

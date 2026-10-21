@@ -319,8 +319,11 @@ class PhoneBridge(
 
     // ------------------------------------------------------------------ gelen
 
-    /** Eşten gelen ileti (`LinkRuntime.Listener.onMessage`). Bilinmeyen tür, yanlış yön ve bozuk yük atılır. */
-    fun incoming(type: String, payload: ByteArray, now: Long = wall()) {
+    /**
+     * Eşten gelen ileti (`LinkRuntime.Listener.onMessage`). Bilinmeyen tür, yanlış yön ve bozuk yük atılır. [sentAtMs] zarfın gönderim
+     * anı bu telefonun saatiyle (`Incoming.localSentAtMs`); yoksa hedefin istek anı kullanılır.
+     */
+    fun incoming(type: String, payload: ByteArray, now: Long = wall(), sentAtMs: Long? = null) {
         val topic = LinkTopic.of(type) ?: return
         if (topic.from != null && (topic.from == role || role == LinkRole.OFF)) return
         val d = LinkPayloads.Decoder(offsetMs)
@@ -331,7 +334,7 @@ class PhoneBridge(
                 LinkTopic.OFFERS -> d.offers(payload)?.let { synchronized(lock) { _offers.value = it; offersAt = now } }
                 LinkTopic.STAGES -> d.stages(payload)?.let(::gotStages)
                 LinkTopic.DAY -> d.day(payload)?.let { _day.value = it }
-                LinkTopic.NAV_TARGET -> d.navTarget(payload)?.let { openTarget(it, now) }
+                LinkTopic.NAV_TARGET -> d.navTarget(payload)?.let { openTarget(it, now, sentAtMs) }
                 LinkTopic.ENERGY_REQUEST -> d.energyRequest(payload)?.let(::answerEnergy)
                 LinkTopic.ENERGY_RESULT -> d.energyResult(payload)?.let(::gotEnergy)
                 LinkTopic.BATTERY -> d.battery(payload)?.let { synchronized(lock) { battery = it; batteryAt = now; refreshLive(now) } }
@@ -389,10 +392,13 @@ class PhoneBridge(
         for ((id, ended) in closed) local.scooter.orderDone(id, ended ?: wall())
     }
 
-    /** Receiver'da gelen hedef: aynı istek bir kez; [LinkTopic.NAV_TARGET] TTL'sinden eski hedef açılmaz (Provider yerelde açtı). */
-    private fun openTarget(t: NavTarget, now: Long) {
+    /**
+     * Receiver'da gelen hedef: aynı istek bir kez. Onay [NAV_FALLBACK_MS] içinde dönmezse Provider rotayı kendisi açar; bu yüzden
+     * gönderiminden [NAV_OPEN_WITHIN_MS]'den geç gelen hedef açılmaz (iki telefonda birden rota olmasın).
+     */
+    private fun openTarget(t: NavTarget, now: Long, sentAtMs: Long?) {
         if (role != LinkRole.RECEIVER) return
-        val fresh = now - t.requestedAtMs <= LinkTopic.NAV_TARGET.ttlMs
+        val fresh = now - (sentAtMs ?: t.requestedAtMs) <= NAV_OPEN_WITHIN_MS
         val first = synchronized(lock) {
             openedTargets.add(t.requestId).also { while (openedTargets.size > 64) openedTargets.remove(openedTargets.first()) }
         }
@@ -434,7 +440,7 @@ class PhoneBridge(
 
     // ------------------------------------------------------------------ saat
 
-    /** Saniyede bir: bekleyen teklif/gün/rota gönderimi, navigasyon yedeği, eskiyen uzak değerler. */
+    /** Saniyede bir: bekleyen teklif/gün/rota gönderimi, duran teklifin yenilenmesi, navigasyon yedeği, eskiyen uzak değerler. */
     fun tick(now: Long = wall()) {
         var offers: List<OfferSummary>? = null
         var day: DaySummary? = null
@@ -442,6 +448,10 @@ class PhoneBridge(
         val fallback = ArrayList<NavTarget>()
         synchronized(lock) {
             pendingOffers?.let { if (now - sentOffersAt >= OFFERS_MIN_GAP_MS) { markOffers(it, now); offers = it } }
+            // Kaynak akış (StateFlow) aynı listeyi yeniden yaymaz: teklif dururken 5 sn'lik yenileme buradan (Receiver boşaltmasın).
+            if (offers == null && role == LinkRole.PROVIDER) {
+                sentOffers?.takeIf { it.isNotEmpty() && now - sentOffersAt >= OFFERS_REFRESH_MS }?.let { markOffers(it, now); offers = it }
+            }
             pendingDay?.let { if (now - sentDayAt >= DAY_MIN_GAP_MS) { sentDay = it; sentDayAt = now; pendingDay = null; day = it } }
             if (routeDirty && now - sentRouteAt >= ROUTE_MIN_GAP_MS) {
                 pendingRoute?.let { sentRoute = it; sentRouteAt = now; route = it }
@@ -504,6 +514,8 @@ class PhoneBridge(
         const val ROUTE_MIN_GAP_MS = 1_000L
         /** Receiver hedefi onaylamazsa Provider rotayı bu süre sonra kendisi açar. */
         const val NAV_FALLBACK_MS = 8_000L
+        /** Receiver bu süreden geç gelen hedefi açmaz: onayın dönüşü ve saat farkı için [NAV_FALLBACK_MS]'den 2 sn pay. */
+        const val NAV_OPEN_WITHIN_MS = NAV_FALLBACK_MS - 2_000L
         /**
          * Enerji yanıtı için bekleme: 0. Ekonomi satırı ekran okuma olayında, ana iş parçacığında `runBlocking` ile yazılır (`OrderFlow`
          * gözlemcisi); beklemek ANR'ye yol açar. Satır "ölçülmedi" yazılır, yanıt düzeltme satırı olur ([ScooterBridge.late]).

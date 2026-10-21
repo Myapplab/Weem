@@ -48,6 +48,8 @@ object LinkHub {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var runtime: LinkRuntime? = null
     private var tickJob: Job? = null
+    /** Eşle son ölçülen saat farkı (`onClock`); yeni eşleşmede ve eşleşme kalkınca silinir. */
+    @Volatile private var clockOffsetMs: Long? = null
 
     /** Bu telefonun yerel modülleri, role göre (`:app` verir). */
     @Volatile var localFor: (LinkRole) -> PhoneBridge.Local = { PhoneBridge.Local() }
@@ -85,13 +87,19 @@ object LinkHub {
         apply(a)
     }
 
+    /** Receiver'da hırsızlık koruması devrede: rol ve eşleşme değişmez (korumayı PIN'siz kapatmanın yolu olmasın; LINK.md 5.1). */
+    fun locked(): Boolean = _role.value == LinkRole.RECEIVER && TheftRuntime.guarding()
+
     // `weem-link` yazımı eşzamanlı (LINK.md 3.12).
+    /** Koruma devredeyken ([locked]) değişmez: false. */
     @SuppressLint("ApplySharedPref")
-    fun setRole(ctx: Context, role: LinkRole) {
+    fun setRole(ctx: Context, role: LinkRole): Boolean {
+        if (role != _role.value && locked()) return false
         val a = ctx.applicationContext
         prefs(a).edit().putString(LinkRole.PREF_KEY, role.key).commit()
         _role.value = role
         apply(a)
+        return true
     }
 
     /** Veren telefon: QR metni (yalnız ekranda; loga yazılmaz). Kimlik açılamazsa null. */
@@ -121,12 +129,16 @@ object LinkHub {
         apply(a)
     }
 
-    fun unpair(ctx: Context) {
+    /** Koruma devredeyken ([locked]) kaldırılmaz: false. */
+    fun unpair(ctx: Context): Boolean {
+        if (locked()) return false
         val a = ctx.applicationContext
         runtime(a).unpair()
+        clockOffsetMs = null
         _peer.value = null
         _peerInfo.value = null
         apply(a)
+        return true
     }
 
     /** Uzaktan kullanım denetim iletisi (teslim zorunlu); bağlantı kapalıysa null. */
@@ -152,6 +164,8 @@ object LinkHub {
         val old = _bridge.value
         val b = if (role == LinkRole.OFF) null else if (old?.role == role) old else PhoneBridge(role, port(rt), System::currentTimeMillis, scope, localFor(role), failures())
         if (b !== old) {
+            // Rol değişince yeni köprü son saat farkıyla başlar (sonraki ölçüme dek eşin saatleri 0 farkla çevrilmesin).
+            clockOffsetMs?.let { b?.clock(it) }
             _bridge.value = b
             Store.guarded(a, "link_bridge") { onBridge(b) }
             b?.linkChanged(_status.value.state == LinkStatus.State.LINKED)
@@ -195,10 +209,11 @@ object LinkHub {
                 app?.let { a -> Store.guarded(a, "link_remote") { onRemote(message) } }
                 return
             }
-            _bridge.value?.incoming(message.type, message.payload)
+            _bridge.value?.incoming(message.type, message.payload, sentAtMs = message.localSentAtMs)
         }
 
         override fun onPaired(peer: PeerRecord) {
+            clockOffsetMs = null
             _peer.value = peer
             _pairingUntil.value = null
             _notices.tryEmit(Notice.Paired(peer.name))
@@ -212,6 +227,7 @@ object LinkHub {
         }
 
         override fun onUnpaired() {
+            clockOffsetMs = null
             _peer.value = null
             _peerInfo.value = null
             _notices.tryEmit(Notice.UnpairedByPeer)
@@ -220,7 +236,10 @@ object LinkHub {
 
         override fun onPeerInfo(info: PeerInfo) { _peerInfo.value = info }
         override fun onAcked(type: String, id: UUID) { _bridge.value?.acked(type, id) }
-        override fun onClock(offsetMs: Long, uncertaintyMs: Long) { _bridge.value?.clock(offsetMs) }
+        override fun onClock(offsetMs: Long, uncertaintyMs: Long) {
+            clockOffsetMs = offsetMs
+            _bridge.value?.clock(offsetMs)
+        }
     }
 
     private const val REMOTE_PREFIX = "remote."

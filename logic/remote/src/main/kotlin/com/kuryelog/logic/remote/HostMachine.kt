@@ -308,7 +308,7 @@ class HostMachine(private val cfg: RemoteConfig = RemoteConfig(), private val ra
         config = null
         seq = 0
         out += Command.StartEncoder(g.copy(bitrate = flow?.bitrate ?: g.bitrate))
-        flow?.reset(nowMs)
+        flow?.restart()
     }
 
     private fun stopEncoder() {

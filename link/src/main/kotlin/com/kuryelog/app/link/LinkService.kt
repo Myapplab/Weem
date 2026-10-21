@@ -30,7 +30,8 @@ class LinkService : Service() {
             return START_NOT_STICKY
         }
         val ok = runCatching { startForeground(NotificationIds.LINK_FGS, notification(this), ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE) }.isSuccess
-        if (!ok) stopSelf()
+        // Reddedildi: bayrak düşer ki sonraki `set(true)` (ör. uygulama öne gelince) yeniden denesin.
+        if (!ok) { on = false; stopSelf() }
         return START_STICKY
     }
 
@@ -44,7 +45,7 @@ class LinkService : Service() {
             val i = Intent(ctx, LinkService::class.java)
             runCatching {
                 if (run) ctx.startForegroundService(i) else ctx.startService(i.setAction(ACTION_STOP))
-            }
+            }.onFailure { if (run) on = false }
         }
 
         /** Bildirim metnini bağlantı durumuyla yeniler (servis çalışıyorsa). */
