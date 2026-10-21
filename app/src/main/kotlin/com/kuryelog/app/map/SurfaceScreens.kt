@@ -84,10 +84,46 @@ internal fun rememberSurfaceData(): SurfaceData {
 
 private fun tone(q: Double) = RoadsText.tone(q).color()
 
+/** Kalite sekmesi sokak satırı: ad, alt yazı, puan etiketi ve rota kalitesi (renk; null = "ölçüm az"). */
+internal class StreetRowView(val key: String, val title: String, val subtitle: String, val score: String, val quality: Double?)
+
+internal fun streetRows(data: SurfaceData, lang: Lang): List<StreetRowView> = data.streets().map { s ->
+    StreetRowView(s.key, s.name ?: data.nameOf(s.ways.first(), lang), SurfaceText.streetSubtitle(s.scoredPieces, s.scoredMeters, lang), StreetScores.label(s.score, lang), s.score?.routeQuality)
+}
+
 /**
  * Kalite sekmesinin üstü: "Yol puanları" açıklaması, ölçüm durumu, "Ölçüm ve kalibrasyon", "Haritada yüzey renkleri" anahtarı ve sokak listesi
- * (kötüden iyiye, "ölçüm az" sonda). Sokağa dokununca [onStreet] (anahtar, ad).
+ * (kötüden iyiye, "ölçüm az" sonda). Sokağa dokununca [onStreet] (anahtar, ad). Çalışma zamanına bağlı hâli [SurfaceQualitySection].
  */
+@Composable
+internal fun SurfaceQualityPanel(lang: Lang, measurement: String, streets: List<StreetRowView>, layerOn: Boolean, onLayer: (Boolean) -> Unit, onStreet: (String, String) -> Unit, onSetup: () -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(12.dp)) {
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(tl(lang, "Yol puanları", "Yol balları"), fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                Text(SurfaceText.qualityIntro(lang), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(measurement, color = MaterialTheme.colorScheme.primary, modifier = Modifier.testTag("surface-state"))
+                TextButton(onClick = onSetup, modifier = Modifier.testTag("surface-setup")) { Text(tl(lang, "Ölçüm ve kalibrasyon", "Ölçmə və kalibrasiya")) }
+            }
+        }
+        Row(Modifier.fillMaxWidth().clickable { onLayer(!layerOn) }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(tl(lang, "Haritada yüzey renkleri", "Xəritədə səth rəngləri"), Modifier.weight(1f))
+            Switch(checked = layerOn, onCheckedChange = null)
+        }
+        if (streets.isEmpty()) Text(tl(lang, "Henüz fiziksel yol ölçümü yok", "Hələ fiziki yol ölçməsi yoxdur"), Modifier.padding(vertical = 12.dp))
+        for (s in streets) {
+            Row(Modifier.fillMaxWidth().clickable { onStreet(s.key, s.title) }.padding(vertical = 8.dp).testTag("street-${s.key}"), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(s.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(s.subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Text(s.score, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = s.quality?.let { tone(it) } ?: MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+    }
+}
+
 @Composable
 fun SurfaceQualitySection(lang: Lang, onStreet: (String, String) -> Unit, onSetup: () -> Unit) {
     val ctx = LocalContext.current
@@ -95,33 +131,9 @@ fun SurfaceQualitySection(lang: Lang, onStreet: (String, String) -> Unit, onSetu
     val data = rememberSurfaceData()
     val view by rt.view.collectAsState()
     val settings by MapSettingsRepo.settings(ctx).collectAsState()
-    val streets = remember(data) { data.streets() }
-    Column(Modifier.fillMaxWidth().padding(12.dp)) {
-        Card(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(tl(lang, "Yol puanları", "Yol balları"), fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                Text(SurfaceText.qualityIntro(lang), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(SurfaceText.measurementLabel(view.decision.state, lang), color = MaterialTheme.colorScheme.primary, modifier = Modifier.testTag("surface-state"))
-                TextButton(onClick = onSetup, modifier = Modifier.testTag("surface-setup")) { Text(tl(lang, "Ölçüm ve kalibrasyon", "Ölçmə və kalibrasiya")) }
-            }
-        }
-        Row(Modifier.fillMaxWidth().clickable { MapSettingsRepo.update(ctx) { it.copy(showQualityLayer = !it.showQualityLayer) } }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(tl(lang, "Haritada yüzey renkleri", "Xəritədə səth rəngləri"), Modifier.weight(1f))
-            Switch(checked = settings.showQualityLayer, onCheckedChange = null)
-        }
-        if (streets.isEmpty()) Text(tl(lang, "Henüz fiziksel yol ölçümü yok", "Hələ fiziki yol ölçməsi yoxdur"), Modifier.padding(vertical = 12.dp))
-        for (s in streets) {
-            val title = s.name ?: data.nameOf(s.ways.first(), lang)
-            Row(Modifier.fillMaxWidth().clickable { onStreet(s.key, title) }.padding(vertical = 8.dp).testTag("street-${s.key}"), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(SurfaceText.streetSubtitle(s.scoredPieces, s.scoredMeters, lang), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Text(StreetScores.label(s.score, lang), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = s.score?.let { tone(it.routeQuality) } ?: MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-        HorizontalDivider(Modifier.padding(vertical = 8.dp))
-    }
+    val rows = remember(data, lang) { streetRows(data, lang) }
+    SurfaceQualityPanel(lang, SurfaceText.measurementLabel(view.decision.state, lang), rows, settings.showQualityLayer,
+        { on -> MapSettingsRepo.update(ctx) { it.copy(showQualityLayer = on) } }, onStreet, onSetup)
 }
 
 /** Yol puanı satırları ([SurfaceText.roadScore]); eksik seviye satırına dokununca [onCalibrate] (bant). */
