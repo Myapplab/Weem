@@ -1,6 +1,7 @@
 package com.kuryelog.app
 
 import android.content.Context
+import com.kuryelog.app.capture.CaptureState
 import com.kuryelog.app.core.Shift
 import com.kuryelog.app.core.Store
 import com.kuryelog.app.economics.Economics
@@ -18,8 +19,9 @@ import com.kuryelog.logic.orders.TripRecord
  * ([Orders.flow], A3.7) ve onun `courier.db` bağlantısı. Canlı kayıt saklıyı ezer; düzeltme düğmeleri akışa gider.
  */
 object OrdersAccess {
-    fun source(ctx: Context): OrdersSource = withDaySummaries(withOfferScores(
-        LogOrdersSource(Store.log(ctx), Orders.records(ctx), Store.values(ctx), Shift.AndroidClock, Orders.flow(ctx)), Economics.scores(ctx)), Economics.daySummaries(ctx))
+    fun source(ctx: Context): OrdersSource = withTools(withDaySummaries(withOfferScores(
+        LogOrdersSource(Store.log(ctx), Orders.records(ctx), Store.values(ctx), Shift.AndroidClock, Orders.flow(ctx)), Economics.scores(ctx)), Economics.daySummaries(ctx)),
+        { Store.targets(ctx) }, { CaptureState.seen[it] ?: 0L })
 
     /** E4 (A4.1): Siparişler → "Teklif puanı" sayfası ve puan sorusu. */
     fun offerScores(ctx: Context): OfferScoreBook = Economics.scores(ctx)
@@ -32,6 +34,12 @@ object OrdersAccess {
     /** N4/N8 (A4.2): gün sonu raporu kartı ve enerji maliyeti `:economics`'ten (`:orders` onu tanımaz). */
     fun withDaySummaries(src: OrdersSource, sums: DaySummaries): OrdersSource = object : OrdersSource by src {
         override fun daySummary(day: OrderHistory.Day, today: Boolean, tl: (String, String) -> String): DayNetSummary = sums.summary(day, today, tl)
+    }
+
+    /** A10.4a (S20): Araçlar için izlenen uygulamalar (`targets` tercihi) ve paketin son görülme anı (`:capture` süreç içi durumu; `:orders` onları tanımaz). */
+    fun withTools(src: OrdersSource, targets: () -> Set<String>, seen: (String) -> Long): OrdersSource = object : OrdersSource by src {
+        override fun targets(): Set<String> = targets()
+        override fun lastSeen(pkg: String): Long = seen(pkg)
     }
 
     /** Kayıt silindi: `courier.db` günlüklerden yeniden kurulur (içe aktarmadan sonrası `LogImport.afterImport` ile). */

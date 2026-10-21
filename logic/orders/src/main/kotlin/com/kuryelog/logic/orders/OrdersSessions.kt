@@ -63,3 +63,23 @@ class OrdersSessions(private val src: OrdersSource, lang: Lang) {
             tl("≈ : başlangıç/bitiş ekranı görülmedi; ilk/son görülen çevrimiçi ekranın saati.", "≈ : başlanğıc/bitiş ekranı görünmədi; ilk/son görünən onlayn ekranın vaxtı."))
     }
 }
+
+/**
+ * Sayfanın çizilecek kartları ([Card] modeli, [CardView] çizer): her platform bir kart (başlık, sonra her dönem: çevrimdışı boşluk, saat aralığı,
+ * sayaçlar, siparişler); oturum yoksa tek açıklama kartı; sonda "≈" notu.
+ */
+fun SessionsPage.cards(): List<Card> {
+    if (empty != null) return listOf(Card(listOf(Block.Line(empty, Style.MUTED))))
+    val cards = groups.map { g ->
+        val b = mutableListOf<Block>(Block.Heading(g.heading, g.tone))
+        for (e in g.entries) {
+            e.offline?.let { b += Block.Line(it, Style.MUTED) }
+            b += Block.Line(e.range, Style.BOLD)
+            b += Block.Line(e.counters, Style.MUTED)
+            e.trips.forEach { b += Block.Line(it) }
+            b += Block.Divider
+        }
+        Card(b.dropLast(1))
+    }
+    return if (note == null) cards else cards + Card(listOf(Block.Line(note, Style.MUTED)))
+}

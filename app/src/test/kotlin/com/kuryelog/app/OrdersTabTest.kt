@@ -28,6 +28,8 @@ import com.kuryelog.logic.economics.OfferScoreBook
 import com.kuryelog.logic.orders.CourierRecords
 import com.kuryelog.logic.orders.LogOrdersSource
 import com.kuryelog.logic.orders.OfferState
+import com.kuryelog.logic.orders.OnlineSessions
+import com.kuryelog.logic.orders.OrderFlow
 import com.kuryelog.logic.orders.OrdersSource
 import com.kuryelog.logic.orders.PickupRecord
 import com.kuryelog.logic.orders.RecordJson
@@ -202,5 +204,51 @@ class OrdersTabTest {
         reveal("Enerji ölçülmedi (scooter bağlı değildi ya da okunamadı): enerji maliyeti hesaba katılmadı.")
         compose.onNodeWithText("Net kazanç").assertIsDisplayed()
         compose.onAllNodesWithText("Günlük hedef", substring = true).assertCountEquals(0)
+    }
+
+    /** A10.4a (S20): bugünün Wolt oturumu 09:00–10:00 (Bakü). */
+    private fun sessionSource(shift: Boolean, picked: Set<String> = emptySet()): OrdersSource {
+        val db = CourierRecords.Memory()
+        val s = OnlineSessions.Closed("com.wolt.courierapp", t0, t0 + 60 * min, true, true, "offline_screen", 4, 2, 2, rejected = 1)
+        File(log.dayDir(log.day(t0)).apply { mkdirs() }, OrderFlow.ONLINE_SESSIONS_FILE).appendText(OnlineSessions.json(s).toString() + "\n")
+        db.saveTrip(RecordJson.trip(trip("a", t0 + 10 * min, "Test Döner", 3.0).also { it.sessionId = s.id }))
+        val prefs = KuryelogPrefs.Memory()
+        if (shift) prefs.put(mapOf(KuryelogPrefs.MANUAL_POLICY to 1, KuryelogPrefs.SHIFT to true, KuryelogPrefs.MANUAL_SESSION to true))
+        return OrdersAccess.withTools(OrdersAccess.withOfferScores(LogOrdersSource(log, db, prefs, clock), book), { picked }, { 0L })
+    }
+
+    @Test fun onlineSessionsPageOpensFromTheTabAndGoesBack() {
+        compose.setContent { WeemTheme(dark = false) { OrdersTab(Lang.TR, { sessionSource(shift = false) }, { book }) } }
+        reveal("Çevrimiçi oturumlar").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Wolt · bugün 1 kez · 1 sa 0 dk").assertIsDisplayed()
+        compose.onNodeWithText("09:00 – 10:00  ·  1 sa 0 dk").assertIsDisplayed()
+        compose.onNodeWithText("4 teklif görüldü · 2 kabul · 1 ret · 2 teslim").assertIsDisplayed()
+        compose.onNodeWithText("09:10 · Test Döner", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("≈ : başlangıç/bitiş ekranı görülmedi; ilk/son görülen çevrimiçi ekranın saati.").assertIsDisplayed()
+        compose.onNodeWithText("Geri").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Net kazanç").assertExists()
+    }
+
+    @Test fun toolsAppearOnlyWithAShiftAndCancellationAsksFirst() {
+        compose.setContent { WeemTheme(dark = false) { OrdersTab(Lang.TR, { sessionSource(shift = false, picked = setOf("com.wolt.courierapp")) }, { book }) } }
+        compose.onNodeWithText("Net kazanç").assertIsDisplayed()
+        compose.onAllNodesWithText("Araçlar").assertCountEquals(0)
+    }
+
+    @Test fun toolsCardHasSplitScreenAndPerPlatformCancellation() {
+        val picked = setOf("com.wolt.courierapp", "ee.mtakso.driver")
+        compose.setContent { WeemTheme(dark = false) { OrdersTab(Lang.TR, { sessionSource(shift = true, picked = picked) }, { book }) } }
+        reveal("Araçlar")
+        reveal("Wolt + Bolt bölünmüş ekranı aç")
+        reveal("Bolt Food: iptal gözlemi kaydet")
+        compose.onAllNodesWithText("YolGo", substring = true).assertCountEquals(0)
+        reveal("Wolt: iptal gözlemi kaydet").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Bu yalnızca istatistik notudur. Platformda iptal işlemi yapmaz.").assertIsDisplayed()
+        compose.onNodeWithText("Vazgeç").performClick()
+        compose.waitForIdle()
+        compose.onAllNodesWithText("Bu yalnızca istatistik notudur. Platformda iptal işlemi yapmaz.").assertCountEquals(0)
     }
 }

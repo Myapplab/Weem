@@ -140,4 +140,22 @@ class OrdersSessionsTest {
         val lines = OrdersSessions(r.source, Lang.TR).page().groups.single().entries.single().trips
         assertEquals(1, lines.size); assertTrue(lines[0].contains("Test Döner"))
     }
+
+    @Test fun cardsHoldTheLinesInOrderAndEndWithTheNote() {
+        val r = rig()
+        val s = closed(wolt, t0, t0 + hour)
+        r.session(s); r.session(closed(wolt, t0 + 90 * min, t0 + 2 * hour)); r.add(trip("a", s.id, t0 + 10 * min, "Test Döner"))
+        val cards = OrdersSessions(r.source, Lang.TR).page().cards()
+        assertEquals(2, cards.size)
+        val b = cards[0].blocks
+        assertEquals(Block.Heading("Wolt · bugün 2 kez · 1 sa 30 dk", Tone.WOLT), b[0])
+        assertEquals(Block.Line("09:00 – 10:00  ·  1 sa 0 dk", Style.BOLD), b[1])
+        assertEquals(Block.Line("4 teklif görüldü · 2 kabul · 1 ret · 2 teslim", Style.MUTED), b[2])
+        assertTrue((b[3] as Block.Line).text.startsWith("09:10 · Test Döner · "))
+        assertEquals(Block.Divider, b[4])
+        assertEquals(Block.Line("Çevrimdışı 10:00 – 10:30 · 30 dk", Style.MUTED), b[5])
+        assertNotEquals("son dönemden sonra ayırıcı yok", Block.Divider, b.last())
+        assertEquals(Style.MUTED, (cards[1].blocks.single() as Block.Line).style)
+        assertEquals(1, OrdersSessions(rig().source, Lang.TR).page().cards().size)
+    }
 }

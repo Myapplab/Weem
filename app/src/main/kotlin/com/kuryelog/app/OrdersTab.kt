@@ -57,6 +57,8 @@ import com.kuryelog.logic.orders.CashTips
 import com.kuryelog.logic.orders.DayDetail
 import com.kuryelog.logic.orders.OrderHistory
 import com.kuryelog.logic.orders.OrdersScreen
+import com.kuryelog.logic.orders.OrdersSessions
+import com.kuryelog.logic.orders.OrdersTools
 import com.kuryelog.logic.orders.OrdersSource
 import com.kuryelog.logic.orders.TripAction
 import com.kuryelog.logic.orders.TripCard
@@ -78,14 +80,17 @@ fun OrdersTab(lang: Lang, source: (Context) -> OrdersSource = OrdersAccess::sour
     var platform by rememberSaveable { mutableStateOf("") }
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     var scoreTab by rememberSaveable { mutableStateOf(false) }
+    var sessionsOpen by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) { while (true) { delay(REFRESH_MS); if (Store.shiftOn(ctx)) version++ } }
     GuardedPage("orders", lang, key = version, build = { source(ctx).let { Triple(it, OrdersScreen(it, lang).warm(), offerScores(ctx)) } }) { (src, screen, book) ->
         val day = detail
-        if (day != null) {
+        if (sessionsOpen) {
+            SessionsPageView(OrdersSessions(src, lang), screen.labels.back) { sessionsOpen = false }
+        } else if (day != null) {
             DayDetailScreen(screen, src, day, platform.ifEmpty { null }, onBack = { detail = null }) { version++ }
         } else {
             val scores = ScoreTab(lang, book, scoreTab) { scoreTab = it }
-            OrdersHome(screen, src, platform.ifEmpty { null }, { platform = it ?: "" }, selected, { selected = it }, { detail = it }, scores) { version++ }
+            OrdersHome(screen, src, platform.ifEmpty { null }, { platform = it ?: "" }, selected, { selected = it }, { detail = it }, scores, { sessionsOpen = true }) { version++ }
         }
     }
 }
@@ -98,7 +103,7 @@ private class ScoreTab(val lang: Lang, val book: OfferScoreBook, val on: Boolean
 @Composable
 private fun OrdersHome(
     screen: OrdersScreen, src: OrdersSource, platform: String?, onPlatform: (String?) -> Unit, selected: String?, onSelected: (String) -> Unit,
-    onDetail: (String) -> Unit, scores: ScoreTab, onChanged: () -> Unit,
+    onDetail: (String) -> Unit, scores: ScoreTab, onSessions: () -> Unit, onChanged: () -> Unit,
 ) {
     val today = remember(screen) { screen.today() }
     var metric by remember { mutableStateOf<OrderHistory.Metric?>(null) }
@@ -108,6 +113,11 @@ private fun OrdersHome(
         CardView(today.hero, onMetric = { metric = it })
         today.report?.let { CardView(it) }
         today.platforms.forEach { CardView(it) }
+        // A10.4a (S20): bugünün çevrimiçi oturumları ve Araçlar (bölünmüş ekran, iptal gözlemi; yalnız vardiya açıkken).
+        val sessions = remember(src, scores.lang) { OrdersSessions(src, scores.lang) }
+        OutlinedButton(onClick = onSessions, Modifier.fillMaxWidth().padding(vertical = 4.dp)) { Text(sessions.title) }
+        val tools = remember(src, scores.lang) { OrdersTools(src, scores.lang) }
+        if (tools.visible) ToolsCard(tools)
         // RS `renderOrders`: seçici gün sayfalarının üstünde; iki sekme aynı gün sayfalarını paylaşır.
         OfferScoreSelector(scores.lang, scores.on, scores.pick)
         val scoreDay: (@Composable ColumnScope.(String) -> Unit)? = if (!scores.on) null else { date ->
