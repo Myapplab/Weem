@@ -145,7 +145,7 @@ Her aşama: testler yeşil → `.dev` APK → telefonda gölge mod denemesi (kul
 | 7 | YolGo kayıtlarını içe aktarma (eski YolGo'ya ek yok, S1; kalanı yeniden girilir/öğrenilir); G1–G5 bütünlüğü | İçe aktarma testleri geçer (S28) | 2–3 |
 | 8 | `:link` 2 telefon modu (N1) + hırsızlık koruması (N6) | Testler yeşil (S28: gerçek vardiya A10.4 sonrası) | 4–5 |
 | 9 | `:remote` uzaktan kullanım (N2) | Testler yeşil (S28) | 2–3 |
-| 10 | Optimizasyon (pil, bellek, APK boyutu, arka planda kalma), kod sadeleştirme (`/simplify`), güvenlik ve büyük denetim, geri yükleme provası; **WEEM 1.0**; geçiş: ZIP yedek → WEEM Rawstats'ın üstüne → YolGo içe aktar | İş telefonlarında WEEM | 4 |
+| 10 | Optimizasyon (pil, bellek, APK boyutu, arka planda kalma), kod sadeleştirme (`/simplify`), güvenlik ve büyük denetim, **WEEM 1.0**; geçiş (S31): arşiv ZIP → Rawstats ve YolGo kaldırılır → WEEM temiz kurulur, kayıtlar sıfırdan | İş telefonlarında WEEM | 4 |
 | 11 | ~~`BEKLEYEN_OZELLIKLER.md` kullanıcıya sorulur~~ → S29: Aşama 10'da gerçek kullanımdan (A10.5) sonra, sadeleştirmeden (A10.6) önce sorulur (A10.5b) | Kullanıcı kararı | — |
 
 Toplam 48 oturumluk görev (`docs/WEEM_ISLER.md`; aksamalarla kabaca 50–55 oturum) + telefon denemeleri. Ara `.dev` sürümleri gölge modda sahada denenir; geçiş yalnız WEEM 1.0 ile.
@@ -213,6 +213,7 @@ Toplam 48 oturumluk görev (`docs/WEEM_ISLER.md`; aksamalarla kabaca 50–55 otu
 | S28 Saha denemeleri | Kullanıcı ara deneme yapmak istemiyor: (K) deneme görevleri (A3.10 gölge mod, A4.4, A5.5, A6.10 YolGo ile yan yana sürüş, A7.3, A8.5, A9.3) kaldırıldı; aşama bitişi = testler yeşil. Sorunlar son sürümden sonra gerçek kullanımda (A10.4–A10.5) düzeltilir. Risk: telefonda hiç denenmemiş kod geçişte ilk kez çalışır; geçişe kadar Rawstats/YolGo/Sürüş Paneli kurulu kalır — 20 Ekim |
 | S29 Bekleyen özellikler ne zaman | `BEKLEYEN_OZELLIKLER.md` kod sadeleştirmeden (A10.6) önce kullanıcıya tek tek sorulur (A10.5b; eski A11.1). Sadeleştirme bu kararları ve A10.5 listesini birlikte gözetir — 20 Ekim |
 | S30 APK boyutu (A10.1) | Yalnız **arm64-v8a** derlenir (Pixel 10 Pro, Poco X3, S22 arm64; A6.5 sorusu (1) kapandı); **release'te R8 + kaynak küçültme** açık (`.dev` küçültmesiz). `.dev` 135,8 → 69,7 MB, release 32,0 MB (`docs/OPTIMIZASYON.md`) — 21 Ekim |
+| S31 Geçiş sıfırdan (A10.3–A10.4) | **Tamamen temiz kurulum:** eski kayıtlar WEEM'e taşınmaz (Rawstats ZIP geri yükleme ve YolGo içe aktarma geçişte kullanılmaz; özellikler uygulamada kalır, çıkarmak A10.6 kararı). Önce **arşiv**: Rawstats ZIP dışa aktarma + YolGo kayıtları bir kez İndirilenler'e (WEEM'e yüklenmez). Sonra Rawstats ve YolGo kaldırılır, WEEM 1.0 temiz kurulur: kayıtlar, ayarlar, ev konumu, filo komisyonu, izinler ve Ninebot eşleşmesi yeniden. Kimlik (paket, imza; Bölüm 2) değişmez. A10.3 geri yükleme provası yerine kısa kurulum rehberi — 21 Ekim |
 
 ## 9. İlerleme
 
