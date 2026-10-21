@@ -189,6 +189,21 @@ class PhoneBridgeTest {
     }
 
     @Test
+    fun anUnchangedOfferIsRefreshedFromTheTickSoTheReceiverKeepsIt() {
+        // Teklif ekranda duruyor, kaynak akış aynı listeyi bir daha yaymıyor: yenileme saniyelik tikten gelir.
+        provider.providerOffers(listOf(offer("a")), now)
+        flush()
+        repeat(20) {
+            now += 1_000
+            provider.tick(now)
+            flush()
+            receiver.tick(now)
+        }
+        assertEquals(1, receiver.orders.offers.value.size)
+        assertEquals(5, pOut.count(LinkTopic.OFFERS))
+    }
+
+    @Test
     fun receiverDropsOffersOnSilenceAndOnLinkLoss() {
         provider.providerOffers(listOf(offer("a")), now)
         flush()

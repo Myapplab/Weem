@@ -440,7 +440,7 @@ class PhoneBridge(
 
     // ------------------------------------------------------------------ saat
 
-    /** Saniyede bir: bekleyen teklif/gün/rota gönderimi, navigasyon yedeği, eskiyen uzak değerler. */
+    /** Saniyede bir: bekleyen teklif/gün/rota gönderimi, duran teklifin yenilenmesi, navigasyon yedeği, eskiyen uzak değerler. */
     fun tick(now: Long = wall()) {
         var offers: List<OfferSummary>? = null
         var day: DaySummary? = null
@@ -448,6 +448,10 @@ class PhoneBridge(
         val fallback = ArrayList<NavTarget>()
         synchronized(lock) {
             pendingOffers?.let { if (now - sentOffersAt >= OFFERS_MIN_GAP_MS) { markOffers(it, now); offers = it } }
+            // Kaynak akış (StateFlow) aynı listeyi yeniden yaymaz: teklif dururken 5 sn'lik yenileme buradan (Receiver boşaltmasın).
+            if (offers == null && role == LinkRole.PROVIDER) {
+                sentOffers?.takeIf { it.isNotEmpty() && now - sentOffersAt >= OFFERS_REFRESH_MS }?.let { markOffers(it, now); offers = it }
+            }
             pendingDay?.let { if (now - sentDayAt >= DAY_MIN_GAP_MS) { sentDay = it; sentDayAt = now; pendingDay = null; day = it } }
             if (routeDirty && now - sentRouteAt >= ROUTE_MIN_GAP_MS) {
                 pendingRoute?.let { sentRoute = it; sentRouteAt = now; route = it }
