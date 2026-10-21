@@ -195,7 +195,7 @@ object LinkHub {
                 app?.let { a -> Store.guarded(a, "link_remote") { onRemote(message) } }
                 return
             }
-            _bridge.value?.incoming(message.type, message.payload)
+            _bridge.value?.incoming(message.type, message.payload, sentAtMs = message.localSentAtMs)
         }
 
         override fun onPaired(peer: PeerRecord) {

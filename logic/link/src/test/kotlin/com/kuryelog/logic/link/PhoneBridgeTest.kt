@@ -302,6 +302,22 @@ class PhoneBridgeTest {
     }
 
     @Test
+    fun navTargetArrivingAfterTheProviderFallbackIsNotOpenedOnTheReceiver() {
+        // Wi-Fi kısa koptu: Provider 8 sn sonra yerelde açtı; hedef TTL (2 dk) içinde ama 20 sn sonra ulaştı. İki telefonda rota olmaz.
+        val sent = now
+        provider.nav.open(target("r4", at = sent))
+        now += PhoneBridge.NAV_FALLBACK_MS
+        provider.tick(now)
+        assertEquals(listOf("r4"), pNav.opened.map { it.requestId })
+        now = sent + 20_000
+        receiver.incoming(LinkTopic.NAV_TARGET.type, LinkPayloads.navTarget(target("r4", at = sent)), now, sentAtMs = sent)
+        assertTrue(rNav.opened.isEmpty())
+        // Zamanında gelen (zarf saatiyle 5 sn) açılır.
+        receiver.incoming(LinkTopic.NAV_TARGET.type, LinkPayloads.navTarget(target("r5", at = now - 9_000)), now, sentAtMs = now - 5_000)
+        assertEquals(listOf("r5"), rNav.opened.map { it.requestId })
+    }
+
+    @Test
     fun energyIsAskedFromTheReceiver() = runBlocking {
         pOut.auto = true
         rOut.auto = true

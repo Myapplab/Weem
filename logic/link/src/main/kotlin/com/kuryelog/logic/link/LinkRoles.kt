@@ -36,7 +36,7 @@ enum class LinkTopic(val type: String, val reliable: Boolean, val ttlMs: Long, v
     OFFERS("OfferSummary", false, 2 * MINUTE, LinkRole.PROVIDER),
     STAGES("TripStages", true, HOUR, LinkRole.PROVIDER),
     DAY("DaySummary", false, 24 * HOUR, LinkRole.PROVIDER),
-    /** Ulaşamazsa Provider [PhoneBridge.NAV_FALLBACK_MS] sonra rotayı kendisi açar; geç gelen hedef Receiver'da açılmaz. */
+    /** Ulaşamazsa Provider [PhoneBridge.NAV_FALLBACK_MS] sonra rotayı kendisi açar; [PhoneBridge.NAV_OPEN_WITHIN_MS]'den geç gelen hedef Receiver'da açılmaz. */
     NAV_TARGET("NavTarget", true, 2 * MINUTE, LinkRole.PROVIDER),
     ENERGY_REQUEST("EnergyRequest", true, 24 * HOUR, LinkRole.PROVIDER),
     ENERGY_RESULT("EnergyResult", true, 24 * HOUR, LinkRole.RECEIVER),

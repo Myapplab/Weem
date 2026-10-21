@@ -242,7 +242,7 @@ Plan 4.3–4.5'in kodu. Saf kısım `logic/link` (`LinkRoles`, `LinkPayloads`, `
 
 ### 4.5 Navigasyon hedefi
 
-Provider'da `LinkIntake` → `NavController.onExternalText` hedefi çözer; 60 m yakınlık denetiminden sonra `forward` bağlıysa `NavTarget`'ı yollar ("Rota öteki telefonda açılıyor"), bu telefonda rota açılmaz. Bağlı değilse ya da 8 sn içinde onay gelmezse rota Provider'da açılır. Receiver aynı `requestId`'yi bir kez açar ve harita sekmesine geçer; TTL'den (2 dk) eski hedefi açmaz (Provider zaten açtı). Etiket restoran adı ya da adres metni (S5).
+Provider'da `LinkIntake` → `NavController.onExternalText` hedefi çözer; 60 m yakınlık denetiminden sonra `forward` bağlıysa `NavTarget`'ı yollar ("Rota öteki telefonda açılıyor"), bu telefonda rota açılmaz. Bağlı değilse ya da 8 sn içinde onay gelmezse rota Provider'da açılır. Receiver aynı `requestId`'yi bir kez açar ve harita sekmesine geçer; gönderiminden (zarf saati, saat farkı düzeltilmiş) 6 sn'den geç gelen hedefi açmaz: Provider 8 sn sonra zaten açtı (TTL 2 dk yalnız yeniden gönderim süresi; denetim düzeltmesi, 21 Ekim). Etiket restoran adı ya da adres metni (S5).
 
 ### 4.6 Enerji dönüşü
 
