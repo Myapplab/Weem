@@ -5,6 +5,7 @@ import com.kuryelog.app.core.ShiftHub
 import com.kuryelog.app.core.Store
 import com.kuryelog.app.economics.Economics
 import com.kuryelog.app.link.LinkHub
+import com.kuryelog.app.remote.RemoteHub
 import com.kuryelog.app.map.BatteryRuntime
 import com.kuryelog.app.map.DayRuntime
 import com.kuryelog.app.map.NavRuntime
@@ -41,6 +42,8 @@ object TwoPhone {
         // Önce tek telefon bağı; mod açıksa `init` köprüyü kurup yeniden bağlar.
         rewire(app, null)
         LinkHub.init(app, localFor = { role -> local(app, role) }, onBridge = { rewire(app, it) })
+        // A9.1: uzaktan kullanım link'in `remote.*` iletilerini ve durumunu dinler.
+        RemoteHub.init(app)
     }
 
     private fun local(app: Context, role: LinkRole): PhoneBridge.Local {

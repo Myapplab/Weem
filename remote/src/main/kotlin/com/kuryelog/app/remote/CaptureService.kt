@@ -284,7 +284,7 @@ class CaptureService : Service() {
                 .addAction(Notification.Action.Builder(null, RemoteText.NOTIF_STOP.get(lang), stop).build())
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) b.setSilent(true)
+                .setCategory(Notification.CATEGORY_SERVICE)
             return b.build()
         }
 
