@@ -212,6 +212,7 @@ Toplam 48 oturumluk görev (`docs/WEEM_ISLER.md`; aksamalarla kabaca 50–55 otu
 | S27 Aşama 10 sırası | Önce kalan özellikler → optimizasyon → **geçiş öncesi kısa güvenlik kontrolü** (müşteri verisi, izinler) → geri yükleme provası → iş telefonlarına geçiş → gerçek kullanım dönemi (kullanıcı gereksiz/birleşecek özellikleri seçer) → sadeleştirme (özellik çıkarma/birleştirme dahil) → **en son** büyük denetim (ultracode, A10.7) — 20 Ekim |
 | S28 Saha denemeleri | Kullanıcı ara deneme yapmak istemiyor: (K) deneme görevleri (A3.10 gölge mod, A4.4, A5.5, A6.10 YolGo ile yan yana sürüş, A7.3, A8.5, A9.3) kaldırıldı; aşama bitişi = testler yeşil. Sorunlar son sürümden sonra gerçek kullanımda (A10.4–A10.5) düzeltilir. Risk: telefonda hiç denenmemiş kod geçişte ilk kez çalışır; geçişe kadar Rawstats/YolGo/Sürüş Paneli kurulu kalır — 20 Ekim |
 | S29 Bekleyen özellikler ne zaman | `BEKLEYEN_OZELLIKLER.md` kod sadeleştirmeden (A10.6) önce kullanıcıya tek tek sorulur (A10.5b; eski A11.1). Sadeleştirme bu kararları ve A10.5 listesini birlikte gözetir — 20 Ekim |
+| S30 APK boyutu (A10.1) | Yalnız **arm64-v8a** derlenir (Pixel 10 Pro, Poco X3, S22 arm64; A6.5 sorusu (1) kapandı); **release'te R8 + kaynak küçültme** açık (`.dev` küçültmesiz). `.dev` 135,8 → 69,7 MB, release 32,0 MB (`docs/OPTIMIZASYON.md`) — 21 Ekim |
 
 ## 9. İlerleme
 

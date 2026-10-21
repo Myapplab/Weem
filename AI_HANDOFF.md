@@ -2,6 +2,13 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-21 — A10.1 optimizasyon bitti (Claude Opus · high; dal `ccr-a451c797-hjk38y`)
+- Yapılan: S30 (kullanıcı): yalnız `arm64-v8a` (`ndk.abiFilters`), release'te R8 + `isShrinkResources` (`app/proguard-rules.pro`); `ci/check_identity.sh` ABI ve dex'te `WatchService`/`NotifService` adını denetler; `rememberMapPuck` Activity STARTED değilken GPS dinlemez. Ölçüm ve arka plan envanteri `docs/OPTIMIZASYON.md`.
+- Ölçüm: `.dev` 135.832.909 → 69.718.203 bayt; release 31.994.290 bayt (dex 41,2 → 5,8 MiB).
+- Doğrulama: `-p logic test` yeşil; `:app` 84 test (ilk koşuda 1 test bir kez kırmızı, adı kaydedilmedi; `--rerun-tasks` ile 3 koşu yeşil — kararsız test olabilir), `:map` 9 test (+`MapPuckLifecycleTest`, düzeltmesiz kırmızı); `:app`/`:map` lint 0 hata; iki APK kimlik denetimi yeşil. Telefonda denenmedi.
+- Açık kalan: R8'li release telefonda ilk kez A10.4'te açılır (sorunda `isMinifyEnabled = false`); pil/bellek sayıları telefonda (`OPTIMIZASYON.md` 4).
+- Sıradaki: A10.2 (geçiş öncesi güvenlik kontrolü).
+
 ## 2026-10-21 — Aşama 8–9 sonu denetimi: `/code-review high`, 10 bulgu düzeltildi (Claude Opus · high; PR #10 → `main` `e66aafa`)
 - Yapılan: uzaktan akış döndürmede donmuyor (`FlowControl.restart`, sayaçlar bağlantının); izleyen Wi-Fi adresini en çok 15 sn bekler; geç `NavTarget` Receiver'da açılmaz (zarf gönderiminden 6 sn, `NAV_OPEN_WITHIN_MS`); duran teklif tikten yenilenir; hırsızlık koruması devredeyken Poco'da PIN'siz kapatma yolu yok (`Status.guarding` kilidi: aç/kapa, rol, eşleşme, PIN, SMS; `TheftAlarm` tam ekran ve dokunuşu yutar; `ARMED`'da kartta PIN/3 sn); rol değişince koruma/SMS sıfırlanır; siren denemesi 3 sn; `LinkService` bayrağı reddedilince düşer; yeni köprü son saat farkıyla başlar; `TwoPhone` parçaları ayrı `Store.guarded`.
 - Doğrulama: `-p logic test` 1.941 test, 0 kırmızı (+5 regresyon); `:app` 84 test; `:app`/`:link`/`:remote` lint 0 hata (yerelde, Maven Central 429 sonrası); PR #10 CI yeşil; APK `apk.yml` #4 yeşil → Release `weem-dev-4` (`weem-0.1.0-dev.apk`, ≈154,4 MiB). Telefonda denenmedi.
