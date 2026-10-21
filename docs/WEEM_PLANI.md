@@ -35,7 +35,7 @@ Kaynak: seçim sayfası <https://claude.ai/artifact/5RTwBJxg8JHXCgUTbLAGyD> (kay
 - **Genel:** G1 Tek vardiya / gün · G2 Ev konumu · G3 Dil (Türkçe / Azərbaycanca) · G4 Az bildirim · G5 İlk açılış kurulumu
 - **Yeni:** N1 2 telefon modu · N2 Uzaktan kullanım · N3 Otomatik şifreli yedek · N4 Gün sonu raporu ve net kazanç · N5 Menzil uyarısı · N6 Hırsızlık koruması · N8 Günlük kazanç hedefi
 
-**Sonra (3):** Y13 Yüzey ve titreşim ölçümü · Y14 Yol kalibrasyonu · N7 Sesli uyarılar → `docs/BEKLEYEN_OZELLIKLER.md`. WEEM 1.0 tamamen hazır olunca kullanıcıya sorulur; o zamana kadar yazılmaz.
+**Sonra (3):** Y13 Yüzey ve titreşim ölçümü · Y14 Yol kalibrasyonu · N7 Sesli uyarılar → `docs/BEKLEYEN_OZELLIKLER.md`. **S32 (21 Ekim):** Y13 + Y14 ve S20 WEEM 1.1'de (geçişten hemen sonra); N7 çıkarıldı.
 
 **Çıkar (1):** N9 Bakım hatırlatıcı — yazılmaz.
 
@@ -214,6 +214,7 @@ Toplam 48 oturumluk görev (`docs/WEEM_ISLER.md`; aksamalarla kabaca 50–55 otu
 | S29 Bekleyen özellikler ne zaman | `BEKLEYEN_OZELLIKLER.md` kod sadeleştirmeden (A10.6) önce kullanıcıya tek tek sorulur (A10.5b; eski A11.1). Sadeleştirme bu kararları ve A10.5 listesini birlikte gözetir — 20 Ekim |
 | S30 APK boyutu (A10.1) | Yalnız **arm64-v8a** derlenir (Pixel 10 Pro, Poco X3, S22 arm64; A6.5 sorusu (1) kapandı); **release'te R8 + kaynak küçültme** açık (`.dev` küçültmesiz). `.dev` 135,8 → 69,7 MB, release 32,0 MB (`docs/OPTIMIZASYON.md`) — 21 Ekim |
 | S31 Geçiş sıfırdan (A10.3–A10.4) | **Tamamen temiz kurulum:** eski kayıtlar WEEM'e taşınmaz (Rawstats ZIP geri yükleme ve YolGo içe aktarma geçişte kullanılmaz; özellikler uygulamada kalır, çıkarmak A10.6 kararı). Önce **arşiv**: Rawstats ZIP dışa aktarma + YolGo kayıtları bir kez İndirilenler'e (WEEM'e yüklenmez). Sonra Rawstats ve YolGo kaldırılır, WEEM 1.0 temiz kurulur: kayıtlar, ayarlar, ev konumu, filo komisyonu, izinler ve Ninebot eşleşmesi yeniden. Kimlik (paket, imza; Bölüm 2) değişmez. A10.3 geri yükleme provası yerine kısa kurulum rehberi — 21 Ekim |
+| S32 Bekleyen özellikler (A10.5b, kullanıcı erken istedi) | **Y13 Yüzey ve titreşim ölçümü** ve **Y14 Yol kalibrasyonu** birlikte yazılır (A10.4b); **S20** Siparişler çevrimiçi oturumlar listesi + Araçlar (bölünmüş ekran, iptal gözlemi) yazılır (A10.4a); **N7 Sesli uyarılar yazılmayacak** (çıkarıldı). Sıra: geçiş (A10.4) bugünkü 1.0 ile şimdi; bu özellikler hemen ardından **WEEM 1.1** (güncelleme kurulumu, kayıtlar korunur); eski testler önce Kotlin'e çevrilir — 21 Ekim |
 
 ## 9. İlerleme
 
