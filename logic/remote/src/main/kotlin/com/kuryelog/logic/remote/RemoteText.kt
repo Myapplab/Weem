@@ -3,7 +3,7 @@ package com.kuryelog.logic.remote
 import com.kuryelog.logic.core.Bilingual
 import com.kuryelog.logic.core.Lang
 
-/** Uzaktan kullanım metinleri (REMOTE.md 1.6). AZ metinler onay bekler (M-R-1). */
+/** Uzaktan kullanım metinleri (REMOTE.md 1.6, 2.4). AZ metinler onay bekler (M-R-1, M-R-2). */
 enum class RemoteText(override val tr: String, override val az: String) : Bilingual {
     VIEW_TITLE("Öteki telefonun ekranı", "Digər telefonun ekranı"),
     VIEW_START("Göster", "Göstər"),
@@ -34,6 +34,17 @@ enum class RemoteText(override val tr: String, override val az: String) : Biling
     ASK_TEXT("Dokunun: izin verin", "Toxunun: icazə verin"),
     NOTIF_STOP("Bitir", "Bitir"),
     N_WATCHED("Ekran paylaşılıyor · öteki telefon izliyor", "Ekran paylaşılır · digər telefon izləyir"),
+    // A9.2: dokunuş, sistem tuşları, oturum işareti.
+    V_VIEW_ONLY("Yalnız görüntü: öteki telefonda uzaktan dokunuş kapalı", "Yalnız görüntü: digər telefonda uzaqdan toxunuş qapalıdır"),
+    KEY_BACK("Geri", "Geri"),
+    KEY_HOME("Ana ekran", "Əsas ekran"),
+    KEY_RECENTS("Son uygulamalar", "Son tətbiqlər"),
+    KEY_NOTIFICATIONS("Bildirimler", "Bildirişlər"),
+    TOUCH_ON("Uzaktan dokunuş açık: öteki telefon bu ekranı yönetebilir", "Uzaqdan toxunuş açıqdır: digər telefon bu ekranı idarə edə bilər"),
+    TOUCH_OFF("Uzaktan dokunuş kapalı: öteki telefon yalnız görür. Yönetebilmesi için Erişilebilirlik'te \"WEEM uzaktan dokunuş\"u açın.", "Uzaqdan toxunuş qapalıdır: digər telefon yalnız görür. İdarə edə bilməsi üçün Əlçatanlıqda \"WEEM uzaktan dokunuş\"u açın."),
+    TOUCH_SETTINGS("Aç", "Aç"),
+    MARK_SHARING("● Ekran paylaşılıyor · Bitir", "● Ekran paylaşılır · Bitir"),
+    MARK_CONTROLLED("● Öteki telefon kullanıyor · Bitir", "● Digər telefon istifadə edir · Bitir"),
 }
 
 /** Görünüm → metin (saf; `:app` ekranı ve bildirimler kullanır). */
@@ -59,6 +70,21 @@ object RemoteLines {
         HostView.State.CONSENT -> RemoteText.H_CONSENT.get(lang)
         HostView.State.SHARING -> if (v.watched) RemoteText.H_WATCHED.get(lang).format(v.kbps) else RemoteText.H_SHARING.get(lang)
     }
+
+    /**
+     * Paylaşan ekranındaki oturum işareti (REMOTE.md 2.4): paylaşım açıkken her zaman; dokununca paylaşım biter. İzleyen bağlıysa
+     * (dokunuş açıksa "kullanıyor", değilse "izliyor" bildirimdeki gibi).
+     */
+    fun marker(v: HostView, lang: Lang): String? = when {
+        v.state != HostView.State.SHARING -> null
+        v.watched && v.touch -> RemoteText.MARK_CONTROLLED.get(lang)
+        v.watched -> "● " + RemoteText.N_WATCHED.get(lang) + " · " + RemoteText.NOTIF_STOP.get(lang)
+        else -> RemoteText.MARK_SHARING.get(lang)
+    }
+
+    /** İzleyen satırı oynarken dokunuş kapalıysa ek bilgi. */
+    fun viewOnly(v: ViewerView, lang: Lang): String? =
+        if (v.state == ViewerView.State.PLAYING && !v.control) RemoteText.V_VIEW_ONLY.get(lang) else null
 
     /** İzleyen ekranındaki "Göster" düğmesi açık mı (oturum yokken). */
     fun canView(v: ViewerView) = v.state == ViewerView.State.IDLE || v.state == ViewerView.State.ENDED

@@ -19,6 +19,9 @@ data class RemoteConfig(
     val keyRequestGapMs: Long = 500,
     val reconnectMs: List<Long> = listOf(1_000, 2_000, 4_000),
     val maxSide: Int = 1280,
+    /** Dokunuş (REMOTE.md 2.3): parça gelmeden bu kadar geçerse basılı parmak kalkar; bir hareket en çok [maxGestureMs]. */
+    val touchStallMs: Long = 1_000,
+    val maxGestureMs: Long = 30_000,
 ) {
     companion object {
         const val PORT = 47312
