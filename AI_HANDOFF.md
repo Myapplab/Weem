@@ -5,7 +5,7 @@ Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 
 ## 2026-10-21 — A9.1 bitti: uzaktan kullanım ekran akışı (Claude Opus · high; dal `ccr-f89752d7-vriy4p`)
 - Yapılan: saf `logic/remote` (akış çerçevesi, HKDF + AES-GCM akış uçları, `remote.ask/offer/end` + geçici P-256 ECDH, `CaptureGeometry`, `AnnexB`, `FlowControl`, `HostMachine`/`ViewerMachine`, `RemoteText`); `LinkStatus.peerHost`; `:link` `LinkHub.onRemote/publishReliable/onLan/bindToLan`; `:remote` `RemoteHub`, `CaptureService` (MediaProjection + H.264), `ConsentActivity`, `RemoteNotices`, `StreamNet`, `Player`; `:app` `RemoteScreen`. `REMOTE.md` 1.
 - Önemli karar: video `:link` kanalından geçmez (65 KiB ileti, onay kuyruğu, canlılık bekler) → ayrı TCP 47312, anahtar link üstünden geçici ECDH; paylaşım bir onayla açık kalır (izleyensiz 10 dk), cepteki telefonda her izlemede onay olmasın.
-- Doğrulama: `-p logic test` 1.872 test, 0 kırmızı (`logic/remote` 44); `:app` 83 test, `:remote`/`:link`/`:app` lint 0 sorun (yerelde). Telefonda denenmedi.
+- Doğrulama: `-p logic test` 1.872 test, 0 kırmızı (`logic/remote` 44); `:app` 83 test, `:remote`/`:link`/`:app` lint 0 sorun (yerelde); PR #7 CI yeşil, `main`'e birleşti. Telefonda denenmedi.
 - Açık kalan: `REMOTE.md` 1.9 (kilit ekranı, `FLAG_SECURE`, gecikme/bit hızı ölçülmedi), AZ metin onayı M-R-1.
 - Sıradaki: A9.2 (dokunuş iletimi) ya da A8.4 (S10, önce kullanıcıya sorulur).
 
