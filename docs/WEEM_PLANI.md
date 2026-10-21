@@ -108,7 +108,7 @@ Saniyelik scooter verisi (`ScooterLive`, `economics-scooter.jsonl`) Receiver'dan
 - **Taşıma:** hotspot **hangi telefondaysa** onun Wi-Fi ağı üstünden TCP (S6; bugün hotspot Poco'da, Pixel ona bağlanıyor; rol ile hotspot sahibi birbirinden bağımsız, keşif iki yönde çalışır), yoksa Bluetooth (yalnız küçük mesajlar; klasik Bluetooth, S23; scooter BLE bağlantısını bozmaması A8.1'in ölçüm planıyla telefonda ölçülür). Ayrıntı `docs/sartname/LINK.md` Bölüm 1. Hotspot sahibinde "Hotspot'u otomatik kapat" kapalı olmalı. Her telefon havayı kendi internetinden alır.
 - **Eşleştirme ve şifreleme:** QR ile bir kez (cihaz kimliği, açık anahtar, tek kullanımlık jeton); oturum anahtarı anahtar değişimiyle türetilir, her mesaj kimlikli şifreli (AEAD), `seq` tekrar saldırısını önler. Anahtarlar Android Keystore'da (yeni takma ad; `VERI_SOZLESMESI` yeni kalem). A8.2'de seçildi: Noise `XX` / `XXpsk3` (jeton = psk) + P-256 + AES-256-GCM + SHA-256, yalnız JCA; kimlik anahtarı Keystore AES anahtarıyla sarılı; ayrıntı `LINK.md` Bölüm 3; araçlar S24.
 - **Bağlanışta:** sürüm denetimi (`protocolVersion` ana sürümü eşit olmalı; küçük fark: bilinmeyen alan yok sayılır; uygulama sürüm farkı Daha fazla'da uyarı), saat farkı ölçümü (4 zaman damgalı ping, 5 dk'da bir yenilenir), son durum mesajlarının tamamı yeniden gönderilir.
-- **Hırsızlık koruması (N6):** `:link` bağlantı durumu + scooter hareketi (`ScooterLive.speedKmh`) + telefon sensörü; ayrıntı A8.4'te kullanıcıya sorulur (S10).
+- **Hırsızlık koruması (N6):** Receiver'da çalışır: scooter hızı (`ScooterLive.speedKmh`) + Poco hareket sensörü + GPS kayması; devreye otomatik (aşama, Pixel uzak) + elle; alarm iki telefonda, bağlantı koparsa Poco SMS ile konum (S10; `LINK.md` Bölüm 5).
 
 ### 4.6 Uzaktan kullanım (`:remote`)
 
@@ -195,7 +195,7 @@ Toplam 48 oturumluk görev (`docs/WEEM_ISLER.md`; aksamalarla kabaca 50–55 otu
 | S7 Eski sözleşmeler | Kaldırılır: `com.kuryelog.app.economics` sağlayıcısı, `SHARE_HOME`, `PICK_HOME` — 17 Ekim |
 | S8 Net ve hedef | Net = brüt + bahşiş − filo komisyonu − enerji maliyeti (Wh × ayarlanabilir kWh fiyatı / şarj verimi). Hedef: günlük sabit tutar, net üzerinden, ayardan değişir — 17 Ekim |
 | S9 Listede adı olmayan eski davranışlar | Hepsi kalır; yalnız "Google Maps'te rota açma" kaldırılır (görev kartındaki "Rota Oluştur" WEEM'in kendi navigasyonunu açar) — 17 Ekim |
-| S10 Hırsızlık koruması | Ayrıntı şimdi gerekmiyor; A8.4'te sorulur — 17 Ekim |
+| S10 Hırsızlık koruması | 21 Ekim (A8.4): koruma **scooter + Receiver telefonu (Poco)**; devreye **otomatik** (restoranda/müşteride ya da Pixel uzaklaşınca) **+ elle** ("Park"); alarm **Pixel'de ses + titreşim, Poco'da yüksek siren, Poco ekranında uyarı**; bağlantı koparsa **Poco SMS ile konum** yollar (Poco'da SIM gerekir) ve Pixel son bilinen konumu gösterir. WEEM scooter'a salt okur: kilitleyemez, scooter alarmını çaldıramaz. Ayrıntı `LINK.md` Bölüm 5 — 17/21 Ekim |
 | S11 Scooter bağlantısı | Scooter tek telefona bağlanır (Receiver = Poco). Provider (Pixel) rolünde WEEM scooter'a hiç bağlanmaz; resmî Ninebot uygulaması Pixel'de gerektiğinde kullanılır, sonra Pixel Bluetooth'u kapatılır ya da scooter unutturulur — 17 Ekim |
 | S12 Uzaktan kullanım | İki yönlü ve tam: yanındaki telefondaki (Pixel ↔ Poco) her şey yönetilebilir — 17 Ekim |
 | S13 Usage | Ultracode yalnız gerekli yerlerde (Aşama 3 ve 6 şartnameleri, son büyük denetim); paralel ajan en çok 2–3, çıktı bölüm bölüm repoya + push; kalite en yüksek (kural `AGENTS.md`) — 17 Ekim |

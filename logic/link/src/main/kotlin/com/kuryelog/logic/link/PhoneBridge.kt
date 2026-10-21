@@ -66,6 +66,8 @@ class PhoneBridge(
         val scooter: ScooterBridge = ScooterBridge.NONE,
         val shift: ShiftPort? = null,
         val navOpened: (NavTarget) -> Unit = {},
+        /** Receiver'da Pixel'den gelen hırsızlık komutu ([TheftGuard.arm]/[TheftGuard.disarm]); aynı kimlik bir kez. */
+        val theftCommand: (TheftCommand) -> Unit = {},
     )
 
     private val lock = Any()
@@ -98,6 +100,8 @@ class PhoneBridge(
     private var sentRouteAt = Long.MIN_VALUE / 2
     private var pendingRoute: RouteStatus? = null
     private var routeDirty = false
+    private var sentTheft: TheftGuard.Status? = null
+    private var sentTheftAt = Long.MIN_VALUE / 2
     private val answered = LinkedHashMap<String, EnergyResult>()
     private val answering = HashSet<String>()
 
@@ -111,6 +115,12 @@ class PhoneBridge(
     private var handledEnd: Long? = null
     private var activeTrips: Set<String>? = null
     private val openedTargets = LinkedHashSet<String>()
+    private val doneTheftCommands = LinkedHashSet<String>()
+
+    // --- Provider: hırsızlık ---
+    private val _theft = MutableStateFlow<TheftState?>(null)
+    /** Provider'da Receiver'ın son hırsızlık durumu; bağlantı kopsa da kalır (son bilinen konum, LINK.md 5.2). */
+    val theft: StateFlow<TheftState?> = _theft.asStateFlow()
 
     private val _peerRole = MutableStateFlow<LinkRole?>(null)
     /** Öteki telefonun bildirdiği rol (bağlanınca gelir). */
@@ -276,6 +286,22 @@ class PhoneBridge(
         if (send) publish(LinkTopic.BATTERY, LinkPayloads.battery(b))
     }
 
+    /** Hırsızlık koruması: durum değişince; uyarı/alarmdayken [THEFT_ALARM_EVERY_MS]'de bir (son konumla). */
+    fun receiverTheft(s: TheftGuard.Status, now: Long = wall()) {
+        if (role != LinkRole.RECEIVER) return
+        val send = synchronized(lock) {
+            val changed = sentTheft?.copy(fix = null) != s.copy(fix = null)
+            if (changed || s.alarming && now - sentTheftAt >= THEFT_ALARM_EVERY_MS) { sentTheft = s; sentTheftAt = now; true } else false
+        }
+        if (send) publish(LinkTopic.THEFT_STATE, LinkPayloads.theftState(TheftState(s, now)))
+    }
+
+    /** Provider'da "Park" ya da kapatma; teslim zorunlu. Yayınlanamadıysa false. */
+    fun sendTheft(action: TheftCommand.Action, now: Long = wall()): Boolean {
+        if (role != LinkRole.PROVIDER) return false
+        return publish(LinkTopic.THEFT_COMMAND, LinkPayloads.theftCommand(TheftCommand(UUID.randomUUID().toString(), action, now))) != null
+    }
+
     /** Rota: değişince, en çok saniyede bir. Rota yoksa hedefsiz ve ölçümsüz durum. Ev rotasının hedefi zaten null. */
     fun receiverRoute(r: RouteStatus?, now: Long = wall()) {
         if (role != LinkRole.RECEIVER) return
@@ -310,6 +336,8 @@ class PhoneBridge(
                 LinkTopic.ENERGY_RESULT -> d.energyResult(payload)?.let(::gotEnergy)
                 LinkTopic.BATTERY -> d.battery(payload)?.let { synchronized(lock) { battery = it; batteryAt = now; refreshLive(now) } }
                 LinkTopic.ROUTE -> d.route(payload)?.let { _route.value = it.takeIf { r -> r.target != null || r.route != null } }
+                LinkTopic.THEFT_STATE -> d.theftState(payload)?.let { _theft.value = it }
+                LinkTopic.THEFT_COMMAND -> d.theftCommand(payload)?.let(::gotTheftCommand)
             }
         } catch (e: Exception) {
             failures.failure("link_${topic.type}", e)
@@ -433,6 +461,13 @@ class PhoneBridge(
         for (t in fallback) local.nav.open(t)
     }
 
+    private fun gotTheftCommand(c: TheftCommand) {
+        val fresh = synchronized(lock) {
+            doneTheftCommands.add(c.commandId).also { while (doneTheftCommands.size > MAX_THEFT_COMMANDS) doneTheftCommands.remove(doneTheftCommands.first()) }
+        }
+        if (fresh) local.theftCommand(c)
+    }
+
     /** Provider'da uzak canlı değer: bağlıyken ve son özet [BATTERY_CURRENT_MS] içindeyse özetin kendisi; değilse bağlantısız. */
     private fun refreshLive(now: Long) {
         val b = battery ?: run { _live.value = null; return }
@@ -476,6 +511,9 @@ class PhoneBridge(
         const val ENERGY_WAIT_MS = 0L
         /** Özet 60 sn'de bir gelir: bu süreden eski özet canlı sayılmaz. */
         const val BATTERY_CURRENT_MS = 75_000L
+        /** Uyarı/alarmdayken `TheftState` yineleme aralığı (LINK.md 5.2). */
+        const val THEFT_ALARM_EVERY_MS = 10_000L
+        private const val MAX_THEFT_COMMANDS = 64
         private const val MAX_ENERGY_WAITING = 256
         private const val ENERGY_PREFIX = "e1"
 

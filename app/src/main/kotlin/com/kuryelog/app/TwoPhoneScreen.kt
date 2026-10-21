@@ -110,6 +110,9 @@ fun TwoPhoneScreen(lang: Lang, version: String, onBack: () -> Unit) {
             }
         }
 
+        // A8.4: hırsızlık koruması (LINK.md 5.4).
+        if (role != LinkRole.OFF) TheftCard(lang)
+
         Text(LinkText.THIS_PHONE.get(lang), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 16.dp))
         Text(mine?.let { LinkText.FINGERPRINT.get(lang).format(it) } ?: LinkText.IDENTITY_FAILED.get(lang), style = MaterialTheme.typography.bodyMedium)
         peer?.let { p ->

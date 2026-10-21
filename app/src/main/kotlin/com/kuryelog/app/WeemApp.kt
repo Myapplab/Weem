@@ -137,6 +137,8 @@ fun WeemApp(
             }
         }
         TaskAlertCard(tasks.alerts, tasks.lastPoint, lang, onRoute = { t -> taskRt.openRoute(t) }, onDismiss = { t -> taskRt.dismiss(t.id) })
+        // A8.4: Receiver'da hırsızlık koruması geri sayımı / alarm ekranı (LINK.md 5.1).
+        TheftOverlay(lang)
         }
     }
 }

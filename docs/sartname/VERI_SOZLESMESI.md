@@ -147,6 +147,17 @@ Parola AndroidKeyStore AES/GCM anahtarıyla şifreli (`password` = Base64 IV `:`
 
 Dosya `MODE_PRIVATE`, yazma eşzamanlı (`commit`). Yedeğe, dışa aktarmaya ve `kuryelog`'a girmez; eşleşme kaldırılınca `peer.*` silinir, `identity.*` kalır.
 
+### 5.3d WEEM hırsızlık koruması — dosya **`weem-theft`** — WEEM: **yeni** (A8.4, `LINK.md` 5.4)
+
+| Anahtar | Tip / değer |
+|---|---|
+| `enabled` | Boolean, varsayılan false (yalnız Receiver'da anlamlı) |
+| `auto_stage`, `auto_away` | Boolean, varsayılan true |
+| `pin_salt`, `pin_hash` | String (hex): 16 bayt rastgele tuz; SHA-256(tuz ‖ 4 haneli PIN). PIN'in kendisi saklanmaz |
+| `sms_1`, `sms_2` | String: alarm SMS numaraları (yalnız rakam ve `+`); bağlantı yüküne, yedeğe ve dışa aktarmaya girmez |
+
+Dosya `MODE_PRIVATE`, yazma `apply`. Bildirim 7406 kanal `theft` (`NotificationIds.THEFT`).
+
 ### 5.4 YolGo — `FlutterSharedPreferences` (her anahtar `flutter.` önekli) — WEEM: **aktarılmaz** (S1: eski YolGo'ya dışa aktarma eki yok; WEEM başka paketin verisini okuyamaz)
 
 Anahtarların anlamı WEEM `:map` ayarları için başvurudur; değerler WEEM'de yeniden girilir ya da yeniden öğrenilir.

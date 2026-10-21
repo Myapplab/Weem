@@ -36,6 +36,8 @@ object LinkPayloads {
     fun energyResult(r: EnergyResult): ByteArray = bytes(r.toJson())
     fun battery(b: BatterySummary): ByteArray = bytes(b.toJson())
     fun route(r: RouteStatus): ByteArray = bytes(r.toJson())
+    fun theftState(s: TheftState): ByteArray = bytes(s.toJson())
+    fun theftCommand(c: TheftCommand): ByteArray = bytes(c.toJson())
     fun role(r: LinkRole): ByteArray = bytes(JSONObject().put("schemaVersion", ROLE_SCHEMA).put("role", r.key))
 
     private fun bytes(j: JSONObject): ByteArray {
@@ -76,6 +78,10 @@ object LinkPayloads {
         fun route(b: ByteArray): RouteStatus? = RouteStatus.parse(text(b))?.let { r ->
             RouteStatus(r.target?.let { it.copy(requestedAtMs = t(it.requestedAtMs)) }, r.route?.let { it.copy(measuredAtMs = t(it.measuredAtMs)) }, t(r.updatedAtMs))
         }
+        fun theftState(b: ByteArray): TheftState? = obj(b)?.let(TheftState::parse)?.let { s ->
+            TheftState(s.status.copy(sinceMs = t(s.status.sinceMs), fix = s.status.fix?.let { it.copy(atMs = t(it.atMs)) }), t(s.atMs))
+        }
+        fun theftCommand(b: ByteArray): TheftCommand? = obj(b)?.let(TheftCommand::parse)?.let { it.copy(atMs = t(it.atMs)) }
         fun role(b: ByteArray): LinkRole? {
             val j = obj(b) ?: return null
             if (j.opt("schemaVersion") != ROLE_SCHEMA) return null
