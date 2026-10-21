@@ -140,7 +140,7 @@ Kurallar: `AGENTS.md` → "Birden çok Claude hesabı". Durumlar: `bekliyor` · 
 | No | İş | Bitti sayılır | Model · effort | Bağımlı | Durum |
 |---|---|---|---|---|---|
 | A10.1 | Optimizasyon: pil, bellek, APK boyutu, arka planda kalma | Ölçümler belgede | Opus · high | A7.2, A8.4, A9.2 | bitti (21 Ekim; `docs/OPTIMIZASYON.md`; pil/bellek telefonda A10.4 sonrası) |
-| A10.2 | Geçiş öncesi kısa güvenlik kontrolü (S27): müşteri adı/telefonu/adresi yanlış yere gidiyor mu (dışa aktarma, scooter telefonu, ağ, günlükler), izinler gereğinden fazla mı; `/code-review high`, ultracode yok | Bulgular kapandı | Opus · high | A10.1 | bitti (21 Ekim; dal `ccr-c2b5a357-2grx9a`, PR_NO; 8 bulgu kapandı; `VERI_SOZLESMESI` 9) |
+| A10.2 | Geçiş öncesi kısa güvenlik kontrolü (S27): müşteri adı/telefonu/adresi yanlış yere gidiyor mu (dışa aktarma, scooter telefonu, ağ, günlükler), izinler gereğinden fazla mı; `/code-review high`, ultracode yok | Bulgular kapandı | Opus · high | A10.1 | bitti (21 Ekim; dal `ccr-c2b5a357-2grx9a`, PR #12; 8 bulgu kapandı; `VERI_SOZLESMESI` 9) |
 | A10.3 | Geçiş rehberi (S31: sıfırdan): arşiv ZIP adımları (Rawstats + YolGo), kaldırma, WEEM 1.0 temiz kurulum, ilk açılış kurulumu, izinler, Ninebot eşleşmesi, 2 telefon eşleştirme; WEEM 1.0 APK'sı Release'e (`apk.yml`'ye release APK adımı) | Rehber + Release'te 1.0 APK | Sonnet · high | A10.2 | bekliyor |
 | A10.4 | (K) Geçiş (S31): arşiv ZIP → Rawstats ve YolGo kaldırılır → WEEM 1.0 temiz kurulur (kayıtlar sıfırdan) | İş telefonlarında WEEM | — | A10.3 | bekliyor |
 | A10.5 | (K) Gerçek kullanım dönemi: kullanıcı gereksiz özellikleri ve aynı motora birleşebilecekleri yazar | Kullanıcının listesi | — | A10.4 | bekliyor |
