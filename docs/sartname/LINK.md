@@ -314,3 +314,12 @@ Pixel'de son `TheftState` ve son konum (saatiyle) bağlantı kopsa da gösterili
 ### 5.4 Ayarlar
 
 Daha fazla → 2 telefon modu → **Hırsızlık koruması**: Açık/Kapalı (varsayılan kapalı), otomatik devreye alma (aşama / Pixel uzak, ikisi de açık), Poco'da: PIN, SMS numaraları, SMS izni, "Siren dene" (3 sn). Durum kartı iki telefonda: durum, kim aldı, son konum.
+
+### 5.5 Kod (A8.4)
+
+- Saf `logic/link`: `TheftGuard` (5.1), `TheftPin`, `TheftSms` (5.3), `TheftState`/`TheftCommand` (5.2; `LinkTopic.THEFT_STATE`/`THEFT_COMMAND`, `LinkPayloads`), `PhoneBridge.receiverTheft`/`sendTheft`/`theft`/`Local.theftCommand`, `TheftText` (TR/AZ; AZ onay bekler).
+- Android `:link` `TheftRuntime`: Receiver'da saniyede bir tik (aşamalar `PhoneBridge.orders.stages`, hız taze `ScooterLive.speedKmh`, bağlantı `LinkHub.status`), koruma açıkken `TYPE_LINEAR_ACCELERATION` + GPS 1 sn, siren (`RingtoneManager` alarm sesi, `USAGE_ALARM`, alarm kanalı en yükseğe, bitince eski düzey), uyarıda bip, SMS (`SmsManager`, `SEND_SMS`); Provider'da `theft` akışına göre titreşim/siren, bildirim düğmeleri Kapat ve Sesi kapat (`TheftReceiver`), haritada aç. Bildirim 7404 kanal `theft` (HIGH, kanal sessiz; ses kodla), uyarı/alarmda tam ekran.
+- `:app`: `TwoPhone` role göre bağlar (tek telefonda `stop`); `TheftCard` (2 telefon modu ekranı), `TheftOverlay` (Receiver'da geri sayım kartı, uyarı/alarmda kırmızı ekran + PIN ya da 3 sn basılı tutma).
+- Testler: `TheftGuardTest` 17, `TheftSmsTest` 6, `PhoneBridgeTest` +3, `LinkPayloadsTest` tür tablosu, `NotificationIdsTest` (20 girdi). Cihazda doğrulanmadı.
+- Açık: AZ metin onayı; Xiaomi'de "Servis SMS'i" ve tam ekran bildirim izni cihazda görülür; koruma tek telefon modunda yok; uzun kırmızı ışık restoran yakınında yanlış alarm riski (geri sayımda İptal, Pixel'den Kapat).
+
