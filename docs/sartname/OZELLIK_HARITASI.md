@@ -544,8 +544,8 @@ Modül başına: `:capture` R1 R2 R16 (+R3 alanları) · `:orders` R3 R5–R13 R
 
 | Kod | Özellik | Eski kod | Test (adet) |
 |---|---|---|---:|
-| Y13 | Yüzey ve titreşim ölçümü | YG `lib/surface/`, `android_overlay/SurfaceSignal.kt`, `RawDiagnostics.kt` | 44 |
-| Y14 | Yol kalibrasyonu | YG `lib/calibration/`, `android_overlay/RoadCalibration*.kt` | 56 |
+| Y13 | Yüzey ve titreşim ölçümü (**A10.4b bitti**, `MAP.md` 18) | YG `lib/surface/`, `android_overlay/SurfaceSignal.kt`, `RawDiagnostics.kt` | 44 |
+| Y14 | Yol kalibrasyonu (**A10.4b bitti**, `MAP.md` 18) | YG `lib/calibration/`, `android_overlay/RoadCalibration*.kt` | 56 |
 | N7 | Sesli uyarılar | yeni | 0 |
 | N9 | Bakım hatırlatıcı (çıkarıldı) | — | 0 |
 
