@@ -21,12 +21,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Surface
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -46,7 +48,7 @@ fun WSheet(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val p = palette()
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Box(Modifier.fillMaxSize()) {
             // Örtü ayrı katman: tıklanabilir üst düğüm içeriği anlamsal olarak birleştirmesin.
             Box(Modifier.fillMaxSize().clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss))
@@ -56,14 +58,14 @@ fun WSheet(
                 modifier = Modifier.align(Alignment.BottomCenter),
                 enter = slideInVertically(tween(WeemMotion.SHEET_IN, easing = WeemMotion.enter)) { it } + fadeIn(tween(WeemMotion.STATE)),
             ) {
-                Surface(
-                    modifier = modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(topStart = WeemRadius.sheet, topEnd = WeemRadius.sheet),
-                    color = p.surface.color(),
-                    contentColor = p.text.color(),
-                ) {
+                // Zemin kırpılmadan çizilir (yalnız üst köşeler yuvarlak): kırpılan bu şekil dokunuş denetiminde `Path.op` ister,
+                // Robolectric onu desteklemez. Boş `pointerInput` dokunuşun alttaki örtüye geçmesini önler (Surface gibi).
+                CompositionLocalProvider(LocalContentColor provides p.text.color()) {
                     Column(
-                        Modifier.navigationBarsPadding().imePadding()
+                        modifier.fillMaxWidth()
+                            .background(p.surface.color(), RoundedCornerShape(topStart = WeemRadius.sheet, topEnd = WeemRadius.sheet))
+                            .pointerInput(Unit) {}
+                            .navigationBarsPadding().imePadding()
                             .padding(start = if (padded) WeemSpace.xxl else 0.dp, end = if (padded) WeemSpace.xxl else 0.dp, top = WeemSpace.m, bottom = WeemSpace.xxl),
                         verticalArrangement = Arrangement.spacedBy(WeemSpace.l),
                     ) {

@@ -93,6 +93,24 @@ fun ListRow(
     }
 }
 
+/** Değer satırı: solda başlık, sağda değer (`numS`) ve ›; dokununca düzenleme açılır. */
+@Composable
+fun ValueRow(
+    title: String,
+    value: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    icon: ImageVector? = null,
+    enabled: Boolean = true,
+) {
+    val p = palette()
+    ListRow(
+        title = title, subtitle = subtitle, icon = icon, enabled = enabled, onClick = onClick, chevron = true, modifier = modifier,
+        trailing = { Text(value, style = WeemType.numS, color = p.text.color(), maxLines = 1) },
+    )
+}
+
 /** Anahtarlı satır: bütün satır anahtardır (`Role.Switch`); [tag] satıra verilir (testler `assertIsOn` ile okur). */
 @Composable
 fun SwitchRow(
