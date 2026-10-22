@@ -4,13 +4,14 @@ import android.animation.ValueAnimator
 import android.app.DatePickerDialog
 import android.content.Context
 import android.widget.Toast
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,17 +21,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,20 +38,41 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kuryelog.app.core.Store
+import com.kuryelog.app.ui.BtnKind
+import com.kuryelog.app.ui.ConfirmDialog
+import com.kuryelog.app.ui.Dot
+import com.kuryelog.app.ui.EmptyState
+import com.kuryelog.app.ui.ListRow
+import com.kuryelog.app.ui.ScreenTitle
+import com.kuryelog.app.ui.SettingsGroup
+import com.kuryelog.app.ui.StatusPill
+import com.kuryelog.app.ui.SubScreen
+import com.kuryelog.app.ui.WButton
+import com.kuryelog.app.ui.WCard
+import com.kuryelog.app.ui.WChip
+import com.kuryelog.app.ui.WIconButton
+import com.kuryelog.app.ui.WSheet
+import com.kuryelog.app.ui.WTone
+import com.kuryelog.app.ui.WeemIcons
+import com.kuryelog.app.ui.WeemRadius
+import com.kuryelog.app.ui.WeemSpace
+import com.kuryelog.app.ui.WeemType
+import com.kuryelog.app.ui.color
+import com.kuryelog.app.ui.mark
+import com.kuryelog.app.ui.palette
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.economics.OfferScoreBook
 import com.kuryelog.logic.orders.CashTips
 import com.kuryelog.logic.orders.DayDetail
 import com.kuryelog.logic.orders.OrderHistory
+import com.kuryelog.logic.orders.OrderRow
 import com.kuryelog.logic.orders.OrdersScreen
 import com.kuryelog.logic.orders.OrdersSessions
 import com.kuryelog.logic.orders.OrdersTools
@@ -70,7 +87,8 @@ import java.time.LocalDate
 /**
  * Siparişler sekmesi (A3.8, ORDERS.md 10.3): "Bugün" kartları, gün sayfaları (sola kaydırma eski güne), gün ayrıntısı; "Siparişler |
  * Teklif puanı" seçicisi (E4, A4.1). İçerik ve metinler `logic/orders` [OrdersScreen]'den ve `logic/economics`'ten (testli); burada yalnız
- * çizim ve dokunuşlar. Açıkken vardiya varsa 5 sn'de bir yenilenir.
+ * çizim ve dokunuşlar. Açıkken vardiya varsa 5 sn'de bir yenilenir. A10.4d (`docs/TASARIM.md` 12): başlık, canlı ŞU AN kartı, net kazanç
+ * kartı, platform kartları, oturumlar satırı, Araçlar, segment seçici, gün başlığı, süzgeç çipleri, siparişler tek kartta.
  */
 @Composable
 fun OrdersTab(lang: Lang, source: (Context) -> OrdersSource = OrdersAccess::source, offerScores: (Context) -> OfferScoreBook = OrdersAccess::offerScores) {
@@ -108,18 +126,22 @@ private fun OrdersHome(
     val today = remember(screen) { screen.today() }
     var metric by remember { mutableStateOf<OrderHistory.Metric?>(null) }
     var trip by remember { mutableStateOf<String?>(null) }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = WeemSpace.l, end = WeemSpace.l, top = WeemSpace.s, bottom = WeemSpace.xxl),
+        verticalArrangement = Arrangement.spacedBy(WeemSpace.m),
+    ) {
+        ScreenTitle(screen.labels.ordersTab)
         NowCard(today.nowTitle, today.now, today.active.map { it.label to it.tripId }) { src.showCustomerCard(it); onChanged() }
         CardView(today.hero, onMetric = { metric = it })
         today.report?.let { CardView(it) }
         today.platforms.forEach { CardView(it) }
         // A10.4a (S20): bugünün çevrimiçi oturumları ve Araçlar (bölünmüş ekran, iptal gözlemi; yalnız vardiya açıkken).
         val sessions = remember(src, scores.lang) { OrdersSessions(src, scores.lang) }
-        OutlinedButton(onClick = onSessions, Modifier.fillMaxWidth().padding(vertical = 4.dp)) { Text(sessions.title) }
+        SettingsGroup(null) { ListRow(sessions.title, icon = WeemIcons.History, chevron = true, onClick = onSessions) }
         val tools = remember(src, scores.lang) { OrdersTools(src, scores.lang) }
         if (tools.visible) ToolsCard(tools)
         // RS `renderOrders`: seçici gün sayfalarının üstünde; iki sekme aynı gün sayfalarını paylaşır.
-        OfferScoreSelector(scores.lang, scores.on, scores.pick)
+        OfferScoreSelector(scores.lang, scores.on, scores.pick, Modifier.padding(top = WeemSpace.s))
         val scoreDay: (@Composable ColumnScope.(String) -> Unit)? = if (!scores.on) null else { date ->
             OfferScoresDay(screen, scores.book, src.zone(), date, platform, scores.lang, screen.labels.cancel)
         }
@@ -130,42 +152,53 @@ private fun OrdersHome(
     trip?.let { id -> TripDialog(screen, id) { trip = null } }
 }
 
-/** Şu an kartı: açık teklif ve siparişler; açık siparişlerin müşteri kartı düğmesi (canlı akış bağlıyken). */
+/**
+ * Şu an kartı (canlı: 2 dp vurgu kenarı + canlı nokta): açık teklif ve siparişler, platform satırları noktalı; açık siparişlerin müşteri
+ * kartı tonal düğmesi (canlı akış bağlıyken).
+ */
 @Composable
 private fun NowCard(title: String, text: String?, buttons: List<Pair<String, String>>, onCustomerCard: (String) -> Unit) {
     if (text == null) return
-    val p = LocalWeemPalette.current
-    Card(
-        Modifier.fillMaxWidth().padding(vertical = 6.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(p.surface)),
-        border = BorderStroke(2.dp, Color(p.accent)),
-    ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(title, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Color(p.accentText))
-            Text(text, style = MaterialTheme.typography.bodyLarge)
-            for ((label, id) in buttons) TextButton(onClick = { onCustomerCard(id) }) { Text(label) }
+    val p = palette()
+    WCard(live = true, spacing = WeemSpace.m) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(18.dp).background(p.accentContainer.color(), CircleShape), contentAlignment = Alignment.Center) { Dot(p.accent.color(), size = 10.dp) }
+            Text(title, style = WeemType.labelM, color = p.accentText.color())
         }
+        Column(verticalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
+            for (line in text.lines().filter { it.isNotBlank() }) {
+                val name = OrderHistory.PLATFORMS.firstOrNull { line.startsWith(it) }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (name != null) Dot(p.mark(platformTone(name).wtone()).color())
+                    Text(line, style = WeemType.bodyM)
+                }
+            }
+        }
+        for ((label, id) in buttons) WButton(label, { onCustomerCard(id) }, kind = BtnKind.TONAL, icon = WeemIcons.Person, fill = true)
     }
 }
 
+private fun platformTone(name: String?) = when (name) { "Wolt" -> Tone.WOLT; "Bolt Food" -> Tone.BOLT; else -> Tone.NEUTRAL }
+
 /**
- * Gün sayfaları: tarihler yeniden eskiye (sola kaydırma eski güne); başlıkta ‹ › okları, dokununca tarih seçici, toplamlar, km ve aktif
- * süre; platform süzgeci; sipariş satırları. [records] true: Kayıtlar sayfası ([archive]: arşivlenmiş günler), [extra] her sayfanın sonuna
- * o günün kayıt kartını koyar. [scoreDay] verilince (E4 "Teklif puanı") sayfa gövdesi odur; platform seçicisi ve "Günün tüm ayrıntıları"
- * gizlenir, seçili platform süzgeci geçerli kalır (RS aynı).
+ * Gün sayfaları: tarihler yeniden eskiye (sola kaydırma eski güne); başlık kartında önceki/sonraki gün düğmeleri, dokununca tarih seçici,
+ * toplamlar, km ve aktif süre; platform süzgeci; sipariş satırları tek kartta. [records] true: Kayıtlar sayfası ([archive]: arşivlenmiş
+ * günler), [extra] her sayfanın sonuna o günün kayıt kartını koyar. [scoreDay] verilince (E4 "Teklif puanı") sayfa gövdesi odur; platform
+ * seçicisi ve "Günün tüm ayrıntıları" gizlenir, seçili platform süzgeci geçerli kalır (RS aynı).
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DayPages(
     screen: OrdersScreen, records: Boolean, archive: Boolean, platform: String?, onPlatform: (String?) -> Unit, selected: String?,
-    onSelected: (String) -> Unit, onDetail: (String) -> Unit, onTrip: (String) -> Unit, extra: @Composable ColumnScope.(String) -> Unit = {},
-    scoreDay: (@Composable ColumnScope.(String) -> Unit)? = null,
+    onSelected: (String) -> Unit, onDetail: (String) -> Unit, onTrip: (String) -> Unit, modifier: Modifier = Modifier,
+    extra: @Composable ColumnScope.(String) -> Unit = {}, scoreDay: (@Composable ColumnScope.(String) -> Unit)? = null,
 ) {
     val ctx = LocalContext.current
+    val p = palette()
     val labels = screen.labels
     val dates = remember(screen, records, archive) { screen.dates(records, archive) }
     if (dates.isEmpty()) {
-        Text(labels.noRecords, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 16.dp))
+        EmptyState(labels.noRecords, modifier, icon = WeemIcons.ReceiptLong)
         return
     }
     val pager = rememberPagerState(initialPage = screen.index(dates, selected).coerceAtLeast(0)) { dates.size }
@@ -179,13 +212,13 @@ fun DayPages(
         val target = i.coerceIn(dates.indices)
         scope.launch { if (ValueAnimator.areAnimatorsEnabled()) pager.animateScrollToPage(target) else pager.scrollToPage(target) }
     }
-    Card(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-        Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(WeemSpace.m)) {
+        WCard(padding = WeemSpace.s, spacing = WeemSpace.xs) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Tarihler azalan sırada: ‹ eski güne, › yeni güne gider.
-                ArrowButton("‹", labels.older, enabled = current < dates.lastIndex) { goTo(current + 1) }
+                // Tarihler azalan sırada: sol ok eski güne, sağ ok yeni güne gider.
+                WIconButton(WeemIcons.ChevronLeft, labels.older, { goTo(current + 1) }, enabled = current < dates.lastIndex)
                 Text(
-                    header.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
+                    header.title, style = WeemType.titleS, textAlign = TextAlign.Center,
                     modifier = Modifier.weight(1f).heightIn(min = 48.dp).clickable(role = Role.Button) {
                         val d = LocalDate.parse(dates[pager.currentPage])
                         DatePickerDialog(ctx, { _, y, m, day ->
@@ -194,52 +227,61 @@ fun DayPages(
                         }, d.year, d.monthValue - 1, d.dayOfMonth).show()
                     }.padding(vertical = 12.dp),
                 )
-                ArrowButton("›", labels.newer, enabled = current > 0) { goTo(current - 1) }
+                WIconButton(WeemIcons.ChevronRight, labels.newer, { goTo(current - 1) }, enabled = current > 0)
             }
-            Text(header.totals, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(header.activity, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(header.totals, style = WeemType.bodyS, color = p.muted.color(), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+            Text(header.activity, style = WeemType.bodyS, color = p.muted.color(), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp))
         }
-    }
-    if (scoreDay == null) Row(Modifier.fillMaxWidth().padding(bottom = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilterChip(selected = platform == null, onClick = { onPlatform(null) }, label = { Text(labels.allOrders) })
-        for (name in OrderHistory.PLATFORMS) FilterChip(selected = platform == name, onClick = { onPlatform(name) }, label = { Text(name) })
-    }
-    HorizontalPager(pager, Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, key = { dates[it] }) { i ->
-        val date = dates[i]
-        if (scoreDay != null) {
-            Column(Modifier.fillMaxWidth().padding(bottom = 8.dp)) { scoreDay(date); extra(date) }
-            return@HorizontalPager
+        if (scoreDay == null) FlowRow(horizontalArrangement = Arrangement.spacedBy(WeemSpace.s), verticalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
+            WChip(labels.allOrders, platform == null, { onPlatform(null) })
+            for (name in OrderHistory.PLATFORMS) WChip(name, platform == name, { onPlatform(name) }, dot = p.mark(platformTone(name).wtone()).color())
         }
-        val page = remember(screen, date, platform) { screen.page(date, platform) }
-        Column(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
-            page.empty?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp)) }
-            for (row in page.rows) OrderRowView(row.tripId, row, onTrip)
-            if (!records) OutlinedButton(onClick = { onDetail(date) }, Modifier.fillMaxWidth().padding(top = 8.dp)) { Text(labels.dayDetails) }
-            extra(date)
+        HorizontalPager(pager, Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, pageSpacing = WeemSpace.l, key = { dates[it] }) { i ->
+            val date = dates[i]
+            if (scoreDay != null) {
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(WeemSpace.s)) { scoreDay(date); extra(date) }
+                return@HorizontalPager
+            }
+            val page = remember(screen, date, platform) { screen.page(date, platform) }
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(WeemSpace.m)) {
+                page.empty?.let { EmptyState(it, icon = WeemIcons.ReceiptLong) }
+                if (page.rows.isNotEmpty()) SettingsGroup(null, dividerInset = if (page.rows.any { it.showDot }) 38.dp else WeemSpace.l) {
+                    for (row in page.rows) OrderRowView(row, onTrip)
+                }
+                if (!records) WButton(labels.dayDetails, { onDetail(date) }, kind = BtnKind.OUTLINE, fill = true)
+                extra(date)
+            }
         }
-    }
-    Text(header.indicator, Modifier.fillMaxWidth().padding(vertical = 8.dp), style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-}
-
-@Composable
-private fun ArrowButton(label: String, description: String, enabled: Boolean, onClick: () -> Unit) {
-    TextButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(48.dp).semantics { contentDescription = description }) {
-        Text(label, style = MaterialTheme.typography.headlineSmall)
+        Text(header.indicator, Modifier.fillMaxWidth(), style = WeemType.bodyS, color = p.muted.color(), textAlign = TextAlign.Center)
     }
 }
 
+/** Sipariş satırı: platform noktası, saat · restoran, alt satır, açık siparişte aşama hapı; sağda Brüt üstte ikincil, Net altta kalın. */
 @Composable
-private fun OrderRowView(id: String, row: com.kuryelog.logic.orders.OrderRow, onTrip: (String) -> Unit) {
-    Card(Modifier.fillMaxWidth().padding(top = 6.dp).clickable(role = Role.Button) { onTrip(id) }) {
-        Row(Modifier.heightIn(min = 64.dp).padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (row.showDot) Text("●", color = toneColor(row.tone), modifier = Modifier.padding(end = 8.dp))
-            Column(Modifier.weight(1f)) {
-                Text(row.title, style = MaterialTheme.typography.bodyMedium)
-                Text(row.line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                row.status?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+private fun OrderRowView(row: OrderRow, onTrip: (String) -> Unit) {
+    val p = palette()
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 64.dp).clickable(role = Role.Button) { onTrip(row.tripId) }.padding(horizontal = WeemSpace.l, vertical = WeemSpace.m),
+        horizontalArrangement = Arrangement.spacedBy(WeemSpace.m),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (row.showDot) Dot(p.mark(row.tone.wtone()).color(), size = 10.dp)
+        Column(Modifier.weight(1f)) {
+            Text(row.title, style = WeemType.titleS, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(row.line, style = WeemType.bodyS, color = p.muted.color(), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            row.status?.let { s ->
+                val pill = row.phase?.pill()
+                StatusPill(s, pill?.first ?: WTone.NEUTRAL, Modifier.padding(top = 6.dp), icon = pill?.second)
             }
-            Text(row.amounts, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
+        }
+        val amounts = row.amounts.split('\n')
+        Column(horizontalAlignment = Alignment.End) {
+            if (amounts.size == 2) {
+                Text(amounts[0], style = WeemType.bodyS, color = p.muted.color())
+                Text(amounts[1], style = WeemType.numS)
+            } else {
+                Text(row.amounts, style = WeemType.bodyS, color = p.muted.color(), textAlign = TextAlign.End)
+            }
         }
     }
 }
@@ -249,8 +291,7 @@ private fun OrderRowView(id: String, row: com.kuryelog.logic.orders.OrderRow, on
 @Composable
 private fun DayDetailScreen(screen: OrdersScreen, src: OrdersSource, date: String, platform: String?, onBack: () -> Unit, onChanged: () -> Unit) {
     val detail = remember(screen, date, platform) { screen.dayDetail(date, platform) }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
-        TextButton(onClick = onBack) { Text(screen.labels.back) }
+    SubScreen(screen.labels.dayDetails, screen.labels.back, onBack) {
         DayDetailBody(screen, src, detail, onChanged)
     }
 }
@@ -259,7 +300,7 @@ private fun DayDetailScreen(screen: OrdersScreen, src: OrdersSource, date: Strin
 private fun DayDetailBody(screen: OrdersScreen, src: OrdersSource, detail: DayDetail, onChanged: () -> Unit) {
     CardView(detail.header)
     detail.cards.forEach { CardView(it) }
-    detail.empty?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 12.dp)) }
+    detail.empty?.let { EmptyState(it, icon = WeemIcons.ReceiptLong) }
     for (t in detail.trips) TripCardView(screen, src, t, onChanged)
 }
 
@@ -269,10 +310,18 @@ private fun TripCardView(screen: OrdersScreen, src: OrdersSource, tc: TripCard, 
     val ctx = LocalContext.current
     var action by remember { mutableStateOf<TripAction?>(null) }
     CardView(tc.card, footer = {
-        for (a in tc.actions) OutlinedButton(
-            onClick = { if (a is TripAction.CustomerCard) { src.showCustomerCard(tc.tripId); onChanged() } else action = a },
-            Modifier.fillMaxWidth().padding(top = 8.dp),
-        ) { Text(a.label) }
+        for (a in tc.actions) WButton(
+            a.label,
+            { if (a is TripAction.CustomerCard) { src.showCustomerCard(tc.tripId); onChanged() } else action = a },
+            kind = if (a is TripAction.CustomerCard) BtnKind.TONAL else BtnKind.OUTLINE,
+            icon = when (a) {
+                is TripAction.EditTip -> WeemIcons.Edit
+                is TripAction.CashAnswer -> WeemIcons.Payments
+                is TripAction.CustomerCard -> WeemIcons.Person
+                is TripAction.ConfirmDelivered -> WeemIcons.CheckCircle
+            },
+            fill = true,
+        )
     })
     val labels = screen.labels
     when (val a = action) {
@@ -286,10 +335,9 @@ private fun TripCardView(screen: OrdersScreen, src: OrdersSource, tc: TripCard, 
             if (got == null || src.recordCashTip(tc.tripId, got) == null) Toast.makeText(ctx, a.badInput, Toast.LENGTH_SHORT).show()
             action = null; onChanged()
         }
-        is TripAction.ConfirmDelivered -> AlertDialog(
-            onDismissRequest = { action = null }, title = { Text(a.title) }, text = { Text(a.message) },
-            confirmButton = { TextButton(onClick = { src.confirmDelivered(tc.tripId); action = null; onChanged() }) { Text(a.confirm) } },
-            dismissButton = { TextButton(onClick = { action = null }) { Text(labels.cancel) } },
+        is TripAction.ConfirmDelivered -> ConfirmDialog(
+            title = a.title, text = a.message, confirm = a.confirm, dismiss = labels.cancel,
+            onConfirm = { src.confirmDelivered(tc.tripId); action = null; onChanged() }, onDismiss = { action = null },
         )
         is TripAction.CustomerCard -> action = null
     }
@@ -298,44 +346,41 @@ private fun TripCardView(screen: OrdersScreen, src: OrdersSource, tc: TripCard, 
 @Composable
 private fun InputDialog(title: String, initial: String, labels: com.kuryelog.logic.orders.OrdersLabels, onDismiss: () -> Unit, onSave: (String) -> Unit) {
     var text by remember { mutableStateOf(initial) }
-    AlertDialog(
-        onDismissRequest = onDismiss, title = { Text(title) },
-        text = { OutlinedTextField(text, { text = it }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)) },
-        confirmButton = { TextButton(onClick = { onSave(text) }) { Text(labels.save) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(labels.cancel) } },
+    ConfirmDialog(
+        title = title, confirm = labels.save, dismiss = labels.cancel, onConfirm = { onSave(text) }, onDismiss = onDismiss,
+        body = {
+            OutlinedTextField(
+                text, { text = it }, singleLine = true, textStyle = WeemType.numM, shape = RoundedCornerShape(WeemRadius.tile),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(),
+            )
+        },
     )
 }
 
-// ---------- Diyaloglar ----------
+// ---------- Pencereler ----------
 
-/** E1: bir ortalamanın dayandığı bugünkü siparişlerin listesi (saat, platform, restoran, değer ya da neden). */
+/** E1: bir ortalamanın dayandığı bugünkü siparişlerin listesi (saat, platform, restoran, değer ya da neden); alttan açılan sayfa. */
 @Composable
 private fun MetricDialog(screen: OrdersScreen, metric: OrderHistory.Metric, onClose: () -> Unit) {
+    val p = palette()
     val list = remember(screen, metric) { screen.metricList(metric) }
-    AlertDialog(
-        onDismissRequest = onClose, title = { Text(list.title) },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
-                Text(list.summary, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                list.empty?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 10.dp)) }
-                for ((text, muted) in list.rows) Text(
-                    text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 10.dp),
-                    color = if (muted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-                )
-            }
-        },
-        confirmButton = { TextButton(onClick = onClose) { Text(screen.labels.close) } },
-    )
+    WSheet(onDismiss = onClose, title = list.title) {
+        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(list.summary, style = WeemType.bodyS, color = p.muted.color())
+            list.empty?.let { Text(it, style = WeemType.bodyM, color = p.muted.color()) }
+            for ((text, muted) in list.rows) Text(text, style = WeemType.bodyM, color = (if (muted) p.muted else p.text).color())
+        }
+        WButton(screen.labels.close, onClose, kind = BtnKind.TEXT, fill = true)
+    }
 }
 
-/** Listeden bir siparişe dokununca: tam kart (düzeltme düğmesiz). */
+/** Listeden bir siparişe dokununca: tam kart (düzeltme düğmesiz), alttan açılan sayfada. */
 @Composable
 internal fun TripDialog(screen: OrdersScreen, id: String, onClose: () -> Unit) {
     val tc = remember(screen, id) { screen.tripDetail(id) }
     if (tc == null) { onClose(); return }
-    AlertDialog(
-        onDismissRequest = onClose, title = {},
-        text = { Box(Modifier.verticalScroll(rememberScrollState())) { CardView(tc.card) } },
-        confirmButton = { TextButton(onClick = onClose) { Text(screen.labels.close) } },
-    )
+    WSheet(onDismiss = onClose) {
+        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) { CardView(tc.card) }
+        WButton(screen.labels.close, onClose, kind = BtnKind.TEXT, fill = true)
+    }
 }

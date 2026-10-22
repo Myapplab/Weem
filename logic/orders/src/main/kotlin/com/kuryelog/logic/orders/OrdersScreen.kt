@@ -45,8 +45,9 @@ data class Today(val nowTitle: String, val now: String?, val active: List<Active
 
 data class MetricList(val title: String, val summary: String, val rows: List<Pair<String, Boolean>>, val empty: String?)
 
-/** Gün sayfasındaki bir sipariş satırı. */
-data class OrderRow(val tripId: String, val tone: Tone, val showDot: Boolean, val title: String, val line: String, val status: String?, val amounts: String)
+/** Gün sayfasındaki bir sipariş satırı; [phase] teslim edilmemiş siparişin aşaması ([status] onun metni; ekranda aşama hapının rengi). */
+data class OrderRow(val tripId: String, val tone: Tone, val showDot: Boolean, val title: String, val line: String, val status: String?, val amounts: String,
+    val phase: TripPhase? = null)
 
 data class DayPage(val date: String, val rows: List<OrderRow>, val empty: String?)
 
@@ -248,7 +249,8 @@ class OrdersScreen(private val src: OrdersSource, lang: Lang) {
                 // E2: the order's restaurant wait under its name ("—" when it was not measured); E3 boost and temperature follow.
                 OrderHistory.listLine(trip, ::tl),
                 if (!trip.countsAsDelivered) OrderHistory.status(trip, ::tl) else null,
-                trip.earnings?.let { g -> tl("Brüt ${f2(g)}₼\nNet ${f2(trip.net ?: g)}₼", "Ümumi ${f2(g)}₼\nXalis ${f2(trip.net ?: g)}₼") } ?: tl("Fiyat okunamadı", "Qiymət oxunmadı"))
+                trip.earnings?.let { g -> tl("Brüt ${f2(g)}₼\nNet ${f2(trip.net ?: g)}₼", "Ümumi ${f2(g)}₼\nXalis ${f2(trip.net ?: g)}₼") } ?: tl("Fiyat okunamadı", "Qiymət oxunmadı"),
+                if (!trip.countsAsDelivered) trip.phase else null)
         }
         return DayPage(date, rows, if (rows.isEmpty()) tl("Bu gün için sipariş kaydı yok.", "Bu gün üçün sifariş qeydi yoxdur.") else null)
     }

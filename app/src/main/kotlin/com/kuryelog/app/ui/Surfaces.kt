@@ -43,13 +43,14 @@ import androidx.compose.ui.unit.sp
 
 /**
  * Kart (`docs/TASARIM.md` 11): `surface`, köşe 16 (büyük 24), iç 16 (büyük 20), gündüz düz, gece 1 dp çizgi. [tone] verilirse zemin
- * ton rengi (Wolt, Bolt, uyarı…); [live] canlı kart (2 dp vurgu kenarı).
+ * ton rengi (Wolt, Bolt, uyarı…); [live] canlı kart (2 dp vurgu kenarı); [outlined] öne çıkan kart (1,5 dp güçlü çizgi; gün raporu).
  */
 @Composable
 fun WCard(
     modifier: Modifier = Modifier,
     tone: WTone? = null,
     live: Boolean = false,
+    outlined: Boolean = false,
     large: Boolean = false,
     onClick: (() -> Unit)? = null,
     padding: Dp = if (large) WeemSpace.xl else WeemSpace.l,
@@ -61,6 +62,7 @@ fun WCard(
     val color = (if (tone == null) p.surface else p.container(tone)).color()
     val border = when {
         live -> BorderStroke(2.dp, p.accent.color())
+        outlined -> BorderStroke(1.5.dp, p.outlineStrong.color())
         p.isDark && tone == null -> BorderStroke(1.dp, p.outline.color())
         else -> null
     }

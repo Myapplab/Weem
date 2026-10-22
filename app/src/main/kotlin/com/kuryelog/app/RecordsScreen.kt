@@ -109,7 +109,7 @@ fun RecordsScreen(lang: Lang, onBack: () -> Unit, source: (android.content.Conte
                 kind = BtnKind.OUTLINE, icon = if (archive) WeemIcons.History else WeemIcons.Folder, fill = true,
             )
             DayPages(screen, records = true, archive = archive, platform = platform.ifEmpty { null }, onPlatform = { platform = it ?: "" }, selected = selected,
-                onSelected = { selected = it }, onDetail = {}, onTrip = { trip = it }) { date ->
+                onSelected = { selected = it }, onDetail = {}, onTrip = { trip = it }, modifier = Modifier.padding(top = WeemSpace.m)) { date ->
                 RecordCard(screen, src.today(), date, lang, canDelete = src.canAct) { version++ }
             }
         }

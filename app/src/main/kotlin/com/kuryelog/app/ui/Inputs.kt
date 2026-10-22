@@ -25,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -33,19 +35,32 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/** Süzgeç çipi (`docs/TASARIM.md` 11): 36 dp görünür / 48 dp hedef, hap; seçili `accentContainer` + ✓, seçili değilken 1,5 dp çerçeve. */
+/**
+ * Süzgeç çipi (`docs/TASARIM.md` 11): 36 dp görünür / 48 dp hedef, hap; seçili `accentContainer` + ✓, seçili değilken 1,5 dp çerçeve.
+ * [dot] seçili değilken solda 8 dp renk noktası (platform süzgeci).
+ */
 @Composable
-fun WChip(text: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, icon: ImageVector? = null, enabled: Boolean = true) {
+fun WChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    enabled: Boolean = true,
+    dot: Color? = null,
+) {
     val p = palette()
+    val haptics = LocalHapticFeedback.current
     FilterChip(
         selected = selected,
-        onClick = onClick,
+        onClick = { haptics.performHapticFeedback(HapticFeedbackType.SegmentTick); onClick() },
         enabled = enabled,
         modifier = modifier.height(36.dp),
         label = { Text(text, style = WeemType.labelM, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         leadingIcon = when {
             selected -> ({ Icon(WeemIcons.Check, contentDescription = null, modifier = Modifier.size(18.dp)) })
             icon != null -> ({ Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp)) })
+            dot != null -> ({ Dot(dot) })
             else -> null
         },
         shape = CircleShape,
@@ -70,6 +85,7 @@ fun WChip(text: String, selected: Boolean, onClick: () -> Unit, modifier: Modifi
 @Composable
 fun Segmented(options: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier, tags: List<String>? = null) {
     val p = palette()
+    val haptics = LocalHapticFeedback.current
     Row(
         modifier.fillMaxWidth().background(p.raised.color(), CircleShape).padding(4.dp).selectableGroup(),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -82,7 +98,7 @@ fun Segmented(options: List<String>, selected: Int, onSelect: (Int) -> Unit, mod
                     .let { if (on) it.floating(CircleShape) else it }
                     .clip(CircleShape).background(bg)
                     .let { m -> tags?.getOrNull(i)?.let { m.testTag(it) } ?: m }
-                    .selectable(selected = on, role = Role.Tab, onClick = { onSelect(i) })
+                    .selectable(selected = on, role = Role.Tab, onClick = { haptics.performHapticFeedback(HapticFeedbackType.SegmentTick); onSelect(i) })
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {

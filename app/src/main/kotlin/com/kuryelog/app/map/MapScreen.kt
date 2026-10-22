@@ -135,7 +135,7 @@ fun MapScreen(lang: Lang, dark: Boolean) {
     }
     if (data.graph == null) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-            ShiftCard(lang)
+            ShiftCard(lang, Modifier.padding(horizontal = WeemSpace.l, vertical = WeemSpace.s))
             MapSetupCard(data, settings.region, lang,
                 onRegion = { r -> ctx.safely { MapSettingsRepo.update(ctx) { it.copy(region = r) } } },
                 onDownload = { scope.launch { runCatching { controller.download(settings.region) } } })
@@ -485,7 +485,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
                 onRoadDetails = { roadsOpen = true },
             )
         },
-        topCard = { if (!active || interrupted) ShiftCard(lang) },
+        topCard = { if (!active || interrupted) ShiftCard(lang, Modifier.padding(bottom = WeemSpace.m), floating = true) },
     )
     if (searching) {
         BackHandler { searching = false; runtime.search.clear() }

@@ -250,6 +250,9 @@ class OrdersScreenTest {
         assertEquals("Fiyat okunamadı", all.rows[2].amounts)
         assertNotNull(all.rows[2].status)
         assertNull(all.rows[0].status)
+        // A10.4d: açık siparişin aşaması satırla gelir (ekranda aşama hapının rengi); teslim edilmişte yok.
+        assertEquals(all.rows[2].status, OverlayText.phase(all.rows[2].phase!!) { tr, _ -> tr })
+        assertNull(all.rows[0].phase)
         assertEquals("Brüt 5.00₼\nNet 5.00₼", all.rows[0].amounts)
         val onlyWolt = screen.page("2026-10-16", "Wolt")
         assertEquals(listOf("w", "open"), onlyWolt.rows.map { it.tripId })

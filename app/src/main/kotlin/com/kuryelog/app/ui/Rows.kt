@@ -35,21 +35,28 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-/** Satırın sol simge kutusu: 40 dp, `raised` (ya da ton zemini), köşe 12. */
+/** Satırın sol simge kutusu: 40 dp, `raised` (ya da ton zemini), köşe 12; [big] kart başlığında 48 dp, köşe 16, simge 28. */
 @Composable
-fun IconBox(icon: ImageVector, modifier: Modifier = Modifier, tone: WTone = WTone.NEUTRAL) {
+fun IconBox(icon: ImageVector, modifier: Modifier = Modifier, tone: WTone = WTone.NEUTRAL, big: Boolean = false) {
     val p = palette()
     Box(
-        modifier.size(40.dp).background(p.container(tone).color(), RoundedCornerShape(WeemRadius.tile)),
+        modifier.size(if (big) 48.dp else 40.dp).background(p.container(tone).color(), RoundedCornerShape(if (big) WeemRadius.card else WeemRadius.tile)),
         contentAlignment = Alignment.Center,
-    ) { Icon(icon, contentDescription = null, tint = (if (tone == WTone.NEUTRAL) p.text else p.mark(tone)).color(), modifier = Modifier.size(22.dp)) }
+    ) {
+        Icon(
+            icon, contentDescription = null, tint = (if (tone == WTone.NEUTRAL) p.text else p.mark(tone)).color(),
+            modifier = Modifier.size(if (big) WeemSize.iconRide else 22.dp),
+        )
+    }
 }
 
 /**
@@ -125,6 +132,7 @@ fun SwitchRow(
     tag: String? = null,
     extra: (@Composable () -> Unit)? = null,
 ) {
+    val haptics = LocalHapticFeedback.current
     ListRow(
         title = title,
         subtitle = subtitle,
@@ -132,7 +140,10 @@ fun SwitchRow(
         enabled = enabled,
         titleStyle = if (subtitle == null && icon == null) WeemType.bodyL else WeemType.titleS,
         modifier = modifier.let { if (tag != null) it.testTag(tag) else it }
-            .toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onCheckedChange),
+            .toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = {
+                haptics.performHapticFeedback(if (it) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
+                onCheckedChange(it)
+            }),
         trailing = {
             extra?.invoke()
             Switch(checked = checked, onCheckedChange = null, enabled = enabled, colors = weemSwitchColors())

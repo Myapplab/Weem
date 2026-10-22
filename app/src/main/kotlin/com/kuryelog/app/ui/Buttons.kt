@@ -19,6 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -32,7 +34,8 @@ enum class BtnKind { PRIMARY, TONAL, OUTLINE, TEXT, DANGER, DANGER_FILLED, WARN_
 
 /**
  * Tek düğme bileşeni: hap, 48 dp (sürüşte [ride] 56 dp), `labelL`, solda isteğe bağlı 20 dp simge; uzun (Azerice) metin iki satıra
- * iner, kesilmez. [busy] iken simgenin yerinde ilerleme halkası.
+ * iner, kesilmez. [busy] iken simgenin yerinde ilerleme halkası. [haptic] verilirse dokununca titrer (`docs/TASARIM.md` 8: vardiya ve
+ * kayıt başlat/bitir, kaydet → `Confirm`).
  */
 @Composable
 fun WButton(
@@ -45,8 +48,10 @@ fun WButton(
     ride: Boolean = false,
     fill: Boolean = false,
     busy: Boolean = false,
+    haptic: HapticFeedbackType? = null,
 ) {
     val p = palette()
+    val haptics = LocalHapticFeedback.current
     val (container, content) = when (kind) {
         BtnKind.PRIMARY -> p.accent to p.accentInk
         BtnKind.TONAL -> p.accentContainer to p.onAccentContainer
@@ -68,7 +73,7 @@ fun WButton(
         else -> 20.dp
     }
     Button(
-        onClick = onClick,
+        onClick = { if (haptic != null) haptics.performHapticFeedback(haptic); onClick() },
         modifier = modifier.heightIn(min = if (ride) WeemSize.ride else WeemSize.touch).let { if (fill) it.fillMaxWidth() else it },
         enabled = enabled,
         shape = CircleShape,
