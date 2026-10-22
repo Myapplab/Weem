@@ -90,6 +90,8 @@ android {
 
 // Compose denemeleri debug'a bağlı (ui-test-manifest yalnız debug'da): release birim testi koşmaz.
 tasks.matching { it.name == "testReleaseUnitTest" }.configureEach { enabled = false }
+// A10.4d görsel tur (`ScreenshotTour`, Robolectric yerel grafik): yalnız WEEM_SHOTS=<klasör> verilince koşar; CI'da yüklenmez.
+tasks.withType<Test>().configureEach { if (System.getenv("WEEM_SHOTS") == null) exclude("**/ScreenshotTour*") }
 
 kotlin {
     compilerOptions {

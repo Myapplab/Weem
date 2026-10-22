@@ -16,7 +16,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.expandVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,14 +29,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -49,15 +43,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -65,6 +56,31 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import com.kuryelog.app.ui.BtnKind
+import com.kuryelog.app.ui.ConfirmDialog
+import com.kuryelog.app.ui.Dot
+import com.kuryelog.app.ui.ListRow
+import com.kuryelog.app.ui.NoticeDialog
+import com.kuryelog.app.ui.ScreenTitle
+import com.kuryelog.app.ui.SettingsGroup
+import com.kuryelog.app.ui.WButton
+import com.kuryelog.app.ui.WIconButton
+import com.kuryelog.app.ui.WSheet
+import com.kuryelog.app.ui.WTone
+import com.kuryelog.app.ui.WeemIcons
+import com.kuryelog.app.ui.WeemRadius
+import com.kuryelog.app.ui.WeemSize
+import com.kuryelog.app.ui.WeemSpace
+import com.kuryelog.app.ui.WeemType
+import com.kuryelog.app.ui.color
+import com.kuryelog.app.ui.palette
 import com.kuryelog.app.scooter.BleScan
 import com.kuryelog.app.scooter.DashboardView
 import com.kuryelog.app.scooter.FloatingPanel
@@ -219,67 +235,26 @@ fun ScooterTab(lang: Lang, dark: Boolean, immersive: Boolean, onImmersive: (Bool
         if (!autoTried) { autoTried = true; ctx.safely("scooter_auto_live") { Scooter.autoLive(ctx) } }
     }
 
-    val p = LocalWeemPalette.current
+    val p = palette()
     Column(Modifier.fillMaxSize()) {
         AnimatedVisibility(visible = !immersive, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
-            Column {
-                Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 6.dp)) {
-                    Text(T.TITLE.get(lang), fontSize = 26.sp, fontWeight = FontWeight.Black, modifier = Modifier.semantics { heading() })
-                    Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        val dot = when (ScooterPanel.dot(state)) {
-                            ScooterPanel.Dot.WARN -> Color(p.warn)
-                            ScooterPanel.Dot.RECORDING -> Color(p.danger)
-                            ScooterPanel.Dot.LINKED -> Color(p.positive)
-                            ScooterPanel.Dot.ACTIVE -> Color(p.accent)
-                            ScooterPanel.Dot.IDLE -> Color(p.muted)
-                        }
-                        Box(Modifier.size(8.dp).background(dot, CircleShape))
-                        Text(ScooterPanel.status(state, lang), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 8.dp))
+            // A10.4d (`docs/TASARIM.md` 12): sekme başlığı + renkli nokta ve durum satırı.
+            Column(Modifier.padding(start = WeemSpace.l, end = WeemSpace.l, top = WeemSpace.s, bottom = WeemSpace.xs)) {
+                ScreenTitle(T.TITLE.get(lang))
+                Row(horizontalArrangement = Arrangement.spacedBy(WeemSpace.s), verticalAlignment = Alignment.Top) {
+                    val dot = when (ScooterPanel.dot(state)) {
+                        ScooterPanel.Dot.WARN -> p.warn
+                        ScooterPanel.Dot.RECORDING -> p.danger
+                        ScooterPanel.Dot.LINKED -> p.positive
+                        ScooterPanel.Dot.ACTIVE -> p.accent
+                        ScooterPanel.Dot.IDLE -> p.muted
                     }
-                }
-                Surface(shape = RoundedCornerShape(26.dp), color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth().padding(8.dp)) {
-                    Row(Modifier.padding(4.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-                        DockButton("⚙", T.DOCK_SETTINGS.get(lang), true) { settings = true }
-                        DockButton("🔗", T.DOCK_PAIR.get(lang), dock.pair) {
-                            ctx.safely("scooter_pair") {
-                                if (Scooter.active || Scooter.exporting || Scooter.maintenance) return@safely
-                                if (!permissions()) return@safely
-                                ask = if (Scooter.device(ctx).isEmpty()) Ask.Message(T.PICK_FIRST.get(lang)) else Ask.Pair
-                            }
-                        }
-                        DockButton("🔍", T.DOCK_SCAN.get(lang), dock.scan) {
-                            ctx.safely("scooter_scan") {
-                                if (Scooter.active || scan.scanning || !permissions()) return@safely
-                                when (scan.start()) {
-                                    BleScan.Start.STARTED -> ask = Ask.Scan
-                                    BleScan.Start.BLUETOOTH_OFF -> ask = Ask.Message(T.BLUETOOTH_OFF.get(lang))
-                                    BleScan.Start.NO_SCANNER -> ask = Ask.Message(T.SCANNER_NOT_READY.get(lang))
-                                    BleScan.Start.FAILED -> ask = Ask.Message(T.SCAN_FAILED_START.get(lang).format(scan.failure))
-                                }
-                                scanVersion++
-                            }
-                        }
-                        DockButton("▶", T.DOCK_START.get(lang), dock.start, accent = true) {
-                            ctx.safely("scooter_start") {
-                                if (Scooter.active) { if (!Scooter.recording) ask = Ask.RecordSwitch; return@safely }
-                                if (Scooter.device(ctx).isEmpty()) { if (permissions()) Scooter.startRecording(ctx, false); bump(); return@safely }
-                                ask = Ask.HowStart
-                            }
-                        }
-                        DockButton("■", T.DOCK_STOP.get(lang), dock.stop, danger = true) { ctx.safely("scooter_stop") { Scooter.stop(ctx); bump() } }
-                        DockButton("⤓", T.DOCK_EXPORT.get(lang), dock.export) {
-                            ask = if (Scooter.recording || Scooter.maintenance) Ask.Message(T.EXPORT_BUSY.get(lang)) else Ask.ExportChoices
-                        }
-                    }
+                    Dot(dot.color(), Modifier.padding(top = 5.dp))
+                    Text(ScooterPanel.status(state, lang), style = WeemType.bodyS, color = p.muted.color())
                 }
             }
         }
-        if (PairAttention.visible()) {
-            Text(
-                T.PAIR_ATTENTION.get(lang), fontSize = 28.sp, fontWeight = FontWeight.Black, color = Color(p.warn),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).background(Color(p.warnBg), RoundedCornerShape(24.dp)).padding(16.dp),
-            )
-        }
+        if (PairAttention.visible()) PairAttentionBanner(T.PAIR_ATTENTION.get(lang))
         val fields = remember(tick) { FloatingPanel.fields(ctx) }
         AndroidView(
             factory = { c -> DashboardView(c).also { v -> dashboard = v; v.show(Scooter.frame) } },
@@ -293,51 +268,94 @@ fun ScooterTab(lang: Lang, dark: Boolean, immersive: Boolean, onImmersive: (Bool
             },
             modifier = Modifier.fillMaxWidth().weight(1f),
         )
+        // K4 #7: eylem çubuğu başparmak bölgesinde — dört simge düğmesi, altında büyük "Kaydı başlat" ve yuvarlak durdur.
+        AnimatedVisibility(visible = !immersive, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
+            Column(
+                Modifier.padding(start = WeemSpace.l, end = WeemSpace.l, top = WeemSpace.xs, bottom = WeemSpace.m),
+                verticalArrangement = Arrangement.spacedBy(WeemSpace.s),
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
+                    ToolButton(WeemIcons.Settings, T.DOCK_SETTINGS.get(lang), true) { settings = true }
+                    ToolButton(WeemIcons.Link, T.DOCK_PAIR.get(lang), dock.pair) {
+                        ctx.safely("scooter_pair") {
+                            if (Scooter.active || Scooter.exporting || Scooter.maintenance) return@safely
+                            if (!permissions()) return@safely
+                            ask = if (Scooter.device(ctx).isEmpty()) Ask.Message(T.PICK_FIRST.get(lang)) else Ask.Pair
+                        }
+                    }
+                    ToolButton(WeemIcons.BluetoothSearching, T.DOCK_SCAN.get(lang), dock.scan) {
+                        ctx.safely("scooter_scan") {
+                            if (Scooter.active || scan.scanning || !permissions()) return@safely
+                            when (scan.start()) {
+                                BleScan.Start.STARTED -> ask = Ask.Scan
+                                BleScan.Start.BLUETOOTH_OFF -> ask = Ask.Message(T.BLUETOOTH_OFF.get(lang))
+                                BleScan.Start.NO_SCANNER -> ask = Ask.Message(T.SCANNER_NOT_READY.get(lang))
+                                BleScan.Start.FAILED -> ask = Ask.Message(T.SCAN_FAILED_START.get(lang).format(scan.failure))
+                            }
+                            scanVersion++
+                        }
+                    }
+                    ToolButton(WeemIcons.FolderZip, T.DOCK_EXPORT.get(lang), dock.export) {
+                        ask = if (Scooter.recording || Scooter.maintenance) Ask.Message(T.EXPORT_BUSY.get(lang)) else Ask.ExportChoices
+                    }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(WeemSpace.s), verticalAlignment = Alignment.CenterVertically) {
+                    WButton(
+                        T.DOCK_START.get(lang),
+                        {
+                            ctx.safely("scooter_start") {
+                                if (Scooter.active) { if (!Scooter.recording) ask = Ask.RecordSwitch; return@safely }
+                                if (Scooter.device(ctx).isEmpty()) { if (permissions()) Scooter.startRecording(ctx, false); bump(); return@safely }
+                                ask = Ask.HowStart
+                            }
+                        },
+                        Modifier.weight(1f), icon = WeemIcons.FiberManualRecordFilled, enabled = dock.start, ride = true, haptic = HapticFeedbackType.Confirm,
+                    )
+                    val haptics = LocalHapticFeedback.current
+                    WIconButton(
+                        WeemIcons.StopFilled, T.DOCK_STOP.get(lang),
+                        { haptics.performHapticFeedback(HapticFeedbackType.Confirm); ctx.safely("scooter_stop") { Scooter.stop(ctx); bump() } },
+                        size = WeemSize.ride, tone = WTone.DANGER, enabled = dock.stop, iconSize = WeemSize.icon,
+                    )
+                }
+            }
+        }
     }
 
     when (val a = ask) {
         null -> {}
-        is Ask.Message -> AlertDialog(
-            onDismissRequest = { ask = null }, text = { Text(a.text) },
-            confirmButton = { TextButton(onClick = { ask = null }) { Text(T.OK.get(lang)) } },
+        is Ask.Message -> NoticeDialog(a.text, T.OK.get(lang), onDismiss = { ask = null })
+        Ask.RecordSwitch -> ConfirmDialog(
+            title = T.RECORD_TITLE.get(lang), text = T.RECORD_TEXT.get(lang), confirm = T.DOCK_START.get(lang), dismiss = T.CANCEL.get(lang),
+            onConfirm = { ask = null; ctx.safely("scooter_record") { Scooter.record(ctx); bump() } }, onDismiss = { ask = null },
         )
-        Ask.RecordSwitch -> AlertDialog(
-            onDismissRequest = { ask = null }, title = { Text(T.RECORD_TITLE.get(lang)) }, text = { Text(T.RECORD_TEXT.get(lang)) },
-            confirmButton = { TextButton(onClick = { ask = null; ctx.safely("scooter_record") { Scooter.record(ctx); bump() } }) { Text(T.DOCK_START.get(lang)) } },
-            dismissButton = { TextButton(onClick = { ask = null }) { Text(T.CANCEL.get(lang)) } },
+        // K4: çok seçenekli pencereler alttan açılan sayfada.
+        Ask.HowStart -> WSheet(onDismiss = { ask = null }, title = T.HOW_START.get(lang)) {
+            SettingsGroup(null, dividerInset = 70.dp) {
+                ListRow(T.START_LIVE.get(lang), icon = WeemIcons.Speed, chevron = true,
+                    onClick = { ask = null; ctx.safely("scooter_start") { if (permissions()) Scooter.startLive(ctx); bump() } })
+                ListRow(T.START_RECORD.get(lang), icon = WeemIcons.FiberManualRecord, iconTone = WTone.DANGER, chevron = true,
+                    onClick = { ask = null; ctx.safely("scooter_start") { if (permissions()) Scooter.startRecording(ctx, false); bump() } })
+            }
+            WButton(T.CANCEL.get(lang), { ask = null }, kind = BtnKind.TEXT, fill = true)
+        }
+        Ask.Pair -> ConfirmDialog(
+            title = T.DOCK_PAIR.get(lang), text = T.PAIR_TEXT.get(lang), confirm = T.PAIR_GO.get(lang), dismiss = T.CANCEL.get(lang),
+            onConfirm = { ask = null; ctx.safely("scooter_pair") { scan.stop(); Scooter.startRecording(ctx, true); bump() } }, onDismiss = { ask = null },
         )
-        Ask.HowStart -> AlertDialog(
-            onDismissRequest = { ask = null }, title = { Text(T.HOW_START.get(lang)) },
-            text = {
-                Column {
-                    ChoiceRow(T.START_LIVE.get(lang)) { ask = null; ctx.safely("scooter_start") { if (permissions()) Scooter.startLive(ctx); bump() } }
-                    ChoiceRow(T.START_RECORD.get(lang)) { ask = null; ctx.safely("scooter_start") { if (permissions()) Scooter.startRecording(ctx, false); bump() } }
-                }
-            },
-            confirmButton = {}, dismissButton = { TextButton(onClick = { ask = null }) { Text(T.CANCEL.get(lang)) } },
-        )
-        Ask.Pair -> AlertDialog(
-            onDismissRequest = { ask = null }, title = { Text(T.DOCK_PAIR.get(lang)) }, text = { Text(T.PAIR_TEXT.get(lang)) },
-            confirmButton = { TextButton(onClick = { ask = null; ctx.safely("scooter_pair") { scan.stop(); Scooter.startRecording(ctx, true); bump() } }) { Text(T.PAIR_GO.get(lang)) } },
-            dismissButton = { TextButton(onClick = { ask = null }) { Text(T.CANCEL.get(lang)) } },
-        )
-        Ask.ExportChoices -> AlertDialog(
-            onDismissRequest = { ask = null }, title = { Text(T.EXPORT_TITLE.get(lang)) },
-            text = {
-                Column {
-                    for (c in ScooterPanel.ExportChoice.entries) ChoiceRow(c.text.get(lang)) {
-                        if (c.warning() != null) ask = Ask.ExportWarn(c) else export(ctx, c, lang) { ask = it }
-                    }
-                }
-            },
-            confirmButton = {}, dismissButton = { TextButton(onClick = { ask = null }) { Text(T.CANCEL.get(lang)) } },
-        )
+        Ask.ExportChoices -> WSheet(onDismiss = { ask = null }, title = T.EXPORT_TITLE.get(lang)) {
+            SettingsGroup(null, dividerInset = 70.dp) {
+                for (c in ScooterPanel.ExportChoice.entries) ListRow(c.text.get(lang), icon = WeemIcons.FolderZip, chevron = true, onClick = {
+                    if (c.warning() != null) ask = Ask.ExportWarn(c) else export(ctx, c, lang) { ask = it }
+                })
+            }
+            WButton(T.CANCEL.get(lang), { ask = null }, kind = BtnKind.TEXT, fill = true)
+        }
         is Ask.ExportWarn -> {
             val (title, text, go) = a.choice.warning()!!
-            AlertDialog(
-                onDismissRequest = { ask = null }, title = title?.let { { Text(it.get(lang)) } }, text = { Text(text.get(lang)) },
-                confirmButton = { TextButton(onClick = { ask = null; export(ctx, a.choice, lang) { ask = it } }) { Text(go.get(lang)) } },
-                dismissButton = { TextButton(onClick = { ask = null }) { Text(T.CANCEL.get(lang)) } },
+            ConfirmDialog(
+                title = (title ?: a.choice.text).get(lang), text = text.get(lang), confirm = go.get(lang), dismiss = T.CANCEL.get(lang),
+                onConfirm = { ask = null; export(ctx, a.choice, lang) { ask = it } }, onDismiss = { ask = null },
             )
         }
         Ask.Scan -> ScanDialog(scan, scanVersion, lang, onDismiss = { scan.stop(); ask = null; scanVersion++ }) { found ->
@@ -350,11 +368,44 @@ fun ScooterTab(lang: Lang, dark: Boolean, immersive: Boolean, onImmersive: (Bool
     if (ask == Ask.Scan && !scan.scanning && scan.list.isEmpty()) LaunchedEffect(scanVersion) { ask = Ask.Message(T.SCAN_EMPTY.get(lang)) }
 }
 
+/** Eşleştirme sırasında "ŞİMDİ güç düğmesine…" büyük uyarı bandı (uyarı tonu, yuvarlak güç simgesi). */
+@Composable
+private fun PairAttentionBanner(text: String) {
+    val p = palette()
+    Row(
+        Modifier.padding(horizontal = WeemSpace.l, vertical = WeemSpace.s).fillMaxWidth()
+            .background(p.warnBg.color(), RoundedCornerShape(WeemRadius.panel)).padding(start = 14.dp, top = 12.dp, end = 18.dp, bottom = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(52.dp).background(p.warn.color(), CircleShape), contentAlignment = Alignment.Center) {
+            Icon(WeemIcons.PowerSettingsNew, contentDescription = null, tint = p.warnBg.color(), modifier = Modifier.size(WeemSize.iconRide))
+        }
+        Text(text, style = WeemType.titleL.copy(fontWeight = FontWeight.ExtraBold), color = p.warn.color(), modifier = Modifier.weight(1f))
+    }
+}
+
+/** Eylem çubuğunun simge düğmesi: 48 dp yükseklik, köşe 16, `raised` zemin; ad ekran okuyucuya (NB `icon`). */
+@Composable
+private fun RowScope.ToolButton(icon: ImageVector, description: String, enabled: Boolean, onClick: () -> Unit) {
+    val p = palette()
+    Surface(
+        onClick = onClick, enabled = enabled, shape = RoundedCornerShape(WeemRadius.card), color = p.raised.color(),
+        contentColor = (if (enabled) p.text else p.muted).color(),
+        modifier = Modifier.weight(1f).height(WeemSize.touch).semantics { contentDescription = description },
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(WeemSize.icon).alpha(if (enabled) 1f else .45f))
+        }
+    }
+}
+
 private fun export(ctx: android.content.Context, choice: ScooterPanel.ExportChoice, lang: Lang, show: (Ask?) -> Unit) {
     show(Ask.Message(T.EXPORT_PREPARING.get(lang)))
     ctx.safely("scooter_export") { Scooter.export(ctx, choice, lang) { msg -> show(Ask.Message(msg)) } }
 }
 
+/** Scooter tarama listesi (alttan açılan sayfa): ipucu, ilerleme, bulunan cihazlar (kayıtlı scooter yeşil simgeyle); dokununca seçilir. */
 @Composable
 private fun ScanDialog(
     scan: BleScan,
@@ -366,59 +417,26 @@ private fun ScanDialog(
     val ctx = LocalContext.current
     val saved = remember(version) { Scooter.device(ctx) }
     val rows = remember(version) { scan.list.ordered(saved) }
-    val p = LocalWeemPalette.current
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (rows.isEmpty() && scan.scanning) T.SCAN_TITLE.get(lang) else (if (scan.scanning) T.SCAN_RUNNING else T.SCAN_DONE).get(lang).format(rows.size.toString())) },
-        text = {
-            Column {
-                Text(T.SCAN_HINT.get(lang), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (scan.scanning) LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 10.dp)) else Box(Modifier.height(14.dp))
-                LazyColumn(Modifier.fillMaxWidth().height(300.dp).padding(top = 8.dp)) {
-                    items(rows, key = { it.address }) { f ->
-                        val isSaved = f.address == saved
-                        Row(
-                            Modifier.fillMaxWidth().clickable { onPick(f) }.padding(vertical = 10.dp)
-                                .semantics { contentDescription = ScooterPanel.ScanList.label(f, lang) },
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(if (isSaved) "🛵" else "ᛒ", color = Color(if (isSaved) p.positive else if (f.named) p.accent else p.muted), modifier = Modifier.padding(end = 12.dp))
-                            Column {
-                                Text(if (f.named) f.name!! else T.UNNAMED.get(lang), style = MaterialTheme.typography.bodyLarge)
-                                Text(ScooterPanel.ScanList.subtitle(f, isSaved, lang), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                    }
-                }
+    val p = palette()
+    val title = if (rows.isEmpty() && scan.scanning) T.SCAN_TITLE.get(lang) else (if (scan.scanning) T.SCAN_RUNNING else T.SCAN_DONE).get(lang).format(rows.size.toString())
+    WSheet(onDismiss = onDismiss, title = title) {
+        Text(T.SCAN_HINT.get(lang), style = WeemType.bodyM, color = p.muted.color())
+        if (scan.scanning) LinearProgressIndicator(Modifier.fillMaxWidth(), color = p.accent.color(), trackColor = p.raised.color(), strokeCap = StrokeCap.Round)
+        LazyColumn(Modifier.fillMaxWidth().height(300.dp)) {
+            items(rows, key = { it.address }) { f ->
+                val isSaved = f.address == saved
+                ListRow(
+                    if (f.named) f.name!! else T.UNNAMED.get(lang),
+                    Modifier.semantics(mergeDescendants = true) { contentDescription = ScooterPanel.ScanList.label(f, lang) },
+                    subtitle = ScooterPanel.ScanList.subtitle(f, isSaved, lang),
+                    icon = if (isSaved) WeemIcons.ElectricScooterFilled else WeemIcons.Bluetooth,
+                    iconTone = if (isSaved) WTone.POSITIVE else if (f.named) WTone.ACCENT else WTone.NEUTRAL,
+                    onClick = { onPick(f) },
+                )
             }
-        },
-        confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text(T.CLOSE.get(lang)) } },
-    )
-}
-
-@Composable
-private fun ChoiceRow(label: String, onClick: () -> Unit) {
-    Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 14.dp))
-}
-
-/** Eylem çubuğu düğmesi: en az 48 × 62 dp; başlat dolgun vurgu, durdur uyarı rengi (NB `icon`). */
-@Composable
-private fun androidx.compose.foundation.layout.RowScope.DockButton(
-    glyph: String,
-    description: String,
-    enabled: Boolean,
-    accent: Boolean = false,
-    danger: Boolean = false,
-    onClick: () -> Unit,
-) {
-    val p = LocalWeemPalette.current
-    val colors = if (accent) IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
-    else IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = if (danger) Color(p.danger) else MaterialTheme.colorScheme.onSurface)
-    FilledTonalIconButton(
-        onClick = onClick, enabled = enabled, colors = colors,
-        modifier = Modifier.weight(1f).height(62.dp).padding(horizontal = 2.dp).semantics { contentDescription = description },
-    ) { Text(glyph, fontSize = 20.sp) }
+        }
+        WButton(T.CLOSE.get(lang), onDismiss, kind = BtnKind.TEXT, fill = true)
+    }
 }
 
 /** PiP penceresi (NB `compact`): yüzen panelin değerleri 2 × 2 ızgarada; dokunma yok. */

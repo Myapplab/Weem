@@ -3,7 +3,7 @@ package com.kuryelog.app.scooter
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
-import android.graphics.Typeface
+import com.kuryelog.app.core.WeemFonts
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.core.OverlayPalette
 import com.kuryelog.logic.scooter.NinebotDashboard
@@ -11,23 +11,26 @@ import com.kuryelog.logic.scooter.PanelField
 import com.kuryelog.logic.scooter.TripMeter
 
 /**
- * Sürüş Paneli renk rolleri (NB `Ui.palette`): `OverlayPalette` = NB `RawPalette`. Panel, top ve PiP ızgarası aynı görünümü paylaşır.
+ * Sürüş Paneli renk rolleri: `OverlayPalette` (A10.4d: uygulama paletiyle aynı tablo, `docs/TASARIM.md` 4 — gösterge zemini `bg`,
+ * kadran `surface`, iz `raised`, yay vurgu, güç turuncu). Panel, top ve PiP ızgarası aynı görünümü paylaşır.
  */
 internal class Ink(p: OverlayPalette) {
+    val dark = p.dark
     val bg = p.bg
     val surface = p.surface
     val surfaceHigh = p.raised
     val line = p.line
+    val lineStrong = p.lineStrong
     val text = p.text
     val muted = p.muted
-    val accent = p.accentText
+    val accent = p.accent
     val accentInk = p.accentInk
-    val power = p.positive
+    val power = p.power
+    val powerBg = p.powerBg
     val record = p.positive
     val danger = p.danger
     val warn = p.warn
     val warnBg = p.warnBg
-    val hero = p.hero
 
     companion object {
         private val light = Ink(OverlayPalette.forMode(false))
@@ -49,10 +52,11 @@ internal class FloatPainter {
     var textScale = 1f
 
     init {
-        value.typeface = Typeface.create("sans-serif", Typeface.BOLD)
+        // A10.4d: Inter (değer kalın, sabit genişlikli rakam; alt yazı yarı kalın).
+        value.typeface = WeemFonts.get(WeemFonts.BOLD)
         value.fontFeatureSettings = "'tnum'"
         value.textAlign = Paint.Align.CENTER
-        caption.typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        caption.typeface = WeemFonts.get(WeemFonts.SEMIBOLD)
         caption.textAlign = Paint.Align.CENTER
     }
 
