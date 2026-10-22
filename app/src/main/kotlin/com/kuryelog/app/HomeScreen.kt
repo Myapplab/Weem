@@ -3,20 +3,11 @@ package com.kuryelog.app
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -27,24 +18,33 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.kuryelog.app.core.Home
 import com.kuryelog.app.core.HomeFixSampler
-import com.kuryelog.app.core.Store
-import com.kuryelog.logic.app.HomeTexts
 import com.kuryelog.app.map.HomePickMap
 import com.kuryelog.app.map.HomePickOutcome
 import com.kuryelog.app.map.HomePickScreen
+import com.kuryelog.app.ui.Banner
+import com.kuryelog.app.ui.BtnKind
+import com.kuryelog.app.ui.ConfirmDialog
+import com.kuryelog.app.ui.IconBox
+import com.kuryelog.app.ui.SubScreen
+import com.kuryelog.app.ui.WButton
+import com.kuryelog.app.ui.WCard
+import com.kuryelog.app.ui.WTone
+import com.kuryelog.app.ui.WeemIcons
+import com.kuryelog.app.ui.WeemSpace
+import com.kuryelog.app.ui.WeemType
+import com.kuryelog.logic.app.HomeTexts
 import com.kuryelog.logic.app.Palette
+import com.kuryelog.logic.app.Text as Str
 import com.kuryelog.logic.core.HomeDraft
 import com.kuryelog.logic.core.HomePickResult
+import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.map.geo.GeoPoint
 import com.kuryelog.logic.map.ui.MapStyles
-import com.kuryelog.logic.core.Lang
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import com.kuryelog.logic.app.Text as Str
 
 /**
  * Daha fazla → Ev konumu (G2, CORE.md 2.1–2.2; RS ev kartı): kayıtlı ev, GPS ile seçim (6 sn ölçüm, taslak, Kaydet/İptal), silme
@@ -93,66 +93,60 @@ fun HomeScreen(lang: Lang, onBack: () -> Unit) {
         ) { s -> HomePickMap(s, MapStyles.userAgent(BuildInfo.versionName(ctx))) }
         return
     }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onBack) { Text(Str.BACK.get(lang)) }
-            Text(Str.HOME_TITLE.get(lang), style = MaterialTheme.typography.headlineMedium)
-        }
+    SubScreen(Str.HOME_TITLE.get(lang), Str.BACK.get(lang), onBack) {
         GuardedPage("home", lang, key = version, build = { Home.point(ctx) to Home.hasBackground(ctx) }) { (point, background) ->
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(WeemSpace.m)) {
                 if (point != null && !editing) {
-                    Card(Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
-                        Column(Modifier.padding(16.dp)) {
-                            Text(Str.HOME_SAVED.get(lang), style = MaterialTheme.typography.titleMedium)
-                            Text(HomeTexts.coordinates(point.lat, point.lon))
-                            val date = point.updatedAt?.let { SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.forLanguageTag(lang.key)).format(Date(it)) }
-                            Text(Str.HOME_UPDATED.get(lang).format(date ?: Str.HOME_UNKNOWN.get(lang)), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Row {
-                                TextButton(onClick = { editing = true }) { Text(Str.HOME_EDIT.get(lang)) }
-                                TextButton(onClick = { confirmDelete = true }) { Text(Str.HOME_DELETE.get(lang)) }
+                    WCard {
+                        Row(horizontalArrangement = Arrangement.spacedBy(WeemSpace.m), verticalAlignment = Alignment.CenterVertically) {
+                            IconBox(WeemIcons.HomeFilled, tone = WTone.ACCENT)
+                            Column(Modifier.weight(1f)) {
+                                Text(Str.HOME_SAVED.get(lang), style = WeemType.titleM)
+                                Text(HomeTexts.coordinates(point.lat, point.lon), style = WeemType.numS)
                             }
+                        }
+                        val date = point.updatedAt?.let { SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.forLanguageTag(lang.key)).format(Date(it)) }
+                        Text(Str.HOME_UPDATED.get(lang).format(date ?: Str.HOME_UNKNOWN.get(lang)), style = WeemType.bodyS, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(horizontalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
+                            WButton(Str.HOME_EDIT.get(lang), { editing = true }, Modifier.weight(1f), kind = BtnKind.TONAL, icon = WeemIcons.Edit)
+                            WButton(Str.HOME_DELETE.get(lang), { confirmDelete = true }, Modifier.weight(1f), kind = BtnKind.DANGER, icon = WeemIcons.Delete)
                         }
                     }
                     if (!background) {
-                        Text(Str.HOME_BACKGROUND.get(lang), color = MaterialTheme.colorScheme.error)
-                        OutlinedButton(onClick = { ctx.safely { askBackground.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION) } }) {
-                            Text(Str.HOME_BACKGROUND_BUTTON.get(lang))
-                        }
+                        Banner(Str.HOME_BACKGROUND.get(lang), tone = WTone.DANGER)
+                        WButton(Str.HOME_BACKGROUND_BUTTON.get(lang), { ctx.safely { askBackground.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION) } }, kind = BtnKind.OUTLINE, fill = true)
                     }
                 } else {
-                    Text(if (point == null) Str.HOME_NONE.get(lang) else Str.HOME_PICK.get(lang), style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(vertical = 12.dp))
-                    Button(onClick = { ctx.safely { if (Home.hasFine(ctx)) measure() else askLocation.launch(locationPermissions()) } }, enabled = measuring == null) {
-                        Text(Str.HOME_USE_CURRENT.get(lang))
-                    }
-                    OutlinedButton(onClick = { sampler.cancel(); measuring = null; picking = true }) { Text(Str.HOME_FROM_MAP.get(lang)) }
-                    measuring?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    status?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    Text(if (point == null) Str.HOME_NONE.get(lang) else Str.HOME_PICK.get(lang), style = WeemType.titleM)
+                    WButton(
+                        Str.HOME_USE_CURRENT.get(lang), { ctx.safely { if (Home.hasFine(ctx)) measure() else askLocation.launch(locationPermissions()) } },
+                        enabled = measuring == null, busy = measuring != null, icon = WeemIcons.MyLocation, fill = true, ride = true,
+                    )
+                    WButton(Str.HOME_FROM_MAP.get(lang), { sampler.cancel(); measuring = null; picking = true }, kind = BtnKind.OUTLINE, icon = WeemIcons.Map, fill = true)
+                    measuring?.let { Text(it, style = WeemType.bodyS, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    status?.let { Banner(it, tone = WTone.DANGER) }
                     draft?.let { d ->
-                        Card(Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
-                            Column(Modifier.padding(16.dp)) {
-                                Text(Str.HOME_DRAFT.get(lang), style = MaterialTheme.typography.titleMedium)
-                                Text(HomeTexts.coordinates(d.lat, d.lon))
-                                d.accuracyM?.let { Text(HomeTexts.accuracy(lang, it), color = if (d.needsWarning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant) }
-                                if (d.needsWarning) Text(HomeTexts.warning(lang), color = MaterialTheme.colorScheme.error)
-                                Row {
-                                    Button(onClick = { ctx.safely { Home.set(ctx, d.lat, d.lon); draft = null; editing = false; version++ } }) { Text(Str.SAVE.get(lang)) }
-                                    TextButton(onClick = { draft = null }) { Text(Str.CANCEL.get(lang)) }
-                                }
+                        WCard(live = true) {
+                            Text(Str.HOME_DRAFT.get(lang), style = WeemType.titleM)
+                            Text(HomeTexts.coordinates(d.lat, d.lon), style = WeemType.numS)
+                            d.accuracyM?.let {
+                                Text(HomeTexts.accuracy(lang, it), style = WeemType.bodyS, color = if (d.needsWarning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            if (d.needsWarning) Banner(HomeTexts.warning(lang), tone = WTone.WARN)
+                            Row(horizontalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
+                                WButton(Str.CANCEL.get(lang), { draft = null }, Modifier.weight(1f), kind = BtnKind.OUTLINE)
+                                WButton(Str.SAVE.get(lang), { ctx.safely { Home.set(ctx, d.lat, d.lon); draft = null; editing = false; version++ } }, Modifier.weight(1f))
                             }
                         }
                     }
-                    if (point != null) TextButton(onClick = { sampler.cancel(); measuring = null; draft = null; editing = false }) { Text(Str.CANCEL.get(lang)) }
+                    if (point != null) WButton(Str.CANCEL.get(lang), { sampler.cancel(); measuring = null; draft = null; editing = false }, kind = BtnKind.TEXT, fill = true)
                 }
             }
         }
-        Text(HomeTexts.rule(lang), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 16.dp))
+        Text(HomeTexts.rule(lang), style = WeemType.bodyS, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
-    if (confirmDelete) AlertDialog(
-        onDismissRequest = { confirmDelete = false },
-        title = { Text(Str.HOME_DELETE_ASK.get(lang)) },
-        confirmButton = { TextButton(onClick = { ctx.safely { Home.clear(ctx); confirmDelete = false; version++ } }) { Text(Str.HOME_DELETE.get(lang)) } },
-        dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(Str.CANCEL.get(lang)) } },
+    if (confirmDelete) ConfirmDialog(
+        title = Str.HOME_DELETE_ASK.get(lang), confirm = Str.HOME_DELETE.get(lang), dismiss = Str.CANCEL.get(lang), danger = true,
+        onConfirm = { ctx.safely { Home.clear(ctx); confirmDelete = false; version++ } }, onDismiss = { confirmDelete = false },
     )
 }
