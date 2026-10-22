@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Bileşen kitaplığı</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0..1,0&amp;icon_names=accessibility_new,add,alt_route,arrow_back,backup,bar_chart,battery_5_bar,battery_alert,battery_full,bluetooth,bluetooth_searching,bolt,check,check_circle,chevron_left,chevron_right,close,contrast,dark_mode,delete,devices,door_front,edit,electric_bolt,electric_scooter,error,expand_less,expand_more,explore,fiber_manual_record,folder,folder_zip,fullscreen,gps_off,history,home,info,inventory_2,keyboard_arrow_right,language,light_mode,link,location_on,lock,map,menu,more_horiz,my_location,navigation,notifications,palette,partly_cloudy_day,payments,person,phone_android,play_arrow,punch_clock,qr_code_scanner,radio_button_checked,radio_button_unchecked,receipt_long,refresh,restaurant,route,schedule,search,settings,share,shield,speed,splitscreen,sports_score,stop,storefront,thermostat,thumb_down,thumb_up,timer,touch_app,trending_up,tune,two_wheeler,visibility_off,warning,water_drop,wifi&amp;display=block">
+<style>
+body{margin:0}
+:where(.ph) *{box-sizing:border-box}
+:where(.ph) button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;text-align:inherit}
+:where(.ph) h2,:where(.ph) h3{margin:0}
+.ph{--bg:#F4F5F8;--sf:#FFFFFF;--r1:#ECEEF2;--r2:#E3E6EB;--ol:#DCDFE5;--olS:#C5CAD3;--tx:#0E1015;--mu:#565C6A;--ok:#0B7A43;--okC:#DDF4E7;--wn:#8A4B00;--wnC:#FFEDD5;--dg:#C4291C;--dgC:#FDE8E6;--wo:#00668F;--woC:#E0F3FB;--bo:#0B6E3B;--boC:#DFF5E8;--mv:#0B4FB3;--mvC:#E3EDFF;--rt:#9A3E00;--rtC:#FFE9D9;--pk:#0B6B47;--pkC:#DDF4EA;--cu:#A0156E;--cuC:#FDE4F3;--sun:#E09400;--ac:#5B3DF5;--acI:#FFFFFF;--acT:#5236E0;--acC:#ECE8FF;--acO:#3A23A8;--e0:none;--e1:0 1px 2px rgba(14,16,21,.10),0 4px 12px rgba(14,16,21,.08);--e2:0 -8px 32px rgba(14,16,21,.18);--mL:#EDEFEA;position:relative;overflow:hidden;background:var(--bg);color:var(--tx);font-family:Inter,Roboto,system-ui,sans-serif;font-size:15px;line-height:22px;-webkit-font-smoothing:antialiased}
+.ph.night{--bg:#0E0F13;--sf:#17191F;--r1:#21242C;--r2:#2B2F38;--ol:#2E323C;--olS:#3D424E;--tx:#F3F4F7;--mu:#A5ABB8;--ok:#62D69B;--okC:#102E1F;--wn:#FFC27A;--wnC:#382607;--dg:#FF8A80;--dgC:#3A1614;--wo:#66CCF2;--woC:#0A2633;--bo:#66D99A;--boC:#0E2A1B;--mv:#A9C8FF;--mvC:#13264A;--rt:#FFB37A;--rtC:#3A220E;--pk:#7FE0B3;--pkC:#0F2E22;--cu:#FF9AD5;--cuC:#3A1430;--sun:#FFC27A;--ac:#A898FF;--acI:#14102E;--acT:#B4A7FF;--acC:#2B2462;--acO:#E0DAFF;--e0:inset 0 0 0 1px var(--ol);--e1:0 0 0 1px var(--ol),0 4px 16px rgba(0,0,0,.40);--e2:0 0 0 1px var(--ol),0 -8px 32px rgba(0,0,0,.50);--mL:#1A1D23}
+.ph.acc-mono{--ac:#0E1015;--acI:#FFFFFF;--acT:#0E1015;--acC:#E3E6EB;--acO:#0E1015}
+.ph.night.acc-mono{--ac:#F3F4F7;--acI:#0E0F13;--acT:#F3F4F7;--acC:#2B2F38;--acO:#F3F4F7}
+.i{font-family:'Material Symbols Rounded';font-weight:400;font-style:normal;font-size:24px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;direction:ltr;font-feature-settings:'liga';-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;flex:none;user-select:none}
+.i.f{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+.s16{font-size:16px}.s18{font-size:18px}.s20{font-size:20px}.s28{font-size:28px}
+.hl{font-size:28px;line-height:34px;font-weight:700;letter-spacing:-.015em}
+.tl{font-size:22px;line-height:28px;font-weight:700;letter-spacing:-.01em}
+.ts{font-size:16px;line-height:22px;font-weight:600}
+.bm{font-size:15px;line-height:22px}
+.bs{font-size:13px;line-height:18px}
+.ls{font-size:12px;line-height:16px;font-weight:600}
+.nm{font-size:22px;line-height:26px;font-weight:700;letter-spacing:-.01em}
+.lm{font-size:13px;line-height:16px;font-weight:600}
+.tn{font-variant-numeric:tabular-nums}
+.mu{color:var(--mu)}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.x{display:flex;align-items:center}
+.y{display:flex;flex-direction:column}
+.f1{flex:1 1 0;min-width:0}
+.pnl{width:1180px;height:1030px;padding:32px 32px 0}
+.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px}
+.col{display:flex;flex-direction:column;gap:28px}
+.cap{font-size:13px;line-height:16px;font-weight:700;color:var(--mu);margin:0 0 12px}
+.card{background:var(--sf);border-radius:16px;padding:16px;box-shadow:var(--e0)}
+.btn{height:48px;border-radius:999px;padding:0 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:15px;line-height:20px;font-weight:600;white-space:nowrap;flex:none}
+.btn.h56{height:56px;font-size:16px;padding:0 24px}
+.btn.pri{background:var(--ac);color:var(--acI)}
+.btn.ton{background:var(--acC);color:var(--acO)}
+.btn.out{box-shadow:inset 0 0 0 1.5px var(--olS);color:var(--tx)}
+.btn.dgt{background:var(--dgC);color:var(--dg)}
+.btn.wnf{background:var(--wn);color:var(--wnC)}
+.btn.txt{color:var(--acT);padding:0 14px}
+.btn.w{width:100%}
+.ib{width:48px;height:48px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx);flex:none}
+.ib.h56{width:56px;height:56px}
+.ib.tint{background:var(--r1)}
+.fab{width:56px;height:56px;border-radius:999px;background:var(--sf);box-shadow:var(--e1);display:inline-flex;align-items:center;justify-content:center;color:var(--tx);flex:none}
+.fab.on{background:var(--acC);color:var(--acO)}
+.stopb{width:56px;height:56px;border-radius:999px;background:var(--dgC);color:var(--dg);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.chip{height:36px;border-radius:999px;padding:0 14px;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;line-height:16px;box-shadow:inset 0 0 0 1.5px var(--olS);white-space:nowrap}
+.chip.on{background:var(--acC);color:var(--acO);box-shadow:none}
+.seg{display:flex;gap:4px;padding:4px;border-radius:999px;background:var(--r1)}
+.seg button{flex:1 1 0;height:40px;border-radius:999px;font-size:14px;font-weight:600;color:var(--mu);display:flex;align-items:center;justify-content:center}
+.seg button.on{background:var(--sf);color:var(--tx);box-shadow:var(--e1)}
+.pill{height:28px;border-radius:999px;padding:0 10px;display:inline-flex;align-items:center;gap:6px;font-size:13px;line-height:16px;font-weight:600;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:999px;background:currentColor;flex:none;display:inline-block}
+.cnt{height:24px;min-width:24px;border-radius:999px;padding:0 8px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:var(--ac);color:var(--acI)}
+.badge{height:24px;border-radius:999px;padding:0 9px;display:inline-flex;align-items:center;gap:4px;font-size:12px;line-height:16px;font-weight:700;background:var(--dgC);color:var(--dg)}
+.badge.ok{background:var(--okC);color:var(--ok)}
+.ban{display:flex;align-items:center;gap:12px;border-radius:16px;padding:12px 14px;font-size:15px;line-height:20px;font-weight:500;width:100%;text-align:left}
+.ban.wn{background:var(--wnC);color:var(--wn)}
+.ban.dg{background:var(--dgC);color:var(--dg)}
+.ban.inf{background:var(--r1);color:var(--tx)}
+.toast{background:var(--sf);border-radius:16px;box-shadow:var(--e1);padding:14px 16px;display:flex;align-items:center;gap:12px}
+.grp{background:var(--sf);border-radius:16px;box-shadow:var(--e0);overflow:hidden}
+.lrow{display:flex;align-items:center;gap:14px;min-height:72px;padding:12px 12px 12px 16px;width:100%;text-align:left;cursor:pointer}
+.lrow.r{min-height:56px;padding:8px 16px}
+.ibox{width:40px;height:40px;border-radius:12px;background:var(--r1);display:inline-flex;align-items:center;justify-content:center;flex:none;color:var(--tx)}
+.hr{height:1px;background:var(--ol);margin-left:70px}
+.hr.r{margin-left:52px}
+.rad{width:20px;height:20px;margin:0;accent-color:var(--ac);flex:none}
+.swi{appearance:none;-webkit-appearance:none;width:52px;height:32px;border-radius:999px;background:var(--r2);position:relative;flex:none;margin:0;cursor:pointer}
+.swi::after{content:'';position:absolute;left:4px;top:4px;width:24px;height:24px;border-radius:999px;background:var(--sf);box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.swi:checked{background:var(--ac)}
+.swi:checked::after{left:24px;background:var(--acI)}
+.tbar{height:64px;display:flex;align-items:center;gap:4px;padding:0 4px;background:var(--sf);border-radius:16px;box-shadow:var(--e0)}
+.sheet{background:var(--sf);border-radius:32px 32px 0 0;padding:12px 24px 24px;box-shadow:var(--e2);display:flex;flex-direction:column;gap:16px}
+.grab{width:36px;height:4px;border-radius:999px;background:var(--r2);align-self:center}
+.dlg{background:var(--sf);border-radius:24px;padding:24px;box-shadow:var(--e1);display:flex;flex-direction:column;gap:12px}
+.empty{display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 16px}
+.ecirc{width:72px;height:72px;border-radius:999px;background:var(--r1);display:flex;align-items:center;justify-content:center;margin-bottom:4px}
+.sk{display:block;height:14px;border-radius:8px;background:var(--r2)}
+.brow{margin-top:28px;display:flex;align-items:flex-end;gap:24px}
+.mapstrip{flex:1 1 0;min-width:0;height:200px;border-radius:24px;background:var(--mL);padding:16px;display:flex;flex-direction:column;justify-content:space-between}
+.srch{height:56px;border-radius:999px;background:var(--sf);box-shadow:var(--e1);display:flex;align-items:center;gap:12px;padding:0 18px;color:var(--mu);font-size:16px;line-height:24px;flex:1 1 0;min-width:0}
+.wx{height:56px;border-radius:999px;background:var(--sf);box-shadow:var(--e1);display:inline-flex;align-items:center;gap:6px;padding:0 16px 0 12px;flex:none}
+.mt{position:relative;overflow:hidden;background:var(--sf);border-radius:16px;box-shadow:var(--e1);padding:8px 8px 9px;display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:82px}
+.mt .v{display:flex;align-items:baseline;gap:3px}
+.bar{position:absolute;left:0;bottom:0;height:4px;background:var(--ok)}
+.dp{height:56px;border-radius:999px;background:var(--sf);box-shadow:var(--e1);display:flex;align-items:center;padding:0 4px 0 6px;flex:none}
+.pdot{width:12px;height:12px;border-radius:999px;background:var(--c);box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 22%,transparent);margin:0 10px 0 10px;flex:none}
+.nav{width:390px;height:84px;padding:8px 4px 12px;background:var(--sf);border-radius:24px 24px 0 0;box-shadow:0 -1px 0 var(--ol),var(--e0);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));flex:none}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--mu);font-size:12px;line-height:16px;font-weight:600;min-width:0}
+.nav .ind{width:56px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center}
+.nav .nl{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav button.on{color:var(--tx)}
+.nav button.on .ind{background:var(--acC);color:var(--acO)}
+.nav button.on .i{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+</style>
+</helmet>
+<div style="width: 1180px; height: 2100px; display: flex; flex-direction: column; gap: 40px; background: #FFFFFF">
+<div class="ph pnl {{acc}}">
+<div class="x" style="gap: 12px; margin-bottom: 24px"><span class="i f s28" style="color: var(--sun)">light_mode</span><h2 class="hl">Gündüz</h2></div>
+<div class="cols">
+<div class="col">
+<section><h3 class="cap">Düğmeler</h3><div class="y" style="gap: 10px">
+<button class="btn pri h56 w"><span class="i f s28">play_arrow</span>Vardiyayı BAŞLAT</button>
+<button class="btn ton w"><span class="i s20">bluetooth</span>Scooter'a şimdi bağlan</button>
+<button class="btn out w">Günün tüm ayrıntıları</button>
+<button class="btn dgt w"><span class="i f s20">stop</span>Vardiyayı BİTİR</button>
+<div class="x" style="gap: 10px; flex-wrap: wrap"><button class="ib" aria-label="Ayarlar"><span class="i">settings</span></button><button class="ib h56 tint" aria-label="Eve dön"><span class="i">home</span></button><button class="fab" aria-label="Konumuma dön"><span class="i s28" style="color: var(--acT)">my_location</span></button><button class="fab on" aria-label="Rota"><span class="i f s28">alt_route</span></button><button class="stopb" aria-label="Kaydı durdur"><span class="i f">stop</span></button></div>
+</div></section>
+<section><h3 class="cap">Çip ve segment</h3><div class="y" style="gap: 12px">
+<div class="x" style="gap: 8px; flex-wrap: wrap"><button class="chip on"><span class="i s18">check</span>Tüm siparişler</button><button class="chip"><span class="dot" style="color: var(--wo)"></span>Wolt</button><button class="chip"><span class="dot" style="color: var(--bo)"></span>Bolt Food</button></div>
+<div class="seg"><button class="on">Siparişler</button><button>Teklif puanı</button></div>
+</div></section>
+<section><h3 class="cap">Durum hapı ve rozet</h3><div class="y" style="gap: 8px">
+<div class="x" style="gap: 8px; flex-wrap: wrap"><span class="pill" style="background: var(--okC); color: var(--ok)"><span class="dot"></span>scooter bağlı</span><span class="pill" style="background: var(--acC); color: var(--acO)"><span class="dot"></span>Kayıt açık</span><span class="pill" style="background: var(--dgC); color: var(--dg)"><span class="dot"></span>Bağlı değil</span></div>
+<div class="x" style="gap: 8px; flex-wrap: wrap"><span class="pill" style="background: var(--mvC); color: var(--mv)"><span class="i f s16">two_wheeler</span>Restorana gidiyorsun</span><span class="pill" style="background: var(--rtC); color: var(--rt)"><span class="i f s16">restaurant</span>Restorana vardın</span></div>
+<div class="x" style="gap: 8px; flex-wrap: wrap"><span class="pill" style="background: var(--pkC); color: var(--pk)"><span class="i f s16">inventory_2</span>Sipariş alındı</span><span class="pill" style="background: var(--cuC); color: var(--cu)"><span class="i f s16">location_on</span>Müşteriye vardın</span></div>
+<div class="x" style="gap: 8px"><span class="cnt tn">+1</span><span class="badge">! 5/7</span><span class="badge ok"><span class="i s16">check</span></span></div>
+</div></section>
+</div>
+<div class="col">
+<section><h3 class="cap">Uyarı şeridi ve bildirim</h3><div class="y" style="gap: 10px">
+<div class="ban wn" style="padding: 8px 6px 8px 14px"><span class="i">battery_alert</span><span class="f1" style="font-weight: 600">Batarya düşük — eve dön?</span><button class="btn wnf" style="padding: 0 16px">Eve git</button><button class="ib" aria-label="Kapat" style="color: var(--wn)"><span class="i">close</span></button></div>
+<button class="ban dg"><span class="i">visibility_off</span><span class="f1" style="font-weight: 600">Ekran okuma kapalı — kayıt yapılmıyor</span><span class="i">chevron_right</span></button>
+<div class="ban inf"><span class="i mu">info</span><span class="f1">Bu yalnızca istatistik notudur. Platformda iptal işlemi yapmaz.</span></div>
+<div class="toast" role="status"><span class="i f" style="color: var(--ok)">check_circle</span><span class="ts f1">Müşteriye vardın</span></div>
+</div></section>
+<section><h3 class="cap">Liste ve ayar grubu</h3><div class="grp">
+<button class="lrow"><span class="ibox"><span class="i">map</span></span><span class="y f1"><span class="ts">Harita ayarları</span><span class="bs mu">Harita görünümü, harita verisi, Google Maps</span></span><span class="i mu">chevron_right</span></button>
+<div class="hr"></div>
+<label class="lrow"><span class="ibox"><span class="i">electric_scooter</span></span><span class="y f1"><span class="ts">Vardiyada scooter'a otomatik bağlan</span><span class="bs mu">Vardiya başlayınca canlı bağlantı açılır, bitince kapanır</span></span><input class="swi" type="checkbox" checked="checked"></label>
+<div class="hr"></div>
+<label class="lrow r"><input class="rad" type="radio" name="tg" checked="checked"><span class="bm f1">Telefonu izle</span></label>
+</div></section>
+<section><h3 class="cap">Üst çubuk (alt ekranlar)</h3><div class="tbar"><button class="ib" aria-label="Geri"><span class="i">arrow_back</span></button><span class="tl f1 ell">Harita ayarları</span><button class="ib" aria-label="Yenile"><span class="i">refresh</span></button></div></section>
+</div>
+<div class="col">
+<section><h3 class="cap">Alt sayfa</h3><div class="sheet">
+<span class="grab" aria-hidden="true"></span>
+<span class="tl">Nasıl başlasın?</span>
+<div class="grp" style="background: var(--r1); box-shadow: none">
+<button class="lrow r"><span class="i" style="color: var(--acT)">electric_scooter</span><span class="bm f1">Canlı panel • kayıt yok</span></button>
+<div class="hr r"></div>
+<button class="lrow r"><span class="i" style="color: var(--acT)">fiber_manual_record</span><span class="bm f1">Panel + kayıt • GPS dahil</span></button>
+</div>
+<button class="btn out w">İptal</button>
+</div></section>
+<section><h3 class="cap">Onay penceresi</h3><div class="dlg">
+<span class="tl">Günü bitir?</span>
+<span class="bm mu">Kayıt durur ve günün istatistiği açılır.</span>
+<div class="x" style="gap: 8px; justify-content: flex-end"><button class="btn txt">Vazgeç</button><button class="btn pri">Bitir</button></div>
+</div></section>
+<section><h3 class="cap">Boş durum ve iskelet</h3><div class="x" style="gap: 12px; align-items: stretch">
+<div class="card empty f1"><span class="ecirc"><span class="i s28 mu">receipt_long</span></span><span class="ts">Henüz kayıt yok</span></div>
+<div class="card y f1" style="gap: 10px; justify-content: center"><span class="sk" style="width: 45%"></span><span class="sk" style="width: 80%; height: 26px"></span><span class="x" style="gap: 8px"><span class="sk f1" style="height: 36px"></span><span class="sk f1" style="height: 36px"></span></span></div>
+</div></section>
+</div>
+</div>
+<div class="brow">
+<div class="mapstrip">
+<div class="x" style="gap: 8px"><button class="srch" aria-label="Adres veya mekân ara"><span class="i" style="color: var(--tx)">search</span><span class="ell">Adres veya mekân ara</span></button><button class="wx" aria-label="Hava 23°"><span class="i f s28" style="color: var(--sun)">partly_cloudy_day</span><span class="ts tn">23°</span></button></div>
+<div class="x" style="gap: 12px; align-items: flex-end">
+<button class="mt" aria-label="Batarya: 78% · +64%"><span class="v"><span class="i f s16" style="color: var(--ok); align-self: center">battery_5_bar</span><span class="nm tn">78%</span></span><span class="ls mu tn">+64%</span><span class="bar" style="width: 78%"></span></button>
+<div class="dp"><span class="pdot" style="--c: var(--mv)"></span><button class="ib h56" aria-label="Eve dön"><span class="i">home</span></button><button class="ib h56" aria-label="İstatistik"><span class="i">bar_chart</span></button><button class="ib h56" aria-label="Günü bitir"><span class="i">sports_score</span></button><span class="i mu" style="padding: 0 8px 0 2px" aria-hidden="true">expand_less</span></div>
+<span class="f1"></span>
+<button class="fab" aria-label="Kuzey yukarı"><span class="i f s28" style="color: var(--acT)">navigation</span></button>
+</div>
+</div>
+<nav class="nav" aria-label="Alt menü">
+<button class="on" aria-current="page"><span class="ind"><span class="i">map</span></span><span class="nl">Harita</span></button>
+<button><span class="ind"><span class="i">receipt_long</span></span><span class="nl">Siparişler</span></button>
+<button><span class="ind"><span class="i">electric_scooter</span></span><span class="nl">Scooter</span></button>
+<button><span class="ind"><span class="i">devices</span></span><span class="nl">Uzaktan</span></button>
+<button><span class="ind"><span class="i">menu</span></span><span class="nl">Daha fazla</span></button>
+</nav>
+</div>
+</div>
+<div class="ph night pnl {{acc}}">
+<div class="x" style="gap: 12px; margin-bottom: 24px"><span class="i f s28" style="color: var(--sun)">dark_mode</span><h2 class="hl">Gece</h2></div>
+<div class="cols">
+<div class="col">
+<section><h3 class="cap">Düğmeler</h3><div class="y" style="gap: 10px">
+<button class="btn pri h56 w"><span class="i f s28">play_arrow</span>Vardiyayı BAŞLAT</button>
+<button class="btn ton w"><span class="i s20">bluetooth</span>Scooter'a şimdi bağlan</button>
+<button class="btn out w">Günün tüm ayrıntıları</button>
+<button class="btn dgt w"><span class="i f s20">stop</span>Vardiyayı BİTİR</button>
+<div class="x" style="gap: 10px; flex-wrap: wrap"><button class="ib" aria-label="Ayarlar"><span class="i">settings</span></button><button class="ib h56 tint" aria-label="Eve dön"><span class="i">home</span></button><button class="fab" aria-label="Konumuma dön"><span class="i s28" style="color: var(--acT)">my_location</span></button><button class="fab on" aria-label="Rota"><span class="i f s28">alt_route</span></button><button class="stopb" aria-label="Kaydı durdur"><span class="i f">stop</span></button></div>
+</div></section>
+<section><h3 class="cap">Çip ve segment</h3><div class="y" style="gap: 12px">
+<div class="x" style="gap: 8px; flex-wrap: wrap"><button class="chip on"><span class="i s18">check</span>Tüm siparişler</button><button class="chip"><span class="dot" style="color: var(--wo)"></span>Wolt</button><button class="chip"><span class="dot" style="color: var(--bo)"></span>Bolt Food</button></div>
+<div class="seg"><button class="on">Siparişler</button><button>Teklif puanı</button></div>
+</div></section>
+<section><h3 class="cap">Durum hapı ve rozet</h3><div class="y" style="gap: 8px">
+<div class="x" style="gap: 8px; flex-wrap: wrap"><span class="pill" style="background: var(--okC); color: var(--ok)"><span class="dot"></span>scooter bağlı</span><span class="pill" style="background: var(--acC); color: var(--acO)"><span class="dot"></span>Kayıt açık</span><span class="pill" style="background: var(--dgC); color: var(--dg)"><span class="dot"></span>Bağlı değil</span></div>
+<div class="x" style="gap: 8px; flex-wrap: wrap"><span class="pill" style="background: var(--mvC); color: var(--mv)"><span class="i f s16">two_wheeler</span>Restorana gidiyorsun</span><span class="pill" style="background: var(--rtC); color: var(--rt)"><span class="i f s16">restaurant</span>Restorana vardın</span></div>
+<div class="x" style="gap: 8px; flex-wrap: wrap"><span class="pill" style="background: var(--pkC); color: var(--pk)"><span class="i f s16">inventory_2</span>Sipariş alındı</span><span class="pill" style="background: var(--cuC); color: var(--cu)"><span class="i f s16">location_on</span>Müşteriye vardın</span></div>
+<div class="x" style="gap: 8px"><span class="cnt tn">+1</span><span class="badge">! 5/7</span><span class="badge ok"><span class="i s16">check</span></span></div>
+</div></section>
+</div>
+<div class="col">
+<section><h3 class="cap">Uyarı şeridi ve bildirim</h3><div class="y" style="gap: 10px">
+<div class="ban wn" style="padding: 8px 6px 8px 14px"><span class="i">battery_alert</span><span class="f1" style="font-weight: 600">Batarya düşük — eve dön?</span><button class="btn wnf" style="padding: 0 16px">Eve git</button><button class="ib" aria-label="Kapat" style="color: var(--wn)"><span class="i">close</span></button></div>
+<button class="ban dg"><span class="i">visibility_off</span><span class="f1" style="font-weight: 600">Ekran okuma kapalı — kayıt yapılmıyor</span><span class="i">chevron_right</span></button>
+<div class="ban inf"><span class="i mu">info</span><span class="f1">Bu yalnızca istatistik notudur. Platformda iptal işlemi yapmaz.</span></div>
+<div class="toast" role="status"><span class="i f" style="color: var(--ok)">check_circle</span><span class="ts f1">Müşteriye vardın</span></div>
+</div></section>
+<section><h3 class="cap">Liste ve ayar grubu</h3><div class="grp">
+<button class="lrow"><span class="ibox"><span class="i">map</span></span><span class="y f1"><span class="ts">Harita ayarları</span><span class="bs mu">Harita görünümü, harita verisi, Google Maps</span></span><span class="i mu">chevron_right</span></button>
+<div class="hr"></div>
+<label class="lrow"><span class="ibox"><span class="i">electric_scooter</span></span><span class="y f1"><span class="ts">Vardiyada scooter'a otomatik bağlan</span><span class="bs mu">Vardiya başlayınca canlı bağlantı açılır, bitince kapanır</span></span><input class="swi" type="checkbox" checked="checked"></label>
+<div class="hr"></div>
+<label class="lrow r"><input class="rad" type="radio" name="tn" checked="checked"><span class="bm f1">Telefonu izle</span></label>
+</div></section>
+<section><h3 class="cap">Üst çubuk (alt ekranlar)</h3><div class="tbar"><button class="ib" aria-label="Geri"><span class="i">arrow_back</span></button><span class="tl f1 ell">Harita ayarları</span><button class="ib" aria-label="Yenile"><span class="i">refresh</span></button></div></section>
+</div>
+<div class="col">
+<section><h3 class="cap">Alt sayfa</h3><div class="sheet">
+<span class="grab" aria-hidden="true"></span>
+<span class="tl">Nasıl başlasın?</span>
+<div class="grp" style="background: var(--r1); box-shadow: none">
+<button class="lrow r"><span class="i" style="color: var(--acT)">electric_scooter</span><span class="bm f1">Canlı panel • kayıt yok</span></button>
+<div class="hr r"></div>
+<button class="lrow r"><span class="i" style="color: var(--acT)">fiber_manual_record</span><span class="bm f1">Panel + kayıt • GPS dahil</span></button>
+</div>
+<button class="btn out w">İptal</button>
+</div></section>
+<section><h3 class="cap">Onay penceresi</h3><div class="dlg">
+<span class="tl">Günü bitir?</span>
+<span class="bm mu">Kayıt durur ve günün istatistiği açılır.</span>
+<div class="x" style="gap: 8px; justify-content: flex-end"><button class="btn txt">Vazgeç</button><button class="btn pri">Bitir</button></div>
+</div></section>
+<section><h3 class="cap">Boş durum ve iskelet</h3><div class="x" style="gap: 12px; align-items: stretch">
+<div class="card empty f1"><span class="ecirc"><span class="i s28 mu">receipt_long</span></span><span class="ts">Henüz kayıt yok</span></div>
+<div class="card y f1" style="gap: 10px; justify-content: center"><span class="sk" style="width: 45%"></span><span class="sk" style="width: 80%; height: 26px"></span><span class="x" style="gap: 8px"><span class="sk f1" style="height: 36px"></span><span class="sk f1" style="height: 36px"></span></span></div>
+</div></section>
+</div>
+</div>
+<div class="brow">
+<div class="mapstrip">
+<div class="x" style="gap: 8px"><button class="srch" aria-label="Adres veya mekân ara"><span class="i" style="color: var(--tx)">search</span><span class="ell">Adres veya mekân ara</span></button><button class="wx" aria-label="Hava 23°"><span class="i f s28" style="color: var(--sun)">partly_cloudy_day</span><span class="ts tn">23°</span></button></div>
+<div class="x" style="gap: 12px; align-items: flex-end">
+<button class="mt" aria-label="Batarya: 78% · +64%"><span class="v"><span class="i f s16" style="color: var(--ok); align-self: center">battery_5_bar</span><span class="nm tn">78%</span></span><span class="ls mu tn">+64%</span><span class="bar" style="width: 78%"></span></button>
+<div class="dp"><span class="pdot" style="--c: var(--mv)"></span><button class="ib h56" aria-label="Eve dön"><span class="i">home</span></button><button class="ib h56" aria-label="İstatistik"><span class="i">bar_chart</span></button><button class="ib h56" aria-label="Günü bitir"><span class="i">sports_score</span></button><span class="i mu" style="padding: 0 8px 0 2px" aria-hidden="true">expand_less</span></div>
+<span class="f1"></span>
+<button class="fab" aria-label="Kuzey yukarı"><span class="i f s28" style="color: var(--acT)">navigation</span></button>
+</div>
+</div>
+<nav class="nav" aria-label="Alt menü">
+<button class="on" aria-current="page"><span class="ind"><span class="i">map</span></span><span class="nl">Harita</span></button>
+<button><span class="ind"><span class="i">receipt_long</span></span><span class="nl">Siparişler</span></button>
+<button><span class="ind"><span class="i">electric_scooter</span></span><span class="nl">Scooter</span></button>
+<button><span class="ind"><span class="i">devices</span></span><span class="nl">Uzaktan</span></button>
+<button><span class="ind"><span class="i">menu</span></span><span class="nl">Daha fazla</span></button>
+</nav>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"enum","options":["mor","mono"],"default":"mor"},"$preview":{"width":1180,"height":2100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const mono = (this.props.accent ?? 'mor') === 'mono';
+    return { acc: mono ? 'acc-mono' : 'acc-violet' };
+  }
+}
+</script>
+</body>
+</html>

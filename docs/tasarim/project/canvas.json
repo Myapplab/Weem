@@ -19,9 +19,9 @@
     "Mono-Harita.dc.html": {"x": 0, "y": 6532, "w": 390, "h": 844, "title": "Siyah-beyaz · Harita (gündüz, TR)"},
     "Mono-Scooter.dc.html": {"x": 470, "y": 6532, "w": 390, "h": 844, "title": "Siyah-beyaz · Scooter (gece, TR)"},
     "DahaFazla.dc.html": {"x": 0, "y": 7776, "w": 390, "h": 1120, "title": "Daha fazla · ayar satırları (gündüz, TR)"},
-    "Bilesenler.dc.html": {"x": 470, "y": 7776, "w": 1180, "h": 1720, "title": "Bileşen kitaplığı (gündüz | gece)"},
-    "Renkler.dc.html": {"x": 0, "y": 9896, "w": 1180, "h": 1040, "title": "Renkler"},
-    "Yazi-Olcu.dc.html": {"x": 1260, "y": 9896, "w": 1180, "h": 1240, "title": "Yazı, ölçüler, simgeler"}
+    "Bilesenler.dc.html": {"x": 470, "y": 7776, "w": 1180, "h": 2100, "title": "Bileşen kitaplığı (gündüz | gece)"},
+    "Renkler.dc.html": {"x": 0, "y": 10276, "w": 1180, "h": 1040, "title": "Renkler"},
+    "Yazi-Olcu.dc.html": {"x": 1260, "y": 10276, "w": 1180, "h": 1240, "title": "Yazı, ölçüler, simgeler"}
   },
   "order": [
     "Main.dc.html",
@@ -49,7 +49,7 @@
     "n4": {"x": 0, "y": 5008, "text": "4 · Scooter (Sürüş Paneli)", "kind": "title1", "maxW": 1330},
     "n5": {"x": 0, "y": 6252, "text": "5 · Vurgu seçeneği: siyah-beyaz", "kind": "title1", "maxW": 1330},
     "n6": {"x": 0, "y": 7496, "text": "6 · Bileşenler", "kind": "title1", "maxW": 1650},
-    "n7": {"x": 0, "y": 9616, "text": "7 · Renk, yazı, ölçü, simge", "kind": "title1", "maxW": 2440},
+    "n7": {"x": 0, "y": 9996, "text": "7 · Renk, yazı, ölçü, simge", "kind": "title1", "maxW": 2440},
     "how": {"x": -560, "y": 0, "w": 440, "maxH": 420, "fill": "purple", "size": "m", "text": "Nasıl bakılır\n\nHer telefon örneğinde Tweaks: dark (gündüz / gece) ve accent (mor / mono = siyah-beyaz) değiştirilebilir.\n\nGündüz örnekleri Türkçe, gece örnekleri çoğunlukla Azerice (uzun metin denemesi).\n\nMetinler ve davranış uygulamadakiyle aynı; yalnız görünüm, yerleşim ve simgeler yeni. Ayrıntı: docs/TASARIM.md."}
   },
   "designSystems": []
