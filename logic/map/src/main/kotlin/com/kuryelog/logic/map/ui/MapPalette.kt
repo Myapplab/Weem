@@ -27,6 +27,11 @@ class MapPalette private constructor(
     val textLo: Int,
     val shadow: Int,
     val bikeway: Int,
+    /** Hava simgesi çizimi (A10.4d; `:app` `WeatherMotion`): güneş, ay, bulut/rüzgâr, yağış. Hap zemininde en az 3:1. */
+    val weatherSun: Int,
+    val weatherMoon: Int,
+    val weatherCloud: Int,
+    val weatherRain: Int,
 ) {
     /** Eğim rengi: > %8 kırmızı, > %3 turuncu, aksi mavi (iniş dahil). [grade] oran (0,05 = %5). */
     fun forGrade(grade: Double): Int = when {
@@ -47,12 +52,14 @@ class MapPalette private constructor(
             stroke = 0xFF2B384C.toInt(), blue = 0xFF8BB5FF.toInt(), orange = 0xFFFF9F1C.toInt(), red = 0xFFFF2D55.toInt(), green = 0xFF8ACDB8.toInt(),
             pink = 0xFFFF7AC6.toInt(), slope = 0xFFB26BFF.toInt(), food = 0xFFFF8A3D.toInt(), walk = 0xFFE8F7FF.toInt(), text = 0xFFE8F7FF.toInt(),
             textLo = 0xFFA5B0C1.toInt(), shadow = 0x99000000.toInt(), bikeway = 0xFF3DDCE8.toInt(),
+            weatherSun = 0xFFE8A927.toInt(), weatherMoon = 0xFF7185B2.toInt(), weatherCloud = 0xFF5588C5.toInt(), weatherRain = 0xFF2D77CA.toInt(),
         )
         val DAY = MapPalette(
             background = 0xFFF3F5F8.toInt(), panel = 0xF2FFFFFF.toInt(), surface = 0xFFFFFFFF.toInt(), surfaceHigh = 0xFFE6EAF0.toInt(),
             stroke = 0xFFCBD2DB.toInt(), blue = 0xFF1765D1.toInt(), orange = 0xFFD45D00.toInt(), red = 0xFFD7002E.toInt(), green = 0xFF137D65.toInt(),
             pink = 0xFFC0008A.toInt(), slope = 0xFF7B2FD0.toInt(), food = 0xFFE2580B.toInt(), walk = 0xFF16222E.toInt(), text = 0xFF0B1218.toInt(),
             textLo = 0xFF55616D.toInt(), shadow = 0x33000000, bikeway = 0xFF00838F.toInt(),
+            weatherSun = 0xFFB87800.toInt(), weatherMoon = 0xFF7185B2.toInt(), weatherCloud = 0xFF5588C5.toInt(), weatherRain = 0xFF2D77CA.toInt(),
         )
 
         fun of(dark: Boolean): MapPalette = if (dark) NIGHT else DAY

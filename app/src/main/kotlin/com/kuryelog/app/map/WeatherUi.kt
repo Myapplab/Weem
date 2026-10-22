@@ -68,7 +68,9 @@ import com.kuryelog.app.ui.WeemRadius
 import com.kuryelog.app.ui.WeemSpace
 import com.kuryelog.app.ui.WeemType
 import com.kuryelog.app.ui.floating
+import com.kuryelog.app.ui.isDark
 import com.kuryelog.app.ui.palette
+import com.kuryelog.logic.map.ui.MapPalette
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.map.ui.HudLayout
 import com.kuryelog.logic.map.ui.WeatherUiText
@@ -308,6 +310,7 @@ fun WeatherDetailSheet(report: WeatherReport, index: Int, availableHeightDp: Dou
 @Composable
 private fun WeatherMotion(kind: WeatherKind, size: Dp) {
     val phase by rememberInfiniteTransition(label = "weather").animateFloat(0f, 1f, infiniteRepeatable(tween(3200, easing = LinearEasing), RepeatMode.Restart), label = "phase")
+    val ink = MapPalette.of(palette().isDark)
     Canvas(Modifier.size(size)) {
         val s = this.size.width
         val t = phase
@@ -315,7 +318,7 @@ private fun WeatherMotion(kind: WeatherKind, size: Dp) {
         fun line(c: Color, x1: Float, y1: Float, x2: Float, y2: Float) = drawLine(c, Offset(x1, y1), Offset(x2, y2), stroke, StrokeCap.Round)
         when (kind) {
             WeatherKind.SUN, WeatherKind.NIGHT -> {
-                val c = if (kind == WeatherKind.SUN) Color(0xFFE8A927) else Color(0xFF7185B2)
+                val c = Color(if (kind == WeatherKind.SUN) ink.weatherSun else ink.weatherMoon)
                 drawCircle(c, s * .2f, Offset(s / 2, s / 2), style = Stroke(stroke))
                 for (i in 0 until 8) {
                     val a = i * PI / 4 + t * PI / 4
@@ -323,20 +326,20 @@ private fun WeatherMotion(kind: WeatherKind, size: Dp) {
                 }
             }
             WeatherKind.WIND -> {
-                val c = Color(0xFF5588C5)
+                val c = Color(ink.weatherCloud)
                 for (i in 0 until 3) {
                     val dx = (sin(t * PI * 2 + i) * s * .08).toFloat()
                     line(c, s * .13f + dx, s * (.3f + i * .2f), s * .83f + dx, s * (.3f + i * .2f))
                 }
             }
             else -> {
-                val c = Color(0xFF5588C5)
+                val c = Color(ink.weatherCloud)
                 val dx = (sin(t * PI * 2) * s * .04).toFloat()
                 drawCircle(c, s * .16f, Offset(s * .35f + dx, s * .4f), style = Stroke(stroke))
                 drawCircle(c, s * .2f, Offset(s * .55f + dx, s * .34f), style = Stroke(stroke))
                 drawRoundRect(c, Offset(s * .17f + dx, s * .4f), Size(s * .67f, s * .2f), androidx.compose.ui.geometry.CornerRadius(s * .1f), Stroke(stroke))
                 if (kind == WeatherKind.RAIN || kind == WeatherKind.THUNDER || kind == WeatherKind.SNOW) {
-                    val d = Color(0xFF2D77CA)
+                    val d = Color(ink.weatherRain)
                     for (i in 0 until 3) {
                         val y = s * (.67f + ((t + i * .2f) % 1f) * .2f)
                         line(d, s * (.3f + i * .2f), y, s * (.26f + i * .2f), y + s * .1f)
