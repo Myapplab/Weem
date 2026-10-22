@@ -121,7 +121,7 @@ fun WeemTopBar(
 fun SubScreen(
     title: String,
     backLabel: String,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
     modifier: Modifier = Modifier,
     scroll: ScrollState? = rememberScrollState(),
     spacing: Dp = WeemSpace.m,

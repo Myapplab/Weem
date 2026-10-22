@@ -111,7 +111,7 @@ fun ValueRow(
     )
 }
 
-/** Anahtarlı satır: bütün satır anahtardır (`Role.Switch`); [tag] satıra verilir (testler `assertIsOn` ile okur). */
+/** Anahtarlı satır: bütün satır anahtardır (`Role.Switch`); [tag] satıra verilir (testler `assertIsOn` ile okur); [extra] anahtarın solunda (ör. bilgi düğmesi). */
 @Composable
 fun SwitchRow(
     title: String,
@@ -122,6 +122,7 @@ fun SwitchRow(
     icon: ImageVector? = null,
     enabled: Boolean = true,
     tag: String? = null,
+    extra: (@Composable () -> Unit)? = null,
 ) {
     ListRow(
         title = title,
@@ -131,7 +132,10 @@ fun SwitchRow(
         titleStyle = if (subtitle == null && icon == null) WeemType.bodyL else WeemType.titleS,
         modifier = modifier.let { if (tag != null) it.testTag(tag) else it }
             .toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onCheckedChange),
-        trailing = { Switch(checked = checked, onCheckedChange = null, enabled = enabled, colors = weemSwitchColors()) },
+        trailing = {
+            extra?.invoke()
+            Switch(checked = checked, onCheckedChange = null, enabled = enabled, colors = weemSwitchColors())
+        },
     )
 }
 
