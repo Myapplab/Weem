@@ -12,10 +12,10 @@ object HudLayout {
     fun bottomMaxHeightDp(screenDp: Double): Double = screenDp * .58
 
     /** Üst panelin kenarları (sol, üst, sağ, alt; dp). */
-    val TOP_PADDING_DP = listOf(8.0, 6.0, 8.0, 0.0)
+    val TOP_PADDING_DP = listOf(12.0, 8.0, 12.0, 0.0)
 
     /** Alt panelin sol/sağ/alt kenarı (dp). */
-    const val BOTTOM_PADDING_DP = 8.0
+    const val BOTTOM_PADDING_DP = 12.0
 
     /** Hava hapının kapalı genişliği (dp; A10.4d: arama hapının sağında, boyu [LOCATE_BUTTON_DP]). */
     const val WEATHER_COMPACT_DP = 96.0

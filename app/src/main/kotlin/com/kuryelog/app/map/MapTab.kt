@@ -1,5 +1,6 @@
 package com.kuryelog.app.map
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,18 +11,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,11 +38,24 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.kuryelog.app.ui.BtnKind
+import com.kuryelog.app.ui.IconBox
+import com.kuryelog.app.ui.WButton
+import com.kuryelog.app.ui.WTone
+import com.kuryelog.app.ui.WeemIcons
+import com.kuryelog.app.ui.WeemRadius
+import com.kuryelog.app.ui.WeemSpace
+import com.kuryelog.app.ui.WeemType
+import com.kuryelog.app.ui.color
+import com.kuryelog.app.ui.floating
+import com.kuryelog.app.ui.palette
 import com.kuryelog.logic.core.Lang
-import com.kuryelog.logic.map.ui.MapText
 import com.kuryelog.logic.map.day.DayView
 import com.kuryelog.logic.map.nav.NavState
 import com.kuryelog.logic.map.ui.CameraMode
+import com.kuryelog.logic.map.ui.HudLayout
+import com.kuryelog.logic.map.ui.MapText
 
 /** Harita sekmesinin görünümü (MAP.md 6.1–6.12): gün, navigasyon, sol göstergeler, hava; [arrivalFocus] varış odağı (hedefe ≤100 m). */
 data class MapTabState(
@@ -120,7 +134,7 @@ fun MapTab(
             keyboard = keyboard, map = map, modifier = modifier, alerts = alerts,
             header = {
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopEnd) {
-                    FilledTonalButton(onClick = actions.onShowPanels, modifier = Modifier.testTag("show-panels")) { Text(MapText.SHOW_PANELS.get(lang)) }
+                    WButton(MapText.SHOW_PANELS.get(lang), actions.onShowPanels, Modifier.floating(CircleShape).testTag("show-panels"), kind = BtnKind.TONAL, icon = WeemIcons.Layers)
                 }
             },
             footer = {
@@ -130,6 +144,7 @@ fun MapTab(
         return
     }
     var collapseSignal by remember { mutableIntStateOf(0) }
+    var weatherOpen by remember { mutableStateOf(false) }
     var shiftCollapsed by remember { mutableStateOf(true) }
     var rootCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
     var cardBounds by remember { mutableStateOf(Rect.Zero) }
@@ -171,39 +186,44 @@ fun MapTab(
             header = {
                 Column(Modifier.fillMaxWidth()) {
                     topCard()
-                    SearchBar(lang, actions.onSearch)
-                    Spacer(Modifier.height(16.dp))
-                    if (state.weatherStrip) WeatherChip(state.weather, lang, state.nowMs, onRefresh = actions.onWeatherRefresh)
-                    Spacer(Modifier.height(6.dp))
+                    // A10.4d (K4): arama hapı ve sağında hava hapı; hava açılınca şerit aramanın altına iner.
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
+                        SearchBar(lang, actions.onSearch, Modifier.weight(1f))
+                        if (state.weatherStrip && !weatherOpen) {
+                            WeatherChip(state.weather, lang, state.nowMs, onRefresh = actions.onWeatherRefresh, expanded = false, onExpandedChange = { weatherOpen = it })
+                        }
+                    }
+                    if (state.weatherStrip && weatherOpen) {
+                        Spacer(Modifier.height(WeemSpace.s))
+                        WeatherChip(state.weather, lang, state.nowMs, onRefresh = actions.onWeatherRefresh, expanded = true, onExpandedChange = { weatherOpen = it })
+                    }
+                    Spacer(Modifier.height(WeemSpace.m))
                     if (!keyboard) metrics()
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(WeemSpace.s))
                     toastSlot()
                     reminderSlot()
                 }
             },
             footer = {
                 // 1.7.1: gün kartı katlıyken konum ve rota düğmeleri kartın yanına iner; açılınca yerlerine döner.
+                // A10.4d (K4): konum düğmesi rota kartının üstünde; gün kartı katlıyken rota düğmesi onun sağında.
                 if (shiftCollapsed) {
-                    Column(Modifier.fillMaxWidth()) {
+                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) { locate() }
                         wrongWay()
                         routePanel()
                         Row(verticalAlignment = Alignment.Bottom) {
                             Box(Modifier.weight(1f), contentAlignment = Alignment.BottomStart) { bar() }
-                            Spacer(Modifier.width(8.dp))
-                            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                locate()
-                                RouteFab(actions.onRouteFab, lang = lang, open = state.routeOpen, busy = state.nav.busy, error = state.nav.error != null)
-                            }
+                            Spacer(Modifier.width(WeemSpace.s))
+                            RouteFab(actions.onRouteFab, lang = lang, open = state.routeOpen, busy = state.nav.busy, error = state.nav.error != null)
                         }
                     }
                 } else {
-                    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
+                    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         locate()
-                        Spacer(Modifier.height(10.dp))
                         wrongWay()
                         routePanel()
                         RouteFab(actions.onRouteFab, lang = lang, open = state.routeOpen, busy = state.nav.busy, error = state.nav.error != null)
-                        Spacer(Modifier.height(8.dp))
                         bar()
                     }
                 }
@@ -212,34 +232,48 @@ fun MapTab(
     }
 }
 
-/** Arama çubuğu (`map-search`; MAP.md 8.8): ipucu "Adres veya mekân ara"; arama akışı A6.6. */
+/** Arama hapı (`map-search`; MAP.md 8.8): 56 dp, solda arama simgesi, ipucu "Adres veya mekân ara"; arama akışı A6.6. */
 @Composable
-private fun SearchBar(lang: Lang, onClick: () -> Unit) {
+private fun SearchBar(lang: Lang, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val p = palette()
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = .95f),
-        shadowElevation = 3.dp,
-        modifier = Modifier.fillMaxWidth().height(52.dp).testTag("map-search"),
+        shape = CircleShape,
+        color = p.surface.color(),
+        contentColor = p.text.color(),
+        modifier = modifier.fillMaxWidth().height(HudLayout.LOCATE_BUTTON_DP.dp).floating(CircleShape).testTag("map-search"),
     ) {
-        Box(Modifier.padding(horizontal = 16.dp), contentAlignment = Alignment.CenterStart) {
-            Text("⌕  " + MapText.SEARCH_HINT.get(lang), color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+        Row(Modifier.padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(WeemIcons.Search, contentDescription = null)
+            Spacer(Modifier.width(WeemSpace.m))
+            Text(MapText.SEARCH_HINT.get(lang), style = WeemType.bodyL, color = p.muted.color(), maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
 
-/** Varış odağında alttaki adres kartı (`arrival-address`; MAP.md 6.3, 7.10): adres ve kapı notu. */
+/** Varış odağında alttaki adres kartı (`arrival-address`; MAP.md 6.3, 7.10): adres büyük, kapı notu turuncu bantta 24 sp. */
 @Composable
 private fun ArrivalAddressCard(label: String, unitNote: String?) {
+    val p = palette()
+    val shape = RoundedCornerShape(WeemRadius.panel)
     Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = .97f),
-        shadowElevation = 4.dp,
-        modifier = Modifier.fillMaxWidth().testTag("arrival-address"),
+        shape = shape,
+        color = p.surface.color(),
+        contentColor = p.text.color(),
+        modifier = Modifier.fillMaxWidth().floating(shape).testTag("arrival-address"),
     ) {
-        Column(Modifier.padding(16.dp)) {
-            Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 3, overflow = TextOverflow.Ellipsis)
-            if (!unitNote.isNullOrBlank()) Text(unitNote, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(Modifier.padding(WeemSpace.xl), verticalArrangement = Arrangement.spacedBy(WeemSpace.m)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(WeemSpace.m), verticalAlignment = Alignment.CenterVertically) {
+                IconBox(WeemIcons.LocationOnFilled, tone = WTone.CUSTOMER)
+                Text(label, style = WeemType.titleL, maxLines = 3, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            }
+            if (!unitNote.isNullOrBlank()) Row(
+                Modifier.fillMaxWidth().background(p.warnBg.color(), RoundedCornerShape(WeemRadius.card)).padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(WeemSpace.m), verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(WeemIcons.DoorFront, contentDescription = null, tint = p.warn.color())
+                Text(unitNote, color = p.warn.color(), style = WeemType.titleL.copy(fontSize = 24.sp, lineHeight = 30.sp, fontWeight = FontWeight.ExtraBold))
+            }
         }
     }
 }
