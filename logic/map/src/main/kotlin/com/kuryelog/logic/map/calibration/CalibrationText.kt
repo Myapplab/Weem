@@ -63,4 +63,31 @@ object CalibrationText {
         "Telefon gidonda sabit olmalı. Hızın koşunun medyan hızına göre ±%10 içinde kalan bölümü sayılır."
     const val LEVELS_HELP = "9–10 Çok iyi · 7–8 İyi · 5–6 Orta · 3–4 Kötü · 1–2 Çok kötü"
     const val TRIM_HELP = "Kırpılmış geçerli koşular sayılır; hız sabit değildi uyarılı kayıt sabit hız gerekliliğini karşılamaz."
+
+    const val TITLE = "Yol Kalitesi Kalibrasyonu"
+    const val FINISHED = "BİTMİŞ KALİBRASYONLAR"
+    const val EMPTY = "Henüz bitmiş kalibrasyon yok."
+    const val LEGACY_TITLE = "ESKİ KAYITLAR"
+    const val LEGACY_HELP = "Yeni ölçeğe çevrilmez; 1–10 referanslarına katılmaz. Eski kayıtlar korunur."
+    const val ADD = "KALİBRASYON EKLE"
+    const val CUSTOM = "Özel süre"
+    const val CUSTOM_RANGE = "1–600 saniye"
+    const val PICK = "Seç"
+    const val CANCEL = "Vazgeç"
+    const val FINISH = "BİTİR"
+    const val START = "BAŞLA"
+    const val SHOW_BUBBLE = "Yüzen bubble göster"
+    const val HIDE_BUBBLE = "Bubble kapat"
+    const val DELETE = "Sil"
+
+    fun profileLine(name: String) = "Profil: $name. Referanslar bu telefon/montaj profili için hesaplanır."
+    fun levelLine(level: Int) = "$level/10 · ${RoadQuality.fromLevel(level).label}"
+    fun secondsLabel(n: Int) = "$n sn"
+
+    /** Hazır süreler (15/30/60/90 sn) dışındaki seçim "Özel: N sn" olarak gösterilir; seçilmemişse "Özel süre". */
+    fun customLabel(seconds: Int?) = if (seconds != null && seconds !in PRESET_SECONDS) "Özel: $seconds sn" else CUSTOM
+    fun remaining(seconds: Int) = "$seconds sn kaldı"
+    fun failed(message: String?) = "İşlem tamamlanamadı: $message"
+
+    val PRESET_SECONDS = listOf(15, 30, 60, 90)
 }

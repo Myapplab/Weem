@@ -4,6 +4,7 @@ import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.map.calibration.RoadCalibrationRecord
 import com.kuryelog.logic.map.calibration.RoadCalibrationReferences
 import com.kuryelog.logic.map.calibration.RoadQuality
+import com.kuryelog.logic.map.calibration.RoadReferenceConflict
 import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
@@ -82,5 +83,49 @@ class SurfaceTextTest {
         assertEquals("Nizami · ← 2", SurfaceText.pieceTitle("Nizami", SurfaceSummary("1/a/1/1", 1, 1, 1, "p", 50.0, .9, 50.0, 0.0, 3, 0, 1.0, 4.0, 2, 0.0, 40.0, 49.0)))
         assertEquals("güven 90% · 3 geçiş · 2 darbe", SurfaceText.pieceSubtitle(s, Lang.TR))
         assertEquals("4 parça · 1.2 km", SurfaceText.streetSubtitle(4, 1200.0, Lang.TR)); assertEquals("3 hissə · 150 m", SurfaceText.streetSubtitle(3, 150.0, Lang.AZ))
+    }
+
+    // A10.4b: `:app` ekranlarındaki birleşik metinler buraya taşındı (TextCoverageTest: `:app`'te yerel harfli düz metin olmaz).
+    @Test fun detailLinesInBothLanguages() {
+        val s = SurfaceSummary("1/a/0/1", 1, 0, 1, "p", 50.0, .9, 50.0, 0.0, 3, 0, 1.0, 4.0, 2, 0.0, 40.0, 49.0)
+        assertEquals(listOf("Rota/harita puanı: 50/100", "güven 90%", "3 bağımsız geçiş · 50 m ölçüldü", "Bozuk ölçülen mesafe: 0%", "2 tarafsız darbe olayı · 4.0 /100 m",
+            "Geçilebilirlik: yüzeyden çıkarılmaz; elle kapanış ayrı kaydedilir", "Son ölçüm: 1970-01-01 04:00"), SurfaceText.detailLines(s, Lang.TR))
+        val short = SurfaceSummary("1/a/0/1", 1, 0, 1, "p", 50.0, .9, 10.0, 5.0, 3, 0, 1.0, 4.0, 2, 0.0, 40.0, 49.0)
+        assertEquals(listOf("Marşrut/xəritə balı: 50/100", "inam 90%", "3 müstəqil keçid · 10 m ölçüldü", "Nahamar ölçülən məsafə: 50%", "2 neytral zərbə hadisəsi · — /100 m",
+            "Keçid: səthdən çıxarılmır; bağlanma ayrı qeyd olunur", "Son ölçmə: 1970-01-01 04:00"), SurfaceText.detailLines(short, Lang.AZ))
+    }
+
+    @Test fun impactEventLines() {
+        assertEquals("Darbe · 7.46 m/s²", SurfaceText.impactTitle(7.456, Lang.TR))
+        assertEquals("Zərbə · 7.46 m/s²", SurfaceText.impactTitle(7.456, Lang.AZ))
+        assertEquals("1970-01-01 04:00:00\nOtomatik · tür bilinmiyor · GPS 3.0 m", SurfaceText.impactSubtitle(0, 3.0, Lang.TR))
+        assertEquals("1970-01-01 04:00:00\nAvtomatik · növ bilinmir · GPS 3.0 m", SurfaceText.impactSubtitle(0, 3.0, Lang.AZ))
+    }
+
+    @Test fun technicalAndDiagnosticsBlocks() {
+        val s = SurfaceSummary("k", 1, 0, 0, "p", 50.0, .9, 50.0, 0.0, 1, 0, 0.5, 4.0, 2, 7.0, 40.0, 49.0, p95 = 3.0, jerk = 1.234, bands = listOf(.1, .25))
+        assertEquals("RMS 0.500 m/s² · jerk 1.23 m/s³\nDarbe max 7.00 · P95 3.00 m/s²\nGyro — rad/s\nGPS 4.0 m · 50 m segment · 100% ölçüm kapsamı\nBantlar 0.100 / 0.250",
+            SurfaceText.technical(s))
+        assertEquals("Durum: closed\nNeden: day_closed\nBoot ms: 0\nGüven: 0.0\nBekleyen: 0 · kabul: 0\nAlgoritma v2 · 50 m · 8.0 s tampon\nHP 0.7 Hz · LP 35.0 Hz · darbe 6.0 m/s²",
+            SurfaceText.diagnostics(SurfaceView(), SurfaceProfile()))
+    }
+
+    @Test fun bandStatusShowsPassesOnlyWhenValidated() {
+        assertEquals("3 / 4 geçiş · kalibre", SurfaceText.bandStatus(CalibrationBand(.2, .9, 3, 4, 0), Lang.TR))
+        assertEquals("3 / 4 keçid · kalibrə olunub", SurfaceText.bandStatus(CalibrationBand(.2, .9, 3, 4, 0), Lang.AZ))
+        assertEquals("Kalibrasyon bekliyor", SurfaceText.bandStatus(null, Lang.TR))
+        assertEquals("Kalibrasiya gözlənilir", SurfaceText.bandStatus(CalibrationBand(.2, .9, 2, 4, 0), Lang.AZ))
+    }
+
+    @Test fun conflictLineMatchesTheRoadScoreLine() {
+        assertEquals("6 ve 7 ters sırada — birini tekrar kalibre et (RMS 6: 2.000, 7: 5.000 m/s²)", SurfaceText.conflictLine(RoadReferenceConflict(6, 7, 2.0, 5.0), Lang.TR))
+        assertEquals("6 və 7 bərabərdir — birini yenidən kalibrasiya et (RMS 6: 2.000, 7: 2.000 m/s²)", SurfaceText.conflictLine(RoadReferenceConflict(6, 7, 2.0, 2.0), Lang.AZ))
+        val r = refs(record(6, 2.0), record(7, 5.0))
+        assertEquals(r.conflicts(20).map { SurfaceText.conflictLine(it, Lang.TR) }, SurfaceText.roadScore(r, 3.0, 20.0, Lang.TR, showMissingLevels = false).lines)
+    }
+
+    @Test fun uiTextHasBothLanguagesAndIsTranslated() {
+        for (t in SurfaceUiText.entries) { assertTrue(t.name, t.tr.isNotBlank()); assertTrue(t.name, t.az.isNotBlank()) }
+        assertEquals(setOf("NEW_PROFILE_HINT"), SurfaceUiText.entries.filter { it.tr == it.az }.map { it.name }.toSet())
     }
 }

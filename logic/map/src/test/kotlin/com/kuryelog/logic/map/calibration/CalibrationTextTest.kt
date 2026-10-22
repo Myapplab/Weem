@@ -70,4 +70,13 @@ class CalibrationTextTest {
         assertEquals("Kalibrasyon başladı", CalibrationText.phaseTitle(st(CalibrationPhase.RECORDING)))
         assertEquals("Kalibrasyon bitti", CalibrationText.phaseTitle(st(CalibrationPhase.DONE)))
     }
+
+    @Test fun screenLabelsMovedFromApp() {
+        assertEquals("Özel süre", CalibrationText.customLabel(null)); assertEquals("Özel süre", CalibrationText.customLabel(30))
+        assertEquals("Özel: 45 sn", CalibrationText.customLabel(45))
+        assertEquals("3 sn kaldı", CalibrationText.remaining(3)); assertEquals("15 sn", CalibrationText.secondsLabel(15))
+        assertEquals("İşlem tamamlanamadı: disk dolu", CalibrationText.failed("disk dolu"))
+        assertEquals("7/10 · ${RoadQuality.fromLevel(7).label}", CalibrationText.levelLine(7))
+        assertEquals("Profil: G3 · gidon. Referanslar bu telefon/montaj profili için hesaplanır.", CalibrationText.profileLine("G3 · gidon"))
+    }
 }

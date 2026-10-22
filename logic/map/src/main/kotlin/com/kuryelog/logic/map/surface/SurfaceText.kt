@@ -2,6 +2,7 @@ package com.kuryelog.logic.map.surface
 
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.map.calibration.RoadCalibrationReferences
+import com.kuryelog.logic.map.calibration.RoadReferenceConflict
 import com.kuryelog.logic.map.input.tl
 import java.util.Locale
 
@@ -84,11 +85,7 @@ object SurfaceText {
         val shock = tl(lang, "⚠ Doğrulanmış darbe", "⚠ Təsdiqlənmiş zərbə")
         val lines = ArrayList<String>()
         if (conflicts.isEmpty()) lines += "${tl(lang, "Yol puanı", "Yol balı")}: $label${if (confirmedShock) " · $shock" else ""}"
-        for (c in conflicts) {
-            val rel = if (c.lowerRms == c.upperRms) tl(lang, "eşit", "bərabərdir") else tl(lang, "ters sırada", "tərs sıradadır")
-            val rmsText = "RMS ${c.lower}: ${String.format(Locale.US, "%.3f", c.lowerRms)}, ${c.upper}: ${String.format(Locale.US, "%.3f", c.upperRms)} m/s²"
-            lines += tl(lang, "${c.lower} ve ${c.upper} $rel — birini tekrar kalibre et ($rmsText)", "${c.lower} və ${c.upper} $rel — birini yenidən kalibrasiya et ($rmsText)")
-        }
+        for (c in conflicts) lines += conflictLine(c, lang)
         if (conflicts.isNotEmpty() && confirmedShock) lines += shock
         if (referenceBand != null && referenceBand != band) {
             lines += tl(lang, "Farklı hız bandı · en yakın $referenceBand km/h referansı kullanıldı", "Fərqli sürət aralığı · ən yaxın $referenceBand km/h referansı istifadə edildi")
@@ -100,10 +97,53 @@ object SurfaceText {
         return RoadScoreView(lines, prompt, if (prompt != null) promptBand else null)
     }
 
+    /** Çelişen iki seviye (eşit ya da ters sıralı medyan): "6 ve 7 ters sırada — birini tekrar kalibre et (RMS …)". */
+    fun conflictLine(c: RoadReferenceConflict, lang: Lang): String {
+        val rel = if (c.lowerRms == c.upperRms) tl(lang, "eşit", "bərabərdir") else tl(lang, "ters sırada", "tərs sıradadır")
+        val rmsText = "RMS ${c.lower}: ${String.format(Locale.US, "%.3f", c.lowerRms)}, ${c.upper}: ${String.format(Locale.US, "%.3f", c.upperRms)} m/s²"
+        return tl(lang, "${c.lower} ve ${c.upper} $rel — birini tekrar kalibre et ($rmsText)", "${c.lower} və ${c.upper} $rel — birini yenidən kalibrasiya et ($rmsText)")
+    }
+
     /** "Şu seviyeleri kalibre et: 1, 2 · 20 ±2,5 km/h"; eksik seviye yoksa null. */
     fun missingLevelsPrompt(references: RoadCalibrationReferences, band: Int, lang: Lang): String? {
         val levels = references.missingLevels(band)
         if (levels.isEmpty()) return null
         return "${tl(lang, "Şu seviyeleri kalibre et", "Bu səviyyələri kalibrasiya et")}: ${levels.joinToString(", ")} · $band ±2,5 km/h"
     }
+
+    private fun f(digits: Int, v: Double?) = v?.let { String.format(Locale.US, "%.${digits}f", it) } ?: "—"
+
+    /** Parça ayrıntısı: rota/harita puanı, güven, geçiş ve mesafe, bozuk oran, darbe yoğunluğu, geçilebilirlik notu, son ölçüm. */
+    fun detailLines(s: SurfaceSummary, lang: Lang): List<String> = listOf(
+        "${tl(lang, "Rota/harita puanı", "Marşrut/xəritə balı")}: ${Math.round(s.score)}/100",
+        "${tl(lang, "güven", "inam")} ${Math.round(s.confidence * 100)}%",
+        "${s.passes} ${tl(lang, "bağımsız geçiş", "müstəqil keçid")} · ${km(s.meters)} ${tl(lang, "ölçüldü", "ölçüldü")}",
+        "${tl(lang, "Bozuk ölçülen mesafe", "Nahamar ölçülən məsafə")}: ${Math.round(s.roughFraction * 100)}%",
+        "${s.impacts} ${tl(lang, "tarafsız darbe olayı", "neytral zərbə hadisəsi")} · ${f(1, s.impactsPer100M)} /100 m",
+        "${tl(lang, "Geçilebilirlik", "Keçid")}: ${tl(lang, "yüzeyden çıkarılmaz; elle kapanış ayrı kaydedilir", "səthdən çıxarılmır; bağlanma ayrı qeyd olunur")}",
+        "${tl(lang, "Son ölçüm", "Son ölçmə")}: ${BakuTime.stamp(s.lastAt, seconds = false)}",
+    )
+
+    /** Darbe olayı satırı: başlık (tepe ivme) ve alt yazı (Bakü saati, otomatik, GPS doğruluğu). */
+    fun impactTitle(peak: Double, lang: Lang) = "${tl(lang, "Darbe", "Zərbə")} · ${f(2, peak)} m/s²"
+
+    fun impactSubtitle(utc: Long, accuracy: Double, lang: Lang) =
+        "${BakuTime.stamp(utc)}\n${tl(lang, "Otomatik · tür bilinmiyor · GPS", "Avtomatik · növ bilinmir · GPS")} ${f(1, accuracy)} m"
+
+    /** "Teknik ölçümler" bloğu (YolGo'da yalnız Türkçe). */
+    fun technical(s: SurfaceSummary) =
+        "RMS ${f(3, s.rms)} m/s² · jerk ${f(2, s.jerk)} m/s³\n" +
+            "Darbe max ${f(2, s.hardest)} · P95 ${f(2, s.p95)} m/s²\n" +
+            "Gyro ${f(3, s.gyro)} rad/s\nGPS ${f(1, s.accuracy)} m · ${Math.round(s.segmentLength)} m segment · ${Math.round(s.coverage * 100)}% ölçüm kapsamı\n" +
+            "Bantlar ${s.bands.joinToString(" / ") { f(3, it) }}"
+
+    /** Hız aralığının kalibrasyon durumu: "3 / 4 geçiş · kalibre" ya da "Kalibrasyon bekliyor". */
+    fun bandStatus(b: CalibrationBand?, lang: Lang) =
+        if (b?.validated == true) "${b.smoothPasses} / ${b.roughPasses} ${tl(lang, "geçiş · kalibre", "keçid · kalibrə olunub")}" else SurfaceUiText.CALIBRATION_WAITING.get(lang)
+
+    /** "Ölçüm tanılama" bloğu (YolGo'da yalnız Türkçe): kapı kararı, tampon sayaçları, algoritma ayarları. */
+    fun diagnostics(view: SurfaceView, profile: SurfaceProfile) =
+        "Durum: ${view.decision.state.name.lowercase()}\nNeden: ${view.decision.reason}\nBoot ms: ${view.decision.at}\nGüven: ${view.decision.confidence}\n" +
+            "Bekleyen: ${view.pending} · kabul: ${view.accepted}\n" +
+            "Algoritma v2 · ${profile.segmentM.toInt()} m · ${profile.bufferMs / 1000.0} s tampon\nHP ${profile.highPassHz} Hz · LP ${profile.lowPassHz} Hz · darbe ${profile.impactThreshold} m/s²"
 }

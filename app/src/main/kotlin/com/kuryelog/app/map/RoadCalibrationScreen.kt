@@ -54,8 +54,6 @@ import org.json.JSONObject
 // kalibrasyon ekle (1–10, süre, hız kipi) ve yüzen paneli açma. Metin ve sıra `logic/map` `CalibrationText`'te (testli); burada yalnız çizim.
 // Hesap ve kayıt `RoadCalibrationService`'te. Cihazda denenmedi.
 
-private fun tl(lang: Lang, tr: String, az: String) = if (lang == Lang.AZ) az else tr
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun RoadCalibrationScreen(lang: Lang, initialBand: Int = 20, onBack: () -> Unit) {
@@ -85,23 +83,23 @@ fun RoadCalibrationScreen(lang: Lang, initialBand: Int = 20, onBack: () -> Unit)
         }
         runCatching {
             RoadCalibrationService.launch(ctx, start, profile.id, level, seconds, mode.name.lowercase(), profile.toJson())
-        }.onFailure { toast("İşlem tamamlanamadı: ${it.message}") }
+        }.onFailure { toast(CalibrationText.failed(it.message)) }
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = onBack) { Text("←") }
-            Text("Yol Kalitesi Kalibrasyonu", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+            Text(CalibrationText.TITLE, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
             TextButton(enabled = loaded, onClick = {
-                runCatching { val s = rt.calibrationRecords(); shareFile(ctx, "WEEM-yol-kalibrasyonu.json", java.io.File(RoadCalibrationService.store(ctx).export()).readBytes()); s }.onFailure { toast("İşlem tamamlanamadı: ${it.message}") }
+                runCatching { val s = rt.calibrationRecords(); shareFile(ctx, "WEEM-yol-kalibrasyonu.json", java.io.File(RoadCalibrationService.store(ctx).export()).readBytes()); s }.onFailure { toast(CalibrationText.failed(it.message)) }
             }) { Text("JSON") }
         }
-        Text("BİTMİŞ KALİBRASYONLAR", style = MaterialTheme.typography.titleMedium)
-        Text("Profil: ${profile.name}. Referanslar bu telefon/montaj profili için hesaplanır.")
+        Text(CalibrationText.FINISHED, style = MaterialTheme.typography.titleMedium)
+        Text(CalibrationText.profileLine(profile.name))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             for (b in RoadCalibrationReferences.bands) FilterChip(selected = band == b, onClick = { band = b }, label = { Text(CalibrationText.bandLabel(b)) }, modifier = Modifier.testTag("band-$b"))
         }
         SurfaceText.missingLevelsPrompt(refs, band, lang)?.let { Text(it, modifier = Modifier.testTag("missing-levels")) }
-        for (c in refs.conflicts(band)) Text(SurfaceText.roadScore(refs, null, band.toDouble(), lang, showMissingLevels = false).lines.firstOrNull { it.contains("${c.lower} ${if (lang == Lang.AZ) "və" else "ve"} ${c.upper}") } ?: "${c.lower}/${c.upper}")
+        for (c in refs.conflicts(band)) Text(SurfaceText.conflictLine(c, lang))
         for (q in RoadQuality.entries) {
             val row = CalibrationText.levelRow(q, refs, band)
             Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -112,26 +110,26 @@ fun RoadCalibrationScreen(lang: Lang, initialBand: Int = 20, onBack: () -> Unit)
         Text(CalibrationText.thresholds(refs, band))
         Text(CalibrationText.TRIM_HELP, fontSize = 12.sp)
         if (!loaded) Text("…")
-        if (loaded && records.isEmpty()) Text("Henüz bitmiş kalibrasyon yok.", Modifier.padding(vertical = 12.dp))
+        if (loaded && records.isEmpty()) Text(CalibrationText.EMPTY, Modifier.padding(vertical = 12.dp))
         for (r in records.filter { !it.isLegacy }) RecordCard(r, refs, profile.id, lang) { runCatching { RoadCalibrationService.store(ctx).delete(r.id) }; rev++ }
         if (records.any { it.isLegacy }) {
             HorizontalDivider(Modifier.padding(vertical = 12.dp))
-            Text("ESKİ KAYITLAR", style = MaterialTheme.typography.titleMedium)
-            Text("Yeni ölçeğe çevrilmez; 1–10 referanslarına katılmaz. Eski kayıtlar korunur.")
+            Text(CalibrationText.LEGACY_TITLE, style = MaterialTheme.typography.titleMedium)
+            Text(CalibrationText.LEGACY_HELP)
             for (r in records.filter { it.isLegacy }) RecordCard(r, refs, profile.id, lang) { runCatching { RoadCalibrationService.store(ctx).delete(r.id) }; rev++ }
         }
         HorizontalDivider(Modifier.padding(vertical = 16.dp))
-        Text("KALİBRASYON EKLE", style = MaterialTheme.typography.titleMedium)
+        Text(CalibrationText.ADD, style = MaterialTheme.typography.titleMedium)
         Text(CalibrationText.HOW_TO)
         Text(CalibrationText.LEVELS_HELP)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             for (n in 1..10) FilterChip(selected = level == n, enabled = !busy, onClick = { level = n }, label = { Text("$n/10") }, modifier = Modifier.testTag("road-calibration-level-$n"))
         }
-        level?.let { Text("$it/10 · ${RoadQuality.fromLevel(it).label}") }
+        level?.let { Text(CalibrationText.levelLine(it)) }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            for (n in listOf(15, 30, 60, 90)) FilterChip(selected = seconds == n, enabled = !busy, onClick = { seconds = n }, label = { Text("$n sn") })
-            FilterChip(selected = seconds != null && seconds !in listOf(15, 30, 60, 90), enabled = !busy, onClick = { custom = true },
-                label = { Text(if (seconds != null && seconds !in listOf(15, 30, 60, 90)) "Özel: $seconds sn" else "Özel süre") })
+            for (n in CalibrationText.PRESET_SECONDS) FilterChip(selected = seconds == n, enabled = !busy, onClick = { seconds = n }, label = { Text(CalibrationText.secondsLabel(n)) })
+            FilterChip(selected = seconds != null && seconds !in CalibrationText.PRESET_SECONDS, enabled = !busy, onClick = { custom = true },
+                label = { Text(CalibrationText.customLabel(seconds)) })
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             for (m in CalibrationSpeedMode.entries) FilterChip(selected = mode == m, enabled = !busy, onClick = { mode = m }, label = { Text(CalibrationText.modeLabel(m)) })
@@ -139,14 +137,14 @@ fun RoadCalibrationScreen(lang: Lang, initialBand: Int = 20, onBack: () -> Unit)
         if (state.phase.active || state.phase == CalibrationPhase.DONE) Card(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
             Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(CalibrationText.phaseTitle(state), fontWeight = FontWeight.Bold)
-                if (state.phase == CalibrationPhase.RECORDING) Text("${state.remaining} sn kaldı")
+                if (state.phase == CalibrationPhase.RECORDING) Text(CalibrationText.remaining(state.remaining))
                 if (state.phase == CalibrationPhase.DONE) Text(state.message)
-                if (state.phase == CalibrationPhase.RECORDING || state.phase == CalibrationPhase.COUNTDOWN) TextButton(onClick = { RoadCalibrationService.finish() }) { Text("BİTİR") }
+                if (state.phase == CalibrationPhase.RECORDING || state.phase == CalibrationPhase.COUNTDOWN) TextButton(onClick = { RoadCalibrationService.finish() }) { Text(CalibrationText.FINISH) }
             }
         }
-        Button(enabled = !busy && level != null && seconds != null, onClick = { launch(true) }, modifier = Modifier.fillMaxWidth().testTag("road-calibration-start")) { Text("BAŞLA") }
-        OutlinedButton(enabled = !busy, onClick = { launch(false) }, modifier = Modifier.fillMaxWidth()) { Text("Yüzen bubble göster") }
-        if (state.visible && !state.phase.active) TextButton(onClick = { RoadCalibrationService.hide() }) { Text("Bubble kapat") }
+        Button(enabled = !busy && level != null && seconds != null, onClick = { launch(true) }, modifier = Modifier.fillMaxWidth().testTag("road-calibration-start")) { Text(CalibrationText.START) }
+        OutlinedButton(enabled = !busy, onClick = { launch(false) }, modifier = Modifier.fillMaxWidth()) { Text(CalibrationText.SHOW_BUBBLE) }
+        if (state.visible && !state.phase.active) TextButton(onClick = { RoadCalibrationService.hide() }) { Text(CalibrationText.HIDE_BUBBLE) }
     }
     if (custom) CustomSecondsDialog(onPick = { seconds = it; custom = false }, onDismiss = { custom = false })
 }
@@ -161,7 +159,7 @@ private fun RecordCard(r: RoadCalibrationRecord, refs: RoadCalibrationReferences
                 for (l in card.lines) Text(l, fontSize = 13.sp)
                 card.score?.let { v -> for (l in v.lines) Text(l, fontSize = 13.sp) }
             }
-            TextButton(onClick = onDelete) { Text("Sil") }
+            TextButton(onClick = onDelete) { Text(CalibrationText.DELETE) }
         }
     }
 }
@@ -171,9 +169,9 @@ private fun CustomSecondsDialog(onPick: (Int) -> Unit, onDismiss: () -> Unit) {
     var text by remember { mutableStateOf("") }
     val value = text.toIntOrNull()
     AlertDialog(
-        onDismissRequest = onDismiss, title = { Text("Özel süre") },
-        text = { OutlinedTextField(text, { text = it.filter(Char::isDigit) }, label = { Text("1–600 saniye") }, singleLine = true) },
-        confirmButton = { TextButton(enabled = value != null && value in 1..600, onClick = { onPick(value!!) }) { Text("Seç") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Vazgeç") } },
+        onDismissRequest = onDismiss, title = { Text(CalibrationText.CUSTOM) },
+        text = { OutlinedTextField(text, { text = it.filter(Char::isDigit) }, label = { Text(CalibrationText.CUSTOM_RANGE) }, singleLine = true) },
+        confirmButton = { TextButton(enabled = value != null && value in 1..600, onClick = { onPick(value!!) }) { Text(CalibrationText.PICK) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(CalibrationText.CANCEL) } },
     )
 }
