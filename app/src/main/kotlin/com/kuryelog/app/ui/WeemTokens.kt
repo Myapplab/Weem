@@ -55,13 +55,13 @@ object WeemMotion {
     val standard = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 }
 
-/** Material şekilleri: küçük karo 12, kart 16, panel 24, pencere/sayfa 32. */
+/** Material şekilleri: giriş alanı ve menü 12, karo 12, kart 16, panel 24, pencere 24 (alt sayfa kendi 32'sini verir). */
 val WeemShapes = Shapes(
-    extraSmall = RoundedCornerShape(WeemRadius.badge),
+    extraSmall = RoundedCornerShape(WeemRadius.tile),
     small = RoundedCornerShape(WeemRadius.tile),
     medium = RoundedCornerShape(WeemRadius.card),
     large = RoundedCornerShape(WeemRadius.panel),
-    extraLarge = RoundedCornerShape(WeemRadius.sheet),
+    extraLarge = RoundedCornerShape(WeemRadius.panel),
 )
 
 /**
