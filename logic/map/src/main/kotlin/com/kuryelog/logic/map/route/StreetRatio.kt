@@ -4,6 +4,7 @@ import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.map.graph.RoadGraph
 import com.kuryelog.logic.map.input.tl
 import com.kuryelog.logic.map.surface.SurfaceMark
+import com.kuryelog.logic.map.surface.SurfaceSummary
 import java.util.Locale
 import kotlin.math.roundToLong
 
@@ -13,11 +14,26 @@ class StreetRatio(val badM: Double, val totalM: Double) {
 }
 
 object StreetRatios {
-    /** WEEM 1.0: yalnız kötü noktalar (ölçülmüş yüzey kesimleri Y13 ile, SORU-Q1). Tek nokta yalnız kendi 50 m'sini sayar. */
-    fun of(g: RoadGraph, way: Long, marks: Iterable<SurfaceMark>): StreetRatio {
+    /** Ölçülmüş kötü kesim: puan bundan düşük ve güven bundan yüksekse sayılır (YolGo `ratioBadScore`, `ratioMinConfidence`). */
+    const val BAD_SCORE = 50.0
+    const val MIN_CONFIDENCE = .35
+
+    /**
+     * Ölçülmüş kötü kesimler ([summaries], Y13; puan < 50, güven ≥ 0,35) ile kötü noktaların ±25 m aralıklarının birleşimi / cadde uzunluğu. Tek
+     * kötü nokta bütün caddeyi değil, yalnız kendi 50 m'sini sayar. Ölçüm yoksa yalnız noktalar (WEEM 1.0 davranışı).
+     */
+    fun of(g: RoadGraph, way: Long, marks: Iterable<SurfaceMark>, summaries: Iterable<SurfaceSummary> = emptyList()): StreetRatio {
         val edges = g.edgesOfOsmWay(way)
         if (edges.isEmpty()) return StreetRatio(0.0, 0.0)
         val spans = HashMap<Int, MutableList<Pair<Double, Double>>>()
+        for (s in summaries) {
+            if (s.way != way || s.score >= BAD_SCORE || s.confidence < MIN_CONFIDENCE) continue
+            val hit = g.nearestEdge(s.lat, s.lon, maxDist = 25.0, accept = { e -> g.osmIdOf(e) == way }) ?: continue
+            val len = g.edgeLen[hit.edge].toDouble()
+            if (len <= 0) continue
+            val start = s.segmentIndex * s.segmentGridM / len
+            spans.getOrPut(hit.edge) { ArrayList() } += start.coerceIn(0.0, 1.0) to minOf(1.0, (s.segmentIndex * s.segmentGridM + s.segmentLength * s.coverage) / len)
+        }
         for (s in BadSpots.spans(g, marks.filter { it.way == way })) spans.getOrPut(s.edge) { ArrayList() } += s.f0 to s.f1
         var total = 0.0
         var bad = 0.0

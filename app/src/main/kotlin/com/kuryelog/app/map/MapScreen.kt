@@ -64,6 +64,7 @@ import com.kuryelog.logic.map.nav.Refollow
 import com.kuryelog.logic.map.graph.Poi
 import com.kuryelog.logic.map.graph.WayFlag
 import com.kuryelog.logic.map.ui.BikewayLayerRules
+import com.kuryelog.logic.map.ui.SurfaceLayerRules
 import com.kuryelog.logic.map.ui.BikewayMenu
 import com.kuryelog.logic.map.ui.BikewayMenuAction
 import com.kuryelog.logic.map.ui.PoiLayerRules
@@ -376,6 +377,14 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
             MapLine("bike-${l.edge}", graph.geometry(l.edge).map { GeoPoint(it.lat, it.lon) }, (0xD9 shl 24) or l.rgb, l.width.toFloat(), if (l.dashed) LinePattern.DASH else LinePattern.SOLID, -1)
         }
     }
+    // Y13 (A10.4b) "Haritada yüzey renkleri": yalnız ölçülmüş 50 m kesimler; kesin olanlar düz, diğerleri kesikli.
+    val surfacePieces by runtime.surface.summaries.collectAsState()
+    val surfaceLines = remember(graph, surfacePieces, settings.showQualityLayer) {
+        if (graph == null) emptyList()
+        else SurfaceLayerRules.lines(graph, surfacePieces, settings.showQualityLayer).map { l ->
+            MapLine("surface-${l.key}", l.points, ((l.alpha * 255).toInt() shl 24) or l.rgb, l.width.toFloat(), if (l.dashed) LinePattern.DASH else LinePattern.SOLID, -1)
+        }
+    }
     // Yer ve ışık işaretleri (MAP.md 5.3): düzeltilmiş yerler + ışık işaretleri, yakınlığa ve görünür kutuya göre süzülür.
     val poiMarkers = remember(center, zoom, viewport, poiRev, lightsRev, data.pois) {
         val c = center ?: return@remember emptyList<MapMarker>()
@@ -388,7 +397,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
     }
     val markers = routeMarkers + poiMarkers
     val model = MapSurfaceModel(
-        base = base, dark = dark, camera = camera, lines = bikeLines + roadLines + lines, markers = markers,
+        base = base, dark = dark, camera = camera, lines = surfaceLines + bikeLines + roadLines + lines, markers = markers,
         puck = puck?.let { MapPuck(it.point, it.course, it.beam, arrow = nav.hasRoute, accuracyM = it.accuracyM) },
     )
     val events = MapSurfaceEvents(

@@ -146,6 +146,9 @@ class NavRuntime private constructor(private val app: Context) {
     /** Yol kalitesi öğrenme (Y12), kalite kartı, ses tuşları (MAP.md 9.12; S26 anahtarı). */
     val roads = RoadsRuntime(app, controller, scope, settings, lang, streets) { reloadStreetPrefs() }
 
+    /** Y13 yüzey ve titreşim ölçümü (A10.4b): sensörler gün açık ve etap uygunken; depo `files/surface-v2/`. */
+    val surface = SurfaceRuntime(app, controller, scope, { settings.value.vehicleId }, { roads.book.state.k.names })
+
     init {
         controller.setBikewayMarks(bikeway.marks)
         controller.shift = day.navShift

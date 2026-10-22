@@ -2,6 +2,13 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-21 — A10.4b Y13 yüzey/titreşim + Y14 yol kalibrasyonu (Claude Sonnet · high; dal `ccr-03d281e4-dglbwh`; S33: geçiş ve telefon beklenmedi, APK yok)
+- Yapılan: `MAP.md` 18. `logic/map` `surface`/`calibration`/`roads`/`ui`/`route`/`nav`: sinyal, kapı, hat (`SurfaceFeed`), işlemci, depo (`files/surface-v2/`), puanlama, kalibrasyon motoru/referanslar, E11 sokak puanları, rota maliyeti (yüzen "kapalı" işaret, düzgün yol adayı), `NavController.surfaceInputs`. `:map`: `SurfaceSensors`/`SurfaceRuntime`, `RoadCalibrationService`+`Overlay`. `:app`: Yol puanları, sokak parçaları, ayrıntı, Ölçüm ve kalibrasyon, Kalibrasyon, harita katmanı.
+- Doğrulama: `logic/map` +144 test (eski Kotlin testleri 40 aynen), `:app` +5; `-p logic test` yeşil, lint 0 hata; telefonda ve CI'da denenmedi (PR sonucu ISLER'de).
+- Açık kalan: cihaz sınaması (sensör hızı, yavaşlatma, yüzen panel, servis); `ACTIVITY_RECOGNITION` izni eklensin mi (SORU-Y13-1); AZ onayı M-Y13-1; ham tanı kaydı ve dayanıklı günlük taşınmadı (`MAP.md` 18.2).
+- DURDURULDU (kullanıcı isteği, 21 Ekim): PR #15 CI kırmızı (`TextCoverageTest`: `:app` `SurfaceScreens.kt` 66 + `RoadCalibrationScreen.kt` 17 yerel harfli düz metin). Sıradaki adım ve doğrulama komutu `docs/WEEM_ISLER.md` → "Devam eden" satırında; yalnız `--rerun-tasks` ile doğrula.
+- Sıradaki: A10.4 (K, kullanıcı geçişi) → A10.5. Not: CI `timeout-minutes` 30 → 45 yapıldı (A10.4a koşusu 30 dk sınırında iptal oldu, yeniden çalıştırınca 22 dk'da yeşil: PR #14 `main`'de).
+
 ## 2026-10-21 — A10.4a Siparişler: çevrimiçi oturumlar + Araçlar (Claude Sonnet · high; dal `ccr-03d281e4-dglbwh`)
 - Yapılan: S20/S32 (WEEM 1.1). `logic/orders` `OrdersSessions` (+ `SessionsPage.cards()`) ve `OrdersTools`; `OrdersSource` `todayTrips/targets/lastSeen/markCancellationObservation`; `OrderFlow.markCancellationObservation` Boolean. `:app` `SessionsPageView`, `ToolsCard`, `SplitScreen` (350 ms sonra `LAUNCH_ADJACENT`), `OrdersAccess.withTools` (`Store.targets` + `CaptureState.seen`). Araçlar yalnız vardiya açıkken; müşteri verisi sayfada yok.
 - Doğrulama: yeni testler `OrdersSessionsTest` 7, `OrdersToolsTest` 7, `OrdersTabWiringTest` +1, `:app` `OrdersTabTest` +3; `-p logic test` yeşil; `:app` lint 0 hata; CI: PR checks (logic + Android testleri, lint, APK). Telefonda denenmedi.
@@ -137,10 +144,3 @@ Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 
 - Doğrulama: `LC_ALL=C.UTF-8 ./gradlew -p logic test --continue` → `:map` 298 (297 kırmızı), `:orders` 26 kırmızı, öteki modüller yeşil; `:app:testDebugUnitTest --tests 'com.kuryelog.app.map.*'` 37 ve `:map:testDebugUnitTest` 6 kırmızı (`NotImplementedError`); `:app`/`:map` lint yeşil. CI yok (`[skip ci]`), telefonda denenecek bir şey yok.
 - **`main`'e birleşmedi** (testler bilerek kırmızı); `main`'e yalnız belgeler (`WEEM_ISLER.md`, `TEST_ENVANTERI.md`, `AGENTS.md` ortam notu, bu not). **Ortam:** Android Gradle ilk indirmede Maven Central 429 verebilir → `--max-workers=1` ile yeniden dene.
 - Açık kalan: A6.3 (Opus · high) bu daldan sürer; sonra A6.4, A6.5. 19 kullanıcı sorusu (`MAP.md` 17.1) varsayılanla ilerliyor.
-
-## 2026-10-19 — A6.2a testleri çevir: rota, harita verisi, Y12 (Claude Sonnet · high; dal `ccr-4340bbea-jlvo9l`, kod `59a4401`)
-- Yapılan: YolGo 17 test dosyasından 110 test `logic/map`'e çevrildi (`graph` 17, `route`/`settings`/`ui`/`nav` 70, `roads` 23); ortak graflar `route/TestGraphs.kt`, sahte saat/dosya/tercih `TestFakes.kt`, `TestPrefs.kt`. Gövdesiz iskelet imzalar (`TODO("A6.3"/"A6.4"/"A6.6"/"A6.8"/"A6.11")`; `geo` ve `RideParams` tam): A6.3–A6.11 doldurur.
-- Sapmalar (`TEST_ENVANTERI` "A6.2a çeviri durumu"): `StreetRatioTest` yalnız nokta satırları (Y13 sonra); kart Compose testi A6.11'de; ayar testlerinden `autoStartDay`/`voice` iddiaları düştü; `NavController` yalnız alt küme (A6.6).
-- Doğrulama: `LC_ALL=C.UTF-8 ./gradlew -p logic :map:test` → 110 test, 110 kırmızı (hepsi `NotImplementedError`/beklenen hata türü); `-p logic compileTestKotlin` ve kök `:map:compileDebugKotlin` yeşil. CI yok (`[skip ci]`), telefonda denenecek bir şey yok.
-- **`main`'e birleşmedi** (testler bilerek kırmızı); `main`'e yalnız belgeler (`WEEM_ISLER.md`, `TEST_ENVANTERI.md`, `AGENTS.md` ortam notu, bu not). **Ortam:** bulut kabuğu `POSIX` yerel ayarlı → `LC_ALL=C.UTF-8 ./gradlew …` (Türkçe test adı sınıfları kırılıyordu).
-- Açık kalan: A6.2b (Sonnet · high) aynı dalda; sonra A6.3 (Opus · high). 19 kullanıcı sorusu (`MAP.md` 17.1) varsayılanla ilerliyor.
