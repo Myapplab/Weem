@@ -27,12 +27,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -43,7 +44,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -54,11 +54,21 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.kuryelog.app.ui.BtnKind
+import com.kuryelog.app.ui.WButton
+import com.kuryelog.app.ui.WIconButton
+import com.kuryelog.app.ui.WeemIcons
+import com.kuryelog.app.ui.WeemRadius
+import com.kuryelog.app.ui.WeemSpace
+import com.kuryelog.app.ui.WeemType
+import com.kuryelog.app.ui.floating
+import com.kuryelog.app.ui.palette
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.map.ui.HudLayout
 import com.kuryelog.logic.map.ui.WeatherUiText
@@ -72,7 +82,6 @@ import java.util.Locale
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.max
-import kotlin.math.roundToInt
 import kotlin.math.sin
 
 /** Hava görünümü: [report] yoksa "Hava yükleniyor…"/"Hava verisi yok"; [failed] "Hava güncellenemedi" (önceki rapor kalır); [busy] istek sürüyor. */
@@ -93,84 +102,113 @@ private fun Long.color() = Color(this)
  * `weather-collapse` küçültür; bir saate dokununca ayrıntı ([WeatherDetailSheet]). [onRefresh] "Yenile" (zorla); liste açılınca rapor 8 saatten kısaysa [onRefresh] çağrılır.
  */
 @Composable
-fun WeatherChip(view: WeatherView, lang: Lang, nowMs: Long, modifier: Modifier = Modifier, onRefresh: () -> Unit = {}) {
-    var strip by remember { mutableStateOf(false) }
+fun WeatherChip(
+    view: WeatherView,
+    lang: Lang,
+    nowMs: Long,
+    modifier: Modifier = Modifier,
+    onRefresh: () -> Unit = {},
+    expanded: Boolean? = null,
+    onExpandedChange: (Boolean) -> Unit = {},
+) {
+    var stripLocal by remember { mutableStateOf(false) }
+    val strip = expanded ?: stripLocal
+    fun setStrip(v: Boolean) { stripLocal = v; onExpandedChange(v) }
     var open by remember { mutableStateOf(false) }
     var detail by remember { mutableIntStateOf(-1) }
     val report = view.report
     val hours = report?.hours.orEmpty()
     val first = hours.firstOrNull()
     val stale = report != null && nowMs - report.fetchedAtMs >= 40 * 60_000
+    val p = palette()
     if (!strip) {
+        // A10.4d (K4): arama hapının sağında hava hapı — hareketli simge, sıcaklık, yağış ihtimali ya da rüzgâr.
         Box(
-            modifier.testTag("live-weather").size(HudLayout.WEATHER_COMPACT_DP.dp)
+            modifier.testTag("live-weather").size(HudLayout.WEATHER_COMPACT_DP.dp, HudLayout.LOCATE_BUTTON_DP.dp)
                 .semantics { contentDescription = WeatherUiText.SECTION_TITLE.get(lang) + (first?.let { ": ${WeatherIcons.kind(it).get(lang)} ${value(it.temperature, "°")}" } ?: "") },
         ) {
-            WeatherBubble(first, HudLayout.WEATHER_COMPACT_DP.dp, "weather-compact", busy = view.busy, extra = true) { strip = true }
+            val more = first?.let { WeatherIcons.compactExtra(it) }
+            Surface(
+                onClick = { setStrip(true) }, shape = CircleShape, color = p.surface.color(), contentColor = p.text.color(),
+                modifier = Modifier.fillMaxSize().floating(CircleShape).testTag("weather-compact"),
+            ) {
+                Row(Modifier.padding(start = WeemSpace.m, end = WeemSpace.s), verticalAlignment = Alignment.CenterVertically) {
+                    val kind = first?.let { WeatherIcons.kind(it) }
+                    if (kind == null) Icon(WeemIcons.PartlyCloudyDay, contentDescription = null, tint = p.muted.color(), modifier = Modifier.size(26.dp))
+                    else WeatherMotion(kind, 28.dp)
+                    Spacer(Modifier.width(6.dp))
+                    Column {
+                        Text(if (first == null) (if (view.busy) "…" else "—") else value(first.temperature, "°"), style = WeemType.titleS.copy(fontWeight = FontWeight.ExtraBold), maxLines = 1)
+                        if (more != null) Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(if (more.rain) WeemIcons.WaterDrop else WeemIcons.Air, contentDescription = null, tint = p.muted.color(), modifier = Modifier.size(11.dp))
+                            Text(more.text, style = WeemType.labelS.copy(fontSize = 11.sp, lineHeight = 13.sp), color = p.muted.color(), maxLines = 1, softWrap = false)
+                        }
+                    }
+                }
+            }
         }
     } else {
         Surface(
-            shape = RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.surface.copy(alpha = .95f), shadowElevation = 3.dp,
-            modifier = modifier.fillMaxWidth().testTag("live-weather"),
+            shape = RoundedCornerShape(WeemRadius.panel), color = p.surface.color(), contentColor = p.text.color(),
+            modifier = modifier.fillMaxWidth().floating(RoundedCornerShape(WeemRadius.panel)).testTag("live-weather"),
         ) {
             Column {
-                Row(Modifier.padding(start = 2.dp, end = 2.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(
-                        onClick = { strip = false; open = false }, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-                        modifier = Modifier.width(30.dp).height(44.dp).testTag("weather-collapse"),
-                    ) { Text("‹", fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                Row(Modifier.padding(start = WeemSpace.xs, end = WeemSpace.xs, top = WeemSpace.s, bottom = WeemSpace.s), verticalAlignment = Alignment.CenterVertically) {
+                    WIconButton(WeemIcons.ChevronLeft, WeatherUiText.CLOSE.get(lang), { setStrip(false); open = false }, Modifier.testTag("weather-collapse"))
                     val shown = hours.take(WeatherReport.STRIP_HOURS)
                     if (shown.isEmpty()) {
-                        Text("☁", fontSize = 18.sp, color = MaterialTheme.colorScheme.primary)
-                        Text((if (view.busy) WeatherUiText.LOADING else WeatherUiText.NONE).get(lang), Modifier.weight(1f).padding(start = 6.dp), fontSize = 14.sp)
+                        Icon(WeemIcons.PartlyCloudyDay, contentDescription = null, tint = p.muted.color())
+                        Text((if (view.busy) WeatherUiText.LOADING else WeatherUiText.NONE).get(lang), Modifier.weight(1f).padding(start = WeemSpace.s), style = WeemType.bodyM)
                     }
                     shown.forEachIndexed { i, h ->
                         Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                if (i == 0) WeatherUiText.NOW.get(lang) else clock(h.at), fontSize = 12.sp, maxLines = 1,
-                                fontWeight = if (i == 0) FontWeight.ExtraBold else FontWeight.Medium,
-                                color = if (i == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                if (i == 0) WeatherUiText.NOW.get(lang) else clock(h.at), style = WeemType.labelS, maxLines = 1,
+                                color = (if (i == 0) p.accentText else p.muted).color(),
                             )
-                            Spacer(Modifier.height(3.dp))
-                            WeatherBubble(h, 44.dp, "weather-strip-$i") { detail = i }
+                            Spacer(Modifier.height(4.dp))
+                            HourTile(h, 48.dp, "weather-strip-$i") { detail = i }
                             Spacer(Modifier.height(2.dp))
-                            Text(value(h.rainChance, "%"), fontSize = 11.sp, maxLines = 1, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(value(h.rainChance, "%"), style = WeemType.labelS, maxLines = 1, color = p.muted.color())
                         }
                     }
-                    TextButton(
-                        onClick = {
+                    WIconButton(
+                        if (open) WeemIcons.ExpandLess else WeemIcons.ExpandMore, WeatherUiText.SHOW_EIGHT.get(lang),
+                        {
                             open = !open
                             // Eski önbellek 8 saatten az saat taşıyabilir: liste açılınca tazelenir.
                             if (open && hours.size < WeatherReport.DETAIL_HOURS && !view.busy) onRefresh()
                         },
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp), modifier = Modifier.width(30.dp).height(44.dp).testTag("weather-toggle"),
-                    ) { Text(if (open) "⌃" else "⌄", fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        Modifier.testTag("weather-toggle"),
+                    )
                 }
                 if (open) {
-                    Column(Modifier.padding(start = 10.dp, end = 10.dp, bottom = 8.dp)) {
+                    HorizontalDivider(thickness = 1.dp, color = p.outline.color())
+                    Column(Modifier.padding(start = WeemSpace.m, end = WeemSpace.m, top = WeemSpace.xs, bottom = WeemSpace.s)) {
                         hours.forEachIndexed { i, h ->
                             Row(
-                                Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable { detail = i }.testTag("weather-hour-$i"),
+                                Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable { detail = i }.testTag("weather-hour-$i"),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                WeatherBubble(h, 40.dp, null, modifier = Modifier.padding(vertical = 4.dp)) { detail = i }
-                                Spacer(Modifier.width(10.dp))
+                                HourTile(h, 40.dp, null, modifier = Modifier.padding(vertical = 4.dp)) { detail = i }
+                                Spacer(Modifier.width(WeemSpace.m))
                                 Text(
                                     "${if (i == 0) WeatherUiText.NOW.get(lang) else clock(h.at)} · ${WeatherIcons.kind(h).get(lang)}", Modifier.weight(1f), maxLines = 1,
-                                    fontSize = 14.sp, fontWeight = if (i == 0) FontWeight.ExtraBold else FontWeight.Medium,
+                                    style = if (i == 0) WeemType.titleS else WeemType.bodyM, overflow = TextOverflow.Ellipsis,
                                 )
-                                Text("${value(h.temperature, "°")} · ${value(h.rainChance, "%")}", fontSize = 14.sp)
-                                Text("›", fontSize = 18.sp, modifier = Modifier.padding(start = 4.dp))
+                                Text("${value(h.temperature, "°")} · ${value(h.rainChance, "%")}", style = WeemType.numS)
+                                Icon(WeemIcons.ChevronRight, contentDescription = null, tint = p.muted.color(), modifier = Modifier.padding(start = 4.dp))
                             }
                         }
                         Text(
                             (if (stale || view.failed) WeatherUiText.STALE.get(lang) else "") +
                                 (if (view.failed) WeatherUiText.FAILED.get(lang) else "Open-Meteo · ${report?.let { bakuClock(it.fetchedAtMs) } ?: "—"}"),
-                            fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
+                            style = WeemType.bodyS, color = p.muted.color(), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = WeemSpace.s),
                         )
-                        TextButton(onClick = onRefresh, enabled = !view.busy, modifier = Modifier.testTag("weather-refresh").align(Alignment.CenterHorizontally)) {
-                            Text("↻  " + WeatherUiText.REFRESH.get(lang))
-                        }
+                        WButton(
+                            WeatherUiText.REFRESH.get(lang), onRefresh, Modifier.testTag("weather-refresh").align(Alignment.CenterHorizontally),
+                            kind = BtnKind.TEXT, icon = WeemIcons.Refresh, enabled = !view.busy,
+                        )
                     }
                 }
             }
@@ -192,33 +230,17 @@ fun WeatherChip(view: WeatherView, lang: Lang, nowMs: Long, modifier: Modifier =
     }
 }
 
-/** Havaya göre degrade kare (köşeleri yuvarlak): hareketli simge + sıcaklık, [extra] ise yağış ihtimali/rüzgâr satırı. [tag] dokunma düğmesinin etiketi. */
+/** Saat karosu: `raised` zeminde hareketli hava simgesi + sıcaklık; [tag] dokunma düğmesinin etiketi. */
 @Composable
-private fun WeatherBubble(hour: WeatherHour?, size: Dp, tag: String?, modifier: Modifier = Modifier, busy: Boolean = false, extra: Boolean = false, onClick: () -> Unit) {
-    val kind = hour?.let { WeatherIcons.kind(it) }
-    val top = kind?.top?.color() ?: MaterialTheme.colorScheme.surface
-    val bottom = kind?.bottom?.color() ?: MaterialTheme.colorScheme.surface
-    val on = kind?.onColor?.color() ?: MaterialTheme.colorScheme.onSurface
-    val shape = RoundedCornerShape(size * .3f)
-    val more = hour?.takeIf { extra }?.let { WeatherIcons.compactExtra(it) }
+private fun HourTile(hour: WeatherHour, size: Dp, tag: String?, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val p = palette()
     Surface(
-        onClick = onClick, shape = shape, color = bottom, shadowElevation = 2.dp,
+        onClick = onClick, shape = RoundedCornerShape(WeemRadius.tile), color = p.raised.color(), contentColor = p.text.color(),
         modifier = modifier.size(size).let { if (tag != null) it.testTag(tag) else it },
     ) {
-        Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(top, bottom))), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                if (kind == null) Text("☁", fontSize = (size.value * .32f).sp, color = on) else WeatherMotion(kind, size * .36f)
-                Text(
-                    if (hour == null) (if (busy) "…" else "—") else value(hour.temperature, "°"), maxLines = 1, color = on,
-                    fontSize = (size.value * .27f).sp, lineHeight = (size.value * .3f).sp, fontWeight = FontWeight.ExtraBold,
-                )
-                if (more != null) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(if (more.rain) "💧" else "≈", color = on.copy(alpha = .85f), fontSize = 9.sp, lineHeight = 11.sp)
-                        Text(more.text, maxLines = 1, softWrap = false, color = on.copy(alpha = .85f), fontSize = 10.sp, lineHeight = 11.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            WeatherMotion(WeatherIcons.kind(hour), size * .42f)
+            Text(value(hour.temperature, "°"), maxLines = 1, style = WeemType.labelM.copy(fontWeight = FontWeight.ExtraBold))
         }
     }
 }
@@ -246,14 +268,15 @@ fun WeatherDetailSheet(report: WeatherReport, index: Int, availableHeightDp: Dou
         null to value(hour.uv, "", 1),
         WeatherUiText.DETAIL_DEW to value(hour.dewpoint, "°"),
     )
-    val ink = Color(0xFF17283A)
-    val inkLo = Color(0xFF506275)
+    val p = palette()
+    val ink = p.text.color()
+    val inkLo = p.muted.color()
     Box(
         modifier.fillMaxWidth().height(availableHeightDp.times(.4).dp).testTag("weather-detail")
             // Üst köşeler yalnız arka planda yuvarlanır; asimetrik `clip` Robolectric'te dokunma isabetini bozar (içerik köşelere değmez).
-            .background(Brush.verticalGradient(listOf(Color(0xFFE5EFF5), Color.White)), RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)),
+            .background(p.surface.color(), RoundedCornerShape(topStart = WeemRadius.sheet, topEnd = WeemRadius.sheet)),
     ) {
-        Box(Modifier.align(Alignment.TopCenter).padding(top = 10.dp).size(36.dp, 4.dp).background(Color(0x8017283A), RoundedCornerShape(2.dp)))
+        Box(Modifier.align(Alignment.TopCenter).padding(top = WeemSpace.m).size(32.dp, 4.dp).background(p.high.color(), CircleShape))
         Column(Modifier.fillMaxSize().testTag("weather-detail-scroll").verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 24.dp)) {
             Column(Modifier.semantics(mergeDescendants = true) {}) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -261,21 +284,21 @@ fun WeatherDetailSheet(report: WeatherReport, index: Int, availableHeightDp: Dou
                     Spacer(Modifier.width(12.dp))
                     Text(
                         "${if (index == 0) WeatherUiText.NOW.get(lang) else clock(hour.at)} · ${kind.get(lang)}", Modifier.weight(1f),
-                        color = ink, fontWeight = FontWeight.Bold, fontSize = 17.sp,
+                        color = ink, style = WeemType.titleM,
                     )
-                    Text(value(hour.temperature, "°"), color = ink, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)
+                    Text(value(hour.temperature, "°"), color = ink, style = WeemType.headline.copy(fontWeight = FontWeight.ExtraBold))
                 }
                 Spacer(Modifier.height(16.dp))
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     for ((label, v) in fields) {
-                        Column(Modifier.width(132.dp)) {
-                            Text(label?.get(lang) ?: "UV", fontSize = 11.sp, color = inkLo)
-                            Text(v, color = ink, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Column(Modifier.width(132.dp).background(p.raised.color(), RoundedCornerShape(WeemRadius.tile)).padding(horizontal = WeemSpace.m, vertical = WeemSpace.s)) {
+                            Text(label?.get(lang) ?: "UV", style = WeemType.labelS, color = inkLo)
+                            Text(v, color = ink, style = WeemType.numS)
                         }
                     }
                 }
                 Spacer(Modifier.height(16.dp))
-                Text("Open-Meteo · ${WeatherUiText.FORECAST.get(lang)} · ${bakuClock(report.fetchedAtMs)}", color = ink, fontSize = 13.sp)
+                Text("Open-Meteo · ${WeatherUiText.FORECAST.get(lang)} · ${bakuClock(report.fetchedAtMs)}", color = inkLo, style = WeemType.bodyS)
             }
         }
     }

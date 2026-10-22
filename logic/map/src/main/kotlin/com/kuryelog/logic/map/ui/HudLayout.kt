@@ -17,9 +17,9 @@ object HudLayout {
     /** Alt panelin sol/sağ/alt kenarı (dp). */
     const val BOTTOM_PADDING_DP = 8.0
 
-    /** Hava yuvarlağının kapalı boyu (dp). */
-    const val WEATHER_COMPACT_DP = 62.0
+    /** Hava hapının kapalı genişliği (dp; A10.4d: arama hapının sağında, boyu [LOCATE_BUTTON_DP]). */
+    const val WEATHER_COMPACT_DP = 96.0
 
-    /** Konum düğmesinin ve alt yer düğmesinin kenarı (dp). */
-    const val LOCATE_BUTTON_DP = 64.0
+    /** Konum düğmesinin ve alt yer düğmesinin kenarı; arama ve hava hapının boyu (dp; A10.4d `docs/TASARIM.md` 11: 56). */
+    const val LOCATE_BUTTON_DP = 56.0
 }
