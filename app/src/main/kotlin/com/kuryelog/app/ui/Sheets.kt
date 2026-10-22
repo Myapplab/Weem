@@ -119,3 +119,19 @@ fun ConfirmDialog(
         dismissButton = { WButton(dismiss, onDismiss, kind = BtnKind.TEXT) },
     )
 }
+
+/** Tek düğmeli bilgi penceresi (ileti, sonuç). */
+@Composable
+fun NoticeDialog(text: String, ok: String, onDismiss: () -> Unit, title: String? = null) {
+    val p = palette()
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(WeemRadius.panel),
+        containerColor = p.surface.color(),
+        titleContentColor = p.text.color(),
+        textContentColor = p.text.color(),
+        title = title?.let { { Text(it, style = WeemType.titleL) } },
+        text = { Text(text, style = WeemType.bodyM) },
+        confirmButton = { WButton(ok, onDismiss, kind = BtnKind.TEXT) },
+    )
+}

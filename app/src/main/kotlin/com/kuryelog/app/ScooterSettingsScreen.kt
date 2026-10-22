@@ -5,29 +5,26 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.Checkbox
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -39,11 +36,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -57,6 +52,27 @@ import com.kuryelog.app.scooter.LoggerPreferences
 import com.kuryelog.app.scooter.PairAttention
 import com.kuryelog.app.scooter.Scooter
 import com.kuryelog.app.scooter.ScooterShiftLink
+import com.kuryelog.app.ui.Banner
+import com.kuryelog.app.ui.BtnKind
+import com.kuryelog.app.ui.CheckRow
+import com.kuryelog.app.ui.ConfirmDialog
+import com.kuryelog.app.ui.DividedColumn
+import com.kuryelog.app.ui.ListRow
+import com.kuryelog.app.ui.NoticeDialog
+import com.kuryelog.app.ui.SettingsGroup
+import com.kuryelog.app.ui.SwitchRow
+import com.kuryelog.app.ui.WButton
+import com.kuryelog.app.ui.WCard
+import com.kuryelog.app.ui.WIconButton
+import com.kuryelog.app.ui.WSheet
+import com.kuryelog.app.ui.WTone
+import com.kuryelog.app.ui.WeemIcons
+import com.kuryelog.app.ui.WeemRadius
+import com.kuryelog.app.ui.WeemSpace
+import com.kuryelog.app.ui.WeemTopBar
+import com.kuryelog.app.ui.WeemType
+import com.kuryelog.app.ui.color
+import com.kuryelog.app.ui.palette
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.scooter.FloatRules
 import com.kuryelog.logic.scooter.LogExport
@@ -102,33 +118,35 @@ fun ScooterSettingsScreen(lang: Lang, onBack: () -> Unit) {
         onDispose { Scooter.summaryWatched = false }
     }
     val idle = remember(tick) { !Scooter.active }
-    val p = LocalWeemPalette.current
 
-    Column(Modifier.fillMaxSize()) {
-        Row(Modifier.padding(start = 8.dp, top = 8.dp, end = 16.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onBack, modifier = Modifier.semantics { contentDescription = T.BACK.get(lang) }) { Text("←", fontSize = 22.sp) }
-            Text(T.SETTINGS_TITLE.get(lang), fontSize = 23.sp, fontWeight = FontWeight.Medium, modifier = Modifier.padding(start = 8.dp).semantics { heading() })
-        }
+    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        WeemTopBar(T.SETTINGS_TITLE.get(lang), onBack, T.BACK.get(lang))
         if (remember(tick) { PairAttention.visible() }) {
+            // Eşleştirme anı: büyük uyarı bandı (gidondan okunur).
             Text(
-                T.PAIR_ATTENTION.get(lang), fontSize = 28.sp, fontWeight = FontWeight.Black, color = Color(p.warn),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).background(Color(p.warnBg), RoundedCornerShape(24.dp)).padding(18.dp),
+                T.PAIR_ATTENTION.get(lang), style = WeemType.titleL.copy(fontSize = 26.sp, lineHeight = 32.sp, fontWeight = FontWeight.ExtraBold),
+                color = palette().warn.color(),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = WeemSpace.l, vertical = WeemSpace.s)
+                    .background(palette().warnBg.color(), RoundedCornerShape(WeemRadius.panel)).padding(WeemSpace.xl),
             )
         }
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp)) {
+        Column(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = WeemSpace.l, end = WeemSpace.l, top = WeemSpace.xs, bottom = WeemSpace.x3),
+            verticalArrangement = Arrangement.spacedBy(WeemSpace.m),
+        ) {
             val name = remember(tick) { Scooter.deviceName(ctx) }
-            Group("🛵", T.STATUS_TITLE.get(lang), ScooterSettings.selectedTitle(name, lang), statusOpen, { statusOpen = it }) {
-                Column(Modifier.padding(start = 18.dp, end = 18.dp, bottom = 16.dp)) {
+            Group(WeemIcons.ElectricScooter, T.STATUS_TITLE.get(lang), ScooterSettings.selectedTitle(name, lang), statusOpen, { statusOpen = it }) {
+                Column(Modifier.padding(start = WeemSpace.l, end = WeemSpace.l, bottom = WeemSpace.l), verticalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
                     Info(T.STATUS_VERSION.get(lang).format(LogExport.VERSION))
                     Info(T.SELECTED.get(lang).format(name.ifEmpty { T.NONE.get(lang) }))
                     Text(
-                        remember(tick, lang) { ScooterStatusText.localize(Scooter.summary, lang) },
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(14.dp)).padding(horizontal = 14.dp, vertical = 12.dp),
+                        remember(tick, lang) { ScooterStatusText.localize(Scooter.summary, lang) }, style = WeemType.bodyM,
+                        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(WeemRadius.tile)).padding(horizontal = 14.dp, vertical = 12.dp),
                     )
                     Info(T.PROTOCOL.get(lang))
                 }
             }
-            Section("▣", T.SECTION_PANEL.get(lang)) {
+            Section(WeemIcons.Tune, T.SECTION_PANEL.get(lang)) {
                 PrefSwitch(T.AUTO_LIVE.get(lang), T.AUTO_LIVE_SUB.get(lang), prefs.getBoolean("auto_live", false)) { prefs.edit().putBoolean("auto_live", it).apply() }
                 PrefSwitch(T.SHIFT_AUTO.get(lang), T.SHIFT_AUTO_SUB.get(lang), ScooterShiftLink.autoConnect(ctx)) {
                     Store.prefs(ctx).edit().putBoolean(ScooterShiftLink.PREF_AUTO, it).apply()
@@ -143,19 +161,19 @@ fun ScooterSettingsScreen(lang: Lang, onBack: () -> Unit) {
                 Nav(T.ORDER.get(lang), T.ORDER_BALL.get(lang).format(FloatRules.ballField(prefs.getString(FloatRules.PREF_BALL_FIELD, ""), fields).title(lang))) { ask = SettingsAsk.Order }
                 Nav(T.SIZE.get(lang), ScooterSettings.sizeLabel(ScooterSettings.SIZES.map { it.clamp(prefs.getInt(it.key, it.default)) }, lang)) { ask = SettingsAsk.Size }
             }
-            Section("▤", T.SECTION_STORAGE.get(lang)) {
+            Section(WeemIcons.Folder, T.SECTION_STORAGE.get(lang)) {
                 Nav(T.CLEAN.get(lang), T.CLEAN_SUB.get(lang)) {
                     ask = if (Scooter.recording || Scooter.maintenance) SettingsAsk.Message(T.EXPORT_BUSY.get(lang)) else SettingsAsk.Clean
                 }
             }
-            Section("◐", T.SECTION_SYSTEM.get(lang)) {
+            Section(WeemIcons.Settings, T.SECTION_SYSTEM.get(lang)) {
                 PrefSwitch(T.KEEP_SCREEN.get(lang), null, prefs.getBoolean("keep_screen_on", true)) { prefs.edit().putBoolean("keep_screen_on", it).apply() }
                 Nav(T.APP_SETTINGS.get(lang), T.APP_SETTINGS_SUB.get(lang)) {
                     ctx.safely { ctx.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + ctx.packageName))) }
                 }
                 Nav(T.GPS_SETTINGS.get(lang), T.GPS_SETTINGS_SUB.get(lang)) { ctx.safely { ctx.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)) } }
             }
-            Section("ⓘ", T.SECTION_LINK.get(lang)) {
+            Section(WeemIcons.Bluetooth, T.SECTION_LINK.get(lang)) {
                 Nav(T.INFO.get(lang), T.INFO_SUB.get(lang)) { ask = SettingsAsk.Info }
                 PrefSwitch(T.PROBE.get(lang), ScooterSettings.probeLabel(remember(tick) { Scooter.externalBattery(ctx) }, lang),
                     remember(tick) { Scooter.externalProbePending(ctx) }, enabled = idle) { prefs.edit().putBoolean("battery_probe", it).apply() }
@@ -163,57 +181,49 @@ fun ScooterSettingsScreen(lang: Lang, onBack: () -> Unit) {
                     ask = if (Scooter.device(ctx).isEmpty()) SettingsAsk.Message(T.KEY_PICK_FIRST.get(lang)) else SettingsAsk.Key
                 }
             }
-            Section("⌁", T.SECTION_DIAG.get(lang)) {
+            Section(WeemIcons.Info, T.SECTION_DIAG.get(lang)) {
                 PrefSwitch(T.DETAILED.get(lang), T.DETAILED_SUB.get(lang), prefs.getBoolean("detailed_diagnostics", false)) { prefs.edit().putBoolean("detailed_diagnostics", it).apply() }
                 PrefSwitch(T.SWEEP.get(lang), T.SWEEP_SUB.get(lang) + if (idle) "" else " • " + T.WHEN_IDLE.get(lang), prefs.getBoolean("sweep", false), enabled = idle) {
                     prefs.edit().putBoolean("sweep", it).apply()
                 }
-                Info(T.DIAG_FULL_HINT.get(lang), Modifier.padding(horizontal = 18.dp, vertical = 8.dp))
+                Info(T.DIAG_FULL_HINT.get(lang), Modifier.padding(horizontal = WeemSpace.l, vertical = WeemSpace.m))
             }
         }
     }
 
     when (val a = ask) {
         null -> {}
-        is SettingsAsk.Message -> AlertDialog(onDismissRequest = { ask = null }, text = { Text(a.text) },
-            confirmButton = { TextButton(onClick = { ask = null }) { Text(T.OK.get(lang)) } })
-        SettingsAsk.Overlay -> AlertDialog(
-            onDismissRequest = { ask = null }, title = { Text(T.OVERLAY_TITLE.get(lang)) }, text = { Text(T.OVERLAY_TEXT.get(lang)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    ask = try {
-                        ctx.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + ctx.packageName)))
-                        null
-                    } catch (e: RuntimeException) { SettingsAsk.Message(T.OVERLAY_FAILED.get(lang)) }
-                }) { Text(T.OVERLAY_OPEN.get(lang)) }
+        is SettingsAsk.Message -> NoticeDialog(a.text, T.OK.get(lang), { ask = null })
+        SettingsAsk.Overlay -> ConfirmDialog(
+            title = T.OVERLAY_TITLE.get(lang), text = T.OVERLAY_TEXT.get(lang), confirm = T.OVERLAY_OPEN.get(lang), dismiss = T.LATER.get(lang),
+            onConfirm = {
+                ask = try {
+                    ctx.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + ctx.packageName)))
+                    null
+                } catch (e: RuntimeException) { SettingsAsk.Message(T.OVERLAY_FAILED.get(lang)) }
             },
-            dismissButton = { TextButton(onClick = { ask = null }) { Text(T.LATER.get(lang)) } },
+            onDismiss = { ask = null },
         )
         SettingsAsk.Fields -> FieldsDialog(ctx, lang) { ask = null; tick++ }
         SettingsAsk.Order -> OrderDialog(ctx, lang) { ask = null; tick++ }
         SettingsAsk.Size -> SizeDialog(ctx, lang) { ask = null; tick++ }
-        SettingsAsk.Clean -> AlertDialog(
-            onDismissRequest = { ask = null }, title = { Text(T.CLEAN_TITLE.get(lang)) }, text = { Text(T.CLEAN_TEXT.get(lang)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    ask = SettingsAsk.Message(T.CLEANING.get(lang))
-                    ctx.safely("scooter_clean") { Scooter.cleanOld(ctx, lang) { ask = SettingsAsk.Message(it) } }
-                }) { Text(T.CLEAN_TITLE.get(lang)) }
+        SettingsAsk.Clean -> ConfirmDialog(
+            title = T.CLEAN_TITLE.get(lang), text = T.CLEAN_TEXT.get(lang), confirm = T.CLEAN_TITLE.get(lang), dismiss = T.CANCEL.get(lang), danger = true,
+            onConfirm = {
+                ask = SettingsAsk.Message(T.CLEANING.get(lang))
+                ctx.safely("scooter_clean") { Scooter.cleanOld(ctx, lang) { ask = SettingsAsk.Message(it) } }
             },
-            dismissButton = { TextButton(onClick = { ask = null }) { Text(T.CANCEL.get(lang)) } },
+            onDismiss = { ask = null },
         )
-        SettingsAsk.Info -> AlertDialog(
-            onDismissRequest = { ask = null }, title = { Text(T.INFO.get(lang)) },
-            text = {
-                Column(Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState())) {
-                    for ((title, body) in T.INFO_SECTIONS) {
-                        Text(title.get(lang), fontSize = 18.sp, fontWeight = FontWeight.Medium, modifier = Modifier.padding(top = 10.dp))
-                        Text(body.get(lang), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp, bottom = 6.dp))
-                    }
+        SettingsAsk.Info -> WSheet(onDismiss = { ask = null }, title = T.INFO.get(lang)) {
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(WeemSpace.xs)) {
+                for ((title, body) in T.INFO_SECTIONS) {
+                    Text(title.get(lang), style = WeemType.titleM, modifier = Modifier.padding(top = WeemSpace.s))
+                    Text(body.get(lang), style = WeemType.bodyM, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-            },
-            confirmButton = { TextButton(onClick = { ask = null }) { Text(T.CLOSE.get(lang)) } },
-        )
+            }
+            WButton(T.CLOSE.get(lang), { ask = null }, kind = BtnKind.TONAL, fill = true)
+        }
         SettingsAsk.Key -> KeyDialog(ctx, lang, { ask = null }) { ask = SettingsAsk.Message(it) }
     }
 }
@@ -223,31 +233,21 @@ fun ScooterSettingsScreen(lang: Lang, onBack: () -> Unit) {
 private fun FieldsDialog(ctx: Context, lang: Lang, onClose: () -> Unit) {
     val current = remember { mutableStateListOf<PanelField>().also { it.addAll(FloatingPanel.fields(ctx)) } }
     var limit by remember { mutableStateOf(false) }
-    AlertDialog(
-        onDismissRequest = onClose, title = { Text(T.FIELDS_MAX.get(lang).format(PanelField.MAX.toString())) },
-        text = {
-            Column(Modifier.heightIn(max = 460.dp).verticalScroll(rememberScrollState())) {
-                if (limit) Text(T.FIELDS_LIMIT.get(lang).format(PanelField.MAX.toString()), color = MaterialTheme.colorScheme.error)
+    WSheet(onDismiss = onClose, title = T.FIELDS_MAX.get(lang).format(PanelField.MAX.toString())) {
+        if (limit) Banner(T.FIELDS_LIMIT.get(lang).format(PanelField.MAX.toString()), tone = WTone.WARN)
+        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+            SettingsGroup(null, dividerInset = 52.dp) {
                 for (f in PanelField.entries) {
                     val on = f in current
-                    Row(
-                        Modifier.fillMaxWidth().clickable(role = Role.Checkbox) { limit = !ScooterSettings.toggle(current, f, !on) }.padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Checkbox(checked = on, onCheckedChange = null)
-                        Text(f.title(lang) + " (" + f.unit(lang) + ")", modifier = Modifier.padding(start = 8.dp))
-                    }
+                    CheckRow(f.title(lang) + " (" + f.unit(lang) + ")", on, { limit = !ScooterSettings.toggle(current, f, !on) })
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                LoggerPreferences.get(ctx).edit().putString(FloatRules.PREF_FIELDS, ScooterSettings.fieldsToSave(current)).apply()
-                onClose()
-            }) { Text(T.SAVE.get(lang)) }
-        },
-        dismissButton = { TextButton(onClick = onClose) { Text(T.CANCEL.get(lang)) } },
-    )
+        }
+        SheetButtons(T.CANCEL.get(lang), T.SAVE.get(lang), onClose) {
+            LoggerPreferences.get(ctx).edit().putString(FloatRules.PREF_FIELDS, ScooterSettings.fieldsToSave(current)).apply()
+            onClose()
+        }
+    }
 }
 
 /** Bardaki sıra (oklar) ve topta görünen değer (daire) (NB `chooseOrder`). */
@@ -256,31 +256,23 @@ private fun OrderDialog(ctx: Context, lang: Lang, onClose: () -> Unit) {
     val prefs = LoggerPreferences.get(ctx)
     val list = remember { mutableStateListOf<PanelField>().also { it.addAll(FloatingPanel.fields(ctx)) } }
     var ball by remember { mutableStateOf(FloatRules.ballField(prefs.getString(FloatRules.PREF_BALL_FIELD, ""), list)) }
-    AlertDialog(
-        onDismissRequest = onClose, title = { Text(T.ORDER_TITLE.get(lang)) },
-        text = {
-            Column {
-                list.forEachIndexed { i, f ->
-                    Row(Modifier.fillMaxWidth().heightIn(min = 52.dp), verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(selected = f == ball, onClick = { ball = f }, modifier = Modifier.semantics { contentDescription = T.ORDER_BALL_DESC.get(lang).format(f.title(lang)) })
-                        Text("${i + 1}. " + f.title(lang), modifier = Modifier.weight(1f))
-                        TextButton(enabled = i > 0, onClick = { list.add(i - 1, list.removeAt(i)) },
-                            modifier = Modifier.width(52.dp).semantics { contentDescription = T.ORDER_UP.get(lang).format(f.title(lang)) }) { Text("↑") }
-                        TextButton(enabled = i < list.size - 1, onClick = { list.add(i + 1, list.removeAt(i)) },
-                            modifier = Modifier.width(52.dp).semantics { contentDescription = T.ORDER_DOWN.get(lang).format(f.title(lang)) }) { Text("↓") }
-                    }
+    WSheet(onDismiss = onClose, title = T.ORDER_TITLE.get(lang)) {
+        SettingsGroup(null, dividerInset = 52.dp) {
+            list.forEachIndexed { i, f ->
+                Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(start = WeemSpace.xs, end = WeemSpace.xs), verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(selected = f == ball, onClick = { ball = f }, modifier = Modifier.semantics { contentDescription = T.ORDER_BALL_DESC.get(lang).format(f.title(lang)) })
+                    Text("${i + 1}. " + f.title(lang), style = WeemType.bodyL, modifier = Modifier.weight(1f))
+                    WIconButton(WeemIcons.ExpandLess, T.ORDER_UP.get(lang).format(f.title(lang)), { list.add(i - 1, list.removeAt(i)) }, enabled = i > 0)
+                    WIconButton(WeemIcons.ExpandMore, T.ORDER_DOWN.get(lang).format(f.title(lang)), { list.add(i + 1, list.removeAt(i)) }, enabled = i < list.size - 1)
                 }
-                Info(T.ORDER_HINT.get(lang))
             }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                prefs.edit().putString(FloatRules.PREF_FIELDS, PanelField.join(list)).putString(FloatRules.PREF_BALL_FIELD, ball.key).apply()
-                onClose()
-            }) { Text(T.SAVE.get(lang)) }
-        },
-        dismissButton = { TextButton(onClick = onClose) { Text(T.CANCEL.get(lang)) } },
-    )
+        }
+        Info(T.ORDER_HINT.get(lang))
+        SheetButtons(T.CANCEL.get(lang), T.SAVE.get(lang), onClose) {
+            prefs.edit().putString(FloatRules.PREF_FIELDS, PanelField.join(list)).putString(FloatRules.PREF_BALL_FIELD, ball.key).apply()
+            onClose()
+        }
+    }
 }
 
 /** Altı kaydırıcı: top, bar kalınlığı, yatay ve dikey uzunluk, iki yazı boyutu (NB `chooseSize`). */
@@ -288,35 +280,25 @@ private fun OrderDialog(ctx: Context, lang: Lang, onClose: () -> Unit) {
 private fun SizeDialog(ctx: Context, lang: Lang, onClose: () -> Unit) {
     val prefs = LoggerPreferences.get(ctx)
     val chosen = remember { mutableStateListOf<Int>().also { l -> ScooterSettings.SIZES.forEach { l.add(it.clamp(prefs.getInt(it.key, it.default))) } } }
-    AlertDialog(
-        onDismissRequest = onClose, title = { Text(T.SIZE.get(lang)) },
-        text = {
-            Column(Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState())) {
-                ScooterSettings.SIZES.forEachIndexed { i, s ->
-                    Text(s.label(chosen[i], lang), modifier = Modifier.padding(top = 14.dp))
-                    Slider(
-                        value = chosen[i].toFloat(), onValueChange = { chosen[i] = Math.round(it) }, valueRange = s.min.toFloat()..s.max.toFloat(),
-                        modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = s.text.get(lang) },
-                    )
-                }
-                Info(T.SIZE_HINT.get(lang))
+    WSheet(onDismiss = onClose, title = T.SIZE.get(lang)) {
+        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+            ScooterSettings.SIZES.forEachIndexed { i, s ->
+                Text(s.label(chosen[i], lang), style = WeemType.bodyM, modifier = Modifier.padding(top = WeemSpace.m))
+                Slider(
+                    value = chosen[i].toFloat(), onValueChange = { chosen[i] = Math.round(it) }, valueRange = s.min.toFloat()..s.max.toFloat(),
+                    modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = s.text.get(lang) },
+                )
             }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                val e = prefs.edit()
-                ScooterSettings.SIZES.forEachIndexed { i, s -> e.putInt(s.key, chosen[i]) }
-                e.apply()
-                onClose()
-            }) { Text(T.SAVE.get(lang)) }
-        },
-        dismissButton = {
-            Row {
-                TextButton(onClick = { val e = prefs.edit(); ScooterSettings.SIZES.forEach { e.remove(it.key) }; e.apply(); onClose() }) { Text(T.DEFAULT.get(lang)) }
-                TextButton(onClick = onClose) { Text(T.CANCEL.get(lang)) }
-            }
-        },
-    )
+            Info(T.SIZE_HINT.get(lang))
+        }
+        WButton(T.DEFAULT.get(lang), { val e = prefs.edit(); ScooterSettings.SIZES.forEach { e.remove(it.key) }; e.apply(); onClose() }, kind = BtnKind.TEXT, fill = true)
+        SheetButtons(T.CANCEL.get(lang), T.SAVE.get(lang), onClose) {
+            val e = prefs.edit()
+            ScooterSettings.SIZES.forEachIndexed { i, s -> e.putInt(s.key, chosen[i]) }
+            e.apply()
+            onClose()
+        }
+    }
 }
 
 /** Kendi scooter'ının 16 bayt anahtarı (NB `key`): telefonda Keystore ile şifreli; kayıt ZIP'ine girmez. */
@@ -332,92 +314,78 @@ private fun KeyDialog(ctx: Context, lang: Lang, onClose: () -> Unit, onMessage: 
             ScooterSettings.keyState(k != null, vault.hasPending(device), vault.confirmed(device)).get(lang)
         } catch (e: RuntimeException) { T.KEY_BROKEN.get(lang) }
     }
-    AlertDialog(
-        onDismissRequest = onClose, title = { Text(T.KEY_TITLE.get(lang)) },
-        text = {
-            Column {
-                Text(T.KEY_TEXT.get(lang) + "\n" + state)
-                OutlinedTextField(
-                    value = input, onValueChange = { input = it }, singleLine = true, placeholder = { Text(T.KEY_HINT.get(lang)) },
-                    visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                )
-                TextButton(onClick = {
-                    onMessage((if (runCatching { KeyVault(ctx).restore(device) }.getOrDefault(false)) T.KEY_RESTORED else T.KEY_NO_PREVIOUS).get(lang))
-                }) { Text(T.KEY_RESTORE.get(lang)) }
-            }
+    ConfirmDialog(
+        title = T.KEY_TITLE.get(lang), confirm = T.SAVE.get(lang), dismiss = T.CANCEL.get(lang), onDismiss = onClose,
+        onConfirm = {
+            val k = ScooterSettings.parseKey(input)
+            input = ""
+            onMessage(
+                if (k == null) T.KEY_BAD.get(lang) else try {
+                    val vault = KeyVault(ctx)
+                    vault.save(device, k, false)
+                    vault.save(device, k, true)
+                    T.KEY_SAVED.get(lang)
+                } catch (e: RuntimeException) { T.KEY_BAD.get(lang) } finally { k.fill(0) },
+            )
         },
-        confirmButton = {
-            TextButton(onClick = {
-                val k = ScooterSettings.parseKey(input)
-                input = ""
-                onMessage(
-                    if (k == null) T.KEY_BAD.get(lang) else try {
-                        val vault = KeyVault(ctx)
-                        vault.save(device, k, false)
-                        vault.save(device, k, true)
-                        T.KEY_SAVED.get(lang)
-                    } catch (e: RuntimeException) { T.KEY_BAD.get(lang) } finally { k.fill(0) },
-                )
-            }) { Text(T.SAVE.get(lang)) }
-        },
-        dismissButton = { TextButton(onClick = onClose) { Text(T.CANCEL.get(lang)) } },
-    )
-}
-
-@Composable
-private fun Info(text: String, modifier: Modifier = Modifier) {
-    Text(text, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = modifier.padding(top = 6.dp, bottom = 2.dp))
-}
-
-/** Açılır kart: başlığa dokununca açılır; ekrandan çıkınca kapanır (NB 0.22.2). */
-@Composable
-private fun Group(glyph: String, title: String, subtitle: String, open: Boolean, onOpen: (Boolean) -> Unit, content: @Composable () -> Unit) {
-    Card(Modifier.fillMaxWidth().padding(top = 12.dp)) {
-        Row(Modifier.fillMaxWidth().clickable { onOpen(!open) }.padding(horizontal = 18.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(glyph, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(end = 14.dp))
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium)
-                if (subtitle.isNotEmpty()) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Text(if (open) "⌃" else "⌄", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        if (open) content()
+    ) {
+        Text(T.KEY_TEXT.get(lang) + "\n" + state, style = WeemType.bodyM)
+        OutlinedTextField(
+            value = input, onValueChange = { input = it }, singleLine = true, placeholder = { Text(T.KEY_HINT.get(lang)) }, shape = RoundedCornerShape(WeemRadius.tile),
+            visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        WButton(T.KEY_RESTORE.get(lang), {
+            onMessage((if (runCatching { KeyVault(ctx).restore(device) }.getOrDefault(false)) T.KEY_RESTORED else T.KEY_NO_PREVIOUS).get(lang))
+        }, kind = BtnKind.TEXT, icon = WeemIcons.History)
     }
 }
 
 @Composable
-private fun Section(glyph: String, title: String, content: @Composable () -> Unit) {
+private fun Info(text: String, modifier: Modifier = Modifier) {
+    Text(text, style = WeemType.bodyS, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = modifier)
+}
+
+/** Alt sayfanın en altındaki iki düğme: vazgeç (çerçeveli) + kaydet (dolgu). */
+@Composable
+private fun SheetButtons(cancel: String, save: String, onCancel: () -> Unit, onSave: () -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
+        WButton(cancel, onCancel, Modifier.weight(1f), kind = BtnKind.OUTLINE)
+        WButton(save, onSave, Modifier.weight(1f))
+    }
+}
+
+/** Açılır kart: başlığa dokununca açılır; ekrandan çıkınca kapanır (NB 0.22.2). */
+@Composable
+private fun Group(icon: ImageVector, title: String, subtitle: String, open: Boolean, onOpen: (Boolean) -> Unit, content: @Composable () -> Unit) {
+    WCard(padding = 0.dp, spacing = 0.dp) {
+        ListRow(
+            title, subtitle = subtitle.ifEmpty { null }, icon = icon, iconTone = WTone.ACCENT, onClick = { onOpen(!open) },
+            trailing = { Icon(if (open) WeemIcons.ExpandLess else WeemIcons.ExpandMore, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+        )
+        AnimatedVisibility(open) {
+            Column {
+                HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                content()
+            }
+        }
+    }
+}
+
+@Composable
+private fun Section(icon: ImageVector, title: String, content: @Composable () -> Unit) {
     var open by remember { mutableStateOf(false) }
-    Group(glyph, title, "", open, { open = it }) { Column(Modifier.padding(bottom = 8.dp)) { content() } }
+    Group(icon, title, "", open, { open = it }) { DividedColumn(MaterialTheme.colorScheme.outlineVariant, inset = WeemSpace.l) { content() } }
 }
 
 /** Bütün satır tercihi çevirir; ekran okuyucu tek anahtar olarak okur. */
 @Composable
 private fun PrefSwitch(title: String, subtitle: String?, initial: Boolean, enabled: Boolean = true, onChange: (Boolean) -> Unit) {
     var on by remember(initial) { mutableStateOf(initial) }
-    Row(
-        Modifier.fillMaxWidth().clickable(enabled = enabled, role = Role.Switch) { on = !on; onChange(on) }.padding(horizontal = 18.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(title, color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
-            if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Switch(checked = on, onCheckedChange = null, enabled = enabled)
-    }
+    SwitchRow(title, on, { on = it; onChange(it) }, subtitle = subtitle, enabled = enabled)
 }
 
 @Composable
 private fun Nav(title: String, subtitle: String, enabled: Boolean = true, onClick: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().clickable(enabled = enabled, onClick = onClick).padding(horizontal = 18.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(title, color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Text("›", color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
+    ListRow(title, subtitle = subtitle.ifEmpty { null }, enabled = enabled, chevron = true, onClick = onClick)
 }
