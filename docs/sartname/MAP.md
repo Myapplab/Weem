@@ -3123,5 +3123,5 @@ YolGo `yolgo-test` @ `870ab6e` `lib/surface/`, `lib/calibration/`, `lib/roads/st
 
 ### 18.4 Açık
 - Cihaz sınaması: sensör örnekleme hızı, duruşta yavaşlatma, GPS 500 ms, yüzen panelin üst üste çizimi (Wolt/Bolt üstünde), geri sayım titreşimi, ekran kilidinde servis.
-- Yürüme algılama izni (SORU-Y13-1); AZ metin onayı: yeni AZ satırları (Yol puanları, Ölçüm ve kalibrasyon, Yüzey kaydı) **M-Y13-1**.
+- Yürüme algılama izni (SORU-Y13-1); AZ metin onayı (kullanıcı onayladı, 22 Ekim): yeni AZ satırları (Yol puanları, Ölçüm ve kalibrasyon, Yüzey kaydı) **M-Y13-1**.
 - `MAP.md` 9.14 listesindeki "sonra" kalemleri (Y13/Y14) bu bölümle kapandı; Yollarım'da "Eski trafik kayıtları" bölümü YolGo'daki gibi yok (WEEM sıfırdan başlar).
