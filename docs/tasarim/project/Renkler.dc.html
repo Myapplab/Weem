@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Renkler</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&amp;display=swap">
+<style>
+body{margin:0}
+.rb *{box-sizing:border-box}
+.rb h2,.rb h3,.rb p{margin:0}
+.rb{width:1180px;height:1040px;padding:28px 20px 20px;background:#FFFFFF;color:#0E1015;font-family:Inter,Roboto,system-ui,sans-serif;display:flex;flex-direction:column;gap:20px}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;flex:1 1 auto}
+.pn{border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:20px}
+.pn.d{background:#F4F5F8;color:#0E1015}
+.pn.n{background:#0E0F13;color:#F3F4F7}
+.pn h3{font-size:13px;line-height:16px;font-weight:700;margin-bottom:10px;opacity:.75}
+.g5{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.sw{display:flex;flex-direction:column;gap:4px}
+.ch{height:48px;border-radius:12px;box-shadow:inset 0 0 0 1px rgba(127,127,127,.25)}
+.nm{font-size:12px;line-height:16px;font-weight:700}
+.hx{font-size:11px;line-height:14px;font-weight:500;font-variant-numeric:tabular-nums;opacity:.75}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.smp{display:inline-flex;flex-direction:column;gap:2px;border-radius:14px;padding:10px 12px;min-width:96px}
+.smp b{font-size:14px;line-height:18px;font-weight:700}
+.smp span{font-size:11px;line-height:14px;font-weight:500;font-variant-numeric:tabular-nums;opacity:.9}
+</style>
+</helmet>
+<div class="rb">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<h2 style="font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -.015em">Renkler</h2>
+<p style="font-size: 15px; line-height: 22px; color: #565C6A">Gri yüzeyler, tek vurgu rengi; renk yalnız anlam taşır. Bütün yazı çiftleri en az 4,5:1, ana sayılar 7:1 (hesaplandı).</p>
+</div>
+<div class="cols">
+<div class="pn d">
+<section><h3>Nötrler · gündüz</h3><div class="g5">
+<div class="sw"><span class="ch" style="background: #F4F5F8"></span><span class="nm">bg</span><span class="hx">#F4F5F8</span></div>
+<div class="sw"><span class="ch" style="background: #FFFFFF"></span><span class="nm">surface</span><span class="hx">#FFFFFF</span></div>
+<div class="sw"><span class="ch" style="background: #ECEEF2"></span><span class="nm">raised</span><span class="hx">#ECEEF2</span></div>
+<div class="sw"><span class="ch" style="background: #E3E6EB"></span><span class="nm">high</span><span class="hx">#E3E6EB</span></div>
+<div class="sw"><span class="ch" style="background: #DCDFE5"></span><span class="nm">outline</span><span class="hx">#DCDFE5</span></div>
+<div class="sw"><span class="ch" style="background: #0E1015"></span><span class="nm">text</span><span class="hx">#0E1015</span></div>
+<div class="sw"><span class="ch" style="background: #565C6A"></span><span class="nm">muted</span><span class="hx">#565C6A</span></div>
+</div></section>
+<section><h3>Vurgu · mor (önerilen)</h3><div class="g5">
+<div class="sw"><span class="ch" style="background: #5B3DF5"></span><span class="nm">accent</span><span class="hx">#5B3DF5</span></div>
+<div class="sw"><span class="ch" style="background: #FFFFFF"></span><span class="nm">accentInk</span><span class="hx">#FFFFFF</span></div>
+<div class="sw"><span class="ch" style="background: #5236E0"></span><span class="nm">accentText</span><span class="hx">#5236E0</span></div>
+<div class="sw"><span class="ch" style="background: #ECE8FF"></span><span class="nm">container</span><span class="hx">#ECE8FF</span></div>
+<div class="sw"><span class="ch" style="background: #3A23A8"></span><span class="nm">onContainer</span><span class="hx">#3A23A8</span></div>
+</div></section>
+<section><h3>Vurgu · siyah-beyaz</h3><div class="g5">
+<div class="sw"><span class="ch" style="background: #0E1015"></span><span class="nm">accent</span><span class="hx">#0E1015</span></div>
+<div class="sw"><span class="ch" style="background: #FFFFFF"></span><span class="nm">accentInk</span><span class="hx">#FFFFFF</span></div>
+<div class="sw"><span class="ch" style="background: #0E1015"></span><span class="nm">accentText</span><span class="hx">#0E1015</span></div>
+<div class="sw"><span class="ch" style="background: #E3E6EB"></span><span class="nm">container</span><span class="hx">#E3E6EB</span></div>
+<div class="sw"><span class="ch" style="background: #0E1015"></span><span class="nm">onContainer</span><span class="hx">#0E1015</span></div>
+</div></section>
+<section><h3>Durum ve platform (yazı / zemin)</h3><div class="row">
+<span class="smp" style="background: #DDF4E7; color: #0B7A43"><b>tamam</b><span>#0B7A43 / #DDF4E7</span></span>
+<span class="smp" style="background: #FFEDD5; color: #8A4B00"><b>uyarı</b><span>#8A4B00 / #FFEDD5</span></span>
+<span class="smp" style="background: #FDE8E6; color: #C4291C"><b>tehlike</b><span>#C4291C / #FDE8E6</span></span>
+<span class="smp" style="background: #E0F3FB; color: #00668F"><b>Wolt</b><span>#00668F / #E0F3FB</span></span>
+<span class="smp" style="background: #DFF5E8; color: #0B6E3B"><b>Bolt Food</b><span>#0B6E3B / #DFF5E8</span></span>
+</div></section>
+<section><h3>Sipariş aşaması (hap yazısı / zemini)</h3><div class="row">
+<span class="smp" style="background: #E3EDFF; color: #0B4FB3"><b>yolda</b><span>#0B4FB3 / #E3EDFF</span></span>
+<span class="smp" style="background: #FFE9D9; color: #9A3E00"><b>restoranda</b><span>#9A3E00 / #FFE9D9</span></span>
+<span class="smp" style="background: #DDF4EA; color: #0B6B47"><b>alındı</b><span>#0B6B47 / #DDF4EA</span></span>
+<span class="smp" style="background: #FDE4F3; color: #A0156E"><b>müşteride</b><span>#A0156E / #FDE4F3</span></span>
+</div></section>
+<section><h3>Harita (çizgi ve alan)</h3><div class="g5">
+<div class="sw"><span class="ch" style="background: #EDEFEA"></span><span class="nm">kara</span><span class="hx">#EDEFEA</span></div>
+<div class="sw"><span class="ch" style="background: #B9D7F0"></span><span class="nm">su</span><span class="hx">#B9D7F0</span></div>
+<div class="sw"><span class="ch" style="background: #CFE7C8"></span><span class="nm">park</span><span class="hx">#CFE7C8</span></div>
+<div class="sw"><span class="ch" style="background: #1765D1"></span><span class="nm">rota</span><span class="hx">#1765D1</span></div>
+<div class="sw"><span class="ch" style="background: #D45D00"></span><span class="nm">yokuş</span><span class="hx">#D45D00</span></div>
+<div class="sw"><span class="ch" style="background: #C0008A"></span><span class="nm">durak</span><span class="hx">#C0008A</span></div>
+<div class="sw"><span class="ch" style="background: #B45309"></span><span class="nm">güç (scooter)</span><span class="hx">#B45309</span></div>
+</div></section>
+</div>
+<div class="pn n">
+<section><h3>Nötrler · gece</h3><div class="g5">
+<div class="sw"><span class="ch" style="background: #0E0F13"></span><span class="nm">bg</span><span class="hx">#0E0F13</span></div>
+<div class="sw"><span class="ch" style="background: #17191F"></span><span class="nm">surface</span><span class="hx">#17191F</span></div>
+<div class="sw"><span class="ch" style="background: #21242C"></span><span class="nm">raised</span><span class="hx">#21242C</span></div>
+<div class="sw"><span class="ch" style="background: #2B2F38"></span><span class="nm">high</span><span class="hx">#2B2F38</span></div>
+<div class="sw"><span class="ch" style="background: #2E323C"></span><span class="nm">outline</span><span class="hx">#2E323C</span></div>
+<div class="sw"><span class="ch" style="background: #F3F4F7"></span><span class="nm">text</span><span class="hx">#F3F4F7</span></div>
+<div class="sw"><span class="ch" style="background: #A5ABB8"></span><span class="nm">muted</span><span class="hx">#A5ABB8</span></div>
+</div></section>
+<section><h3>Vurgu · mor (önerilen)</h3><div class="g5">
+<div class="sw"><span class="ch" style="background: #A898FF"></span><span class="nm">accent</span><span class="hx">#A898FF</span></div>
+<div class="sw"><span class="ch" style="background: #14102E"></span><span class="nm">accentInk</span><span class="hx">#14102E</span></div>
+<div class="sw"><span class="ch" style="background: #B4A7FF"></span><span class="nm">accentText</span><span class="hx">#B4A7FF</span></div>
+<div class="sw"><span class="ch" style="background: #2B2462"></span><span class="nm">container</span><span class="hx">#2B2462</span></div>
+<div class="sw"><span class="ch" style="background: #E0DAFF"></span><span class="nm">onContainer</span><span class="hx">#E0DAFF</span></div>
+</div></section>
+<section><h3>Vurgu · siyah-beyaz</h3><div class="g5">
+<div class="sw"><span class="ch" style="background: #F3F4F7"></span><span class="nm">accent</span><span class="hx">#F3F4F7</span></div>
+<div class="sw"><span class="ch" style="background: #0E0F13"></span><span class="nm">accentInk</span><span class="hx">#0E0F13</span></div>
+<div class="sw"><span class="ch" style="background: #F3F4F7"></span><span class="nm">accentText</span><span class="hx">#F3F4F7</span></div>
+<div class="sw"><span class="ch" style="background: #2B2F38"></span><span class="nm">container</span><span class="hx">#2B2F38</span></div>
+<div class="sw"><span class="ch" style="background: #F3F4F7"></span><span class="nm">onContainer</span><span class="hx">#F3F4F7</span></div>
+</div></section>
+<section><h3>Durum ve platform (yazı / zemin)</h3><div class="row">
+<span class="smp" style="background: #102E1F; color: #62D69B"><b>tamam</b><span>#62D69B / #102E1F</span></span>
+<span class="smp" style="background: #382607; color: #FFC27A"><b>uyarı</b><span>#FFC27A / #382607</span></span>
+<span class="smp" style="background: #3A1614; color: #FF8A80"><b>tehlike</b><span>#FF8A80 / #3A1614</span></span>
+<span class="smp" style="background: #0A2633; color: #66CCF2"><b>Wolt</b><span>#66CCF2 / #0A2633</span></span>
+<span class="smp" style="background: #0E2A1B; color: #66D99A"><b>Bolt Food</b><span>#66D99A / #0E2A1B</span></span>
+</div></section>
+<section><h3>Sipariş aşaması (hap yazısı / zemini)</h3><div class="row">
+<span class="smp" style="background: #13264A; color: #A9C8FF"><b>yolda</b><span>#A9C8FF / #13264A</span></span>
+<span class="smp" style="background: #3A220E; color: #FFB37A"><b>restoranda</b><span>#FFB37A / #3A220E</span></span>
+<span class="smp" style="background: #0F2E22; color: #7FE0B3"><b>alındı</b><span>#7FE0B3 / #0F2E22</span></span>
+<span class="smp" style="background: #3A1430; color: #FF9AD5"><b>müşteride</b><span>#FF9AD5 / #3A1430</span></span>
+</div></section>
+<section><h3>Harita (çizgi ve alan)</h3><div class="g5">
+<div class="sw"><span class="ch" style="background: #1A1D23"></span><span class="nm">kara</span><span class="hx">#1A1D23</span></div>
+<div class="sw"><span class="ch" style="background: #0E2233"></span><span class="nm">su</span><span class="hx">#0E2233</span></div>
+<div class="sw"><span class="ch" style="background: #16291D"></span><span class="nm">park</span><span class="hx">#16291D</span></div>
+<div class="sw"><span class="ch" style="background: #8BB5FF"></span><span class="nm">rota</span><span class="hx">#8BB5FF</span></div>
+<div class="sw"><span class="ch" style="background: #FF9F1C"></span><span class="nm">yokuş</span><span class="hx">#FF9F1C</span></div>
+<div class="sw"><span class="ch" style="background: #FF7AC6"></span><span class="nm">durak (yeni)</span><span class="hx">#FF7AC6</span></div>
+<div class="sw"><span class="ch" style="background: #FFB547"></span><span class="nm">güç (scooter)</span><span class="hx">#FFB547</span></div>
+</div></section>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1180,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
