@@ -5,19 +5,30 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
+import com.kuryelog.app.ui.BtnKind
+import com.kuryelog.app.ui.WButton
+import com.kuryelog.app.ui.WCard
+import com.kuryelog.app.ui.WTone
+import com.kuryelog.app.ui.WeemIcons
+import com.kuryelog.app.ui.WeemSize
+import com.kuryelog.app.ui.WeemSpace
+import com.kuryelog.app.ui.WeemType
+import com.kuryelog.app.ui.color
+import com.kuryelog.app.ui.ink
+import com.kuryelog.app.ui.mark
+import com.kuryelog.app.ui.palette
 import com.kuryelog.app.core.CrashLog
 import com.kuryelog.app.core.Store
 import com.kuryelog.logic.core.CrashReport
@@ -65,22 +76,27 @@ fun CrashCard(j: JSONObject, lang: Lang, onHide: () -> Unit) {
     ErrorCard(Str.CRASH_TITLE.get(lang).format(time), j, lang, hint = Str.CRASH_HINT.get(lang), onHide = onHide)
 }
 
+/** Hata/çökme kartı (A10.4d, `docs/TASARIM.md` 10): tehlike tonu, simgeli başlık, özet; Kopyala · Paylaş yan yana, Gizle metin düğmesi. */
 @Composable
 private fun ErrorCard(title: String, j: JSONObject, lang: Lang, hint: String?, onHide: (() -> Unit)?) {
     val ctx = LocalContext.current
+    val p = palette()
+    val ink = p.ink(WTone.DANGER).color()
     val text = remember(j) { CrashReport.text(j, LogTime.ts(j.optLong("at"))) }
-    Card(
-        Modifier.fillMaxWidth().padding(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-    ) {
-        Column(Modifier.padding(16.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onErrorContainer)
-            Text(CrashReport.summary(j), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onErrorContainer)
-            if (hint != null) Text(hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onErrorContainer)
-            TextButton(onClick = { ctx.safely { ctx.copyText(text) } }) { Text(Str.CRASH_COPY.get(lang)) }
-            TextButton(onClick = { ctx.safely { ctx.shareText(text) } }) { Text(Str.CRASH_SHARE.get(lang)) }
-            if (onHide != null) TextButton(onClick = { ctx.safely { onHide() } }) { Text(Str.CRASH_HIDE.get(lang)) }
+    WCard(Modifier.padding(horizontal = WeemSpace.l, vertical = WeemSpace.s), tone = WTone.DANGER) {
+        Row(horizontalArrangement = Arrangement.spacedBy(WeemSpace.m), verticalAlignment = Alignment.Top) {
+            Icon(WeemIcons.Error, contentDescription = null, tint = p.mark(WTone.DANGER).color(), modifier = Modifier.size(WeemSize.icon))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(WeemSpace.xs)) {
+                Text(title, style = WeemType.titleS, color = ink)
+                Text(CrashReport.summary(j), style = WeemType.bodyS, color = ink)
+                if (hint != null) Text(hint, style = WeemType.bodyS, color = ink)
+            }
         }
+        Row(horizontalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
+            WButton(Str.CRASH_COPY.get(lang), { ctx.safely { ctx.copyText(text) } }, Modifier.weight(1f), kind = BtnKind.OUTLINE, icon = WeemIcons.ContentCopy, fill = true)
+            WButton(Str.CRASH_SHARE.get(lang), { ctx.safely { ctx.shareText(text) } }, Modifier.weight(1f), kind = BtnKind.OUTLINE, icon = WeemIcons.Share, fill = true)
+        }
+        if (onHide != null) WButton(Str.CRASH_HIDE.get(lang), { ctx.safely { onHide() } }, kind = BtnKind.TEXT)
     }
 }
 
