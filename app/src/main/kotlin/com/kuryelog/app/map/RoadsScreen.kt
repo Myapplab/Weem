@@ -1,31 +1,24 @@
 package com.kuryelog.app.map
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -36,13 +29,33 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kuryelog.app.ui.BtnKind
+import com.kuryelog.app.ui.ConfirmDialog
+import com.kuryelog.app.ui.EmptyState
+import com.kuryelog.app.ui.ListRow
+import com.kuryelog.app.ui.Segmented
+import com.kuryelog.app.ui.SettingsGroup
+import com.kuryelog.app.ui.SwitchRow
+import com.kuryelog.app.ui.WButton
+import com.kuryelog.app.ui.WIconButton
+import com.kuryelog.app.ui.WSheet
+import com.kuryelog.app.ui.WTone
+import com.kuryelog.app.ui.WeemIcons
+import com.kuryelog.app.ui.WeemRadius
+import com.kuryelog.app.ui.WeemSpace
+import com.kuryelog.app.ui.WeemTopBar
+import com.kuryelog.app.ui.WeemType
+import com.kuryelog.app.ui.ink
+import com.kuryelog.app.ui.color
+import com.kuryelog.app.ui.palette
+import com.kuryelog.logic.app.Palette
+import com.kuryelog.logic.app.Text as Str
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.map.graph.RoadGraph
 import com.kuryelog.logic.map.roads.GhostMark
@@ -100,13 +113,13 @@ class RoadsActions(
 )
 
 /** [RoadState] + ayarlar + sokak kararları → ekran verisi (hayaletler yeniden eskiye). */
-fun roadsScreenState(s: RoadState, settings: MapSettings, streets: StreetPrefs, lang: Lang, zone: ZoneId, graph: RoadGraph?): RoadsScreenState {
+fun roadsScreenState(s: RoadState, settings: MapSettings, streets: StreetPrefs, lang: Lang, zone: ZoneId, graph: RoadGraph?, palette: Palette = Palette.light): RoadsScreenState {
     val k = s.k
     val quality = k.ratings.keys.map { way ->
         val st = k.ways[way]
         val r = k.ratings[way] ?: QualityRating.NONE
         QualityRowView(
-            way, k.nameOf(way, lang), RoadsText.pct(r / 100.0), RoadsText.tone(r / 100.0).color(), RoadsText.manualRow(lang, st), r,
+            way, k.nameOf(way, lang), RoadsText.pct(r / 100.0), Color(RoadsText.tone(r / 100.0).ink(palette)), RoadsText.manualRow(lang, st), r,
             RoadsText.sheetSubtitle(lang, k.qualityOf(way, graph), st), st != null,
         )
     }
@@ -136,14 +149,13 @@ fun RoadsScreen(
     surface: @Composable () -> Unit = {},
 ) {
     var tab by remember { mutableIntStateOf(initialTab) }
-    Column(modifier.fillMaxSize()) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onBack) { Text("←") }
-            Text(RoadsText.title(), style = MaterialTheme.typography.titleLarge)
-        }
-        TabRow(selectedTabIndex = tab) {
-            RoadsText.tabs(lang).forEachIndexed { i, t -> Tab(selected = tab == i, onClick = { tab = i }, text = { Text(t, maxLines = 1, fontSize = 12.sp) }, modifier = Modifier.testTag("roads-tab-$i")) }
-        }
+    Column(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        WeemTopBar(RoadsText.title(), onBack, Str.BACK.get(lang))
+        // Sekmeler: Kalite · Ters yön · Yol yok · Bisiklet (segment; uzun Azerice ad iki satıra iner).
+        Segmented(
+            RoadsText.tabs(lang), tab, { tab = it }, Modifier.padding(horizontal = WeemSpace.l, vertical = WeemSpace.xs),
+            tags = RoadsText.tabs(lang).indices.map { "roads-tab-$it" },
+        )
         Box(Modifier.weight(1f)) {
             when (tab) {
                 0 -> QualityTab(state, lang, actions, surface)
@@ -156,127 +168,121 @@ fun RoadsScreen(
     }
 }
 
+/** Sekmenin üstündeki açıklama kartı: başlık + ikincil metin (+ isteğe bağlı satırlar). */
 @Composable
-private fun InfoCard(content: @Composable () -> Unit) {
-    Card(Modifier.fillMaxWidth().padding(12.dp)) { Column(Modifier.padding(14.dp)) { content() } }
+private fun InfoCard(title: String, text: String, content: @Composable () -> Unit = {}) {
+    SettingsGroup(null, Modifier.padding(top = WeemSpace.m)) {
+        Column(Modifier.padding(WeemSpace.l), verticalArrangement = Arrangement.spacedBy(WeemSpace.xs)) {
+            Text(title, style = WeemType.titleM)
+            Text(text, style = WeemType.bodyS, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        content()
+    }
 }
 
+/** Yüzde rozeti: tonda 1 dp çerçeve, köşe 12, kalın yüzde. */
 @Composable
-private fun Lo(text: String) = Text(text, fontSize = 12.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun PctBadge(text: String, color: Color) {
+    Box(
+        Modifier.width(56.dp).border(1.dp, color, RoundedCornerShape(WeemRadius.tile)).padding(vertical = 6.dp),
+        contentAlignment = Alignment.Center,
+    ) { Text(text, color = color, style = WeemType.numS.copy(fontWeight = FontWeight.ExtraBold), maxLines = 1) }
+}
 
 @Composable
 private fun QualityTab(state: RoadsScreenState, lang: Lang, actions: RoadsActions, surface: @Composable () -> Unit = {}) {
     var sheet by remember { mutableStateOf<QualityRowView?>(null) }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 40.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = WeemSpace.l, end = WeemSpace.l, bottom = WeemSpace.x4)) {
         surface()
-        Text(RoadsText.manualHeader(lang), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(16.dp, 12.dp, 16.dp, 4.dp))
-        if (state.quality.isEmpty()) Lo(RoadsText.emptyList(lang).let { "   $it" })
-        for (r in state.quality) {
-            Row(Modifier.fillMaxWidth().clickable { sheet = r }.padding(horizontal = 16.dp, vertical = 8.dp).testTag("quality-row-${r.way}"), verticalAlignment = Alignment.CenterVertically) {
-                Surface(shape = RoundedCornerShape(10.dp), border = BorderStroke(1.dp, r.color), modifier = Modifier.width(54.dp)) {
-                    Text(r.pctText, color = r.color, fontWeight = FontWeight.Black, textAlign = TextAlign.Center, modifier = Modifier.padding(vertical = 6.dp))
-                }
-                Column(Modifier.weight(1f).padding(start = 12.dp)) {
-                    Text(r.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(r.subtitle, fontSize = 11.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+        SettingsGroup(RoadsText.manualHeader(lang)) {
+            if (state.quality.isEmpty()) ListRow(RoadsText.emptyList(lang), titleStyle = WeemType.bodyM, titleTone = WTone.NEUTRAL)
+            for (r in state.quality) {
+                ListRow(
+                    r.name, Modifier.testTag("quality-row-${r.way}"), subtitle = r.subtitle,
+                    leading = { PctBadge(r.pctText, r.color) }, chevron = true, onClick = { sheet = r },
+                )
             }
         }
-        HorizontalDivider(Modifier.padding(vertical = 8.dp))
-        Row(Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(RoadsText.tolerance(lang), Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
-            Text("%${state.tolerancePct.roundToInt()}", fontWeight = FontWeight.Bold)
-        }
-        Slider(
-            value = state.tolerancePct.toFloat().coerceIn(0f, 30f), onValueChange = { actions.tolerance(it.roundToInt().toDouble()) }, valueRange = 0f..30f, steps = 29,
-            modifier = Modifier.padding(horizontal = 16.dp),
-        )
-        HorizontalDivider(Modifier.padding(vertical = 8.dp))
-        Text(RoadsText.spotsHeader(lang), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 16.dp))
-        if (state.spots.isEmpty()) Lo("   " + RoadsText.emptyList(lang))
-        for (sp in state.spots) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(sp.title, color = if (sp.removed) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified)
-                    Text(sp.subtitle, fontSize = 11.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        SettingsGroup(null, Modifier.padding(top = WeemSpace.l)) {
+            Column(Modifier.padding(horizontal = WeemSpace.l, vertical = WeemSpace.m)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(RoadsText.tolerance(lang), Modifier.weight(1f), style = WeemType.titleS)
+                    Text("%${state.tolerancePct.roundToInt()}", style = WeemType.numS)
                 }
-                TextButton(onClick = { actions.spotRemoved(sp.id, !sp.removed) }) { Text(if (sp.removed) RoadsText.undo(lang) else RoadsText.delete()) }
+                Slider(
+                    value = state.tolerancePct.toFloat().coerceIn(0f, 30f), onValueChange = { actions.tolerance(it.roundToInt().toDouble()) }, valueRange = 0f..30f, steps = 29,
+                )
             }
         }
-        HorizontalDivider(Modifier.padding(vertical = 8.dp))
-        Text(RoadsText.trafficHeader(lang), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 16.dp))
-        Lo("    " + RoadsText.trafficSubtitle(lang))
-        for ((name, line) in state.traffic) {
-            Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-                Text(name, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(line, fontSize = 11.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        SettingsGroup(RoadsText.spotsHeader(lang)) {
+            if (state.spots.isEmpty()) ListRow(RoadsText.emptyList(lang), titleStyle = WeemType.bodyM)
+            for (sp in state.spots) {
+                ListRow(
+                    sp.title, subtitle = sp.subtitle, enabled = !sp.removed, titleStyle = WeemType.bodyM,
+                    trailing = { WButton(if (sp.removed) RoadsText.undo(lang) else RoadsText.delete(), { actions.spotRemoved(sp.id, !sp.removed) }, kind = BtnKind.TEXT) },
+                )
             }
+        }
+        SettingsGroup(RoadsText.trafficHeader(lang), footer = RoadsText.trafficSubtitle(lang)) {
+            for ((name, line) in state.traffic) ListRow(name, subtitle = line, titleStyle = WeemType.bodyM)
         }
     }
     sheet?.let { r ->
         fun done(f: () -> Unit) { f(); sheet = null }
-        AlertDialog(
-            onDismissRequest = { sheet = null },
-            title = { Column { Text(r.name, fontWeight = FontWeight.ExtraBold); Lo(r.sheetSubtitle) } },
-            text = {
-                Column {
-                    MenuRow("👍 " + RoadsText.sheetGood(lang), r.rating == QualityRating.GOOD) { done { actions.rate(r.way, QualityRating.GOOD, r.name) } }
-                    MenuRow("👎 " + RoadsText.sheetBad(lang), r.rating == QualityRating.BAD) { done { actions.rate(r.way, QualityRating.BAD, r.name) } }
-                    MenuRow("% " + RoadsText.sheetPercent(lang)) { done { actions.openPercent(r.way, r.name) } }
-                    if (r.rating != QualityRating.NONE) MenuRow(RoadsText.sheetClear(lang)) { done { actions.rate(r.way, QualityRating.NONE, "") } }
-                    if (r.hasStats) MenuRow(RoadsText.sheetReset(lang)) { done { actions.resetQuality(r.way) } }
-                }
-            },
-            confirmButton = { TextButton(onClick = { sheet = null }) { Text(RoadsText.cancel(lang)) } },
-        )
+        // K4: çok seçenekli menü alttan açılan sayfada.
+        WSheet(onDismiss = { sheet = null }, title = r.name) {
+            Text(r.sheetSubtitle, style = WeemType.bodyS, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            SettingsGroup(null, dividerInset = 70.dp) {
+                MenuRow(RoadsText.sheetGood(lang), WeemIcons.ThumbUp, r.rating == QualityRating.GOOD) { done { actions.rate(r.way, QualityRating.GOOD, r.name) } }
+                MenuRow(RoadsText.sheetBad(lang), WeemIcons.ThumbDown, r.rating == QualityRating.BAD) { done { actions.rate(r.way, QualityRating.BAD, r.name) } }
+                MenuRow(RoadsText.sheetPercent(lang), WeemIcons.Tune) { done { actions.openPercent(r.way, r.name) } }
+                if (r.rating != QualityRating.NONE) MenuRow(RoadsText.sheetClear(lang), WeemIcons.Close) { done { actions.rate(r.way, QualityRating.NONE, "") } }
+                if (r.hasStats) MenuRow(RoadsText.sheetReset(lang), WeemIcons.Refresh) { done { actions.resetQuality(r.way) } }
+            }
+            WButton(RoadsText.cancel(lang), { sheet = null }, kind = BtnKind.TEXT, fill = true)
+        }
     }
 }
 
+/** Menü satırı: simge kutusu + metin; seçiliyse vurgu tonunda ve ✓. */
 @Composable
-private fun MenuRow(text: String, selected: Boolean = false, onClick: () -> Unit) {
-    Text(
-        text, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-        color = if (selected) MaterialTheme.colorScheme.primary else Color.Unspecified,
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 12.dp),
+private fun MenuRow(text: String, icon: ImageVector, selected: Boolean = false, onClick: () -> Unit) {
+    ListRow(
+        text, icon = icon, iconTone = if (selected) WTone.ACCENT else WTone.NEUTRAL, titleTone = if (selected) WTone.ACCENT else null, onClick = onClick,
+        trailing = if (selected) ({ Icon(WeemIcons.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }) else null,
     )
 }
 
 @Composable
 private fun WrongWayTab(state: RoadsScreenState, lang: Lang, actions: RoadsActions) {
     var menu by remember { mutableStateOf<WwRowView?>(null) }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 40.dp)) {
-        InfoCard {
-            Text(RoadsText.wwInfoTitle(lang), fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
-            Lo(RoadsText.wwInfo(lang))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(RoadsText.wwThreshold(lang), Modifier.weight(1f), fontWeight = FontWeight.Bold)
-                TextButton(onClick = { actions.threshold((state.wwThresholdPct - 5).coerceIn(20.0, 90.0)) }) { Text("−") }
-                Text("%${state.wwThresholdPct.roundToInt()}", fontWeight = FontWeight.ExtraBold, modifier = Modifier.testTag("ww-threshold"))
-                TextButton(onClick = { actions.threshold((state.wwThresholdPct + 5).coerceIn(20.0, 90.0)) }) { Text("+") }
+    val p = palette()
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = WeemSpace.l, end = WeemSpace.l, bottom = WeemSpace.x4)) {
+        InfoCard(RoadsText.wwInfoTitle(lang), RoadsText.wwInfo(lang)) {
+            Row(Modifier.padding(start = WeemSpace.l, end = WeemSpace.s).heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(RoadsText.wwThreshold(lang), Modifier.weight(1f), style = WeemType.titleS)
+                WIconButton(WeemIcons.Remove, "−5", { actions.threshold((state.wwThresholdPct - 5).coerceIn(20.0, 90.0)) }, tinted = true)
+                Text("%${state.wwThresholdPct.roundToInt()}", style = WeemType.numS, modifier = Modifier.padding(horizontal = WeemSpace.s).testTag("ww-threshold"))
+                WIconButton(WeemIcons.Add, "+5", { actions.threshold((state.wwThresholdPct + 5).coerceIn(20.0, 90.0)) }, tinted = true)
             }
-            Row(Modifier.fillMaxWidth().clickable { actions.askAlways(!state.wwAskAlways) }, verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(RoadsText.wwAskAlways(lang))
-                    Lo(RoadsText.wwAskAlwaysSub(lang))
-                }
-                Switch(checked = state.wwAskAlways, onCheckedChange = null)
-            }
+            SwitchRow(RoadsText.wwAskAlways(lang), state.wwAskAlways, { actions.askAlways(!state.wwAskAlways) }, subtitle = RoadsText.wwAskAlwaysSub(lang))
         }
-        if (state.ww.isEmpty()) Text(RoadsText.wwEmpty(lang), textAlign = TextAlign.Center, fontSize = 12.5.sp, modifier = Modifier.fillMaxWidth().padding(24.dp))
-        for (r in state.ww) {
-            Row(Modifier.fillMaxWidth().clickable { menu = r }.padding(horizontal = 16.dp, vertical = 8.dp).testTag("ww-row-${r.way}"), verticalAlignment = Alignment.CenterVertically) {
-                Text("⇄", color = if (r.approved) GOOD_GREEN else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(28.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(r.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(r.subtitle, fontSize = 11.5.sp, color = if (r.avoided) BAD_RED else MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Text(
-                    r.ratioText, fontWeight = FontWeight.Black, fontSize = 16.sp,
-                    color = when (r.tone) {
-                        WwTone.NONE -> MaterialTheme.colorScheme.onSurfaceVariant
-                        WwTone.RED -> BAD_RED
-                        WwTone.ORANGE -> FAIR_ORANGE
-                        WwTone.GREEN -> GOOD_GREEN
+        if (state.ww.isEmpty()) EmptyState(RoadsText.wwEmpty(lang), icon = WeemIcons.AltRoute)
+        else SettingsGroup(null, Modifier.padding(top = WeemSpace.l), dividerInset = 70.dp) {
+            for (r in state.ww) {
+                ListRow(
+                    r.name, Modifier.testTag("ww-row-${r.way}"), subtitle = r.subtitle, subtitleTone = if (r.avoided) WTone.DANGER else null,
+                    icon = WeemIcons.AltRoute, iconTone = if (r.approved) WTone.POSITIVE else WTone.NEUTRAL, onClick = { menu = r },
+                    trailing = {
+                        Text(
+                            r.ratioText, style = WeemType.numS.copy(fontWeight = FontWeight.ExtraBold),
+                            color = when (r.tone) {
+                                WwTone.NONE -> p.muted
+                                WwTone.RED -> p.danger
+                                WwTone.ORANGE -> p.warn
+                                WwTone.GREEN -> p.positive
+                            }.color(),
+                        )
                     },
                 )
             }
@@ -284,52 +290,40 @@ private fun WrongWayTab(state: RoadsScreenState, lang: Lang, actions: RoadsActio
     }
     menu?.let { r ->
         fun done(f: () -> Unit) { f(); menu = null }
-        AlertDialog(
-            onDismissRequest = { menu = null },
-            title = { Text(r.name, fontWeight = FontWeight.ExtraBold) },
-            text = {
-                Column {
-                    MenuRow(RoadsText.wwAddProblem(lang)) { done { actions.wwAdd(r.way, true, r.name) } }
-                    MenuRow(RoadsText.wwAddClean(lang)) { done { actions.wwAdd(r.way, false, r.name) } }
-                    MenuRow(RoadsText.wwReset(lang)) { done { actions.wwReset(r.way) } }
-                    if (r.approved) MenuRow(RoadsText.wwUnapprove(lang)) { done { actions.unapprove(r.way) } }
-                }
-            },
-            confirmButton = { TextButton(onClick = { menu = null }) { Text(RoadsText.cancel(lang)) } },
-        )
+        WSheet(onDismiss = { menu = null }, title = r.name) {
+            SettingsGroup(null, dividerInset = 70.dp) {
+                MenuRow(RoadsText.wwAddProblem(lang), WeemIcons.Warning) { done { actions.wwAdd(r.way, true, r.name) } }
+                MenuRow(RoadsText.wwAddClean(lang), WeemIcons.CheckCircle) { done { actions.wwAdd(r.way, false, r.name) } }
+                MenuRow(RoadsText.wwReset(lang), WeemIcons.Refresh) { done { actions.wwReset(r.way) } }
+                if (r.approved) MenuRow(RoadsText.wwUnapprove(lang), WeemIcons.Close) { done { actions.unapprove(r.way) } }
+            }
+            WButton(RoadsText.cancel(lang), { menu = null }, kind = BtnKind.TEXT, fill = true)
+        }
     }
 }
 
 @Composable
 private fun GhostTab(state: RoadsScreenState, lang: Lang, actions: RoadsActions) {
     var confirm by remember { mutableStateOf(false) }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 40.dp)) {
-        InfoCard {
-            Text(RoadsText.ghostInfoTitle(lang), fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
-            Lo(RoadsText.ghostInfo(lang))
-        }
-        if (state.ghosts.isEmpty()) Text(RoadsText.emptyList(lang), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(24.dp))
-        state.ghosts.forEachIndexed { i, (name, sub) ->
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(name)
-                    Text(sub, fontSize = 11.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                IconButton(onClick = { actions.removeGhost(i) }, modifier = Modifier.testTag("ghost-del-$i")) { Text("✕") }
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = WeemSpace.l, end = WeemSpace.l, bottom = WeemSpace.x4)) {
+        InfoCard(RoadsText.ghostInfoTitle(lang), RoadsText.ghostInfo(lang))
+        if (state.ghosts.isEmpty()) EmptyState(RoadsText.emptyList(lang), icon = WeemIcons.GpsOff)
+        else SettingsGroup(null, Modifier.padding(top = WeemSpace.l)) {
+            state.ghosts.forEachIndexed { i, (name, sub) ->
+                ListRow(
+                    name, subtitle = sub, titleStyle = WeemType.bodyM,
+                    trailing = { WIconButton(WeemIcons.Close, RoadsText.delete(), { actions.removeGhost(i) }, Modifier.testTag("ghost-del-$i")) },
+                )
             }
         }
         if (state.ghosts.isNotEmpty()) {
-            TextButton(onClick = { confirm = true }, modifier = Modifier.align(Alignment.CenterHorizontally)) { Text(RoadsText.ghostClearAll(lang), color = BAD_RED) }
+            WButton(RoadsText.ghostClearAll(lang), { confirm = true }, Modifier.padding(top = WeemSpace.l), kind = BtnKind.DANGER, icon = WeemIcons.Delete, fill = true)
         }
     }
-    if (confirm) {
-        AlertDialog(
-            onDismissRequest = { confirm = false },
-            text = { Text(RoadsText.ghostClearConfirm(lang)) },
-            dismissButton = { TextButton(onClick = { confirm = false }) { Text(RoadsText.cancel(lang)) } },
-            confirmButton = { TextButton(onClick = { confirm = false; actions.clearGhosts() }) { Text(RoadsText.delete()) } },
-        )
-    }
+    if (confirm) ConfirmDialog(
+        title = RoadsText.ghostClearAll(lang), text = RoadsText.ghostClearConfirm(lang), confirm = RoadsText.delete(), dismiss = RoadsText.cancel(lang), danger = true,
+        onConfirm = { confirm = false; actions.clearGhosts() }, onDismiss = { confirm = false },
+    )
 }
 
 /** Yollarım'ın çalışma zamanına bağlı hâli (`NavRuntime.roads`, sokak kararları, Harita ayarları, bisiklet işaretleri). */
@@ -345,7 +339,8 @@ fun RoadsHost(lang: Lang, onBack: () -> Unit, initialTab: Int = 0) {
     var bikeRev by remember { mutableIntStateOf(0) }
     BackHandler(onBack = onBack)
     val graph = data.graph
-    val state = remember(road, settings, lang, graph) { roadsScreenState(road, settings, nav.streets.current, lang, ZoneId.systemDefault(), graph) }
+    val pal = palette()
+    val state = remember(road, settings, lang, graph, pal) { roadsScreenState(road, settings, nav.streets.current, lang, ZoneId.systemDefault(), graph, pal) }
     val actions = remember(rt) {
         RoadsActions(
             rate = { w, p, n -> rt.book.rate(w, p, n) },

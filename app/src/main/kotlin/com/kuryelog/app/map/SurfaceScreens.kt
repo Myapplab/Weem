@@ -84,6 +84,7 @@ internal fun rememberSurfaceData(): SurfaceData {
     return remember(pieces, records, road.k.names.size) { SurfaceData(pieces, records, HashMap(road.k.names)) }
 }
 
+@Composable
 private fun tone(q: Double) = RoadsText.tone(q).color()
 
 /** Kalite sekmesi sokak satırı: ad, alt yazı, puan etiketi ve rota kalitesi (renk; null = "ölçüm az"). */
