@@ -3,6 +3,7 @@ package com.kuryelog.logic.map.route
 import com.kuryelog.logic.map.geo.GeoPoint
 import com.kuryelog.logic.map.graph.RoadGraph
 import com.kuryelog.logic.map.surface.SurfaceMark
+import com.kuryelog.logic.map.surface.SurfaceSummary
 import java.time.Instant
 
 /** Hesap isteği (düz veri; YolGo `PlanRequest`, MAP.md 3.3, 3.10). Y13 yüzey girdileri 1.0'da yok (MAP.md 3.16 SORU 1). */
@@ -23,6 +24,9 @@ class PlanRequest(
     val ghost: Set<Int> = emptySet(),
     val learned: Map<Long, LearnedQuality> = emptyMap(),
     val marks: List<SurfaceMark> = emptyList(),
+    /** Y13: ölçülmüş yüzey kesimleri ve (varsa) sokak puanından kalite; boşken rota eskisiyle aynı. */
+    val surface: List<SurfaceSummary> = emptyList(),
+    val surfaceQuality: Map<String, Double> = emptyMap(),
     val wwRatio: Map<Long, Double> = emptyMap(),
     val wwAvoid: Set<Long> = emptySet(),
     val reverseHours: Map<Long, ReverseHours> = emptyMap(),
@@ -42,6 +46,13 @@ object Planner {
     /** Durak sırası denenirken en çok bu kadar durak (4 → 24 sıra); fazlası verilen sırayla. */
     private const val MAX_PERMUTED_STOPS = 4
 
+    /** Yüzeyi daha düzgün (çukursuz, pürüzsüz, yamasız) bir yol aynı yere en fazla bu kadar daha uzun ve en fazla [QUALITY_EXTRA_TURNS] ek dönüşle gidiyorsa o seçilir. */
+    const val QUALITY_DETOUR_M = 200.0
+    const val QUALITY_EXTRA_TURNS = 2
+
+    /** Düzgün yol arayan adayda ölçülmüş yüzey cezasının çarpanı. */
+    const val QUALITY_SEEK_SCALE = 15.0
+
     fun computePlans(r: PlanRequest, probe: RouteProbe? = null): PlanResult {
         val plans = LinkedHashMap<RideMode, Plan>()
         var error: RouteMsg? = null
@@ -52,7 +63,7 @@ object Planner {
         val failures = if (r.reverseHours.isEmpty()) HashMap<Long, RoutingException>() else null
         for (mode in RideMode.entries) {
             try {
-                plans[mode] = planWithAvoid(r, mode, departure, failures, probe)
+                plans[mode] = planForMode(r, mode, departure, failures, probe)
             } catch (e: RoutingException) {
                 if (error == null) error = e.msg
             }
@@ -62,19 +73,46 @@ object Planner {
 
     /**
      * Önce kötü yollar dışlanarak; bağlantı yoksa kötü yollara izin verilir ve her bacağa uyarı eklenir. Kara liste, özel alan,
-     * "yol yok" ve eğim kuralları gevşetilmez. (YolGo `_planForMode` ölçülmüş yüzey adayı Y13 ile gelir; 1.0'da tek aday.)
+     * "yol yok" ve eğim kuralları gevşetilmez. Ölçülmüş yüzey adayı: [planForMode].
      */
-    private fun planWithAvoid(
+    /**
+     * Ölçülmüş yüzey varsa (Y13, 1.7.2) iki aday: yüzey cezasız ve [QUALITY_SEEK_SCALE] cezalı; düzgün aday en fazla [QUALITY_DETOUR_M]
+     * daha uzunsa ve en fazla [QUALITY_EXTRA_TURNS] ek dönüş içeriyorsa seçilir. Yüzey boşsa tek aday (eskisiyle aynı).
+     */
+    private fun planForMode(
         r: PlanRequest,
         mode: RideMode,
         departure: Instant,
         failures: MutableMap<Long, RoutingException>?,
         probe: RouteProbe?,
     ): Plan {
+        val base = planWithAvoid(r, mode, departure, failures, probe, 0.0)
+        if (r.surface.isEmpty()) return base
+        return try {
+            val smooth = planWithAvoid(r, mode, departure, failures, probe, QUALITY_SEEK_SCALE)
+            val shorter = smooth.rideM <= base.rideM + QUALITY_DETOUR_M
+            val fewTurns = turns(smooth) <= turns(base) + QUALITY_EXTRA_TURNS
+            if (shorter && fewTurns) smooth else base
+        } catch (_: RoutingException) {
+            base
+        }
+    }
+
+    private fun turns(p: Plan) = p.legs.sumOf { it.turns.size }
+
+    private fun planWithAvoid(
+        r: PlanRequest,
+        mode: RideMode,
+        departure: Instant,
+        failures: MutableMap<Long, RoutingException>?,
+        probe: RouteProbe?,
+        surfaceScale: Double = 1.0,
+    ): Plan {
         fun model(avoid: Boolean) = CostModel(
             r.graph, mode = mode, params = r.params, approved = r.approved, blocked = r.blocked, steep = r.steep, avoidBad = avoid,
             ghost = r.ghost, learned = r.learned, marks = r.marks, wwRatio = r.wwRatio, wwAvoid = r.wwAvoid,
             reverseHours = r.reverseHours, wrongWayEdges = r.wrongWayEdges, bikeways = r.bikeways,
+            surface = r.surface, surfaceQuality = r.surfaceQuality, surfaceScale = surfaceScale,
             departure = departure,
         )
         return try {

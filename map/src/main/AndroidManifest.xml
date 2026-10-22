@@ -13,5 +13,10 @@
             android:name="com.kuryelog.app.map.NavOnlyService"
             android:exported="false"
             android:foregroundServiceType="location" />
+        <!-- A10.4b Y14 yol kalibrasyonu (kullanıcı başlatır; bildirim 7435): yüzen panel + konum, tür location. -->
+        <service
+            android:name="com.kuryelog.app.map.RoadCalibrationService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
     </application>
 </manifest>

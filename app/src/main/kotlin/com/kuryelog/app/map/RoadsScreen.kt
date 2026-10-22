@@ -133,6 +133,7 @@ fun RoadsScreen(
     initialTab: Int = 0,
     prompt: @Composable () -> Unit = {},
     bikeway: @Composable () -> Unit = {},
+    surface: @Composable () -> Unit = {},
 ) {
     var tab by remember { mutableIntStateOf(initialTab) }
     Column(modifier.fillMaxSize()) {
@@ -145,7 +146,7 @@ fun RoadsScreen(
         }
         Box(Modifier.weight(1f)) {
             when (tab) {
-                0 -> QualityTab(state, lang, actions)
+                0 -> QualityTab(state, lang, actions, surface)
                 1 -> WrongWayTab(state, lang, actions)
                 2 -> GhostTab(state, lang, actions)
                 else -> bikeway()
@@ -164,9 +165,10 @@ private fun InfoCard(content: @Composable () -> Unit) {
 private fun Lo(text: String) = Text(text, fontSize = 12.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
 @Composable
-private fun QualityTab(state: RoadsScreenState, lang: Lang, actions: RoadsActions) {
+private fun QualityTab(state: RoadsScreenState, lang: Lang, actions: RoadsActions, surface: @Composable () -> Unit = {}) {
     var sheet by remember { mutableStateOf<QualityRowView?>(null) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 40.dp)) {
+        surface()
         Text(RoadsText.manualHeader(lang), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(16.dp, 12.dp, 16.dp, 4.dp))
         if (state.quality.isEmpty()) Lo(RoadsText.emptyList(lang).let { "   $it" })
         for (r in state.quality) {
@@ -360,10 +362,24 @@ fun RoadsHost(lang: Lang, onBack: () -> Unit, initialTab: Int = 0) {
             clearGhosts = { rt.book.clearGhosts() },
         )
     }
+    // Y13/Y14 alt ekranları (A10.4b): sokak parçaları, ölçüm ve kalibrasyon, yol kalitesi kalibrasyonu.
+    var sub by remember { mutableStateOf<SurfaceSub?>(null) }
+    sub?.let { target ->
+        BackHandler { sub = if (target is SurfaceSub.Street || target is SurfaceSub.Calibration) (if (target is SurfaceSub.Calibration && target.from != null) target.from else SurfaceSub.Setup.takeIf { target is SurfaceSub.Calibration }) else null }
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            when (target) {
+                is SurfaceSub.Street -> StreetPiecesScreen(lang, target.key, target.title, onBack = { sub = null }, onCalibrate = { sub = SurfaceSub.Calibration(it, target) })
+                SurfaceSub.Setup -> SurfaceSetupScreen(lang, onBack = { sub = null }, onCalibration = { sub = SurfaceSub.Calibration(20, SurfaceSub.Setup) })
+                is SurfaceSub.Calibration -> RoadCalibrationScreen(lang, target.band, onBack = { sub = target.from })
+            }
+        }
+        return
+    }
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         RoadsScreen(
             state, lang, actions, onBack, initialTab = initialTab,
             prompt = { ask?.let { a -> RoadPromptCard(a, lang) } },
+            surface = { SurfaceQualitySection(lang, onStreet = { k, t -> sub = SurfaceSub.Street(k, t) }, onSetup = { sub = SurfaceSub.Setup }) },
             bikeway = {
                 val marks = remember(bikeRev) { nav.bikeway.marks }
                 val stats = remember(graph) { graph?.let { bikewayStats(it) } }
@@ -399,4 +415,11 @@ internal fun bikewayStats(g: RoadGraph): Pair<Int, Double> {
         m += g.edgeLen[e]
     }
     return ids.size to m
+}
+
+/** Yollarım'ın Y13/Y14 alt ekranları. */
+internal sealed interface SurfaceSub {
+    data class Street(val key: String, val title: String) : SurfaceSub
+    data object Setup : SurfaceSub
+    data class Calibration(val band: Int, val from: SurfaceSub?) : SurfaceSub
 }
