@@ -2,34 +2,26 @@ package com.kuryelog.app.map
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import android.content.Intent
-import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,15 +35,34 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.kuryelog.app.core.Downloads
+import com.kuryelog.app.ui.BtnKind
+import com.kuryelog.app.ui.ConfirmDialog
+import com.kuryelog.app.ui.EmptyState
+import com.kuryelog.app.ui.IconBox
+import com.kuryelog.app.ui.ListRow
+import com.kuryelog.app.ui.RadioRow
+import com.kuryelog.app.ui.SectionLabel
+import com.kuryelog.app.ui.SettingsGroup
+import com.kuryelog.app.ui.SubScreen
+import com.kuryelog.app.ui.SwitchRow
+import com.kuryelog.app.ui.WButton
+import com.kuryelog.app.ui.WCard
+import com.kuryelog.app.ui.WSheet
+import com.kuryelog.app.ui.WTone
+import com.kuryelog.app.ui.WeemIcons
+import com.kuryelog.app.ui.WeemRadius
+import com.kuryelog.app.ui.WeemSpace
+import com.kuryelog.app.ui.WeemType
+import com.kuryelog.app.ui.color
+import com.kuryelog.logic.app.Text as Str
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.map.calibration.RoadCalibrationRecord
 import com.kuryelog.logic.map.calibration.RoadCalibrationReferences
 import com.kuryelog.logic.map.roads.ProfileReferences
+import com.kuryelog.logic.map.roads.RoadsText
 import com.kuryelog.logic.map.roads.Street
 import com.kuryelog.logic.map.roads.StreetScores
-import com.kuryelog.logic.map.roads.RoadsText
 import com.kuryelog.logic.map.surface.Passability
 import com.kuryelog.logic.map.surface.SurfaceLabel
 import com.kuryelog.logic.map.surface.SurfaceMark
@@ -100,30 +111,25 @@ internal fun streetRows(data: SurfaceData, lang: Lang): List<StreetRowView> = da
  */
 @Composable
 internal fun SurfaceQualityPanel(lang: Lang, measurement: String, streets: List<StreetRowView>, layerOn: Boolean, onLayer: (Boolean) -> Unit, onStreet: (String, String) -> Unit, onSetup: () -> Unit) {
-    Column(Modifier.fillMaxWidth().padding(12.dp)) {
-        Card(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(SurfaceUiText.ROAD_SCORES.get(lang), fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                Text(SurfaceText.qualityIntro(lang), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(measurement, color = MaterialTheme.colorScheme.primary, modifier = Modifier.testTag("surface-state"))
-                TextButton(onClick = onSetup, modifier = Modifier.testTag("surface-setup")) { Text(SurfaceUiText.SETUP.get(lang)) }
+    Column(Modifier.fillMaxWidth().padding(top = WeemSpace.m), verticalArrangement = Arrangement.spacedBy(WeemSpace.m)) {
+        SettingsGroup(null, dividerInset = 70.dp) {
+            Column(Modifier.padding(WeemSpace.l), verticalArrangement = Arrangement.spacedBy(WeemSpace.xs)) {
+                Text(SurfaceUiText.ROAD_SCORES.get(lang), style = WeemType.titleM)
+                Text(SurfaceText.qualityIntro(lang), style = WeemType.bodyS, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(measurement, style = WeemType.labelL, color = MaterialTheme.colorScheme.primary, modifier = Modifier.testTag("surface-state"))
+            }
+            ListRow(SurfaceUiText.SETUP.get(lang), Modifier.testTag("surface-setup"), icon = WeemIcons.Vibration, chevron = true, onClick = onSetup)
+            SwitchRow(SurfaceUiText.LAYER.get(lang), layerOn, onLayer, icon = WeemIcons.Layers)
+        }
+        SettingsGroup(null) {
+            if (streets.isEmpty()) ListRow(SurfaceUiText.NO_MEASUREMENT.get(lang), titleStyle = WeemType.bodyM)
+            for (s in streets) {
+                ListRow(
+                    s.title, Modifier.testTag("street-${s.key}"), subtitle = s.subtitle, onClick = { onStreet(s.key, s.title) },
+                    trailing = { Text(s.score, style = WeemType.numS.copy(fontWeight = FontWeight.ExtraBold), color = s.quality?.let { tone(it) } ?: MaterialTheme.colorScheme.onSurfaceVariant) },
+                )
             }
         }
-        Row(Modifier.fillMaxWidth().clickable { onLayer(!layerOn) }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(SurfaceUiText.LAYER.get(lang), Modifier.weight(1f))
-            Switch(checked = layerOn, onCheckedChange = null)
-        }
-        if (streets.isEmpty()) Text(SurfaceUiText.NO_MEASUREMENT.get(lang), Modifier.padding(vertical = 12.dp))
-        for (s in streets) {
-            Row(Modifier.fillMaxWidth().clickable { onStreet(s.key, s.title) }.padding(vertical = 8.dp).testTag("street-${s.key}"), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(s.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(s.subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Text(s.score, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = s.quality?.let { tone(it) } ?: MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-        HorizontalDivider(Modifier.padding(vertical = 8.dp))
     }
 }
 
@@ -144,11 +150,11 @@ fun SurfaceQualitySection(lang: Lang, onStreet: (String, String) -> Unit, onSetu
 internal fun RoadScoreLines(refs: RoadCalibrationReferences, rms: Double?, speedKmh: Double?, lang: Lang, onCalibrate: ((Int) -> Unit)?, confirmedShock: Boolean = false) {
     val v = remember(refs, rms, speedKmh, lang, confirmedShock) { SurfaceText.roadScore(refs, rms, speedKmh, lang, confirmedShock = confirmedShock) }
     Column {
-        for (l in v.lines) Text(l, fontSize = 13.sp)
+        for (l in v.lines) Text(l, style = WeemType.bodyS)
         v.prompt?.let { p ->
             val band = v.promptBand
-            if (onCalibrate != null && band != null) TextButton(onClick = { onCalibrate(band) }, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) { Text(p, fontSize = 13.sp) }
-            else Text(p, fontSize = 13.sp)
+            if (onCalibrate != null && band != null) WButton(p, { onCalibrate(band) }, kind = BtnKind.TEXT, icon = WeemIcons.Tune)
+            else Text(p, style = WeemType.bodyS)
         }
     }
 }
@@ -168,23 +174,29 @@ fun StreetPiecesScreen(lang: Lang, streetKey: String, title: String, onBack: () 
             else av.compareTo(bv).let { if (it == 0) a.key.compareTo(b.key) else it }
         }.orEmpty()
     }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) { TextButton(onClick = onBack) { Text("←") }; Text(title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-        if (street == null) Text(SurfaceUiText.NO_MEASUREMENT.get(lang), Modifier.padding(20.dp))
-        else Row(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-            Column(Modifier.weight(1f)) {
-                Text(SurfaceUiText.STREET_SCORE.get(lang))
-                Text(SurfaceText.streetSubtitle(street.scoredPieces, street.scoredMeters, lang), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    SubScreen(title, Str.BACK.get(lang), onBack) {
+        if (street == null) EmptyState(SurfaceUiText.NO_MEASUREMENT.get(lang), icon = WeemIcons.Vibration)
+        else WCard {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(SurfaceUiText.STREET_SCORE.get(lang), style = WeemType.titleS)
+                    Text(SurfaceText.streetSubtitle(street.scoredPieces, street.scoredMeters, lang), style = WeemType.bodyS, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Text(StreetScores.label(street.score, lang), style = WeemType.numM)
             }
-            Text(StreetScores.label(street.score, lang), fontWeight = FontWeight.Bold, fontSize = 16.sp)
         }
-        for (s in pieces) {
-            val score = street?.scores?.get(s.key)
-            val dim = s.confidence < .3 || score == null
-            Column(Modifier.fillMaxWidth().clickable { detail = s }.padding(vertical = 8.dp).testTag("road-score-${s.key}")) {
-                Text(SurfaceText.pieceTitle(data.nameOf(s.way, lang), s), maxLines = 1, overflow = TextOverflow.Ellipsis, color = if (dim) MaterialTheme.colorScheme.onSurfaceVariant else tone(score!!.level / 10))
-                RoadScoreLines(data.references.of(s.profile), s.dominantRoadBand?.rms, s.dominantRoadBand?.let { it.speed * 3.6 }, lang, onCalibrate, s.confirmedShock)
-                Text(SurfaceText.pieceSubtitle(s, lang), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (pieces.isNotEmpty()) SettingsGroup(null) {
+            for (s in pieces) {
+                val score = street?.scores?.get(s.key)
+                val dim = s.confidence < .3 || score == null
+                Column(Modifier.fillMaxWidth().clickable { detail = s }.padding(horizontal = WeemSpace.l, vertical = WeemSpace.m).testTag("road-score-${s.key}")) {
+                    Text(
+                        SurfaceText.pieceTitle(data.nameOf(s.way, lang), s), style = WeemType.titleS, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        color = if (dim) MaterialTheme.colorScheme.onSurfaceVariant else tone(score!!.level / 10),
+                    )
+                    RoadScoreLines(data.references.of(s.profile), s.dominantRoadBand?.rms, s.dominantRoadBand?.let { it.speed * 3.6 }, lang, onCalibrate, s.confirmedShock)
+                    Text(SurfaceText.pieceSubtitle(s, lang), style = WeemType.bodyS, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         }
     }
@@ -200,31 +212,31 @@ private fun SurfaceDetailDialog(lang: Lang, s: SurfaceSummary, data: SurfaceData
     var edit by remember { mutableStateOf<Triple<Long, Pair<Double, Double>, SurfaceMark?>?>(null) }
     var tech by remember { mutableStateOf(false) }
     val refs = remember(data, s.profile) { RoadCalibrationReferences(data.records.filter { it.profile == s.profile }) }
-    AlertDialog(
-        onDismissRequest = onClose,
-        title = { Text(data.nameOf(s.way, lang), maxLines = 2) },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                RoadScoreLines(refs, s.dominantRoadBand?.rms, s.dominantRoadBand?.let { it.speed * 3.6 }, lang, onCalibrate, s.confirmedShock)
-                for (l in SurfaceText.detailLines(s, lang)) Text(l)
-                if (events.isNotEmpty()) {
-                    Text(SurfaceUiText.IMPACT_EVENTS.get(lang), fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp))
+    // K4: uzun ayrıntı alttan açılan sayfada.
+    WSheet(onDismiss = onClose, title = data.nameOf(s.way, lang)) {
+        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(WeemSpace.xs)) {
+            RoadScoreLines(refs, s.dominantRoadBand?.rms, s.dominantRoadBand?.let { it.speed * 3.6 }, lang, onCalibrate, s.confirmedShock)
+            for (l in SurfaceText.detailLines(s, lang)) Text(l, style = WeemType.bodyM)
+            if (events.isNotEmpty()) {
+                SectionLabel(SurfaceUiText.IMPACT_EVENTS.get(lang))
+                SettingsGroup(null, dividerInset = 70.dp) {
                     for (e in events) {
                         val id = "event-${e.opt("id")}"
                         val previous = NavRuntime.get(ctx).roads.book.state.marks.firstOrNull { it.id == id }
-                        Column(Modifier.fillMaxWidth().clickable { edit = Triple(s.way, e.optDouble("lat") to e.optDouble("lon"), previous ?: SurfaceMark(id, s.way, e.optDouble("lat"), e.optDouble("lon"), 0)) }.padding(vertical = 4.dp)) {
-                            Text(SurfaceText.impactTitle(e.optDouble("peak"), lang))
-                            Text(SurfaceText.impactSubtitle(e.optLong("utc"), e.optDouble("accuracy"), lang), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
+                        ListRow(
+                            SurfaceText.impactTitle(e.optDouble("peak"), lang), subtitle = SurfaceText.impactSubtitle(e.optLong("utc"), e.optDouble("accuracy"), lang),
+                            icon = WeemIcons.Warning, iconTone = WTone.WARN, chevron = true,
+                            onClick = { edit = Triple(s.way, e.optDouble("lat") to e.optDouble("lon"), previous ?: SurfaceMark(id, s.way, e.optDouble("lat"), e.optDouble("lon"), 0)) },
+                        )
                     }
                 }
-                TextButton(onClick = { edit = Triple(s.way, s.lat to s.lon, null) }) { Text(SurfaceUiText.SAVE_MARK.get(lang)) }
-                TextButton(onClick = { tech = !tech }) { Text(SurfaceUiText.TECHNICAL.get(lang)) }
-                if (tech) Text(SurfaceText.technical(s), fontSize = 12.sp)
             }
-        },
-        confirmButton = { TextButton(onClick = onClose) { Text(RoadsText.cancel(lang)) } },
-    )
+            WButton(SurfaceUiText.SAVE_MARK.get(lang), { edit = Triple(s.way, s.lat to s.lon, null) }, Modifier.padding(top = WeemSpace.s), kind = BtnKind.TONAL, icon = WeemIcons.Flag, fill = true)
+            WButton(SurfaceUiText.TECHNICAL.get(lang), { tech = !tech }, kind = BtnKind.TEXT, icon = if (tech) WeemIcons.ExpandLess else WeemIcons.ExpandMore)
+            if (tech) Text(SurfaceText.technical(s), style = WeemType.bodyS)
+        }
+        WButton(RoadsText.cancel(lang), onClose, kind = BtnKind.TEXT, fill = true)
+    }
     edit?.let { (way, point, previous) ->
         EditSurfaceMarkDialog(lang, way, point.first, point.second, previous, onDone = { edit = null })
     }
@@ -236,26 +248,25 @@ private fun EditSurfaceMarkDialog(lang: Lang, way: Long, lat: Double, lon: Doubl
     val ctx = LocalContext.current
     var label by remember { mutableStateOf(previous?.label ?: SurfaceLabel.UNKNOWN) }
     var access by remember { mutableStateOf(previous?.access ?: Passability.UNKNOWN) }
-    AlertDialog(
-        onDismissRequest = onDone,
-        title = { Text(SurfaceUiText.MARK_TITLE.get(lang)) },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
-                for (l in SurfaceLabel.entries) Row(Modifier.fillMaxWidth().clickable { label = l }, verticalAlignment = Alignment.CenterVertically) { RadioButton(selected = label == l, onClick = { label = l }); Text(SurfaceText.surfaceLabel(l, lang)) }
-                HorizontalDivider(Modifier.padding(vertical = 6.dp))
-                for (a in Passability.entries) Row(Modifier.fillMaxWidth().clickable { access = a }, verticalAlignment = Alignment.CenterVertically) { RadioButton(selected = access == a, onClick = { access = a }); Text(SurfaceText.passability(a, lang)) }
+    WSheet(onDismiss = onDone, title = SurfaceUiText.MARK_TITLE.get(lang)) {
+        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(WeemSpace.m)) {
+            SettingsGroup(null, dividerInset = 52.dp, selectableGroup = true) {
+                for (l in SurfaceLabel.entries) RadioRow(SurfaceText.surfaceLabel(l, lang), label == l, { label = l })
             }
-        },
-        confirmButton = {
-            TextButton(onClick = {
+            SettingsGroup(null, dividerInset = 52.dp, selectableGroup = true) {
+                for (a in Passability.entries) RadioRow(SurfaceText.passability(a, lang), access == a, { access = a })
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
+            WButton(RoadsText.cancel(lang), onDone, Modifier.weight(1f), kind = BtnKind.OUTLINE)
+            WButton(SurfaceUiText.SAVE.get(lang), {
                 val now = System.currentTimeMillis()
                 NavRuntime.get(ctx).roads.book.saveMark(SurfaceMark(previous?.id ?: "user-$now", way, lat, lon, now, label, access))
                 Toast.makeText(ctx, SurfaceUiText.MARK_SAVED.get(lang), Toast.LENGTH_SHORT).show()
                 onDone()
-            }) { Text(SurfaceUiText.SAVE.get(lang)) }
-        },
-        dismissButton = { TextButton(onClick = onDone) { Text(RoadsText.cancel(lang)) } },
-    )
+            }, Modifier.weight(1f))
+        }
+    }
 }
 
 /** Ölçüm ve kalibrasyon: durum, montaj profili, duraklat, montaj yönü, kontrollü kalibrasyon etiketi, hız aralıkları, tanılama. */
@@ -276,69 +287,66 @@ fun SurfaceSetupScreen(lang: Lang, onBack: () -> Unit, onCalibration: () -> Unit
     var motionGranted by remember { mutableStateOf(Build.VERSION.SDK_INT < 29 || ctx.checkSelfPermission(Manifest.permission.ACTIVITY_RECOGNITION) == PackageManager.PERMISSION_GRANTED) }
     val askMotion = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> motionGranted = ok; rt.motionPermissionChanged(); rev++ }
     fun toast(text: String) = Toast.makeText(ctx, text, Toast.LENGTH_SHORT).show()
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) { TextButton(onClick = onBack) { Text("←") }; Text(SurfaceUiText.SETUP_TITLE.get(lang), style = MaterialTheme.typography.titleLarge) }
-        Text(SurfaceText.measurementLabel(view.decision.state, lang), style = MaterialTheme.typography.titleMedium)
-        Text("${profile.name}\n${profile.id} · v${profile.version}")
+    SubScreen(SurfaceUiText.SETUP_TITLE.get(lang), Str.BACK.get(lang), onBack) {
+        WCard {
+            Row(horizontalArrangement = Arrangement.spacedBy(WeemSpace.m), verticalAlignment = Alignment.CenterVertically) {
+                IconBox(WeemIcons.Vibration, tone = WTone.ACCENT)
+                Text(SurfaceText.measurementLabel(view.decision.state, lang), style = WeemType.titleM, modifier = Modifier.weight(1f))
+            }
+            Text("${profile.name}\n${profile.id} · v${profile.version}", style = WeemType.bodyS, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            WButton(
+                (if (rt.paused) SurfaceUiText.RESUME else SurfaceUiText.PAUSE).get(lang), { rt.pause(!rt.paused); rev++ }, Modifier.testTag("surface-pause"),
+                kind = BtnKind.OUTLINE, icon = if (rt.paused) WeemIcons.PlayArrow else WeemIcons.Stop, fill = true,
+            )
+            Text(SurfaceUiText.RESUME_HELP.get(lang), style = WeemType.bodyS, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         val sameVehicle = store.profiles.filter { it.vehicleId == vehicle }
-        if (sameVehicle.size > 1) {
-            Text(SurfaceUiText.SAVED_PROFILE.get(lang), fontWeight = FontWeight.SemiBold)
-            for (p in sameVehicle) Row(Modifier.fillMaxWidth().clickable { runCatching { store.saveProfile(p) }; rev++ }, verticalAlignment = Alignment.CenterVertically) {
-                RadioButton(selected = p.id == profile.id, onClick = { runCatching { store.saveProfile(p) }; rev++ }); Text(p.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
+        if (sameVehicle.size > 1) SettingsGroup(SurfaceUiText.SAVED_PROFILE.get(lang), dividerInset = 52.dp, selectableGroup = true) {
+            for (p in sameVehicle) RadioRow(p.name, p.id == profile.id, { runCatching { store.saveProfile(p) }; rev++ })
         }
-        OutlinedButton(onClick = { rt.pause(!rt.paused); rev++ }, modifier = Modifier.fillMaxWidth().testTag("surface-pause")) {
-            Text((if (rt.paused) SurfaceUiText.RESUME else SurfaceUiText.PAUSE).get(lang))
+        SettingsGroup(null, dividerInset = 70.dp) {
+            ListRow(SurfaceUiText.NEW_PROFILE.get(lang), subtitle = SurfaceUiText.NEW_PROFILE_HELP.get(lang), icon = WeemIcons.Add, onClick = { newProfile = true })
+            ListRow(SurfaceUiText.SAVE_MOUNT.get(lang), icon = WeemIcons.Check, onClick = { if (rt.saveMount()) { rev++ } else toast(SurfaceUiText.MOUNT_NOT_READY.get(lang)) })
         }
-        Text(SurfaceUiText.RESUME_HELP.get(lang), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        TextButton(onClick = { newProfile = true }) { Text(SurfaceUiText.NEW_PROFILE.get(lang)) }
-        Text(SurfaceUiText.NEW_PROFILE_HELP.get(lang), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        TextButton(onClick = {
-            if (rt.saveMount()) { rev++ } else toast(SurfaceUiText.MOUNT_NOT_READY.get(lang))
-        }) { Text(SurfaceUiText.SAVE_MOUNT.get(lang)) }
-        HorizontalDivider()
-        Text(SurfaceUiText.CONTROLLED.get(lang), style = MaterialTheme.typography.titleMedium)
-        Text(SurfaceUiText.CONTROLLED_HELP.get(lang), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        for ((key, text) in listOf<Pair<String?, String>>(
-            null to SurfaceUiText.CALIBRATION_OFF.get(lang), "smooth" to SurfaceUiText.KNOWN_SMOOTH.get(lang), "rough" to SurfaceUiText.KNOWN_ROUGH.get(lang),
-        )) Row(Modifier.fillMaxWidth().clickable { rt.setCalibrationLabel(key); rev++ }, verticalAlignment = Alignment.CenterVertically) {
-            RadioButton(selected = rt.calibrationLabel == key, onClick = { rt.setCalibrationLabel(key); rev++ }); Text(text)
+        SettingsGroup(SurfaceUiText.CONTROLLED.get(lang), footer = SurfaceUiText.CONTROLLED_HELP.get(lang), dividerInset = 52.dp, selectableGroup = true) {
+            for ((key, text) in listOf<Pair<String?, String>>(
+                null to SurfaceUiText.CALIBRATION_OFF.get(lang), "smooth" to SurfaceUiText.KNOWN_SMOOTH.get(lang), "rough" to SurfaceUiText.KNOWN_ROUGH.get(lang),
+            )) RadioRow(text, rt.calibrationLabel == key, { rt.setCalibrationLabel(key); rev++ })
         }
-        for (bin in 0..3) {
-            Column {
-                Text(SurfaceText.SPEED_BINS[bin])
-                Text(SurfaceText.bandStatus(profile.bands[bin], lang), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+        SettingsGroup(null) {
+            for (bin in 0..3) ListRow(SurfaceText.SPEED_BINS[bin], subtitle = SurfaceText.bandStatus(profile.bands[bin], lang), icon = WeemIcons.Speed)
         }
-        OutlinedButton(onClick = { runCatching { store.calibrate() }; rev++ }, modifier = Modifier.fillMaxWidth()) { Text(SurfaceUiText.CALCULATE.get(lang)) }
-        Button(onClick = onCalibration, modifier = Modifier.fillMaxWidth().testTag("surface-road-calibration")) { Text(SurfaceUiText.ROAD_CALIBRATION.get(lang)) }
-        HorizontalDivider()
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(SurfaceUiText.MOTION_TITLE.get(lang))
-                Text((if (motionGranted) SurfaceUiText.MOTION_ALLOWED else SurfaceUiText.MOTION_LIMITED).get(lang), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            if (!motionGranted) TextButton(onClick = { askMotion.launch(Manifest.permission.ACTIVITY_RECOGNITION) }, modifier = Modifier.testTag("surface-motion-grant")) { Text(SurfaceUiText.MOTION_GRANT.get(lang)) }
+        Row(horizontalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
+            WButton(SurfaceUiText.CALCULATE.get(lang), { runCatching { store.calibrate() }; rev++ }, Modifier.weight(1f), kind = BtnKind.OUTLINE)
+            WButton(SurfaceUiText.ROAD_CALIBRATION.get(lang), onCalibration, Modifier.weight(1f).testTag("surface-road-calibration"), icon = WeemIcons.Tune)
         }
-        TextButton(onClick = { diagnostics = !diagnostics }) { Text(SurfaceUiText.DIAGNOSTICS.get(lang)) }
-        if (diagnostics) {
-            Row(Modifier.fillMaxWidth().clickable { rawOn = !rawOn; rt.rawEnabled = rawOn }, verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(SurfaceUiText.RAW_TITLE.get(lang))
-                    Text(SurfaceUiText.RAW_HINT.get(lang), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Switch(checked = rawOn, onCheckedChange = null, modifier = Modifier.testTag("surface-raw-switch"))
-            }
-            TextButton(onClick = {
+        SettingsGroup(null, dividerInset = 70.dp) {
+            ListRow(
+                SurfaceUiText.MOTION_TITLE.get(lang), subtitle = (if (motionGranted) SurfaceUiText.MOTION_ALLOWED else SurfaceUiText.MOTION_LIMITED).get(lang),
+                icon = WeemIcons.Sensors, iconTone = if (motionGranted) WTone.POSITIVE else WTone.WARN,
+                trailing = if (!motionGranted) ({
+                    WButton(SurfaceUiText.MOTION_GRANT.get(lang), { askMotion.launch(Manifest.permission.ACTIVITY_RECOGNITION) }, Modifier.testTag("surface-motion-grant"), kind = BtnKind.TONAL)
+                }) else null,
+            )
+            ListRow(
+                SurfaceUiText.DIAGNOSTICS.get(lang), icon = WeemIcons.Info, onClick = { diagnostics = !diagnostics },
+                trailing = { Icon(if (diagnostics) WeemIcons.ExpandLess else WeemIcons.ExpandMore, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+            )
+        }
+        if (diagnostics) SettingsGroup(null, dividerInset = 70.dp) {
+            SwitchRow(SurfaceUiText.RAW_TITLE.get(lang), rawOn, { rawOn = it; rt.rawEnabled = it }, subtitle = SurfaceUiText.RAW_HINT.get(lang), tag = "surface-raw-switch")
+            ListRow(SurfaceUiText.RAW_EXPORT.get(lang), icon = WeemIcons.Share, onClick = {
                 val file = rt.exportRaw()
                 if (file == null) toast(SurfaceUiText.RAW_EMPTY.get(lang))
                 else runCatching { shareFile(ctx, "WEEM-surface-raw-last-10-minutes.jsonl", file.readBytes(), "application/x-ndjson") }.onFailure { toast(it.message ?: SurfaceUiText.ERROR.get(lang)) }
-            }) { Text(SurfaceUiText.RAW_EXPORT.get(lang)) }
-            Text(SurfaceText.diagnostics(view, profile), fontSize = 12.sp)
-            for (row in store.decisions.takeLast(10).reversed()) Text("${row.optString("state")} · ${row.optString("reason")}\n${row.optString("leg")}", fontSize = 12.sp)
-            TextButton(onClick = {
+            })
+            Column(Modifier.padding(WeemSpace.l), verticalArrangement = Arrangement.spacedBy(WeemSpace.xs)) {
+                Text(SurfaceText.diagnostics(view, profile), style = WeemType.bodyS)
+                for (row in store.decisions.takeLast(10).reversed()) Text("${row.optString("state")} · ${row.optString("reason")}\n${row.optString("leg")}", style = WeemType.bodyS, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            ListRow(SurfaceUiText.EXPORT_JSON.get(lang), icon = WeemIcons.Share, onClick = {
                 runCatching { shareFile(ctx, "WEEM-surface-diagnostics.json", java.io.File(store.export()).readBytes()) }.onFailure { toast(it.message ?: SurfaceUiText.ERROR.get(lang)) }
-            }) { Text(SurfaceUiText.EXPORT_JSON.get(lang)) }
+            })
         }
     }
     if (newProfile) NewProfileDialog(lang, vehicle, onDone = { newProfile = false; rev++ })
@@ -349,18 +357,16 @@ private fun NewProfileDialog(lang: Lang, vehicle: String, onDone: () -> Unit) {
     val ctx = LocalContext.current
     val rt = remember { NavRuntime.get(ctx).surface }
     var name by remember { mutableStateOf("") }
-    AlertDialog(
-        onDismissRequest = onDone,
-        title = { Text(SurfaceUiText.NEW_PROFILE_TITLE.get(lang)) },
-        text = { OutlinedTextField(name, { name = it }, singleLine = true, placeholder = { Text(SurfaceUiText.NEW_PROFILE_HINT.get(lang)) }) },
-        confirmButton = {
-            TextButton(enabled = name.isNotBlank(), onClick = {
-                runCatching { rt.store.saveProfile(SurfaceProfile(id = "$vehicle-${System.currentTimeMillis()}", name = "$vehicle · ${name.trim()}", vehicleId = vehicle)) }
-                onDone()
-            }) { Text(SurfaceUiText.CREATE.get(lang)) }
+    ConfirmDialog(
+        title = SurfaceUiText.NEW_PROFILE_TITLE.get(lang), confirm = SurfaceUiText.CREATE.get(lang), dismiss = RoadsText.cancel(lang), confirmEnabled = name.isNotBlank(),
+        onConfirm = {
+            runCatching { rt.store.saveProfile(SurfaceProfile(id = "$vehicle-${System.currentTimeMillis()}", name = "$vehicle · ${name.trim()}", vehicleId = vehicle)) }
+            onDone()
         },
-        dismissButton = { TextButton(onClick = onDone) { Text(RoadsText.cancel(lang)) } },
-    )
+        onDismiss = onDone,
+    ) {
+        OutlinedTextField(name, { name = it }, singleLine = true, placeholder = { Text(SurfaceUiText.NEW_PROFILE_HINT.get(lang)) }, shape = RoundedCornerShape(WeemRadius.tile))
+    }
 }
 
 /** Dosyayı İndirilenler/WEEM'e yazar ve paylaşım seçicisini açar. */
