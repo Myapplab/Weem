@@ -100,4 +100,18 @@ class NavControllerForwardTest {
         nav.onExternalText("Restoran, Bakı", "intent", origin = NavOrigin.INTENT)
         assertEquals(1, nav.state.value.stops.size)
     }
+
+    /** A10.4e (N5): uyarılı teklif "eve dön?" kartını açar; açıkken ikinci çağrı durumu değiştirmez, kapatılınca kalkar. */
+    @Test
+    fun rangeWarningOpensTheHomeCard() {
+        val nav = nav()
+        assertFalse(nav.state.value.homeSuggest)
+        nav.suggestHome()
+        val st = nav.state.value
+        assertTrue(st.homeSuggest)
+        nav.suggestHome()
+        assertTrue(st === nav.state.value)
+        nav.dismissHomeSuggest()
+        assertFalse(nav.state.value.homeSuggest)
+    }
 }

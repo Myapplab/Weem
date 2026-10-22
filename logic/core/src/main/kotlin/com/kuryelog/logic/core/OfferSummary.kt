@@ -27,6 +27,8 @@ data class OfferSummary(
     val dropoffAddress: String? = null,
     val dropoffLat: Double? = null,
     val dropoffLon: Double? = null,
+    /** N5 menzil uyarısı (A10.4e, MAP.md 10.6): v2 `BATTERY_ESCAPE_NOT_MET` doğduysa bırakış → ev sürüş km'si; yoksa null. */
+    val rangeWarnKm: Double? = null,
 ) {
     /** Kartta görünen değerler (feed v2 `shown`; `kmScope`, `demandLabel` mesajda yok). */
     data class Shown(
@@ -56,7 +58,7 @@ data class OfferSummary(
         .putN("displayedFeeAzn", displayedFeeAzn).putN("platformDistanceKm", platformDistanceKm).putN("restaurant", restaurant?.take(MAX_RESTAURANT))
         .put("pickupZone", pickupZone.key).put("dropoffZone", dropoffZone.key).put("dropoffKnown", dropoffKnown).put("shown", shown.toJson())
         .putN("score", score?.takeIf { it in 1..10 }).putN("netAzn", netAzn).putN("dropoffAddress", dropoffAddress?.take(MAX_ADDRESS))
-        .putN("dropoffLat", dropoffLat).putN("dropoffLon", dropoffLon)
+        .putN("dropoffLat", dropoffLat).putN("dropoffLon", dropoffLon).putN("rangeWarnKm", rangeWarnKm)
 
     companion object {
         const val SCHEMA = 1
@@ -93,6 +95,7 @@ data class OfferSummary(
                 score = Msg.int(main, "score")?.takeIf { it in 1..10 }, netAzn = Msg.num(main, "netAzn"),
                 dropoffAddress = Msg.str(fees, "dropoffAddress")?.take(MAX_ADDRESS),
                 dropoffLat = if (lat != null && lon != null) lat else null, dropoffLon = if (lat != null && lon != null) lon else null,
+                rangeWarnKm = Msg.num(main, "rangeWarnKm")?.takeIf { it >= 0 },
             )
         }
     }

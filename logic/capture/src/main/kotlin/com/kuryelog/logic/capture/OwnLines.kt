@@ -24,6 +24,9 @@ object OwnLines {
     val OFFLINE = "Çevrimdışı" to "Oflayn"
     val TODAY = "Bugün" to "Bu gün"
     val ORDERS = "sipariş" to "sifariş"
+    /** N5 menzil uyarısı (A10.4e): "Batarya yetmeyebilir · eve ~6.4 km". */
+    val RANGE = "Batarya yetmeyebilir" to "Batareya çatmaya bilər"
+    val HOME = "eve" to "evə"
     /** Trip phase texts (TR to AZ) by `TripPhase` name; `:orders` maps its enum onto these keys. */
     val PHASES: Map<String, Pair<String, String>> = linkedMapOf(
         "TO_RESTAURANT" to ("Restorana gidiliyor" to "Restorana gedilir"),
@@ -58,7 +61,8 @@ object OwnLines {
 
     private val OWN: List<Regex> = (kinds(KNOWN, LOOSE) + kinds(GENERIC, STRICT) + listOf(
         "[·•●∙⋅*]$SP[0-9]+(?:[.,][0-9]+)?${SP}km",
-        "(?:${alternatives(both(TODAY))})$SP:?$SP[0-9]+$SP(?:${alternatives(both(ORDERS))})")).map { Regex(it) }
+        "(?:${alternatives(both(TODAY))})$SP:?$SP[0-9]+$SP(?:${alternatives(both(ORDERS))})",
+        "(?:${alternatives(both(RANGE))})$LOOSE(?:${alternatives(both(HOME))})$SP~?$SP[0-9]+(?:[.,][0-9]+)?${SP}km")).map { Regex(it) }
 
     /** True for a line WEEM draws itself, as the accessibility tree or OCR may read it. */
     fun isOwn(line: String): Boolean { val n = norm(line); return n.isNotEmpty() && OWN.any { it.matches(n) } }

@@ -26,6 +26,8 @@ object OverlayText {
     private val WAITING = OwnLines.WAITING
     private val OFFLINE = OwnLines.OFFLINE
     private val TODAY = OwnLines.TODAY
+    private val RANGE = OwnLines.RANGE
+    private val HOME = OwnLines.HOME
     private val ORDERS = OwnLines.ORDERS
     private val PHASES: Map<TripPhase, Pair<String, String>> = TripPhase.values().associateWith { OwnLines.PHASES.getValue(it.name) }
 
@@ -47,6 +49,10 @@ object OverlayText {
      */
     fun net(gross: Double?, commissionPct: Double?): Double? =
         if (gross == null || commissionPct == null) null else gross * (1.0 - commissionPct / 100.0)
+
+    /** N5 (A10.4e, MAP.md 10.6): under a pending offer whose v2 battery escape is not met, "Batarya yetmeyebilir · eve ~6.4 km". */
+    fun rangeWarning(homeKm: Double, tl: (String, String) -> String): String =
+        pick(RANGE, tl) + SEP + pick(HOME, tl) + " ~" + fixed(homeKm, 1) + " km"
 
     /** An active trip: "Wolt · <restaurant|customer|Sipariş> · <phase>". */
     fun trip(platform: String, label: String?, phase: TripPhase, tl: (String, String) -> String): String =
@@ -73,9 +79,13 @@ object OverlayText {
      * even when it has several packages (online wins). [names] false for the overlay (K35).
      */
     fun badge(core: DeliveryCore, sessions: OnlineSessions, delivered: Int, names: Boolean, commission: (String) -> Double?,
-              platform: (String) -> String, tl: (String, String) -> String): String {
+              platform: (String) -> String, tl: (String, String) -> String, rangeWarnKm: (OfferState) -> Double? = { null }): String {
         // A pending offer also shows its net after the fleet commission ("Wolt · 3.94₼ · net 3.15₼ · <restaurant>"), only when one is set.
-        val lines = core.pending.values.map { offer(platform(it.pkg), it.data.gross, if (names) it.data.restaurant else null, net = net(it.data.gross, commission(it.pkg)), tl = tl) } +
+        // WEEM N5 (A10.4e): one line under it when the battery may not reach home after the offer.
+        val lines = core.pending.values.flatMap { o ->
+            listOfNotNull(offer(platform(o.pkg), o.data.gross, if (names) o.data.restaurant else null, net = net(o.data.gross, commission(o.pkg)), tl = tl),
+                rangeWarnKm(o)?.let { rangeWarning(it, tl) })
+        } +
             core.trips.values.filter { it.active }.map {
                 if (names) trip(platform(it.pkg), it.pickups.lastOrNull()?.restaurant ?: it.customers[it.currentCustomer]?.details?.name, it.phase, tl)
                 else tripStatus(platform(it.pkg), it.phase, tl) }

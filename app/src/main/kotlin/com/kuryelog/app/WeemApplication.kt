@@ -9,6 +9,7 @@ import com.kuryelog.app.core.ShiftHub
 import com.kuryelog.app.core.Store
 import com.kuryelog.app.core.WeemFonts
 import com.kuryelog.app.economics.Economics
+import com.kuryelog.app.map.BatteryRuntime
 import com.kuryelog.app.map.DatasetRecording
 import com.kuryelog.app.map.NavRuntime
 import com.kuryelog.app.map.WeatherRuntime
@@ -46,6 +47,8 @@ class WeemApplication : Application() {
         Store.guarded(this, "start") { Orders.bind(this) }
         // A6.7: hava (R15, teklif satırı); `:orders` `:map`'i tanımaz, bağ burada.
         Store.guarded(this, "start") { Orders.bindWeather(WeatherRuntime.get(this).port) }
+        // A10.4e: N5 menzil girdileri (batarya + eve sürüş, telefondaki harita verisiyle); `:economics` `:map`'i tanımaz.
+        Store.guarded(this, "start") { Orders.bindRange(BatteryRuntime.get(this).range) }
         // A6.9: gün motoru, sürüş günlüğü, gün raporu, görev ve hatırlatıcı çalışma zamanları süreçle birlikte kalkar (vardiya arka planda sürerken ekran kapalı olabilir).
         Store.guarded(this, "start") { NavRuntime.get(this) }
         // Scooter dikişi (teklif anı pili, sipariş enerjisi R14, batarya tahmininin çapası), sipariş olayları → harita aşama izleyicisi ve

@@ -42,6 +42,7 @@ import com.kuryelog.app.ui.WeemRadius
 import com.kuryelog.app.ui.WeemSpace
 import com.kuryelog.app.ui.WeemType
 import com.kuryelog.logic.app.Text as Str
+import com.kuryelog.logic.core.KuryelogPrefs
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.economics.NetSettings
 import com.kuryelog.logic.orders.CustomerCard
@@ -99,6 +100,9 @@ fun OrdersSettingsScreen(lang: Lang, onBack: () -> Unit) {
             SwitchRow(Str.OSET_OVERLAY.get(lang), values.getBoolean(OrderSettings.OVERLAY, true), { write(mapOf(OrderSettings.OVERLAY to it)) })
             SwitchRow(Str.OSET_OCR.get(lang), values.getBoolean(OrderSettings.OCR, true), { write(mapOf(OrderSettings.OCR to it)) })
             SwitchRow(Str.OSET_CARD.get(lang), values.getBoolean(OrderSettings.CUSTOMER_CARD, true), { write(mapOf(OrderSettings.CUSTOMER_CARD to it)) })
+            // A10.4e (N5, T1-1 a): menzil uyarısı; varsayılan açık.
+            SwitchRow(Str.OSET_RANGE.get(lang), values.getBoolean(KuryelogPrefs.RANGE_WARN, true), { write(mapOf(KuryelogPrefs.RANGE_WARN to it)) },
+                subtitle = Str.OSET_RANGE_NOTE.get(lang), tag = "range_warn")
             // A3.11 (S16 (a)): yalnız `.dev` yapıda; sürüm yapısında anahtar da görünmez, akış da okumaz.
             if (BuildInfo.isDebuggable(ctx)) {
                 SwitchRow(Str.OSET_SHADOW.get(lang), OrderSettings.shadowMode(values), { write(mapOf(OrderSettings.SHADOW to it)) }, subtitle = Str.OSET_SHADOW_NOTE.get(lang))

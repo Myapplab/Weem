@@ -44,11 +44,13 @@ object ShadowEvaluator {
         val hereZone: String = OfferGeo.UNKNOWN,
         val speedKmh: Double? = null,
         val repositioning: Boolean = false,
-        val appMode: String? = SHADOW
+        val appMode: String? = SHADOW,
+        /** WEEM N5 (A10.4e, MAP.md 10.6): menzil girdileri; null = bugünkü gibi (BATTERY_UNKNOWN / CHARGER_DISTANCE_UNKNOWN). */
+        val range: Range? = null,
     ) {
         companion object {
             /** From a feed v2 `courierState` ([EconomicsRecorder.courierState]) and the prefs values. */
-            fun of(courierState: JSONObject, commissionPct: Double?, vehicle: String?, appMode: String?): Context {
+            fun of(courierState: JSONObject, commissionPct: Double?, vehicle: String?, appMode: String?, range: Range? = null): Context {
                 val apps = ArrayList<String>()
                 courierState.optJSONArray("appsOnline")?.let { a -> for (i in 0 until a.length()) apps.add(a.optString(i)) }
                 val wolt = courierState.optJSONObject("wolt")
@@ -57,10 +59,19 @@ object ShadowEvaluator {
                 val bolt = courierState.optJSONObject("bolt")
                 return Context(commissionPct, vehicle, apps, wolt?.optInt("declinesInWindow", 0) ?: 0, trig,
                     bolt?.takeIf { !it.isNull("acceptanceRate") }?.optDouble("acceptanceRate"), courierState.optString("hereZone", OfferGeo.UNKNOWN),
-                    courierState.takeIf { !it.isNull("speedKmh") }?.optDouble("speedKmh"), courierState.optBoolean("repositioning", false), appMode)
+                    courierState.takeIf { !it.isNull("speedKmh") }?.optDouble("speedKmh"), courierState.optBoolean("repositioning", false), appMode, range)
             }
         }
     }
+
+    /**
+     * WEEM N5 girdileri (`:core` `RangePort` sonuçları, v2 alan adlarıyla): batarya ya taze scooter % ([blePct], [bleAtMs]) ya da Y9
+     * tahmini [estimatorWh]; şarj yeri = ev: bırakış → ev ([destToHomeKm], [destToHomeMin] = `destToChargerKm`), konum → ev. Yok = null.
+     */
+    data class Range(
+        val blePct: Double? = null, val bleAtMs: Long? = null, val estimatorWh: Double? = null,
+        val destToHomeKm: Double? = null, val destToHomeMin: Double? = null, val hereToHomeKm: Double? = null, val hereToHomeMin: Double? = null,
+    )
 
     fun vehicleProfile(label: String?): String = label?.trim()?.lowercase()?.takeIf { it in VEHICLES } ?: DEFAULT_VEHICLE
 
@@ -101,6 +112,17 @@ object ShadowEvaluator {
         val st = JSONObject().put("minuteOfDay", EconomicsLogs.minuteOfDay(nowMs)).put("otherAppOnline", other)
             .put("woltDeclinesInWindow", maxOf(0, c.woltDeclinesInWindow)).put("repositioning", c.repositioning)
         zone(c.hereZone)?.let { st.put("hereZone", it) }
+        c.range?.let { r ->
+            fun ok(x: Double?) = x?.takeIf { it.isFinite() && it >= 0 }
+            val sc = JSONObject()
+            if (ok(r.blePct) != null && r.bleAtMs != null) sc.put("blePct", r.blePct).put("bleAtMs", minOf(r.bleAtMs, nowMs))
+            ok(r.estimatorWh)?.let { sc.put("estimatorWh", it) }
+            if (sc.length() > 0) st.put("scooter", sc)
+            ok(r.destToHomeKm)?.let { offer.put("destToChargerKm", it).put("destToHomeKm", it) }
+            ok(r.destToHomeMin)?.let { offer.put("destToHomeMin", it) }
+            ok(r.hereToHomeKm)?.let { st.put("hereToHomeKm", it) }
+            ok(r.hereToHomeMin)?.let { st.put("hereToHomeMin", it) }
+        }
         c.speedKmh?.takeIf { it.isFinite() && it >= 0 }?.let { st.put("speedKmh", it) }
         c.boltAcceptanceRate?.takeIf { it.isFinite() && it >= 0 && it <= 1 }?.let { st.put("boltAR", it) }
         val trig = c.woltTriggerCounts.filter { it >= 1 }
@@ -150,17 +172,21 @@ object ShadowEvaluator {
 class ShadowMode {
     /** One evaluation; [nanos] is the wall time of input + engine (for the latency test, not the row). */
     class Entry(val offerId: String, val gross: Double?, val km: Double?, val computedAtMs: Long, val input: JSONObject?,
-                val result: JSONObject?, val verdict: JSONObject?, val nanos: Long, val error: Exception?)
+                val result: JSONObject?, val verdict: JSONObject?, val nanos: Long, val error: Exception?, val rangeKey: Any? = null) {
+        /** WEEM N5: the evaluation blocked the offer for battery escape (`BATTERY_ESCAPE_NOT_MET`). */
+        val batteryEscapeNotMet: Boolean get() = result?.optJSONArray("blocks")?.let { a -> (0 until a.length()).any { a.optString(it) == BATTERY_ESCAPE } } == true
+    }
 
     private val entries = LinkedHashMap<String, Entry>()
 
     /** After `DeliveryCore.observe(o)`: [offer] is the pending offer of `o.pkg`. Returns the new evaluation, if any. */
-    fun frame(o: CourierObservation, offer: OfferState?, context: () -> ShadowEvaluator.Context): Entry? {
+    fun frame(o: CourierObservation, offer: OfferState?, rangeKey: Any? = null, context: () -> ShadowEvaluator.Context): Entry? {
         if (o.stage != ScreenStage.OFFER || !o.complete || offer == null || offer.pkg != o.pkg || offer.lastSeenAt != o.at) return null
         if (Platforms.of(offer.pkg) == null) return null
         val d = offer.data
         val old = entries[offer.id]
-        if (old != null && (offer.declineClickAt != null || old.gross == d.gross && old.km == d.km)) return null
+        // WEEM N5: also again when the range legs ([rangeKey]) arrive after the first evaluation.
+        if (old != null && (offer.declineClickAt != null || old.gross == d.gross && old.km == d.km && old.rangeKey == rangeKey)) return null
         val t0 = System.nanoTime()
         val e = try {
             val c = context()
@@ -168,9 +194,9 @@ class ShadowMode {
             val inp = ShadowEvaluator.input(offer, o.at, c) ?: return null
             val res = EconomicsV2.evaluate(inp)
             val v = ShadowEvaluator.verdictShadow(res, inp, o.at)
-            Entry(offer.id, d.gross, d.km, o.at, inp, res, v, System.nanoTime() - t0, null)
+            Entry(offer.id, d.gross, d.km, o.at, inp, res, v, System.nanoTime() - t0, null, rangeKey)
         } catch (ex: Exception) {
-            Entry(offer.id, d.gross, d.km, o.at, null, null, null, System.nanoTime() - t0, ex)
+            Entry(offer.id, d.gross, d.km, o.at, null, null, null, System.nanoTime() - t0, ex, rangeKey)
         }
         entries.remove(offer.id); entries[offer.id] = e
         while (entries.size > MAX_ENTRIES) entries.remove(entries.keys.first())
@@ -183,5 +209,6 @@ class ShadowMode {
     companion object {
         /** One offer is pending per app and it resolves when the next one replaces it; older entries are dropped. */
         const val MAX_ENTRIES = 16
+        const val BATTERY_ESCAPE = "BATTERY_ESCAPE_NOT_MET"
     }
 }

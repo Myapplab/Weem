@@ -9,6 +9,7 @@ import com.kuryelog.app.orders.Orders
 import com.kuryelog.logic.core.Clock
 import com.kuryelog.logic.core.KuryelogPrefs
 import com.kuryelog.logic.core.LogStore
+import com.kuryelog.logic.core.RangePort
 import com.kuryelog.logic.core.ScooterBridge
 import com.kuryelog.logic.core.WeatherPort
 import com.kuryelog.logic.economics.DaySummaries
@@ -58,5 +59,11 @@ object Economics {
         /** A6.7 köprüsü (`Orders.bindWeather`): bağlı değilse `NONE` → hava alanları boş. */
         override val weather: WeatherPort get() = Orders.weather
         override fun monoNs(): Long = SystemClock.elapsedRealtimeNanos()
+        /** A10.4e köprüsü (`Orders.bindRange`): bağlı değilse `NONE` → menzil girdisi yok. */
+        override val range: RangePort get() = Orders.range
+        /** N5 rota hesabı teklif karesini bekletmez: tek arka plan iş parçacığı. */
+        override fun background(task: () -> Unit) = rangeWorker.execute { runCatching(task).onFailure { Store.log(ctx).failure("range_inputs", it) } }
     }
+
+    private val rangeWorker = java.util.concurrent.Executors.newSingleThreadExecutor { r -> Thread(r, "weem-range").apply { isDaemon = true } }
 }

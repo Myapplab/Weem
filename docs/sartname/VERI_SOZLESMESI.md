@@ -95,6 +95,7 @@ Bugünkü mesajlar (alan alan: `bulgular/X_protocol.md` P1–P11; WEEM'deki kar�
 | `home.lat`, `home.lon` | **String** | `CORE` 2.1 | `:core` · A2.4 |
 | `home.updatedAt` | Long (yok = bilinmiyor) | `CORE` 2.1 | `:core` · A2.4 |
 | `home.startBlocked`, `home.endArmed` | Bool (false) | `CORE` 1.6 | `:core` · A2.4 |
+| `range.warn` | Bool (yoksa true) | **yeni** (A10.4e, N5 menzil uyarısı; `MAP.md` 10.6) | `:economics` · `:app` |
 | `crashSeenAt` | Long (0) | `CORE` 4.1 | `:core` · A2.3 |
 | `weem.deviceId` | String: küçük harfli UUID (36 karakter; `DeviceId`) | **yeni** (`CORE` 1.10) | `:core` · A2.4 |
 | `weem.setupDone` | Bool (false): ilk açılış kurulumu bitti/atlandı; şifreli yedeğe girmez | **yeni** (G5, A7.2) | `:app` · A7.2 |

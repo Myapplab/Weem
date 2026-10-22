@@ -1,5 +1,6 @@
 package com.kuryelog.logic.map.ride
 
+import com.kuryelog.logic.core.OfferSummary
 import com.kuryelog.logic.core.RangeBattery
 import com.kuryelog.logic.core.RangePort
 import com.kuryelog.logic.map.geo.GeoPoint
@@ -41,4 +42,22 @@ data class RangeInputs(
             hereToHomeMin = hereToHomeMin?.takeIf { it.isFinite() && it >= 0 },
         )
     }
+}
+
+/**
+ * N5 haritası (A10.4e, T1-1 a): ekrandaki bir teklifte `rangeWarnKm` (v2 `BATTERY_ESCAPE_NOT_MET`) doğunca var olan "eve dön?" kartı bir kez
+ * açılır; aynı teklif kartı kapatıldıktan sonra yeniden açmaz.
+ */
+class RangeWarnings {
+    private val seen = LinkedHashSet<String>()
+
+    /** [offers] içinde yeni uyarılı ve görünen teklif var mı (varsa kart açılır). */
+    @Synchronized fun fresh(offers: List<OfferSummary>): Boolean {
+        var any = false
+        for (o in offers) if (o.visibleNow && o.rangeWarnKm != null && seen.add(o.offerKey)) any = true
+        while (seen.size > MAX) seen.remove(seen.first())
+        return any
+    }
+
+    companion object { const val MAX = 32 }
 }

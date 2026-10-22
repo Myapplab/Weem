@@ -5,6 +5,7 @@ import com.kuryelog.logic.core.Clock
 import com.kuryelog.logic.core.KuryelogPrefs
 import com.kuryelog.logic.core.LogStore
 import com.kuryelog.logic.core.OfferSummary
+import com.kuryelog.logic.core.RangePort
 import com.kuryelog.logic.core.ScooterBridge
 import com.kuryelog.logic.core.WeatherPort
 import com.kuryelog.logic.orders.CoreEvent
@@ -40,6 +41,10 @@ class EconomicsObserver(private val env: Env) : OrderObserver, OfferAnnotator {
         val clock: Clock
         val scooter: ScooterBridge get() = ScooterBridge.NONE
         val weather: WeatherPort get() = WeatherPort.NONE
+        /** WEEM N5 (A10.4e): batarya ve eve sürüş (`:map`); bağlı değilse `NONE` → girdi yok, uyarı yok. */
+        val range: RangePort get() = RangePort.NONE
+        /** N5 rota hesabı için arka plan; JVM testinde hemen çalışır. */
+        fun background(task: () -> Unit) = task()
         /** `SystemClock.elapsedRealtimeNanos` (Android); JVM'de `System.nanoTime`. */
         fun monoNs(): Long = System.nanoTime()
     }
@@ -51,6 +56,8 @@ class EconomicsObserver(private val env: Env) : OrderObserver, OfferAnnotator {
     private val shadow = ShadowMode()
     /** SPEC 2.1.0 section 17.2 rows: economics-offers/-legs/-idle/-penalties.jsonl and waits v2. */
     private val econ = EconomicsRecorder().also { r -> r.verdictShadow = { shadow.verdictFor(it) } }
+    /** WEEM N5 (A10.4e): teklif başına menzil girdileri. */
+    private val range = OfferRange({ env.range }, env::background)
     /** The order core of the last hook (E4: the trip of an accepted offer). */
     private var core: DeliveryCore? = null
     private var idleKey = ""
@@ -100,7 +107,9 @@ class EconomicsObserver(private val env: Env) : OrderObserver, OfferAnnotator {
         this.core = core
         val pkg = o.pkg
         // Shadow verdict at the first complete offer frame (again only if fee or km change); logged with the offer row, never shown.
-        shadow.frame(o, core.pending[pkg]) { shadowContext(pkg, now, core, open) }?.error?.let { failure("shadow_verdict", it) }
+        val offer = core.pending[pkg]
+        val rangeKey = offer?.takeIf { rangeOn() }?.let { range.key(it.id) }
+        shadow.frame(o, offer, rangeKey) { shadowContext(pkg, now, core, open, offer) }?.error?.let { failure("shadow_verdict", it) }
         writeRows(econ.frame(o, events, before, core, open, hereZone(now), feeBasis())); persistIdle(now)
     }
 
@@ -145,8 +154,20 @@ class EconomicsObserver(private val env: Env) : OrderObserver, OfferAnnotator {
         val score = entry?.takeIf { it.error == null }?.let { OfferScore.of(it.result, it.gross?.takeIf { g -> g.isFinite() } ?: offer.data.gross).value }
         return summary.copy(pickupZone = OfferSummary.Zone.of(EconomicsLogs.pickupZone(offer)),
             dropoffZone = OfferSummary.Zone.of(EconomicsLogs.dropoffZone(offer)), score = score,
-            netAzn = OverlayText.net(offer.data.gross, commissionSet(offer.pkg)))
+            netAzn = OverlayText.net(offer.data.gross, commissionSet(offer.pkg)), rangeWarnKm = rangeWarnKm(offer))
     }
+
+    /**
+     * WEEM N5 (A10.4e, T1-1 a): teklifin v2 değerlendirmesi `BATTERY_ESCAPE_NOT_MET` verdiyse bırakış → ev km (rozetin "Batarya yetmeyebilir ·
+     * eve ~X km" satırı, haritanın "eve dön?" kartı); ayar kapalıysa, değerlendirme yoksa ya da km bilinmiyorsa null. Kabul yine kurye'de.
+     */
+    override fun rangeWarnKm(offer: OfferState): Double? {
+        if (!rangeOn()) return null
+        val e = shadow.entry(offer.id)?.takeIf { it.error == null && it.batteryEscapeNotMet } ?: return null
+        return e.input?.optJSONObject("offer")?.takeIf { it.has("destToChargerKm") }?.optDouble("destToChargerKm")?.takeIf { it.isFinite() }
+    }
+
+    private fun rangeOn() = env.prefs.getBoolean(KuryelogPrefs.RANGE_WARN, true)
 
     // ------------------------------------------------------------------ E4 readers and the courier's own score (OrderTracker.kt:150-161)
 
@@ -224,9 +245,21 @@ class EconomicsObserver(private val env: Env) : OrderObserver, OfferAnnotator {
     }
 
     /** Engine context of an offer of [pkg]: `commission:<pkg>` (else the global `commission`), vehicle, mode, courier state. */
-    private fun shadowContext(pkg: String, now: Long, core: DeliveryCore, open: List<OnlineSessions.Session>): ShadowEvaluator.Context =
+    private fun shadowContext(pkg: String, now: Long, core: DeliveryCore, open: List<OnlineSessions.Session>, offer: OfferState?): ShadowEvaluator.Context =
         ShadowEvaluator.Context.of(courierState(now, core, open), commissionSet(pkg), env.prefs.getString(PREF_VEHICLE, null),
-            env.prefs.getString(ShadowEvaluator.APP_MODE_KEY, ShadowEvaluator.SHADOW))
+            env.prefs.getString(ShadowEvaluator.APP_MODE_KEY, ShadowEvaluator.SHADOW), rangeInputs(offer, now))
+
+    /** N5: ayar açıkken teklifin menzil girdileri (ev `home.lat/lon`, son taze konum); hata değerlendirmeyi düşürmez. */
+    private fun rangeInputs(offer: OfferState?, now: Long): ShadowEvaluator.Range? {
+        if (offer == null || !rangeOn()) return null
+        return try {
+            val lat = env.prefs.getString(KuryelogPrefs.HOME_LAT, null)?.toDoubleOrNull()
+            val lon = env.prefs.getString(KuryelogPrefs.HOME_LON, null)?.toDoubleOrNull()
+            val home = if (lat != null && lon != null) OfferGeo.LatLon(lat, lon) else null
+            val here = env.log.lastLocation?.takeIf { now - it.atMs in 0..FRESH_FIX_MS }?.let { OfferGeo.LatLon(it.lat, it.lon) }
+            range.inputs(offer, home, here)
+        } catch (e: Exception) { failure("range_inputs", e); null }
+    }
     private fun courierState(now: Long, core: DeliveryCore, open: List<OnlineSessions.Session>): JSONObject {
         val l = env.log.lastLocation?.takeIf { now - it.atMs in 0..FRESH_FIX_MS }
         return econ.courierState(now, core, open.map { it.pkg }, hereZone(now), l?.speedMs?.let { it * 3.6 })

@@ -6,6 +6,7 @@ import com.kuryelog.app.core.ShiftHub
 import com.kuryelog.logic.core.Clock
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.core.OrderEvents
+import com.kuryelog.logic.map.ride.RangeWarnings
 import com.kuryelog.logic.map.day.DayController
 import com.kuryelog.logic.map.day.DayFix
 import com.kuryelog.logic.map.day.DayState
@@ -45,6 +46,10 @@ class DayRuntime private constructor(private val app: Context) {
     private val controller = DayController(MapPrefsStore(app), lang)
     private var lastPoint: GeoPoint? = null
     private var stagesJob: Job? = null
+    private var offersJob: Job? = null
+    private val rangeWarnings = RangeWarnings()
+    /** N5 (A10.4e): uyarılı yeni teklif → "eve dön?" kartı ([NavRuntime] bağlar). */
+    @Volatile var onRangeWarning: (() -> Unit)? = null
     private var recheck: Job? = null
     @Volatile private var events: OrderEvents = OrderEvents.NONE
 
@@ -110,6 +115,8 @@ class DayRuntime private constructor(private val app: Context) {
         events = source
         stagesJob?.cancel()
         stagesJob = scope.launch { source.stages.collect { readStages() } }
+        offersJob?.cancel()
+        offersJob = scope.launch { source.offers.collect { if (rangeWarnings.fresh(it)) onRangeWarning?.invoke() } }
     }
 
     private fun readStages() {

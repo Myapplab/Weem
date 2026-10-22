@@ -152,6 +152,7 @@ class NavRuntime private constructor(private val app: Context) {
     init {
         controller.setBikewayMarks(bikeway.marks)
         controller.shift = day.navShift
+        day.onRangeWarning = controller::suggestHome
         RideLogRuntime.get(app).let { log ->
             controller.log = { name, data -> log.writer.event(name, data) }
             controller.recording = log.recording

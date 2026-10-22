@@ -59,6 +59,8 @@ interface OrderObserver {
 /** ORDERS.md 13.3: teklif özetinin ekonomi alanları (bölgeler, R4 puanı, net); `:economics` uygular, `:app` bağlar. */
 interface OfferAnnotator {
     fun annotate(offer: OfferState, summary: OfferSummary): OfferSummary = summary
+    /** N5 (A10.4e): bırakış → ev km, teklif sonrası batarya eve yetmeyebilirse (rozetin uyarı satırı); yoksa null. */
+    fun rangeWarnKm(offer: OfferState): Double? = null
 
     object NONE : OfferAnnotator
 }
@@ -834,7 +836,7 @@ class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
     /** [names]: the home page keeps restaurant/customer names; the overlay badge (K35) shows only the status. */
     @Synchronized fun badgeLines(names: Boolean = true): String {
         init()
-        return OverlayText.badge(core, sessions, deliveredToday(), names, ::commissionSet, ::platform, ::tl)
+        return OverlayText.badge(core, sessions, deliveredToday(), names, ::commissionSet, ::platform, ::tl, env.annotator::rangeWarnKm)
     }
     /** [Stats.delivered] alone, for the K35 badge every 500 ms: without the SQL count, the shift minutes and the money sums. */
     private fun deliveredToday(): Int {
