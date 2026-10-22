@@ -97,13 +97,14 @@ fun WeemTopBar(
     backLabel: String,
     modifier: Modifier = Modifier,
     divider: Boolean = false,
+    backTag: String? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val p = palette()
     if (onBack != null) BackHandler(onBack = onBack)
     Column(modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (onBack != null) WIconButton(WeemIcons.ArrowBack, backLabel, onBack)
+            if (onBack != null) WIconButton(WeemIcons.ArrowBack, backLabel, onBack, if (backTag != null) Modifier.testTag(backTag) else Modifier)
             Text(
                 title, style = WeemType.titleL, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f).padding(start = if (onBack != null) 4.dp else 12.dp, end = 8.dp).semantics { heading() },
