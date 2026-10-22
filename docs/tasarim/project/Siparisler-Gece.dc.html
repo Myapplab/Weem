@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="az">
+<head>
+<meta charset="utf-8">
+<title>Sifarişlər · Bu gün</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0..1,0&amp;icon_names=accessibility_new,add,alt_route,arrow_back,backup,bar_chart,battery_5_bar,battery_alert,battery_full,bluetooth,bluetooth_searching,bolt,check,check_circle,chevron_left,chevron_right,close,contrast,dark_mode,delete,devices,door_front,edit,electric_bolt,electric_scooter,error,expand_less,expand_more,explore,fiber_manual_record,folder,folder_zip,fullscreen,gps_off,history,home,info,inventory_2,keyboard_arrow_right,language,light_mode,link,location_on,lock,map,menu,more_horiz,my_location,navigation,notifications,palette,partly_cloudy_day,payments,person,phone_android,play_arrow,punch_clock,qr_code_scanner,radio_button_checked,radio_button_unchecked,receipt_long,refresh,restaurant,route,schedule,search,settings,share,shield,speed,splitscreen,sports_score,stop,storefront,thermostat,thumb_down,thumb_up,timer,touch_app,trending_up,tune,visibility_off,warning,water_drop,wifi&amp;display=block">
+<style>
+body{margin:0}
+:where(.ph) *{box-sizing:border-box}
+:where(.ph) button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;text-align:inherit}
+:where(.ph) h1,:where(.ph) h2{margin:0}
+.ph{--bg:#F4F5F8;--sf:#FFFFFF;--r1:#ECEEF2;--r2:#E3E6EB;--ol:#DCDFE5;--olS:#C5CAD3;--tx:#0E1015;--mu:#565C6A;--ok:#0B7A43;--okC:#DDF4E7;--wn:#8A4B00;--wnC:#FFEDD5;--dg:#C4291C;--dgC:#FDE8E6;--wo:#00668F;--woC:#E0F3FB;--bo:#0B6E3B;--boC:#DFF5E8;--mv:#0B4FB3;--mvC:#E3EDFF;--rt:#9A3E00;--rtC:#FFE9D9;--pk:#0B6B47;--pkC:#DDF4EA;--cu:#A0156E;--cuC:#FDE4F3;--pw:#B45309;--ac:#5B3DF5;--acI:#FFFFFF;--acT:#5236E0;--acC:#ECE8FF;--acO:#3A23A8;--e0:none;--e1:0 1px 2px rgba(14,16,21,.10),0 4px 12px rgba(14,16,21,.08);position:relative;overflow:hidden;background:var(--bg);color:var(--tx);font-family:Inter,Roboto,system-ui,sans-serif;font-size:15px;line-height:22px;-webkit-font-smoothing:antialiased}
+.ph.night{--bg:#0E0F13;--sf:#17191F;--r1:#21242C;--r2:#2B2F38;--ol:#2E323C;--olS:#3D424E;--tx:#F3F4F7;--mu:#A5ABB8;--ok:#62D69B;--okC:#102E1F;--wn:#FFC27A;--wnC:#382607;--dg:#FF8A80;--dgC:#3A1614;--wo:#66CCF2;--woC:#0A2633;--bo:#66D99A;--boC:#0E2A1B;--mv:#A9C8FF;--mvC:#13264A;--rt:#FFB37A;--rtC:#3A220E;--pk:#7FE0B3;--pkC:#0F2E22;--cu:#FF9AD5;--cuC:#3A1430;--pw:#FFB547;--ac:#A898FF;--acI:#14102E;--acT:#B4A7FF;--acC:#2B2462;--acO:#E0DAFF;--e0:inset 0 0 0 1px var(--ol);--e1:0 0 0 1px var(--ol),0 4px 16px rgba(0,0,0,.40)}
+.ph.acc-mono{--ac:#0E1015;--acI:#FFFFFF;--acT:#0E1015;--acC:#E3E6EB;--acO:#0E1015}
+.ph.night.acc-mono{--ac:#F3F4F7;--acI:#0E0F13;--acT:#F3F4F7;--acC:#2B2F38;--acO:#F3F4F7}
+.i{font-family:'Material Symbols Rounded';font-weight:400;font-style:normal;font-size:24px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;direction:ltr;font-feature-settings:'liga';-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;flex:none;user-select:none}
+.i.f{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+.s16{font-size:16px}.s18{font-size:18px}.s20{font-size:20px}.s28{font-size:28px}
+.dm{font-size:40px;line-height:44px;font-weight:800;letter-spacing:-.025em}
+.hl{font-size:28px;line-height:34px;font-weight:700;letter-spacing:-.015em}
+.tm{font-size:18px;line-height:24px;font-weight:600;letter-spacing:-.005em}
+.ts{font-size:16px;line-height:22px;font-weight:600}
+.bm{font-size:15px;line-height:22px}
+.bs{font-size:13px;line-height:18px}
+.lm{font-size:13px;line-height:16px;font-weight:600}
+.ls{font-size:12px;line-height:16px;font-weight:600}
+.ns{font-size:16px;line-height:20px;font-weight:600}
+.tn{font-variant-numeric:tabular-nums}
+.mu{color:var(--mu)}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.x{display:flex;align-items:center}
+.y{display:flex;flex-direction:column}
+.f1{flex:1 1 0;min-width:0}
+.card{background:var(--sf);border-radius:16px;padding:16px;box-shadow:var(--e0)}
+.btn{height:48px;border-radius:999px;padding:0 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:15px;line-height:20px;font-weight:600;white-space:nowrap;flex:none}
+.btn.pri{background:var(--ac);color:var(--acI)}
+.btn.ton{background:var(--acC);color:var(--acO)}
+.btn.out{box-shadow:inset 0 0 0 1.5px var(--olS);color:var(--tx)}
+.btn.w{width:100%}
+.ib{width:48px;height:48px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx);flex:none}
+.dis{opacity:.38}
+.dot{width:8px;height:8px;border-radius:999px;background:currentColor;flex:none;display:inline-block}
+.chip{height:36px;border-radius:999px;padding:0 14px;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;line-height:16px;box-shadow:inset 0 0 0 1.5px var(--olS);white-space:nowrap}
+.chip.on{background:var(--acC);color:var(--acO);box-shadow:none}
+.seg{display:flex;gap:4px;padding:4px;border-radius:999px;background:var(--r1)}
+.seg button{flex:1 1 0;height:40px;border-radius:999px;font-size:14px;font-weight:600;color:var(--mu);display:flex;align-items:center;justify-content:center}
+.seg button.on{background:var(--sf);color:var(--tx);box-shadow:var(--e1)}
+.ibox{width:40px;height:40px;border-radius:12px;background:var(--r1);display:inline-flex;align-items:center;justify-content:center;flex:none;color:var(--tx)}
+.hr{height:1px;background:var(--ol)}
+.nav{position:absolute;left:0;right:0;bottom:0;height:84px;padding:8px 4px 12px;background:var(--sf);box-shadow:0 -1px 0 var(--ol);display:grid;grid-template-columns:repeat(5,minmax(0,1fr))}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--mu);font-size:12px;line-height:16px;font-weight:600;min-width:0}
+.nav .ind{width:56px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center}
+.nav .nl{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav button.on{color:var(--tx)}
+.nav button.on .ind{background:var(--acC);color:var(--acO)}
+.nav button.on .i{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+.page{padding:36px 16px 120px;display:flex;flex-direction:column;gap:12px}
+.live{box-shadow:inset 0 0 0 2px var(--ac);display:flex;flex-direction:column;gap:12px}
+.ldot{width:10px;height:10px;border-radius:999px;background:var(--ac);box-shadow:0 0 0 4px var(--acC);flex:none}
+.hero{padding:20px;display:flex;flex-direction:column;gap:16px}
+.s3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.sv{font-size:20px;line-height:24px;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.sv.sm{font-size:16px;line-height:20px;font-weight:600}
+.sl{font-size:12px;line-height:16px;font-weight:600;color:var(--mu);margin-top:2px}
+.mtile{position:relative;background:var(--r1);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-height:60px;text-align:left}
+.mtile .i{position:absolute;right:6px;top:8px;color:var(--mu)}
+.ptag{height:28px;border-radius:999px;padding:0 12px;display:inline-flex;align-items:center;gap:8px;font-size:14px;line-height:16px;font-weight:700}
+.orow{display:flex;align-items:center;gap:12px;padding:12px 16px;width:100%;min-height:64px;text-align:left}
+.pd{width:10px;height:10px;border-radius:999px;flex:none}
+.amt{display:flex;flex-direction:column;align-items:flex-end;flex:none}
+.phase{height:24px;border-radius:999px;padding:0 10px;display:inline-flex;align-items:center;gap:6px;font-size:12px;line-height:16px;font-weight:700;align-self:flex-start;margin-top:4px}
+</style>
+</helmet>
+<div class="ph {{mode}}" style="width: 390px; height: 2400px">
+<div class="page">
+<h1 class="hl">Sifarişlər</h1>
+<section class="card live" aria-label="İNDİ">
+<div class="x" style="gap: 10px"><span class="ldot" aria-hidden="true"></span><span class="lm" style="color: var(--acT); letter-spacing: .04em">İNDİ</span></div>
+<div class="y" style="gap: 8px">
+<div class="x" style="gap: 10px; align-items: baseline"><span class="dot" style="color: var(--wo)"></span><span class="bm">Wolt · Sushi Bar 28 · Müştəriyə gedilir</span></div>
+<div class="x" style="gap: 10px; align-items: baseline"><span class="dot" style="color: var(--bo)"></span><span class="bm">Bolt Food · Sifariş gözlənilir</span></div>
+</div>
+<button class="btn ton w"><span class="i s20">person</span>Wolt müştəri kartını göstər</button>
+</section>
+<section class="card hero">
+<div class="y" style="gap: 2px">
+<span class="bs mu">Xalis qazanc</span>
+<span class="dm tn">29.60 ₼</span>
+</div>
+<div class="s3">
+<div class="y"><span class="sv">6</span><span class="sl">çatdırılma</span></div>
+<div class="y"><span class="sv">5.55 ₼</span><span class="sl">saat başına</span></div>
+<div class="y"><span class="sv">5 saat 20 dəq</span><span class="sl">onlayn</span></div>
+</div>
+<div class="hr"></div>
+<div class="s3">
+<div class="y"><span class="sv sm">19</span><span class="sl">görülən təklif</span></div>
+<div class="y"><span class="sv sm">8</span><span class="sl">qəbul</span></div>
+<div class="y"><span class="sv sm">11</span><span class="sl">imtina</span></div>
+</div>
+<div class="s3">
+<div class="y"><span class="sv sm">32.00 ₼</span><span class="sl">ümumi</span></div>
+<div class="y"><span class="sv sm">4.00 ₼</span><span class="sl">çaypulu</span></div>
+</div>
+<div class="hr"></div>
+<div class="y" style="gap: 10px">
+<span class="bs mu">Sifariş başına orta</span>
+<div class="s3" style="gap: 8px">
+<button class="mtile"><span class="i s16">chevron_right</span><span class="sv sm">21.4 Wh</span><span class="sl">batareya</span></button>
+<button class="mtile"><span class="i s16">chevron_right</span><span class="sv sm">6.2 dəq</span><span class="sl">restoranda</span></button>
+<button class="mtile"><span class="i s16">chevron_right</span><span class="sv sm">3.1 dəq</span><span class="sl">müştəridə</span></button>
+<button class="mtile"><span class="i s16">chevron_right</span><span class="sv sm">31.5 dəq</span><span class="sl">sərf olunan vaxt</span></button>
+<button class="mtile"><span class="i s16">chevron_right</span><span class="sv sm">12.0 dəq</span><span class="sl">sifarişdən əvvəl</span></button>
+</div>
+</div>
+</section>
+<section class="card y" style="gap: 14px">
+<span class="ptag" style="background: var(--woC); color: var(--wo); align-self: flex-start"><span class="dot"></span>Wolt</span>
+<div class="s3">
+<div class="y"><span class="sv" style="color: var(--wo)">4</span><span class="sl">çatdırılma</span></div>
+<div class="y"><span class="sv">22.00₼</span><span class="sl">ümumi</span></div>
+<div class="y"><span class="sv">20.60₼</span><span class="sl">xalis</span></div>
+</div>
+<div class="s3">
+<div class="y"><span class="sv sm">18.5 dəq</span><span class="sl">gözləmə</span></div>
+<div class="y"><span class="sv sm">4.0 dəq</span><span class="sl">hazırdan sonra gözləmə</span></div>
+<div class="y"><span class="sv sm">3.00₼</span><span class="sl">çaypulu</span></div>
+</div>
+</section>
+<section class="card y" style="gap: 14px">
+<span class="ptag" style="background: var(--boC); color: var(--bo); align-self: flex-start"><span class="dot"></span>Bolt Food</span>
+<div class="s3">
+<div class="y"><span class="sv" style="color: var(--bo)">2</span><span class="sl">çatdırılma</span></div>
+<div class="y"><span class="sv">10.00₼</span><span class="sl">ümumi</span></div>
+<div class="y"><span class="sv">9.00₼</span><span class="sl">xalis</span></div>
+</div>
+<div class="s3">
+<div class="y"><span class="sv sm">9.0 dəq</span><span class="sl">gözləmə</span></div>
+<div class="y"><span class="sv sm">2.5 dəq</span><span class="sl">hazırdan sonra gözləmə</span></div>
+<div class="y"><span class="sv sm">1.00₼</span><span class="sl">çaypulu</span></div>
+</div>
+</section>
+<button class="card x" style="gap: 12px; padding: 12px 12px 12px 16px; text-align: left"><span class="ibox"><span class="i">history</span></span><span class="ts f1">Onlayn sessiyalar</span><span class="i mu">chevron_right</span></button>
+<section class="card y" style="gap: 10px">
+<div class="x" style="gap: 10px; margin-bottom: 2px"><span class="i" style="color: var(--acT)">tune</span><span class="tm">Alətlər</span></div>
+<button class="btn ton w"><span class="i s20">splitscreen</span>Wolt + Bolt üçün bölünmüş ekranı aç</button>
+<button class="btn out w">Wolt: ləğv müşahidəsini qeyd et</button>
+<button class="btn out w">Bolt Food: ləğv müşahidəsini qeyd et</button>
+</section>
+<div class="seg" style="margin-top: 8px"><button class="on">Sifarişlər</button><button>Təklif balı</button></div>
+<section class="card y" style="gap: 4px; padding: 8px 8px 14px">
+<div class="x" style="gap: 4px">
+<button class="ib" aria-label="Əvvəlki gün"><span class="i">chevron_left</span></button>
+<button class="ts f1" style="text-align: center">22 oktyabr 2026 · Bu gün · cümə axşamı</button>
+<button class="ib dis" aria-label="Sonrakı gün" aria-disabled="true"><span class="i">chevron_right</span></button>
+</div>
+<span class="bs mu tn" style="text-align: center">6 sifariş · Ümumi 32.00₼ · Xalis 29.60₼</span>
+<span class="bs mu tn" style="text-align: center">41.6 km · Aktiv müddət: 5 saat 20 dəq</span>
+</section>
+<div class="x" style="gap: 8px; flex-wrap: wrap">
+<button class="chip on"><span class="i s18">check</span>Bütün sifarişlər</button>
+<button class="chip"><span class="dot" style="color: var(--wo)"></span>Wolt</button>
+<button class="chip"><span class="dot" style="color: var(--bo)"></span>Bolt Food</button>
+</div>
+<section class="card" style="padding: 4px 0">
+<button class="orow"><span class="pd" style="background: var(--wo)"></span><span class="y f1"><span class="ts ell"><span class="tn">09:41</span>  Pizza Mizza</span><span class="bs mu ell">Restoranda 6 dəq · Boost — · 18°</span></span><span class="amt"><span class="bs mu tn">Ümumi 5.40₼</span><span class="ns tn">Xalis 4.32₼</span></span></button>
+<div class="hr" style="margin-left: 38px"></div>
+<button class="orow"><span class="pd" style="background: var(--bo)"></span><span class="y f1"><span class="ts ell"><span class="tn">10:22</span>  Kebab House</span><span class="bs mu ell">Restoranda 9 dəq · Boost yoxdur · 19°</span></span><span class="amt"><span class="bs mu tn">Ümumi 4.80₼</span><span class="ns tn">Xalis 3.84₼</span></span></button>
+<div class="hr" style="margin-left: 38px"></div>
+<button class="orow"><span class="pd" style="background: var(--wo)"></span><span class="y f1"><span class="ts ell"><span class="tn">11:05</span>  Coffee Moffie</span><span class="bs mu ell">Restoranda 3 dəq · Boost — · 21°</span></span><span class="amt"><span class="bs mu tn">Ümumi 4.90₼</span><span class="ns tn">Xalis 4.92₼</span></span></button>
+<div class="hr" style="margin-left: 38px"></div>
+<button class="orow"><span class="pd" style="background: var(--wo)"></span><span class="y f1"><span class="ts ell"><span class="tn">12:30</span>  Dolma Restoran</span><span class="bs mu ell">Restoranda 12 dəq · Boost — · 23°</span></span><span class="amt"><span class="bs mu tn">Ümumi 6.10₼</span><span class="ns tn">Xalis 4.88₼</span></span></button>
+<div class="hr" style="margin-left: 38px"></div>
+<button class="orow"><span class="pd" style="background: var(--bo)"></span><span class="y f1"><span class="ts ell"><span class="tn">13:10</span>  Burger Lab</span><span class="bs mu ell">Restoranda 5 dəq · Boost — · 24°</span></span><span class="amt"><span class="bs mu tn">Ümumi 5.20₼</span><span class="ns tn">Xalis 5.16₼</span></span></button>
+<div class="hr" style="margin-left: 38px"></div>
+<button class="orow"><span class="pd" style="background: var(--wo)"></span><span class="y f1"><span class="ts ell"><span class="tn">13:31</span>  Çay Evi</span><span class="bs mu ell">Restoranda 4 dəq · Boost — · 24°</span></span><span class="amt"><span class="bs mu tn">Ümumi 5.60₼</span><span class="ns tn">Xalis 6.48₼</span></span></button>
+<div class="hr" style="margin-left: 38px"></div>
+<button class="orow"><span class="pd" style="background: var(--wo)"></span><span class="y f1"><span class="ts ell"><span class="tn">13:52</span>  Sushi Bar 28</span><span class="bs mu ell">Restoranda 7 dəq · Boost — · 24°</span><span class="phase" style="background: var(--mvC); color: var(--mv)"><span class="i f s16">two_wheeler</span>Müştəriyə gedilir</span></span><span class="amt"><span class="bs mu tn">Ümumi 6.20₼</span><span class="ns tn">Xalis 4.96₼</span></span></button>
+</section>
+<button class="btn out w">Günün bütün təfərrüatları</button>
+<span class="bs mu tn" style="text-align: center">1 / 12 gün</span>
+</div>
+<nav class="nav" aria-label="Alt menyu">
+<button><span class="ind"><span class="i">map</span></span><span class="nl">Xəritə</span></button>
+<button class="on" aria-current="page"><span class="ind"><span class="i">receipt_long</span></span><span class="nl">Sifarişlər</span></button>
+<button><span class="ind"><span class="i">electric_scooter</span></span><span class="nl">Scooter</span></button>
+<button><span class="ind"><span class="i">devices</span></span><span class="nl">Uzaqdan</span></button>
+<button><span class="ind"><span class="i">menu</span></span><span class="nl">Daha çox</span></button>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"accent":{"editor":"enum","options":["mor","mono"],"default":"mor"},"$preview":{"width":390,"height":2400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.dark ?? true;
+    const mono = (this.props.accent ?? 'mor') === 'mono';
+    return { mode: (dark ? 'night' : 'day') + (mono ? ' acc-mono' : '') };
+  }
+}
+</script>
+</body>
+</html>
