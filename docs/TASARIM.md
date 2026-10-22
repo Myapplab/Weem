@@ -1,17 +1,17 @@
 # WEEM tasarım dili (A10.4d)
 
-Durum: **öneri, kullanıcı onayı bekliyor** (S35, 22 Ekim). Onaydan önce kod yok. Örnek ekranlar: Artifact tuvali <https://claude.ai/artifact/UNcHAcWBebiWH9Xqg373W5> (17 çalışma alanı; yalnız bu Claude hesabında açılır); kaynakları `docs/tasarim/project/` (`.dc.html`: düz HTML'e yakın, renk ve ölçüler doğrudan okunur; başka hesap tuvali açamazsa buradan okur). Bu belge eski `docs/TASARIM_PROMPTU.md`'nin yerini alır (sınırlar burada).
+Durum: **onaylandı** (S36, 22 Ekim: önerilerin hepsi; vurgu laciverte yaklaştırıldı) — uygulama sürüyor (Bölüm 13). Örnek ekranlar: Artifact tuvali <https://claude.ai/artifact/UNcHAcWBebiWH9Xqg373W5> (17 çalışma alanı; yalnız bu Claude hesabında açılır); kaynakları `docs/tasarim/project/` (`.dc.html`: düz HTML'e yakın, renk ve ölçüler doğrudan okunur; başka hesap tuvali açamazsa buradan okur). Bu belge eski `docs/TASARIM_PROMPTU.md`'nin yerini alır (sınırlar burada).
 
 Kural: **davranış, veri, metin anlamı ve kimlik değişmez** (`AGENTS.md`); yalnız görünüm, yerleşim, hareket ve etkileşim değişir. Metin kuralı sürer: `:app`'te yerel harfli düz metin yok, metinler `logic/*` iki dilli tablolarda (`TextCoverageTest`). Yeni kütüphane yok: Compose Material 3 + yerel simge seti (+ isteğe bağlı gömülü yazı tipi, K2).
 
-## 0. Kullanıcı kararı bekleyenler
+## 0. Kullanıcı kararları (S36, 22 Ekim)
 
-| No | Karar | Seçenekler | Öneri |
-|---|---|---|---|
-| K1 | Vurgu rengi | (a) **Mor** `#5B3DF5` (gece `#A898FF`): WEEM'in kendi rengi, Wolt mavisi ve Bolt yeşiliyle karışmaz · (b) **Siyah-beyaz**: düğmeler gündüz siyah, gece beyaz (Uber, Instagram, TikTok gibi); renk yalnız anlam taşır | (a); tuvalde ikisi yan yana, her örnekte "Tweaks → accent" ile çevrilir |
-| K2 | Yazı tipi | (a) **Inter** uygulamaya gömülü (tek değişken dosya, Latin + Türkçe/Azerice harfler + ₼ alt kümesi ≈ 0,2–0,4 MB; ₼, ə, ğ, ı, ş Inter'de var, 22 Ekim'de denetlendi) · (b) **Roboto** (telefonun yazı tipi, 0 MB) | (a): rakamları daha net, kimlik verir |
-| K3 | Örnek ekranlar | Onay ya da değişiklik listesi | — |
-| K4 | Etkileşim değişiklikleri (Bölüm 12) | Hepsi / bazıları | hepsi |
+| No | Karar | Seçilen |
+|---|---|---|
+| K1 | Vurgu rengi | **Lacivert**: önerilen mor, kullanıcı isteğiyle laciverte yaklaştırıldı (gündüz `#2C3EA8`, gece `#9BB1F5`; Bölüm 4). Siyah-beyaz seçilmedi (tuvalde karşılaştırma olarak duruyor) |
+| K2 | Yazı tipi | **Inter** uygulamaya gömülü (tek değişken dosya, Latin + Türkçe/Azerice harfler + ₼ alt kümesi ≈ 0,2–0,4 MB; ₼, ə, ğ, ı, ş Inter'de var) |
+| K3 | Örnek ekranlar | Onaylı |
+| K4 | Etkileşim değişiklikleri | Hepsi (Bölüm 12) |
 
 ## 1. Ekran envanteri
 
@@ -76,15 +76,17 @@ Hepsi `logic/app` `Palette`'e girer (v2); karşıtlık `PaletteContrastTest` + y
 | `text` | `#0E1015` | `#F3F4F7` | ana yazı |
 | `muted` | `#565C6A` | `#A5ABB8` | ikincil yazı |
 
-**Vurgu** — K1 (a) Mor / (b) Siyah-beyaz
+**Vurgu — lacivert** (K1, S36; önerilen mor laciverte yaklaştırıldı)
 
-| Anahtar | Mor gündüz | Mor gece | S-B gündüz | S-B gece |
-|---|---|---|---|---|
-| `accent` (dolgu) | `#5B3DF5` | `#A898FF` | `#0E1015` | `#F3F4F7` |
-| `accentInk` (dolgu üstü yazı) | `#FFFFFF` | `#14102E` | `#FFFFFF` | `#0E0F13` |
-| `accentText` (bağlantı, seçili yazı) | `#5236E0` | `#B4A7FF` | `#0E1015` | `#F3F4F7` |
-| `accentContainer` (seçili gösterge, tonal düğme) | `#ECE8FF` | `#2B2462` | `#E3E6EB` | `#2B2F38` |
-| `onAccentContainer` | `#3A23A8` | `#E0DAFF` | `#0E1015` | `#F3F4F7` |
+| Anahtar | Gündüz | Gece |
+|---|---|---|
+| `accent` (dolgu) | `#2C3EA8` | `#9BB1F5` |
+| `accentInk` (dolgu üstü yazı) | `#FFFFFF` | `#0E1533` |
+| `accentText` (bağlantı, seçili yazı) | `#2838A1` | `#AABFFC` |
+| `accentContainer` (seçili gösterge, tonal düğme) | `#E5ECFF` | `#1F2A56` |
+| `onAccentContainer` | `#1C297C` | `#DDE4F9` |
+
+Karşıtlık: dolgu üstü yazı 8,9:1 (gündüz) / 8,5:1 (gece); vurgu yazısı her yüzeyde ≥ 8:1; `onAccentContainer` ≥ 10:1.
 
 **Durum ve platform** (yazı / zemin; gündüz · gece)
 
@@ -96,17 +98,17 @@ Hepsi `logic/app` `Palette`'e girer (v2); karşıtlık `PaletteContrastTest` + y
 | Wolt | `#00668F` / `#E0F3FB` | `#66CCF2` / `#0A2633` |
 | Bolt Food | `#0B6E3B` / `#DFF5E8` | `#66D99A` / `#0E2A1B` |
 
-**Sipariş aşaması** (hap yazısı / hap zemini; gündüz · gece). Haritadaki `MapPalette` çizgi renkleri aynı tonlardan; hap yazısı artık her zaman ≥ 4,5:1.
+**Sipariş aşaması** (hap yazısı / hap zemini; gündüz · gece). Haritadaki `MapPalette` çizgi renkleri aynı tonlardan; hap yazısı artık her zaman ≥ 4,5:1. "Yolda" hapı nötr: lacivert vurguyla karışmasın (S36); rengi simgede.
 
 | Aşama | Gündüz | Gece |
 |---|---|---|
-| yolda (restorana / müşteriye) | `#0B4FB3` / `#E3EDFF` | `#A9C8FF` / `#13264A` |
+| yolda (restorana / müşteriye) | `text` / `raised`, simge rota mavisi `#1765D1` | `text` / `raised`, simge `#8BB5FF` |
 | restoranda | `#9A3E00` / `#FFE9D9` | `#FFB37A` / `#3A220E` |
 | sipariş alındı | `#0B6B47` / `#DDF4EA` | `#7FE0B3` / `#0F2E22` |
 | müşteride | `#A0156E` / `#FDE4F3` | `#FF9AD5` / `#3A1430` |
 | yok | `muted` / `raised` | `muted` / `raised` |
 
-**Harita:** `MapPalette` (eğim, rota, duraklar) anlam olarak aynı kalır; yalnız (K1 a seçilirse) gece durak/müşteri rengi `#B68CFF` → `#FF7AC6` (mor vurguyla karışmasın) ve harita panelleri `MapPalette.panel` yerine uygulama `surface`'ı. **Scooter göstergesi ve rozetler:** `:scooter` `Ink` ve `OverlayPalette` aynı tablodan beslenir (gösterge zemini = `bg`, kadran = `surface`, iz = `raised`, yay = `accent`, güç = `#B45309` gündüz / `#FFB547` gece). Wolt/Bolt üstündeki rozetin **metin biçimi değişmez** (ekran okuma kendi satırını onunla tanır, `OwnLines`).
+**Harita:** `MapPalette` (eğim, rota, duraklar) anlam olarak aynı kalır; yalnız gece durak/müşteri rengi `#B68CFF` → `#FF7AC6` (vurgu ve aşama renkleriyle karışmasın) ve harita panelleri `MapPalette.panel` yerine uygulama `surface`'ı. **Scooter göstergesi ve rozetler:** `:scooter` `Ink` ve `OverlayPalette` aynı tablodan beslenir (gösterge zemini = `bg`, kadran = `surface`, iz = `raised`, yay = `accent`, güç = `#B45309` gündüz / `#FFB547` gece). Wolt/Bolt üstündeki rozetin **metin biçimi değişmez** (ekran okuma kendi satırını onunla tanır, `OwnLines`).
 
 ## 5. Yazı
 
@@ -221,7 +223,7 @@ Kural: büyük harf yalnız metin zaten büyükse ("ŞU AN", "BATARYA"); hiyerar
 
 **Scooter (Sürüş Paneli):** Başlık + durum satırı (renkli nokta + "Canlı panel • …"). Büyük gösterge kartı: 270° hız yayı, ortada hız (80–88 sp), güç hapı, altta kapsam + dokunma ipucu; 2×2 kadran (batarya + menzil, voltaj, akım, sıcaklık; her birinde küçük halka); sipariş üçlüsü (enerji, pil kullanımı, ortalama hız); altta dört simge düğmesi (ayarlar, eşleştir, bul, ZIP) ve en altta büyük "Kaydı başlat" + yuvarlak durdur. Eşleştirmede "ŞİMDİ güç düğmesine…" büyük uyarı bandı; veri yokken değerler "—", yaylar boş. Tam ekranda başlık, düğmeler ve alt menü kaybolur.
 
-**Tuvaldeki örnekler** (`docs/tasarim/project/`): `Main` Harita rotada (gündüz TR) · `Harita-Gece` (gece AZ, düşük batarya önerisi) · `Harita-Varis` (gece TR) · `Vardiya-Kapali` (gündüz TR) · `Vardiya-Kesildi` (gece AZ) · `Gun-Karti` (gündüz AZ) · `Siparisler` (gündüz TR) / `Siparisler-Gece` (gece AZ), tam kaydırma · `Scooter` (gece TR) · `Scooter-Gunduz` (gündüz AZ) · `Scooter-Bekleniyor` (eşleştirme, gece AZ) · `Mono-Harita`, `Mono-Scooter` (siyah-beyaz vurgu) · `DahaFazla` (ayar satırları) · `Bilesenler` (gündüz/gece bileşen kitaplığı) · `Renkler` · `Yazi-Olcu`. Telefon örneklerinde "Tweaks" ile gündüz/gece ve mor/siyah-beyaz değiştirilir. Harita altlığı temsilîdir (gerçek harita MapLibre/Google stilinden gelir; renkleri Bölüm 4'teki harita satırı).
+**Tuvaldeki örnekler** (`docs/tasarim/project/`): `Main` Harita rotada (gündüz TR) · `Harita-Gece` (gece AZ, düşük batarya önerisi) · `Harita-Varis` (gece TR) · `Vardiya-Kapali` (gündüz TR) · `Vardiya-Kesildi` (gece AZ) · `Gun-Karti` (gündüz AZ) · `Siparisler` (gündüz TR) / `Siparisler-Gece` (gece AZ), tam kaydırma · `Scooter` (gece TR) · `Scooter-Gunduz` (gündüz AZ) · `Scooter-Bekleniyor` (eşleştirme, gece AZ) · `Mono-Harita`, `Mono-Scooter` (siyah-beyaz vurgu) · `DahaFazla` (ayar satırları) · `Bilesenler` (gündüz/gece bileşen kitaplığı) · `Renkler` · `Yazi-Olcu`. Telefon örneklerinde "Tweaks" ile gündüz/gece ve lacivert/siyah-beyaz değiştirilir. Harita altlığı temsilîdir (gerçek harita MapLibre/Google stilinden gelir; renkleri Bölüm 4'teki harita satırı).
 
 **Etkileşim değişiklikleri (K4; işlev aynı):** (1) gün kartı dokununca da açılır (kaydırma kalır, 20 sn sonra katlanır), açıkken eylemler etiketli; (2) çok seçenekli ve uzun pencereler alttan açılan sayfa olur; (3) Daha fazla'da her satır tek dokunuşla açılır (simge + başlık + açıklama + ›); (4) alt ekranlarda üst çubuk ve sistem geri tuşu; (5) hava yuvarlağı arama hapının sağına iner (dokununca bugünkü gibi açılır); (6) metinlerdeki işaret önekleri ("▶  ", "■  ", "⚠ ", "✕  ", "⌕  ") simgeye döner, metnin kendisi aynı kalır; (7) scooter eylem çubuğunda kayıt düğmesi büyük, öteki dördü simge; (8) haritada konum düğmesi rota kartının üstüne, rota düğmesi gün kartının sağına iner; rota düğmesi panel açıkken "✕" yerine seçili görünür.
 
@@ -229,7 +231,7 @@ Kural: büyük harf yalnız metin zaten büyükse ("ŞU AN", "BATARYA"); hiyerar
 
 Model: tema + bileşenler Sonnet · high; zor ekranlar (harita HUD, scooter Canvas) Opus · high. Her adım ayrı commit, testler yeşil, `:app` lint 0 hata.
 
-1. **Belirteçler:** `logic/app` `Palette` v2 (eski alan adları kalır; yeni: `high`, `outline`, `accentContainer`, `onAccentContainer`, `dangerBg`, `power`, aşama tonları) + `PaletteContrastTest` yeni çiftler; yalnız seçilen vurgu (K1). `MapPalette` gece durak rengi (K1 a ise) + `MapPaletteTest`.
+1. **Belirteçler:** `logic/app` `Palette` v2 (eski alan adları kalır; yeni: `high`, `outline`, `accentContainer`, `onAccentContainer`, `dangerBg`, `power`, aşama tonları) + `PaletteContrastTest` yeni çiftler; lacivert vurgu (S36). `MapPalette` gece durak rengi + `MapPaletteTest`.
 2. **Tema:** `:app` `WeemTheme` (renk şeması, `Typography` Bölüm 5, `Shapes`), `WeemTokens` (boşluk, köşe, yükseklik, hareket), yazı tipi (K2 a ise `res/font` + OFL), `WeemIcons.kt`.
 3. **Bileşenler:** Bölüm 11 tablosu (`ui/` paketi), her biri için Robolectric örnek testi (en az 48 dp hedef, içerik açıklaması).
 4. **Ekranlar** sırayla: kabuk (alt menü, üst çubuklar) → Harita HUD → vardiya kartı → Siparişler (`CardView` çizicisi tek yerde değişir, bütün kartlar düzelir) → Scooter (sekme + `DashboardView`/`FloatPainter` renk ve yazı) → Daha fazla ve ayar ekranları (`SettingsGroup`) → öteki ekranlar (kurulum, izinler, ev, kayıtlar, 2 telefon, uzaktan, hırsızlık, harita alt ekranları) → sistem üstü katmanlar (rozet metni hariç) → `/code-review high`.

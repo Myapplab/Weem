@@ -15,8 +15,8 @@ body{margin:0}
 :where(.ph) *{box-sizing:border-box}
 :where(.ph) button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;text-align:inherit}
 :where(.ph) h1,:where(.ph) h2{margin:0}
-.ph{--bg:#F4F5F8;--sf:#FFFFFF;--r1:#ECEEF2;--r2:#E3E6EB;--ol:#DCDFE5;--olS:#C5CAD3;--tx:#0E1015;--mu:#565C6A;--ok:#0B7A43;--okC:#DDF4E7;--wn:#8A4B00;--wnC:#FFEDD5;--dg:#C4291C;--dgC:#FDE8E6;--ac:#5B3DF5;--acI:#FFFFFF;--acT:#5236E0;--acC:#ECE8FF;--acO:#3A23A8;--e0:none;--e1:0 1px 2px rgba(14,16,21,.10),0 4px 12px rgba(14,16,21,.08);position:relative;overflow:hidden;background:var(--bg);color:var(--tx);font-family:Inter,Roboto,system-ui,sans-serif;font-size:15px;line-height:22px;-webkit-font-smoothing:antialiased}
-.ph.night{--bg:#0E0F13;--sf:#17191F;--r1:#21242C;--r2:#2B2F38;--ol:#2E323C;--olS:#3D424E;--tx:#F3F4F7;--mu:#A5ABB8;--ok:#62D69B;--okC:#102E1F;--wn:#FFC27A;--wnC:#382607;--dg:#FF8A80;--dgC:#3A1614;--ac:#A898FF;--acI:#14102E;--acT:#B4A7FF;--acC:#2B2462;--acO:#E0DAFF;--e0:inset 0 0 0 1px var(--ol);--e1:0 0 0 1px var(--ol),0 4px 16px rgba(0,0,0,.40)}
+.ph{--bg:#F4F5F8;--sf:#FFFFFF;--r1:#ECEEF2;--r2:#E3E6EB;--ol:#DCDFE5;--olS:#C5CAD3;--tx:#0E1015;--mu:#565C6A;--ok:#0B7A43;--okC:#DDF4E7;--wn:#8A4B00;--wnC:#FFEDD5;--dg:#C4291C;--dgC:#FDE8E6;--ac:#2C3EA8;--acI:#FFFFFF;--acT:#2838A1;--acC:#E5ECFF;--acO:#1C297C;--e0:none;--e1:0 1px 2px rgba(14,16,21,.10),0 4px 12px rgba(14,16,21,.08);position:relative;overflow:hidden;background:var(--bg);color:var(--tx);font-family:Inter,Roboto,system-ui,sans-serif;font-size:15px;line-height:22px;-webkit-font-smoothing:antialiased}
+.ph.night{--bg:#0E0F13;--sf:#17191F;--r1:#21242C;--r2:#2B2F38;--ol:#2E323C;--olS:#3D424E;--tx:#F3F4F7;--mu:#A5ABB8;--ok:#62D69B;--okC:#102E1F;--wn:#FFC27A;--wnC:#382607;--dg:#FF8A80;--dgC:#3A1614;--ac:#9BB1F5;--acI:#0E1533;--acT:#AABFFC;--acC:#1F2A56;--acO:#DDE4F9;--e0:inset 0 0 0 1px var(--ol);--e1:0 0 0 1px var(--ol),0 4px 16px rgba(0,0,0,.40)}
 .ph.acc-mono{--ac:#0E1015;--acI:#FFFFFF;--acT:#0E1015;--acC:#E3E6EB;--acO:#0E1015}
 .ph.night.acc-mono{--ac:#F3F4F7;--acI:#0E0F13;--acT:#F3F4F7;--acC:#2B2F38;--acO:#F3F4F7}
 .i{font-family:'Material Symbols Rounded';font-weight:400;font-style:normal;font-size:24px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;direction:ltr;font-feature-settings:'liga';-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;flex:none;user-select:none}
@@ -91,11 +91,11 @@ body{margin:0}
 </nav>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"accent":{"editor":"enum","options":["mor","mono"],"default":"mor"},"$preview":{"width":390,"height":1120}}'>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"accent":{"editor":"enum","options":["lacivert","mono"],"default":"lacivert"},"$preview":{"width":390,"height":1120}}'>
 class Component extends DCLogic {
   renderVals() {
     const dark = this.props.dark ?? false;
-    const mono = (this.props.accent ?? 'mor') === 'mono';
+    const mono = (this.props.accent ?? 'lacivert') === 'mono';
     return { mode: (dark ? 'night' : 'day') + (mono ? ' acc-mono' : '') };
   }
 }
