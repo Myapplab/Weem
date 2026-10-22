@@ -2,11 +2,11 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
-## 2026-10-22 — A10.4b PR #15 kırmızısı kapandı: ekran metinleri logic/map'e (Claude Opus · high; dal `ccr-4b659265-9jxyuk`)
+## 2026-10-22 — A10.4b PR #15 kırmızısı kapandı: ekran metinleri logic/map'e (Claude Opus · high; dal `ccr-4b659265-9jxyuk`, PR #16)
 - Yapılan: PR #15 dalı + `main` birleştirildi. `TextCoverageTest` (`:app`'te yerel harfli düz metin yok) için `SurfaceScreens.kt` ve `RoadCalibrationScreen.kt` metinleri `logic/map`'e: `SurfaceUiText` (TR/AZ), `SurfaceText.detailLines/impactTitle/impactSubtitle/technical/bandStatus/diagnostics/conflictLine`, `CalibrationText` sabitleri + `profileLine/levelLine/customLabel/remaining/failed` (yalnız TR, YolGo gibi). Çelişki satırı artık `roadScore` satırlarında "ve/və" aranarak bulunmuyor (`conflictLine`). `MAP.md` 18.2/18.3.
-- Doğrulama: `-p logic test --rerun-tasks` 2.116 test, 0 kırmızı; `:app` ana kaynağı derlendi; `:app`/`:map` Robolectric + lint yerelde Maven Central 429 (repo.maven.apache.org ve repo1) → CI'da. Telefonda denenmedi.
+- Doğrulama: `-p logic test --rerun-tasks` 2.116 test, 0 kırmızı; `:app` ana kaynağı derlendi; `:app`/`:map` Robolectric + lint yerelde Maven Central 429 (repo.maven.apache.org ve repo1); **PR #16 CI yeşil** (13 dk) → `main` `a4ffac3` (PR #15 de birleşmiş sayıldı). Telefonda denenmedi.
 - Açık kalan: önceki bölümdeki A10.4b açıkları (SORU-Y13-1, M-Y13-1, cihaz sınaması).
-- Sıradaki: CI yeşilse `main`'e birleştir → A10.4 (K, kullanıcı geçişi) → A10.5.
+- Sıradaki: A10.4 (K, kullanıcı geçişi) → A10.5.
 
 ## 2026-10-21 — A10.4b Y13 yüzey/titreşim + Y14 yol kalibrasyonu (Claude Sonnet · high; dal `ccr-03d281e4-dglbwh`; S33: geçiş ve telefon beklenmedi, APK yok)
 - Yapılan: `MAP.md` 18. `logic/map` `surface`/`calibration`/`roads`/`ui`/`route`/`nav`: sinyal, kapı, hat (`SurfaceFeed`), işlemci, depo (`files/surface-v2/`), puanlama, kalibrasyon motoru/referanslar, E11 sokak puanları, rota maliyeti (yüzen "kapalı" işaret, düzgün yol adayı), `NavController.surfaceInputs`. `:map`: `SurfaceSensors`/`SurfaceRuntime`, `RoadCalibrationService`+`Overlay`. `:app`: Yol puanları, sokak parçaları, ayrıntı, Ölçüm ve kalibrasyon, Kalibrasyon, harita katmanı.
