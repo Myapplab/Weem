@@ -6,7 +6,6 @@ import android.annotation.SuppressLint
 import android.graphics.Path
 import android.graphics.PixelFormat
 import android.graphics.Rect
-import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Handler
 import android.os.Looper
@@ -15,6 +14,7 @@ import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.widget.TextView
 import com.kuryelog.app.core.OwnOverlays
+import com.kuryelog.app.core.WeemFonts
 import com.kuryelog.app.core.Store
 import com.kuryelog.logic.remote.GestureStroke
 import com.kuryelog.logic.remote.GlobalAction
@@ -182,12 +182,13 @@ class TouchService : AccessibilityService() {
         val wm = getSystemService(WindowManager::class.java)
         val d = resources.displayMetrics.density
         val tv = TextView(this).apply {
+            val pal = OwnOverlays.palette(this@TouchService)
             textSize = 12f
-            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            typeface = WeemFonts.get(WeemFonts.SEMIBOLD)
             includeFontPadding = false
-            setTextColor(MARKER_TEXT)
+            setTextColor(if (pal.dark) pal.bg else pal.surface)
             setPadding((12 * d).toInt(), (6 * d).toInt(), (12 * d).toInt(), (6 * d).toInt())
-            background = GradientDrawable().apply { cornerRadius = 14 * d; setColor(MARKER_BG) }
+            background = GradientDrawable().apply { cornerRadius = 100 * d; setColor(pal.danger) }
             elevation = 4 * d
             // Tek dokunuşla bitirme: paylaşım (ve izleme, dokunuş) kapanır.
             setOnClickListener { RemoteHub.stopShare() }
@@ -216,8 +217,6 @@ class TouchService : AccessibilityService() {
     companion object {
         /** Durum çubuğunun altı (çoğu telefonda 24–40 dp). */
         private const val MARKER_TOP_DP = 40
-        private const val MARKER_BG = 0xE6C62828.toInt()
-        private const val MARKER_TEXT = 0xFFFFFFFF.toInt()
 
         // Servis bağlıyken tutulur, kopunca (shutdown) silinir; işaret penceresi de o an kaldırılır.
         @SuppressLint("StaticFieldLeak")

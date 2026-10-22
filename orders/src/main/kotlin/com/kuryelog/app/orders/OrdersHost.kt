@@ -4,7 +4,6 @@ import android.accessibilityservice.AccessibilityService
 import android.annotation.SuppressLint
 import android.graphics.PixelFormat
 import android.graphics.Rect
-import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.MotionEvent
@@ -12,6 +11,7 @@ import android.view.WindowManager
 import android.widget.TextView
 import com.kuryelog.app.capture.CaptureHost
 import com.kuryelog.app.core.OwnOverlays
+import com.kuryelog.app.core.WeemFonts
 import com.kuryelog.app.core.Shift
 import com.kuryelog.app.core.Store
 import com.kuryelog.logic.orders.OverlayText
@@ -63,7 +63,7 @@ object OrdersHost : CaptureHost {
         val wm = s.getSystemService(WindowManager::class.java)
         // K35: the badge wraps its text (no names, so no long line that wraps and leaves empty width); no extra font padding.
         val density = s.resources.displayMetrics.density
-        val tv = TextView(s).apply { textSize = 12f; typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL); includeFontPadding = false
+        val tv = TextView(s).apply { textSize = 12f; typeface = WeemFonts.get(WeemFonts.SEMIBOLD); includeFontPadding = false
             setPadding((10 * density).toInt(), (7 * density).toInt(), (10 * density).toInt(), (7 * density).toInt()); elevation = 4 * density }
         val p = Store.prefs(s)
         val lp = WindowManager.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT,
@@ -85,7 +85,7 @@ object OrdersHost : CaptureHost {
         if (badgeDark == dark) return
         val p = OwnOverlays.palette(s)
         b.setTextColor(p.text)
-        b.background = GradientDrawable().apply { cornerRadius = 16 * s.resources.displayMetrics.density; setColor(p.surface); setStroke((s.resources.displayMetrics.density + .5f).toInt(), p.line) }
+        b.background = GradientDrawable().apply { cornerRadius = 8 * s.resources.displayMetrics.density; setColor(p.surface); setStroke((s.resources.displayMetrics.density + .5f).toInt(), p.line) }
         badgeDark = dark
     }
     /**
