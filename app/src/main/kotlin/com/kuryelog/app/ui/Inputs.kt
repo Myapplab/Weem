@@ -3,6 +3,8 @@ package com.kuryelog.app.ui
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -18,8 +20,10 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -80,33 +84,45 @@ fun WChip(
 }
 
 /**
- * Bölümlü seçici: `raised` hap içinde 40 dp seçenekler (toplam 48 dp); seçili `surface` + `e1`. Seçenekler `Role.Tab`; [tags] testler için.
+ * Bölümlü seçici: `raised` hap içinde 40 dp seçenekler (toplam 48 dp); seçili `surface` + `e1`. Dokunma alanı hapın iç boşluğunu da
+ * kapsar (≥ 48 dp, `docs/TASARIM.md` 14); dalga yalnız görünen seçenekte. Seçenekler `Role.Tab`; [tags] testler için.
  */
 @Composable
 fun Segmented(options: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier, tags: List<String>? = null) {
     val p = palette()
     val haptics = LocalHapticFeedback.current
     Row(
-        modifier.fillMaxWidth().background(p.raised.color(), CircleShape).padding(4.dp).selectableGroup(),
+        modifier.fillMaxWidth().background(p.raised.color(), CircleShape).padding(horizontal = 4.dp).selectableGroup(),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         options.forEachIndexed { i, label ->
             val on = i == selected
             val bg by animateColorAsState(if (on) p.surface.color() else Color.Transparent, tween(WeemMotion.STATE), label = "seg-bg")
+            val press = remember { MutableInteractionSource() }
             Box(
-                Modifier.weight(1f).heightIn(min = 40.dp)
-                    .let { if (on) it.floating(CircleShape) else it }
-                    .clip(CircleShape).background(bg)
+                Modifier.weight(1f).heightIn(min = WeemSize.touch)
                     .let { m -> tags?.getOrNull(i)?.let { m.testTag(it) } ?: m }
-                    .selectable(selected = on, role = Role.Tab, onClick = { haptics.performHapticFeedback(HapticFeedbackType.SegmentTick); onSelect(i) })
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .selectable(
+                        selected = on, interactionSource = press, indication = null, role = Role.Tab,
+                        onClick = { haptics.performHapticFeedback(HapticFeedbackType.SegmentTick); onSelect(i) },
+                    )
+                    .padding(vertical = 4.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(
-                    label, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center,
-                    color = (if (on) p.text else p.muted).color(), maxLines = 2, overflow = TextOverflow.Ellipsis,
-                    fontFamily = Inter,
-                )
+                Box(
+                    Modifier.fillMaxWidth().heightIn(min = 40.dp)
+                        .let { if (on) it.floating(CircleShape) else it }
+                        .clip(CircleShape).background(bg)
+                        .indication(press, ripple())
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        label, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center,
+                        color = (if (on) p.text else p.muted).color(), maxLines = 2, overflow = TextOverflow.Ellipsis,
+                        fontFamily = Inter,
+                    )
+                }
             }
         }
     }
