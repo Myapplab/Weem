@@ -34,6 +34,8 @@ class WeemApplication : Application() {
                 else -> R.font.inter_extrabold
             })
         }
+        // A10.4h: geri yüklenen harita verisi, harita çalışma zamanları (NavRuntime, hava…) kurulmadan önce.
+        Store.guarded(this, "encrypted_restore_map") { EncryptedBackups.applyPendingMap(this) }
         // ShiftPort durumu tercihlerden (süreç vardiya sürerken yeniden başlamış olabilir).
         ShiftHub.attach(this)
         // Ekonomi dikişi (ECONOMICS.md 3): akışın ilk girişinden önce (kancalar `restart`/`restored` ilk girişte bir kez); `:orders`
