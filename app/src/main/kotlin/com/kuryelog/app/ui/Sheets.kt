@@ -29,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -97,6 +98,7 @@ fun ConfirmDialog(
     text: String? = null,
     danger: Boolean = false,
     confirmEnabled: Boolean = true,
+    confirmTag: String? = null,
     body: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val p = palette()
@@ -114,7 +116,10 @@ fun ConfirmDialog(
             }
         }),
         confirmButton = {
-            WButton(confirm, onConfirm, kind = if (danger) BtnKind.DANGER_FILLED else BtnKind.PRIMARY, enabled = confirmEnabled)
+            WButton(
+                confirm, onConfirm, if (confirmTag != null) Modifier.testTag(confirmTag) else Modifier,
+                kind = if (danger) BtnKind.DANGER_FILLED else BtnKind.PRIMARY, enabled = confirmEnabled,
+            )
         },
         dismissButton = { WButton(dismiss, onDismiss, kind = BtnKind.TEXT) },
     )
