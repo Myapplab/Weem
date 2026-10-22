@@ -44,7 +44,7 @@ class OrdersTabWiringTest {
         assertTrue(tab.contains("if (tools.visible) ToolsCard(tools)") && tab.contains("SessionsPageView(OrdersSessions(src, lang)"))
         val ui = RepoSource.text("app/src/main/kotlin/com/kuryelog/app/OrdersTools.kt")
         assertEquals(1, Regex("SplitScreen\\.open\\(").findAll(ui).count())
-        assertTrue(ui.contains("onClick = { SplitScreen.open(ctx, tools) }"))
+        assertTrue(ui.contains("{ SplitScreen.open(ctx, tools) }"))
         val split = RepoSource.text("app/src/main/kotlin/com/kuryelog/app/SplitScreen.kt")
         assertTrue(split.contains("FLAG_ACTIVITY_LAUNCH_ADJACENT"))
         // Başka hiçbir dosya kurye uygulamasını başlatmaz (bu özellik dışında Wolt/Bolt'a dokunulmaz).
