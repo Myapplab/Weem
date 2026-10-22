@@ -69,6 +69,7 @@ fun ListRow(
     enabled: Boolean = true,
     titleTone: WTone? = null,
     titleStyle: androidx.compose.ui.text.TextStyle = if (subtitle == null && icon == null && leading == null) WeemType.bodyL else WeemType.titleS,
+    subtitleTone: WTone? = null,
     onClick: (() -> Unit)? = null,
 ) {
     val p = palette()
@@ -86,7 +87,7 @@ fun ListRow(
                 title, style = titleStyle, maxLines = 3, overflow = TextOverflow.Ellipsis,
                 color = (if (titleTone != null) p.onSurface(titleTone) else p.text).color().copy(alpha = alpha),
             )
-            if (subtitle != null) Text(subtitle, style = WeemType.bodyS, color = p.muted.color().copy(alpha = alpha))
+            if (subtitle != null) Text(subtitle, style = WeemType.bodyS, color = (if (subtitleTone != null) p.onSurface(subtitleTone) else p.muted).color().copy(alpha = alpha))
         }
         trailing?.invoke(this)
         if (chevron) Icon(WeemIcons.ChevronRight, contentDescription = null, tint = p.muted.color(), modifier = Modifier.size(24.dp))

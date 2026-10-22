@@ -68,7 +68,7 @@ internal fun reminderSummary(it: ReminderItem, lang: Lang): String {
  * metin, "Dene"); altta "Nasıl çalışır". Değişiklikler [onChange] ile (sayaç kuralları denetleyicide).
  */
 /** Hatırlatıcı simgesi (emoji yerine; metin ve bildirim aynı kalır). */
-private fun ReminderKind.icon() = when (this) {
+internal fun ReminderKind.icon() = when (this) {
     ReminderKind.WATER -> WeemIcons.WaterDrop
     ReminderKind.CHECK -> WeemIcons.Tune
     ReminderKind.FOOD -> WeemIcons.Restaurant

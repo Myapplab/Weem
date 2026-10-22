@@ -6,8 +6,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -15,14 +14,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.kuryelog.app.ui.WIconButton
+import com.kuryelog.app.ui.WTone
+import com.kuryelog.app.ui.WeemIcons
+import com.kuryelog.app.ui.WeemRadius
+import com.kuryelog.app.ui.WeemSpace
+import com.kuryelog.app.ui.WeemType
+import com.kuryelog.app.ui.color
+import com.kuryelog.app.ui.floating
+import com.kuryelog.app.ui.palette
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.map.reminders.ActiveReminder
 import com.kuryelog.logic.map.ui.ReminderText
@@ -35,29 +41,29 @@ import com.kuryelog.logic.map.ui.ReminderText
 fun ReminderCard(active: ActiveReminder?, lang: Lang, onDone: () -> Unit, modifier: Modifier = Modifier) {
     if (active == null) return
     val item = active.item
-    val accent = MaterialTheme.colorScheme.primary
+    val p = palette()
+    val accent = p.accentText.color()
+    val shape = RoundedCornerShape(WeemRadius.tile)
     Surface(
-        modifier.testTag("reminder-card").fillMaxWidth().heightIn(max = 44.dp).padding(top = 2.dp),
-        shape = RoundedCornerShape(12.dp),
-        tonalElevation = 2.dp,
-        border = androidx.compose.foundation.BorderStroke(1.dp, accent),
+        modifier.testTag("reminder-card").fillMaxWidth().heightIn(max = 44.dp).padding(top = 2.dp).floating(shape),
+        shape = shape,
+        color = p.surface.color(),
+        contentColor = p.text.color(),
     ) {
-        Row(Modifier.padding(start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(item.emoji, fontSize = 14.sp)
+        Row(Modifier.padding(start = WeemSpace.m), verticalAlignment = Alignment.CenterVertically) {
+            Icon(item.kind.icon(), contentDescription = null, tint = p.accent.color(), modifier = Modifier.size(18.dp))
             Text(
                 buildAnnotatedString {
-                    withStyle(SpanStyle(fontWeight = FontWeight.Black, color = accent)) { append(item.title(lang)) }
+                    withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, color = accent)) { append(item.title(lang)) }
                     append(" · ")
                     append(item.message(lang))
                 },
-                Modifier.weight(1f).padding(start = 6.dp),
+                Modifier.weight(1f).padding(start = WeemSpace.s),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                fontSize = 12.5.sp,
+                style = WeemType.bodyS,
             )
-            IconButton(onClick = onDone, Modifier.size(width = 36.dp, height = 32.dp).testTag("reminder-done").semantics { contentDescription = ReminderText.DONE.get(lang) }) {
-                Text("✓", color = accent, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            }
+            WIconButton(WeemIcons.Check, ReminderText.DONE.get(lang), onDone, Modifier.testTag("reminder-done"), size = 40.dp, tone = WTone.ACCENT)
         }
     }
 }
