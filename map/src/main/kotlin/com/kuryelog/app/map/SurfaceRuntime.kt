@@ -8,6 +8,7 @@ import com.kuryelog.logic.map.nav.NavController
 import com.kuryelog.logic.map.calibration.RoadCalibrationRecord
 import com.kuryelog.logic.map.nav.SurfaceInputs
 import com.kuryelog.logic.map.roads.StreetScores
+import com.kuryelog.logic.map.surface.RawDiagnostics
 import com.kuryelog.logic.map.surface.SurfaceFeed
 import com.kuryelog.logic.map.surface.SurfaceFeedConfig
 import com.kuryelog.logic.map.surface.SurfaceLeg
@@ -54,6 +55,9 @@ class SurfaceRuntime internal constructor(
     )
     private val sensors: SurfaceSensors = SurfaceSensors(app, feed)
 
+    /** Ham tanı kaydı (A10.4c; `files/surface-raw-v2/`, son 10 dk): anahtar kapalıyken hiçbir ham örnek yazılmaz. */
+    private val raw = RawDiagnostics(File(app.filesDir, "surface-raw-v2"))
+
     private val viewFlow = MutableStateFlow(SurfaceView())
     private val summariesFlow = MutableStateFlow<List<SurfaceSummary>>(emptyList())
 
@@ -72,10 +76,42 @@ class SurfaceRuntime internal constructor(
 
     val paused: Boolean get() = processor.gate.manualPaused
 
+    /** Ham tanı kaydı açık mı (tercih `surface.raw.debug`). */
+    var rawEnabled: Boolean
+        get() = prefs.getBool(RAW_DEBUG) == true
+        set(on) {
+            prefs.setBool(RAW_DEBUG, on)
+            applyRaw()
+        }
+
+    private fun applyRaw() {
+        if (!rawEnabled) { feed.rawSink = null; raw.clear(); return }
+        // Yazım hatasında (disk dolu vb.) kayıt kendini kapatır; ölçüm etkilenmez.
+        feed.rawSink = { s ->
+            runCatching { raw.append(s.day, s.boot, s.atNs / 1_000_000, s.toJson()) }.onFailure { feed.rawSink = null; prefs.setBool(RAW_DEBUG, false); raw.close() }
+        }
+    }
+
+    /** Ham kaydı JSONL olarak önbelleğe yazar; kayıt yoksa null. */
+    fun exportRaw(): File? {
+        val out = File(app.cacheDir, "WEEM-surface-raw-last-10-minutes.jsonl")
+        return if (raw.export(out) > 0) out else null
+    }
+
+    /** Etkinlik tanıma izni verilince/geri alınınca sensörler yeniden kaydedilir (adım dedektörü izne bağlı). */
+    fun motionPermissionChanged() {
+        sensors.setActive(false)
+        evaluate()
+    }
+
+    /** Adım dedektörü kullanılabilir mi (donanım + izin). */
+    fun stepsAvailable(): Boolean = sensors.stepsAvailable()
+
     init {
         summariesFlow.value = store.summaries
         store.onChanged { summariesFlow.value = it }
         DayDeletionRuntime.get(app).deleteSurface = ::deleteDate
+        applyRaw()
         nav.surfaceInputs = ::routeInputs
         scope.launch {
             while (isActive) {
@@ -161,12 +197,13 @@ class SurfaceRuntime internal constructor(
     /** Gün silindi: tampondaki ve kayıtlı o güne ait ölçümler gider. */
     fun deleteDate(date: String): Set<String> {
         val ids = runCatching { store.deleteDate(date) }.getOrDefault(emptyList())
-        ids.forEach { processor.dropDay(it) }
+        ids.forEach { processor.dropDay(it); raw.removeDay(it) }
         return ids.toSet()
     }
 
     private companion object {
         const val PAUSED_DAY = "surface.paused.day"
+        const val RAW_DEBUG = "surface.raw.debug"
         const val EVAL_MS = 1_000L
     }
 }

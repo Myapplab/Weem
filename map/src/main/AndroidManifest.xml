@@ -7,6 +7,8 @@
     <!-- Lint: tür `location` için konum izni de bildirilmeli (birleşik manifestte `:app` ile aynı izinler, çoğalmaz). -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- A10.4c (kullanıcı kararı 22 Ekim, SORU-Y13-1): Y13 adım dedektörü yürüyüşü ayırır; izin yoksa ölçüm sensör + GPS ile sürer. Ayarlar'dan geri alınabilir. -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <application>
         <!-- A6.6 yalnız-navigasyon (MAP.md 7.12, 7.17 SORU-N4): gün bitince açık rota ≤90 dk; tür location. -->
         <service

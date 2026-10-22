@@ -40,10 +40,11 @@ class PrivacyAuditTest {
     }
 
     @Test fun noUnusedSensitivePermission() {
-        val manifests = listOf("app", "core", "capture", "orders", "economics", "scooter", "map", "link", "remote")
-            .joinToString("\n") { src("$it/src/main/AndroidManifest.xml") }
-        // Y13 (yürüme güveni) WEEM 1.0'da yok; kod kullanmıyor (MAP.md 2745).
-        assertFalse(manifests.contains("android.permission.ACTIVITY_RECOGNITION"))
+        val modules = listOf("app", "core", "capture", "orders", "economics", "scooter", "map", "link", "remote")
+        val manifests = modules.joinToString("\n") { src("$it/src/main/AndroidManifest.xml") }
+        // ACTIVITY_RECOGNITION (A10.4c, SORU-Y13-1): yalnız Y13 adım dedektörü (`:map` SurfaceSensors) için ve yalnız `:map` bildirir.
+        assertEquals(listOf("map"), modules.filter { src("$it/src/main/AndroidManifest.xml").contains("android.permission.ACTIVITY_RECOGNITION") })
+        assertTrue(src("map/src/main/kotlin/com/kuryelog/app/map/SurfaceSensors.kt").contains("TYPE_STEP_DETECTOR"))
         assertFalse(manifests.contains("android.permission.QUERY_ALL_PACKAGES"))
         assertFalse(manifests.contains("android.permission.READ_CONTACTS"))
         assertFalse(manifests.contains("android.permission.READ_PHONE_STATE"))

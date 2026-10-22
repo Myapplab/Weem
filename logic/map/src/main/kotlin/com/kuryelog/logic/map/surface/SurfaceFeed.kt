@@ -33,6 +33,9 @@ class SurfaceFeed(
     /** Adım dedektörü ya da etkinlik tanıma kullanılabilir mi (izin + donanım). */
     private val activityAvailable: () -> Boolean = { false },
 ) {
+    /** Ham tanı kaydı (isteğe bağlı, A10.4c): doluysa her ivme örneği ölçüme girmeden önce buraya da verilir; null = kapalı. */
+    @Volatile var rawSink: ((RawSample) -> Unit)? = null
+
     private var config = SurfaceFeedConfig()
     private var signal = SurfaceSignal()
     private var signalSetup = ""
@@ -147,6 +150,12 @@ class SurfaceFeed(
         val fresh = timestampNs - fix.elapsedNs in 0..3_000_000_000L
         val stationary = fresh && fix.speed < .5 && displacementSpeed < .6
         val orientation = if (timestampNs - orientationAt < 500_000_000) up else null
+        rawSink?.takeIf { !config.paused }?.invoke(RawSample(
+            day = day, boot = boot, leg = config.leg, atNs = timestampNs, receivedNs = elapsedRealtimeNs(),
+            utc = utcNow() - (elapsedRealtimeNs() - timestampNs) / 1_000_000, receivedUtc = utcNow(), linear = linear,
+            acceleration = values.copyOf(3), worldUp = orientation?.copyOf(), gyro = gyro, speed = fix.speed, accuracy = fix.accuracy,
+            profile = config.profile.id, freshGps = fresh, stationary = stationary, offsetReady = signal.offsetReady,
+        ))
         val w = signal.feed(timestampNs, values.copyOf(3), orientation, linear, stationary, fix.speed, gyro) ?: return
         val leg = config.leg
         if (currentLeg != leg) { lastWindowLocation = null; lastWindowEnd = 0; currentLeg = leg }
