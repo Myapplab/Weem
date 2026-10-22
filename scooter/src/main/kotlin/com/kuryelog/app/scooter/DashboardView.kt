@@ -112,7 +112,8 @@ class DashboardView(context: Context) : View(context) {
             val gw = Math.min(w * .5f, ch * 1.25f)
             gaugeCard(c, s, fresh, alpha, m, top, gw, ch)
             val x = m + gw + dp(12f)
-            val k = (ch - gap - block) / dp(2 * DIAL + TRIP)
+            // Same ceiling as portrait full screen: a tall landscape (tablet) does not blow the cards up.
+            val k = Math.min(1.7f, (ch - gap - block) / dp(2 * DIAL + TRIP))
             dials(c, s, fresh, alpha, x, top, w - x - m, dp(DIAL) * k, gap, k)
             tripCard(c, alpha, x, top + 2 * dp(DIAL) * k + gap + block, w - x - m, dp(TRIP) * k, k)
             return
@@ -126,9 +127,13 @@ class DashboardView(context: Context) : View(context) {
         val grow = Math.max(0f, Math.min(spare * .5f, cw * 1.05f - gh))
         gh += grow
         spare -= grow
-        // Short screens shrink the cards (not below 60 %) instead of cutting them off.
-        val fit = (h - 2 * pad - gh) / below
-        val k = if (fit < 1f) Math.max(.6f, fit) else Math.min(if (immersive) 1.7f else 1.45f, 1f + spare / below)
+        // Short screens shrink the cards instead of cutting them off; below 60 % the gauge gives up height first (split screen).
+        var fit = (h - 2 * pad - gh) / below
+        if (fit < .6f) {
+            gh = Math.max(dp(96f), h - 2 * pad - below * .6f)
+            fit = (h - 2 * pad - gh) / below
+        }
+        val k = if (fit < 1f) fit else Math.min(if (immersive) 1.7f else 1.45f, 1f + spare / below)
         val top = Math.max(pad, (h - gh - below * k) / 2f)
         gaugeCard(c, s, fresh, alpha, m, top, cw, gh)
         val y = top + gh + block * k
@@ -220,10 +225,17 @@ class DashboardView(context: Context) : View(context) {
         powerPill(c, s, alpha, cx, cy + r * .81f, r)
         // Hint row at the bottom of the card: scope (this order / connection) and what a tap does.
         val hint = ScooterPanel.hint(trip, immersive, lang)
-        val hs = Math.max(dp(11f), r * .12f)
+        var hs = Math.max(dp(11f), r * .12f)
         paint.typeface = WeemFonts.get(WeemFonts.SEMIBOLD)
         paint.textSize = hs
         paint.letterSpacing = 0f
+        // Icon + gap + text shrink together to fit inside the card (long AZ hint, narrow landscape card).
+        val room = w - dp(24f)
+        val need = hs * 1.35f + dp(6f) + paint.measureText(hint)
+        if (need > room && need > 0) {
+            hs *= room / need
+            paint.textSize = hs
+        }
         val iconSize = hs * 1.35f
         val tw = paint.measureText(hint)
         val left = cx - (iconSize + dp(6f) + tw) / 2f

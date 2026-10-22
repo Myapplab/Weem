@@ -107,7 +107,12 @@ internal class FloatPainter {
 
     /** Sistem PiP penceresi ızgarası: iki değere kadar tek satır, üç-dört değerde 2 × 2. */
     fun grid(c: Canvas, w: Float, h: Float, fields: List<PanelField>, s: NinebotDashboard.Snapshot?, t: TripMeter.Stats?, alpha: Int) {
-        c.drawColor(ink.bg)
+        // drawRect, not drawColor: on a software canvas (no per-view clip) the compact Scooter tab would paint over its header.
+        fill.shader = null
+        fill.style = Paint.Style.FILL
+        fill.color = ink.bg
+        fill.alpha = 255
+        c.drawRect(0f, 0f, w, h, fill)
         val n = fields.size
         val cols = if (n <= 2) n else 2
         val rows = if (n <= 2) 1 else 2

@@ -3,6 +3,7 @@ package com.kuryelog.app.map
 import android.animation.ValueAnimator
 import android.app.AlertDialog
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
@@ -18,6 +19,7 @@ import android.view.WindowManager
 import android.widget.EditText
 import com.kuryelog.app.core.OwnOverlays
 import com.kuryelog.app.core.WeemFonts
+import com.kuryelog.logic.core.OverlayPalette
 import com.kuryelog.logic.map.calibration.CalibrationPhase
 import com.kuryelog.logic.map.calibration.CalibrationState
 import kotlin.math.hypot
@@ -143,7 +145,8 @@ internal class RoadCalibrationOverlay(private val context: Context, private val 
         private var dragged = false
         private val slop = ViewConfiguration.get(c).scaledTouchSlop
         // A10.4d (`docs/TASARIM.md` 4): renkler `OverlayPalette`'ten (telefonun gece/gündüz ayarı); metinler YolGo'daki gibi.
-        private val pal get() = OwnOverlays.palette(context)
+        // Çizim başına bir kez çözülür; gece/gündüz değişince yeniden çizilir.
+        private var pal: OverlayPalette = OwnOverlays.palette(c)
         private val surface get() = (pal.surface and 0x00ffffff) or 0xf5000000.toInt()
         private val accent get() = pal.accentText
 
@@ -157,7 +160,13 @@ internal class RoadCalibrationOverlay(private val context: Context, private val 
             c.drawText(value, x, y, p)
         }
 
+        override fun onConfigurationChanged(newConfig: Configuration) {
+            super.onConfigurationChanged(newConfig)
+            invalidate()
+        }
+
         override fun onDraw(c: Canvas) {
+            pal = OwnOverlays.palette(context)
             val w = width.toFloat(); val h = height.toFloat(); val barH = 108 * d
             p.style = Paint.Style.FILL; p.color = if (phase == CalibrationPhase.DONE) (pal.positiveBg and 0x00ffffff) or 0xf5000000.toInt() else surface
             if (!expanded) c.drawCircle(w / 2, h / 2, w / 2, p) else c.drawRoundRect(0f, 0f, w, barH, 34 * d, 34 * d, p)

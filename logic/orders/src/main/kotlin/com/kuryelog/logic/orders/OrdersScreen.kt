@@ -13,7 +13,14 @@ import java.util.Locale
 // ekran Compose, bu sınıf yalnız metni ve sırayı üretir (Compose [Block]'ları çizer, Android'siz test edilir). Farklar: ORDERS.md 16.3.
 
 /** Platform rengi: Wolt, Bolt Food ya da nötr (Rawstats `platformColor`/`platformBg`). */
-enum class Tone { NEUTRAL, WOLT, BOLT }
+enum class Tone {
+    NEUTRAL, WOLT, BOLT;
+
+    companion object {
+        /** Platform adı ([OrderHistory.PLATFORMS]) → ton; bilinmeyen ya da null nötr. */
+        fun of(platform: String?) = when (platform) { "Wolt" -> WOLT; "Bolt Food" -> BOLT; else -> NEUTRAL }
+    }
+}
 
 /** Satırın ağırlığı ve rengi (Rawstats `text(c, s, size, bold, color)`). */
 enum class Style { BODY, MUTED, BOLD, ACCENT_BOLD, DANGER, DANGER_BOLD, TITLE }
@@ -108,7 +115,6 @@ class OrdersScreen(private val src: OrdersSource, lang: Lang) {
     private fun f1(n: Double) = String.format(Locale.US, "%.1f", n)
     private fun f2(n: Double) = String.format(Locale.US, "%.2f", n)
     private fun platformOf(pkg: String) = Platform.name(pkg)
-    private fun toneOf(platform: String?) = when (platform) { "Wolt" -> Tone.WOLT; "Bolt Food" -> Tone.BOLT; else -> Tone.NEUTRAL }
     private fun dk(m: Double) = OrderHistory.durationText(m, ::tl)
     /** Whole minutes, the sign kept ("-3 dk" = earlier than the platform's upper estimate). */
     private fun minutesText(m: Double) = if (m < -0.5) "-" + dk(-m) else dk(m.coerceAtLeast(0.0))
@@ -164,7 +170,7 @@ class OrdersScreen(private val src: OrdersSource, lang: Lang) {
                 Tile(m(a.beforeOfferMin), tl("sipariş öncesi", "sifarişdən əvvəl"), metric = OrderHistory.Metric.BEFORE_OFFER))),
         )
         val platforms = byPlatform.filter { it.second.trips.isNotEmpty() }.map { (name, d) ->
-            val tone = toneOf(name)
+            val tone = Tone.of(name)
             val b = mutableListOf<Block>(Block.Heading(name, tone),
                 Block.Tiles(listOf(Tile(d.orders.toString(), tl("teslim", "çatdırılma"), tone), Tile(f2(d.gross) + "₼", tl("brüt", "ümumi")), Tile(f2(d.net) + "₼", tl("net", "xalis")))),
                 Block.Tiles(listOf(Tile(f1(d.waitMinutes) + " " + tl("dk", "dəq"), tl("bekleme", "gözləmə")),
@@ -244,7 +250,7 @@ class OrdersScreen(private val src: OrdersSource, lang: Lang) {
         val rows = trips.map { trip ->
             val name = platformOf(trip.pkg)
             val unverified = if (trip.deliveredInferred && trip.verifiedBy == null) " · " + tl("doğrulanmadı", "təsdiqlənmədi") else ""
-            OrderRow(trip.id, toneOf(name), platform == null,
+            OrderRow(trip.id, Tone.of(name), platform == null,
                 "${clock(OrderHistory.listTime(trip, name))}  ${OrderHistory.restaurant(trip) ?: tl("Sipariş", "Sifariş")}$unverified",
                 // E2: the order's restaurant wait under its name ("—" when it was not measured); E3 boost and temperature follow.
                 OrderHistory.listLine(trip, ::tl),
@@ -260,7 +266,7 @@ class OrdersScreen(private val src: OrdersSource, lang: Lang) {
     /** Bir gün: toplamlar, nakit, resmî değerler, kaçırılanlar, boost, sonra her sipariş tam kart (teklif zamanı sırasıyla). */
     fun dayDetail(date: String, platform: String? = null): DayDetail {
         val d = days(platform).firstOrNull { it.date == date } ?: OrderHistory.Day(date, emptyList())
-        val tone = if (platform == null) Tone.NEUTRAL else toneOf(platform)
+        val tone = if (platform == null) Tone.NEUTRAL else Tone.of(platform)
         val head = mutableListOf<Block>(Block.Heading(labels.platformLabel(platform), tone), Block.Line(dayTitle(date), Style.TITLE),
             Block.Tiles(listOf(Tile(d.orders.toString(), tl("teslim", "çatdırılma"), tone), Tile(f2(d.gross) + "₼", tl("brüt", "ümumi")), Tile(f2(d.net) + "₼", tl("net", "xalis")))),
             Block.Tiles(listOf(Tile(f1(d.waitMinutes) + " " + tl("dk", "dəq"), tl("bekleme", "gözləmə")),
@@ -411,7 +417,7 @@ class OrdersScreen(private val src: OrdersSource, lang: Lang) {
      */
     fun tripCard(trip: TripRecord, actions: Boolean = false, sameDay: List<TripRecord> = emptyList()): TripCard {
         val name = platformOf(trip.pkg)
-        val tone = toneOf(name)
+        val tone = Tone.of(name)
         val b = mutableListOf<Block>()
         b += Block.Heading("$name · ${OrderHistory.status(trip, ::tl)}", tone)
         b += Block.Line(trip.pickups.joinToString("\n") { listOfNotNull(it.restaurant, it.address).joinToString("\n") }, Style.TITLE)

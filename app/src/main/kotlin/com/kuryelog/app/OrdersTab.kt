@@ -169,7 +169,7 @@ private fun NowCard(title: String, text: String?, buttons: List<Pair<String, Str
             for (line in text.lines().filter { it.isNotBlank() }) {
                 val name = OrderHistory.PLATFORMS.firstOrNull { line.startsWith(it) }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    if (name != null) Dot(p.mark(platformTone(name).wtone()).color())
+                    if (name != null) Dot(p.mark(Tone.of(name).wtone()).color())
                     Text(line, style = WeemType.bodyM)
                 }
             }
@@ -177,8 +177,6 @@ private fun NowCard(title: String, text: String?, buttons: List<Pair<String, Str
         for ((label, id) in buttons) WButton(label, { onCustomerCard(id) }, kind = BtnKind.TONAL, icon = WeemIcons.Person, fill = true)
     }
 }
-
-private fun platformTone(name: String?) = when (name) { "Wolt" -> Tone.WOLT; "Bolt Food" -> Tone.BOLT; else -> Tone.NEUTRAL }
 
 /**
  * Gün sayfaları: tarihler yeniden eskiye (sola kaydırma eski güne); başlık kartında önceki/sonraki gün düğmeleri, dokununca tarih seçici,
@@ -234,7 +232,7 @@ fun DayPages(
         }
         if (scoreDay == null) FlowRow(horizontalArrangement = Arrangement.spacedBy(WeemSpace.s), verticalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
             WChip(labels.allOrders, platform == null, { onPlatform(null) })
-            for (name in OrderHistory.PLATFORMS) WChip(name, platform == name, { onPlatform(name) }, dot = p.mark(platformTone(name).wtone()).color())
+            for (name in OrderHistory.PLATFORMS) WChip(name, platform == name, { onPlatform(name) }, dot = p.mark(Tone.of(name).wtone()).color())
         }
         HorizontalPager(pager, Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, pageSpacing = WeemSpace.l, key = { dates[it] }) { i ->
             val date = dates[i]

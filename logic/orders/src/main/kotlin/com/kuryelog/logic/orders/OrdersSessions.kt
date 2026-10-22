@@ -30,7 +30,6 @@ class OrdersSessions(private val src: OrdersSource, lang: Lang) {
     private val clockFormat by lazy { DateTimeFormatter.ofPattern("HH:mm", Locale.US).withZone(src.zone()) }
     private fun clock(t: Long) = clockFormat.format(Instant.ofEpochMilli(t))
     private fun dur(m: Double) = OrderHistory.durationText(m, ::tl)
-    private fun toneOf(platform: String) = when (platform) { "Wolt" -> Tone.WOLT; "Bolt Food" -> Tone.BOLT; else -> Tone.NEUTRAL }
 
     val title = tl("Çevrimiçi oturumlar", "Onlayn sessiyalar")
 
@@ -57,7 +56,7 @@ class OrdersSessions(private val src: OrdersSource, lang: Lang) {
                     tl("${x.offers} teklif görüldü · ${x.accepted} kabul · ${x.rejected} ret · ${x.delivered} teslim",
                         "${x.offers} təklif görüldü · ${x.accepted} qəbul · ${x.rejected} imtina · ${x.delivered} çatdırılma"), mine)
             }
-            SessionGroup(name, toneOf(name), tl("$name · bugün ${list.size} kez · ${dur(list.sumOf { it.minutes })}", "$name · bu gün ${list.size} dəfə · ${dur(list.sumOf { it.minutes })}"), entries)
+            SessionGroup(name, Tone.of(name), tl("$name · bugün ${list.size} kez · ${dur(list.sumOf { it.minutes })}", "$name · bu gün ${list.size} dəfə · ${dur(list.sumOf { it.minutes })}"), entries)
         }
         return SessionsPage(title, null, groups,
             tl("≈ : başlangıç/bitiş ekranı görülmedi; ilk/son görülen çevrimiçi ekranın saati.", "≈ : başlanğıc/bitiş ekranı görünmədi; ilk/son görünən onlayn ekranın vaxtı."))

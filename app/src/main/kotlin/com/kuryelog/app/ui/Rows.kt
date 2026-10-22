@@ -266,7 +266,8 @@ fun DividedColumn(divider: Color?, inset: Dp, modifier: Modifier = Modifier, con
         val placeables = measurables.map { it.measure(loose) }
         val height = placeables.sumOf { it.height } + line * (placeables.size - 1).coerceAtLeast(0)
         val ys = FloatArray((placeables.size - 1).coerceAtLeast(0))
-        layout(constraints.maxWidth, height.coerceIn(constraints.minHeight, constraints.maxHeight)) {
+        val width = if (constraints.hasBoundedWidth) constraints.maxWidth else placeables.maxOfOrNull { it.width } ?: 0
+        layout(width, height.coerceIn(constraints.minHeight, constraints.maxHeight)) {
             var y = 0
             placeables.forEachIndexed { i, pl ->
                 pl.placeRelative(0, y)

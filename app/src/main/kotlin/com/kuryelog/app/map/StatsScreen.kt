@@ -1,22 +1,26 @@
 package com.kuryelog.app.map
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -99,12 +103,16 @@ fun StatsScreen(
             Box(Modifier.fillMaxSize().padding(WeemSpace.xxl), contentAlignment = Alignment.Center) { EmptyState(StatsTabs.emptyText(lang), icon = WeemIcons.BarChart) }
             return
         }
-        // Günler: kaydırılan çip sırası (seçili çip vurgu kabında).
-        Row(
-            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = WeemSpace.l, vertical = WeemSpace.xs),
+        // Günler: kaydırılan çip sırası (seçili çip vurgu kabında); odaklanan/seçilen gün görünür alana kaydırılır.
+        val chips = rememberLazyListState(initialFirstVisibleItemIndex = index)
+        LaunchedEffect(index) { chips.animateScrollToItem(index) }
+        LazyRow(
+            Modifier.fillMaxWidth(),
+            state = chips,
+            contentPadding = PaddingValues(horizontal = WeemSpace.l, vertical = WeemSpace.xs),
             horizontalArrangement = Arrangement.spacedBy(WeemSpace.s),
         ) {
-            days.forEachIndexed { i, d -> WChip(StatsTabs.label(d, i, nowMs, zone, lang), i == index, { selected = i }, Modifier.testTag("stats-tab-$i")) }
+            itemsIndexed(days) { i, d -> WChip(StatsTabs.label(d, i, nowMs, zone, lang), i == index, { selected = i }, Modifier.testTag("stats-tab-$i")) }
         }
         DayStatsPage(days[index], lang, nowMs, zone, actions, Modifier.weight(1f))
     }
