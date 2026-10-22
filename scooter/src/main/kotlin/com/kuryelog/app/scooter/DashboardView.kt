@@ -90,9 +90,14 @@ class DashboardView(context: Context) : View(context) {
     private fun dp(v: Float): Float = v * d
 
     override fun onDraw(c: Canvas) {
-        c.drawColor(ink.bg)
         val w = width.toFloat()
         val h = height.toFloat()
+        // drawRect, not drawColor: a software canvas (no per-view clip) would otherwise paint over the Compose header above.
+        paint.shader = null
+        paint.style = Paint.Style.FILL
+        paint.color = ink.bg
+        paint.alpha = 255
+        c.drawRect(0f, 0f, w, h, paint)
         val s = frame
         val fresh = live()
         lastDrawnLive = fresh
@@ -187,17 +192,27 @@ class DashboardView(context: Context) : View(context) {
             }
         }
         val label = Math.max(dp(11f), r * .13f)
-        text(c, (if (fresh) T.SPEED else T.NO_DATA).get(lang), cx, cy - r * .455f, label, if (fresh) ink.muted else ink.warn, 255, WeemFonts.SEMIBOLD,
+        // "HIZ" sits between the 10 and 20 labels; the longer waiting label goes above them and shrinks to fit inside the ring.
+        val title = (if (fresh) T.SPEED else T.NO_DATA).get(lang)
+        val titleRoom = r * if (fresh) .7f else 1.05f
+        paint.typeface = WeemFonts.get(WeemFonts.SEMIBOLD)
+        paint.textSize = label
+        paint.letterSpacing = .08f
+        val titleWidth = paint.measureText(title)
+        paint.letterSpacing = 0f
+        val titleSize = if (titleWidth > titleRoom) label * titleRoom / titleWidth else label
+        text(c, title, cx, cy - r * if (fresh) .455f else .6f, titleSize, if (fresh) ink.muted else ink.warn, 255, WeemFonts.SEMIBOLD,
             Paint.Align.CENTER, .08f)
         val speed = NinebotDashboard.speed(s?.speedKmh)
         number.typeface = WeemFonts.get(WeemFonts.EXTRABOLD)
         number.letterSpacing = -.04f
-        var font = r * .8f
+        // No reading yet: a small, faint dash instead of a large grey bar.
+        var font = r * if (s?.speedKmh == null) .4f else .8f
         number.textSize = font
         val max = r * 1.3f
         if (number.measureText(speed) > max) font *= max / number.measureText(speed)
         number.textSize = font
-        number.color = ink.text
+        number.color = if (s?.speedKmh == null) ink.muted else ink.text
         number.alpha = alpha
         c.drawText(speed, cx, cy + r * .27f, number)
         number.letterSpacing = 0f
