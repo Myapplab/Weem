@@ -2,7 +2,7 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
-## 2026-10-22 — A10.4d bitti: tasarım yenileme tamam (Claude Opus; dal `ccr-b2a13552-nsq0si`; PR ve CI `WEEM_ISLER.md` "Şu an"da)
+## 2026-10-22 — A10.4d bitti: tasarım yenileme tamam (Claude Opus; dal `ccr-b2a13552-nsq0si`; PR #18 CI yeşil, `main` `efa3df5`)
 - Yapılan: wip dal (`ccr-6a6f738a-pn3a16`) alındı ve doğrulandı; Sürüş Paneli düzeltmeleri; Uzaktan, hata/çökme kartı, sistem üstü katmanlar (rozet metni/biçimi aynı); ev seçici iğnesi; `Segmented` 48 dp; `AcceptanceTest`; `/code-review high` 10 bulgu (7 düzeltildi, 1 değişmedi, 1 belge).
 - Doğrulama: `-p logic test` 2.126/0; `:app` 106/106, `:map` 9/9; 7 modülde lint 0 hata; release APK +88 KB (`main` ile yerelde karşılaştırıldı); telefonda denenmedi.
 - Açık kalan: bahşiş/cep nakdi pencereleri sistem teması; `WeemTopBar` `BackHandler` ana işleyicileri gölgeliyor (bugün aynı sonuç); görsel tur Robolectric yaklaşığı.
