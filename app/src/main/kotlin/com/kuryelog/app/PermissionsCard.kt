@@ -11,15 +11,16 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -39,6 +40,18 @@ import com.kuryelog.app.capture.CaptureStatus
 import com.kuryelog.app.core.Home
 import com.kuryelog.app.scooter.Scooter
 import com.kuryelog.app.scooter.ScooterShiftLink
+import com.kuryelog.app.ui.BtnKind
+import com.kuryelog.app.ui.StatusPill
+import com.kuryelog.app.ui.WButton
+import com.kuryelog.app.ui.WCard
+import com.kuryelog.app.ui.WTone
+import com.kuryelog.app.ui.WeemIcons
+import com.kuryelog.app.ui.WeemSpace
+import com.kuryelog.app.ui.WeemType
+import com.kuryelog.app.ui.color
+import com.kuryelog.app.ui.mark
+import com.kuryelog.app.ui.onSurface
+import com.kuryelog.app.ui.palette
 import com.kuryelog.logic.app.BatteryAction
 import com.kuryelog.logic.app.BatteryGuide
 import com.kuryelog.logic.app.PermKind
@@ -120,44 +133,56 @@ fun PermissionsCard(lang: Lang, modifier: Modifier = Modifier, alwaysOpen: Boole
     }
     val ok = Permissions.allOk(s)
     val open = alwaysOpen || Permissions.startsOpen(s, userOpen)
-    val warn = MaterialTheme.colorScheme.error
-    Card(modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp)) {
-            Row(
-                Modifier.fillMaxWidth().clickable(enabled = !alwaysOpen, role = Role.Button) { userOpen = !open },
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(SetupText.PERMS_TITLE.get(lang), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                Text(Permissions.badge(s), color = if (ok) MaterialTheme.colorScheme.primary else warn, style = MaterialTheme.typography.titleMedium)
-            }
-            if (!open) return@Column
-            for (row in Permissions.rows(s)) {
-                PermLine(row.kind.label.get(lang), if (row.ok) "✓" else "!", if (row.ok) null else warn) {
-                    ctx.safely {
-                        when (row.kind) {
-                            PermKind.ACCESSIBILITY -> CaptureStatus.openAccessibilitySettings(ctx)
-                            PermKind.NOTIFICATION_LISTENER -> SystemPages.open(ctx, Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
-                            PermKind.LOCATION -> askLocation.launch(locationPermissions())
-                            PermKind.BACKGROUND_LOCATION ->
-                                if (!s.location) askLocation.launch(locationPermissions()) else askBackground.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-                            PermKind.BLUETOOTH -> askBluetooth.launch(ScooterShiftLink.bluetoothPermissions)
-                        }
+    WCard(modifier, spacing = 0.dp, padding = 0.dp) {
+        Row(
+            Modifier.fillMaxWidth().clickable(enabled = !alwaysOpen, role = Role.Button) { userOpen = !open }
+                .heightIn(min = 56.dp).padding(horizontal = WeemSpace.l, vertical = WeemSpace.m),
+            horizontalArrangement = Arrangement.spacedBy(WeemSpace.m),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(SetupText.PERMS_TITLE.get(lang), style = WeemType.titleM, modifier = Modifier.weight(1f))
+            StatusPill(Permissions.badge(s), if (ok) WTone.POSITIVE else WTone.DANGER, dot = false)
+            if (!alwaysOpen) Icon(
+                if (open) WeemIcons.ExpandLess else WeemIcons.ExpandMore, contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (!open) return@WCard
+        for (row in Permissions.rows(s)) {
+            PermLine(row.kind.label.get(lang), row.ok) {
+                ctx.safely {
+                    when (row.kind) {
+                        PermKind.ACCESSIBILITY -> CaptureStatus.openAccessibilitySettings(ctx)
+                        PermKind.NOTIFICATION_LISTENER -> SystemPages.open(ctx, Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
+                        PermKind.LOCATION -> askLocation.launch(locationPermissions())
+                        PermKind.BACKGROUND_LOCATION ->
+                            if (!s.location) askLocation.launch(locationPermissions()) else askBackground.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                        PermKind.BLUETOOTH -> askBluetooth.launch(ScooterShiftLink.bluetoothPermissions)
                     }
                 }
-                if (row.kind == PermKind.NOTIFICATION_LISTENER) Info(SetupText.PERM_NOTIF_NOTE.get(lang))
             }
-            if (Permissions.backgroundNote(s)) Info(SetupText.PERM_BGLOC_HOME.get(lang))
-            PermLine(Permissions.batteryText(s).get(lang), Permissions.batteryBadge(s)?.get(lang) ?: "✓", null) {
-                ctx.safely { SystemPages.open(ctx, Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) }
-            }
-            Info(SetupText.BATTERY_HELP.get(lang))
-            TextButton(onClick = { restrictedOpen = !restrictedOpen }) {
-                Text((if (restrictedOpen) "▾ " else "▸ ") + SetupText.RESTRICTED_TITLE.get(lang))
-            }
-            if (restrictedOpen) {
-                Info(SetupText.RESTRICTED_HELP.get(lang))
-                TextButton(onClick = { ctx.safely { SystemPages.open(ctx, SystemPages.appInfo(ctx)) } }) { Text(SetupText.OPEN_APP_INFO.get(lang)) }
-                TextButton(onClick = { ctx.safely { SystemPages.open(ctx, Intent(Settings.ACTION_APPLICATION_SETTINGS)) } }) { Text(SetupText.OPEN_ALL_APPS.get(lang)) }
+            if (row.kind == PermKind.NOTIFICATION_LISTENER) Info(SetupText.PERM_NOTIF_NOTE.get(lang))
+        }
+        if (Permissions.backgroundNote(s)) Info(SetupText.PERM_BGLOC_HOME.get(lang))
+        val battery = Permissions.batteryBadge(s)?.get(lang)
+        PermLine(Permissions.batteryText(s).get(lang), battery == null, badge = battery) {
+            ctx.safely { SystemPages.open(ctx, Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) }
+        }
+        Info(SetupText.BATTERY_HELP.get(lang))
+        Row(
+            Modifier.fillMaxWidth().clickable(role = Role.Button) { restrictedOpen = !restrictedOpen }
+                .heightIn(min = 48.dp).padding(horizontal = WeemSpace.l, vertical = WeemSpace.s),
+            horizontalArrangement = Arrangement.spacedBy(WeemSpace.s),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(if (restrictedOpen) WeemIcons.ExpandLess else WeemIcons.ExpandMore, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Text(SetupText.RESTRICTED_TITLE.get(lang), style = WeemType.labelL, color = MaterialTheme.colorScheme.primary)
+        }
+        if (restrictedOpen) {
+            Info(SetupText.RESTRICTED_HELP.get(lang))
+            Column(Modifier.padding(start = WeemSpace.s, end = WeemSpace.s, bottom = WeemSpace.s)) {
+                WButton(SetupText.OPEN_APP_INFO.get(lang), { ctx.safely { SystemPages.open(ctx, SystemPages.appInfo(ctx)) } }, kind = BtnKind.TEXT)
+                WButton(SetupText.OPEN_ALL_APPS.get(lang), { ctx.safely { SystemPages.open(ctx, Intent(Settings.ACTION_APPLICATION_SETTINGS)) } }, kind = BtnKind.TEXT)
             }
         }
     }
@@ -167,35 +192,48 @@ fun PermissionsCard(lang: Lang, modifier: Modifier = Modifier, alwaysOpen: Boole
 @Composable
 fun BatteryGuideCard(lang: Lang, modifier: Modifier = Modifier, vendor: Vendor = Vendor.of(Build.MANUFACTURER, Build.BRAND)) {
     val ctx = LocalContext.current
-    Card(modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp)) {
-            Text(SetupText.GUIDE_TITLE.get(lang), style = MaterialTheme.typography.titleMedium)
-            Text(BatteryGuide.title(vendor).get(lang), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp))
-            BatteryGuide.steps(vendor).forEachIndexed { i, step ->
-                Text("${i + 1}. ${step.get(lang)}", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 6.dp))
-            }
-            Info(SetupText.GUIDE_NAMES_VARY.get(lang))
-            for (a in BatteryGuide.actions(vendor)) {
-                OutlinedButton(onClick = { ctx.safely { SystemPages.open(ctx, SystemPages.intent(ctx, a)) } }, modifier = Modifier.padding(top = 8.dp)) {
-                    Text(a.label.get(lang))
-                }
-            }
+    WCard(modifier) {
+        Text(SetupText.GUIDE_TITLE.get(lang), style = WeemType.titleM)
+        Text(BatteryGuide.title(vendor).get(lang), style = WeemType.titleS, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        BatteryGuide.steps(vendor).forEachIndexed { i, step ->
+            Text("${i + 1}. ${step.get(lang)}", style = WeemType.bodyM)
+        }
+        Text(SetupText.GUIDE_NAMES_VARY.get(lang), style = WeemType.bodyS, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        for (a in BatteryGuide.actions(vendor)) {
+            WButton(a.label.get(lang), { ctx.safely { SystemPages.open(ctx, SystemPages.intent(ctx, a)) } }, kind = BtnKind.OUTLINE, icon = WeemIcons.Settings)
         }
     }
 }
 
+/** İzin satırı: solda durum simgesi (tamam yeşil, eksik kırmızı), metin, sağda isteğe bağlı rozet ve ›; bütün satır dokunulur. */
 @Composable
-private fun PermLine(label: String, badge: String, color: androidx.compose.ui.graphics.Color?, onClick: () -> Unit) {
+private fun PermLine(label: String, ok: Boolean, badge: String? = null, onClick: () -> Unit) {
+    val p = palette()
+    val tone = when {
+        ok -> WTone.POSITIVE
+        badge != null -> WTone.WARN
+        else -> WTone.DANGER
+    }
     Row(
-        Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick).padding(vertical = 10.dp),
+        Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick).heightIn(min = 56.dp)
+            .padding(start = WeemSpace.l, end = WeemSpace.m, top = WeemSpace.s, bottom = WeemSpace.s),
+        horizontalArrangement = Arrangement.spacedBy(WeemSpace.m),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, color = color ?: MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
-        Text(badge, color = color ?: MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(
+            if (ok) WeemIcons.CheckCircleFilled else if (badge != null) WeemIcons.WarningFilled else WeemIcons.ErrorFilled,
+            contentDescription = if (ok) "✓" else "!", tint = p.mark(tone).color(), modifier = Modifier.size(22.dp),
+        )
+        Text(label, style = WeemType.bodyM, color = if (ok) p.text.color() else p.onSurface(tone).color(), modifier = Modifier.weight(1f))
+        if (badge != null) StatusPill(badge, WTone.WARN, dot = false)
+        Icon(WeemIcons.ChevronRight, contentDescription = null, tint = p.muted.color())
     }
 }
 
 @Composable
 private fun Info(text: String) {
-    Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
+    Text(
+        text, style = WeemType.bodyS, color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 50.dp, end = WeemSpace.l, bottom = WeemSpace.s),
+    )
 }
