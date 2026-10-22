@@ -2,6 +2,7 @@ package com.kuryelog.app.map
 
 import android.app.Application
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -118,5 +119,15 @@ class StatsScreenTest {
         compose.onNodeWithTag("stats-tab-0").performClick()
         compose.waitForIdle()
         text("2026-10-02").assertCountEquals(1)
+    }
+
+    /** A10.4d (gözden geçirme): çip sırası odaklanan güne kayar (eski `ScrollableTabRow` gibi); ekran dışındaki çip görünür olur. */
+    @Test
+    fun odakGunuCipSirasindaGorunur() {
+        val base = Instant.parse("2026-09-20T06:30:00Z").toEpochMilli()
+        val days = (0 until 12).map { k -> DayState().also { it.startedAtMs = base - k * 86_400_000L; it.endedAtMs = it.startedAtMs!! + 600_000 } }
+        show(days, Rec(), focus = days.last().startedAtMs)
+        compose.waitForIdle()
+        compose.onNodeWithTag("stats-tab-11").assertIsDisplayed()
     }
 }

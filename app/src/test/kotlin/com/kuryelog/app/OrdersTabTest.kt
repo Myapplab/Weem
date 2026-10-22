@@ -8,6 +8,9 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.swipeUp
@@ -140,7 +143,7 @@ class OrdersTabTest {
         reveal("Günün tüm ayrıntıları").performClick()
         compose.waitForIdle()
         compose.onAllNodesWithText("Zaman çizelgesi").onFirst().assertExists()
-        compose.onNodeWithText("Geri").performClick()
+        compose.onNodeWithContentDescription("Geri").performClick() // A10.4d: üst çubuk geri oku
         compose.waitForIdle()
         compose.onNodeWithText("Net kazanç").assertExists()
     }
@@ -161,7 +164,7 @@ class OrdersTabTest {
         // Uygulamanın puanı teklif anında yazılmış (teklif 08:59, bugünün dosyası).
         log.append(OfferScore.FILE, JSONObject().put("schemaVersion", 1).put("kind", "offer_score").put("offer_id", "o-a").put("score", 7).toString(), log.day(t0 - min))
         show()
-        compose.onNodeWithText("Teklif puanı").performClick()
+        compose.onNodeWithTag("orders-tab-scores").performScrollTo().performClick() // A10.4d: segment seçici (başlık da "Siparişler")
         compose.waitForIdle()
         reveal("Ortalama fark: — (iki puanı da olan sipariş yok)")
         reveal("Uygulama 7 · Sen —")
@@ -179,7 +182,7 @@ class OrdersTabTest {
         // Puan sekmesinde platform seçicisi ve "Günün tüm ayrıntıları" yok; sipariş kartında "Teklif puanı" satırı.
         compose.onAllNodesWithText("Tüm siparişler").assertCountEquals(0)
         compose.onAllNodesWithText("Günün tüm ayrıntıları").assertCountEquals(0)
-        compose.onNodeWithText("Siparişler").performClick()
+        compose.onNodeWithTag("orders-tab-orders").performScrollTo().performClick()
         compose.waitForIdle()
         reveal("08:59  Test Döner").performClick()
         compose.waitForIdle()
@@ -226,7 +229,7 @@ class OrdersTabTest {
         compose.onNodeWithText("4 teklif görüldü · 2 kabul · 1 ret · 2 teslim").assertIsDisplayed()
         compose.onNodeWithText("09:10 · Test Döner", substring = true).assertIsDisplayed()
         compose.onNodeWithText("≈ : başlangıç/bitiş ekranı görülmedi; ilk/son görülen çevrimiçi ekranın saati.").assertIsDisplayed()
-        compose.onNodeWithText("Geri").performClick()
+        compose.onNodeWithContentDescription("Geri").performClick() // A10.4d: üst çubuk geri oku
         compose.waitForIdle()
         compose.onNodeWithText("Net kazanç").assertExists()
     }

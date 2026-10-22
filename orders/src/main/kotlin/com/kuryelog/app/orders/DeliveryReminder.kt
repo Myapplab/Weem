@@ -11,7 +11,6 @@ import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.PixelFormat
-import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
 import android.net.Uri
@@ -23,6 +22,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import com.kuryelog.app.core.Store
+import com.kuryelog.app.core.WeemFonts
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.core.NotificationIds
 import com.kuryelog.logic.core.OverlayPalette
@@ -115,8 +115,11 @@ class DeliveryReminder(private val service: AccessibilityService) {
         phone = d.phone
         call?.let { it.text = d.phone?.let { p -> tl("Ara ", "Zəng et ") + p } ?: ""; it.visibility = if (d.phone == null) android.view.View.GONE else android.view.View.VISIBLE }
     }
+    /** Hap köşesi (dp): yüksekliğin yarısından büyük her değer tam yuvarlak. */
+    private val PILL = 100
     private fun rounded(color: Int, radius: Int = 16) = GradientDrawable().apply { setColor(color); cornerRadius = dp(radius).toFloat() }
-    private fun buttonBackground(fill: Int, ink: Int) = RippleDrawable(ColorStateList.valueOf((ink and 0x00ffffff) or 0x22000000), rounded(fill), rounded(Color.WHITE))
+    // A10.4d (`docs/TASARIM.md` 7): düğmeler hap biçiminde.
+    private fun buttonBackground(fill: Int, ink: Int) = RippleDrawable(ColorStateList.valueOf((ink and 0x00ffffff) or 0x22000000), rounded(fill, PILL), rounded(Color.WHITE, PILL))
     private fun style() {
         val dark = (service.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
         if (styledDark == dark || root == null) return
@@ -133,18 +136,18 @@ class DeliveryReminder(private val service: AccessibilityService) {
     /** E16: the card's size choice (Ayarlar → Ekran), 85 % of the old card by default; text and height follow it. */
     private fun sizePct() = CustomerCard.sizePct(Store.prefs(service).getInt(CustomerCard.SIZE_KEY, CustomerCard.DEFAULT_SIZE_PCT))
     private fun show() {
-        val medium = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        val medium = WeemFonts.get(WeemFonts.SEMIBOLD); val regular = WeemFonts.get(WeemFonts.REGULAR)
         val k = CustomerCard.scale(sizePct())
         val column = LinearLayout(service).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(16), dp(18), dp(10)); elevation = dp(8).toFloat() }
         header = TextView(service).apply { textSize = 17f * k; typeface = medium; isAccessibilityHeading = true }.also { column.addView(it) }
-        sub = TextView(service).apply { textSize = 13f * k; setPadding(0, dp(4), 0, 0) }.also { column.addView(it) }
+        sub = TextView(service).apply { textSize = 13f * k; typeface = regular; setPadding(0, dp(4), 0, 0) }.also { column.addView(it) }
         facts = TextView(service).apply { textSize = 24f * k; typeface = medium; setPadding(0, dp(8), 0, dp(4)) }.also { column.addView(it) }
         building = TextView(service).apply { textSize = 18f * k; typeface = medium; setPadding(0, dp(4), 0, dp(4)) }.also { column.addView(it) }
         cells.clear()
         row = LinearLayout(service).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = false; setPadding(dp(12), dp(8), dp(12), dp(8)) }.also { r ->
             for (label in listOf(tl("Giriş", "Giriş"), tl("Kat", "Mərtəbə"), tl("Daire", "Mənzil"))) {
                 val cell = LinearLayout(service).apply { orientation = LinearLayout.VERTICAL }
-                val name = TextView(service).apply { textSize = 12f * k; text = label }
+                val name = TextView(service).apply { textSize = 12f * k; typeface = regular; text = label }
                 val value = TextView(service).apply { textSize = 22f * k; typeface = medium; setPadding(0, dp(2), dp(8), 0) }
                 cell.addView(name); cell.addView(value); r.addView(cell, LinearLayout.LayoutParams(0, -2, 1f)); cells.add(name to value)
             }
@@ -154,7 +157,7 @@ class DeliveryReminder(private val service: AccessibilityService) {
             setOnClickListener { phone?.let { p -> runCatching { service.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + p.filter { c -> c.isDigit() || c == '+' })).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } } } }
         column.addView(call, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8); bottomMargin = dp(4) })
         val scroll = ScrollView(service).apply { isVerticalScrollBarEnabled = false }
-        body = TextView(service).apply { textSize = 16f * k; setLineSpacing(0f, 1.15f); setPadding(0, dp(10), 0, dp(10)) }
+        body = TextView(service).apply { textSize = 16f * k; typeface = regular; setLineSpacing(0f, 1.15f); setPadding(0, dp(10), 0, dp(10)) }
         scroll.addView(body); column.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
         val buttons = LinearLayout(service)
         fun small(label: String) = Button(service).apply { isAllCaps = false; text = label; textSize = 14f * k; typeface = medium; minHeight = dp(48); setPadding(dp(10), dp(10), dp(10), dp(10)) }.also { secondaryButtons.add(it) }
@@ -191,7 +194,7 @@ class DeliveryReminder(private val service: AccessibilityService) {
     private fun addBubble(k: String) {
         val pct = RestaurantBubble.widthPct(Store.prefs(service).getInt(RestaurantBubble.WIDTH_KEY, RestaurantBubble.DEFAULT_WIDTH_PCT))
         val scale = RestaurantBubble.scale(pct)
-        val medium = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        val medium = WeemFonts.get(WeemFonts.SEMIBOLD)
         val pill = LinearLayout(service).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
             setPadding(dpf(18 * scale), dpf(8 * scale), dpf(8 * scale), dpf(8 * scale)); elevation = dp(8).toFloat(); isClickable = true }
         val name = TextView(service).apply { textSize = 17f * scale; typeface = medium; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END }
@@ -243,13 +246,13 @@ class DeliveryReminder(private val service: AccessibilityService) {
     private fun addCustomer(k: String) {
         val pct = RestaurantBubble.widthPct(Store.prefs(service).getInt(CustomerBubble.WIDTH_KEY, RestaurantBubble.DEFAULT_WIDTH_PCT))
         val s = CustomerCard.scale(sizePct())
-        val medium = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        val medium = WeemFonts.get(WeemFonts.SEMIBOLD); val regular = WeemFonts.get(WeemFonts.REGULAR)
         val column = LinearLayout(service).apply { orientation = LinearLayout.VERTICAL; elevation = dp(8).toFloat() }
         val pill = LinearLayout(service).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
             setPadding(dpf(18 * s), dpf(8 * s), dpf(8 * s), dpf(8 * s)) }
         val left = LinearLayout(service).apply { orientation = LinearLayout.VERTICAL }
         val line = TextView(service).apply { textSize = 17f * s; typeface = medium; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END }
-        val orders = TextView(service).apply { textSize = 12f * s; visibility = android.view.View.GONE }
+        val orders = TextView(service).apply { textSize = 12f * s; typeface = regular; visibility = android.view.View.GONE }
         left.addView(line); left.addView(orders); pill.addView(left, LinearLayout.LayoutParams(0, -2, 1f))
         val size = dpf(CustomerBubble.BUBBLE_DP * s)
         val minutes = TextView(service).apply { textSize = 13f * s; typeface = medium; gravity = Gravity.CENTER; maxLines = 1; includeFontPadding = false }
@@ -260,7 +263,7 @@ class DeliveryReminder(private val service: AccessibilityService) {
         val scroll = object : ScrollView(service) {
             override fun onMeasure(w: Int, h: Int) = super.onMeasure(w, android.view.View.MeasureSpec.makeMeasureSpec(maxNotes, android.view.View.MeasureSpec.AT_MOST))
         }.apply { isVerticalScrollBarEnabled = false }
-        val body = TextView(service).apply { textSize = 15f * s; setLineSpacing(0f, 1.15f) }
+        val body = TextView(service).apply { textSize = 15f * s; typeface = regular; setLineSpacing(0f, 1.15f) }
         scroll.addView(body)
         val notes = LinearLayout(service).apply { orientation = LinearLayout.VERTICAL; setPadding(dpf(18 * s), 0, dpf(18 * s), dp(10)) }
         notes.addView(scroll, LinearLayout.LayoutParams(-1, -2))

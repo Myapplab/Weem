@@ -2,27 +2,37 @@ package com.kuryelog.app.map
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.kuryelog.app.ui.BtnKind
+import com.kuryelog.app.ui.IconBox
+import com.kuryelog.app.ui.WButton
+import com.kuryelog.app.ui.WChip
+import com.kuryelog.app.ui.WTone
+import com.kuryelog.app.ui.WeemIcons
+import com.kuryelog.app.ui.WeemRadius
+import com.kuryelog.app.ui.WeemSpace
+import com.kuryelog.app.ui.WeemType
+import com.kuryelog.app.ui.color
+import com.kuryelog.app.ui.floating
+import com.kuryelog.app.ui.palette
+import com.kuryelog.logic.app.Palette
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.map.roads.QualityAsk
 import com.kuryelog.logic.map.roads.QualityPrompt
@@ -30,15 +40,16 @@ import com.kuryelog.logic.map.roads.QualityTone
 import com.kuryelog.logic.map.roads.RoadsText
 import com.kuryelog.logic.map.roads.WrongWayCardText
 
-internal val GOOD_GREEN = Color(0xFF2EBD59)
-internal val FAIR_ORANGE = Color(0xFFFF9800)
-internal val BAD_RED = Color(0xFFE53935)
-
-internal fun QualityTone.color(): Color = when (this) {
-    QualityTone.GOOD -> GOOD_GREEN
-    QualityTone.FAIR -> FAIR_ORANGE
-    QualityTone.BAD -> BAD_RED
+/** Kalite tonu (iyi/orta/kötü) paletten: tamam, uyarı, tehlike (A10.4d; eskiden elle yazılmış yeşil/turuncu/kırmızı). */
+internal fun QualityTone.ink(p: Palette): Long = when (this) {
+    QualityTone.GOOD -> p.positive
+    QualityTone.FAIR -> p.warn
+    QualityTone.BAD -> p.danger
 }
+
+@Composable
+@ReadOnlyComposable
+internal fun QualityTone.color(): Color = Color(ink(palette()))
 
 /** Ters yön kartının görünümü: açık soru ([question]) ya da süren onaylı geçiş şeridi ([liveName]). */
 data class WrongWayView(
@@ -56,29 +67,34 @@ data class WrongWayView(
  */
 @Composable
 fun WrongWayCard(view: WrongWayView, lang: Lang, onAnswer: (Boolean) -> Unit, onReport: () -> Unit, modifier: Modifier = Modifier) {
+    val p = palette()
     if (view.question) {
-        Surface(modifier.fillMaxWidth().padding(vertical = 4.dp).testTag("ww-card"), shape = RoundedCornerShape(16.dp), tonalElevation = 6.dp, shadowElevation = 6.dp) {
-            Column(Modifier.padding(14.dp)) {
-                Text(WrongWayCardText.title(lang), color = FAIR_ORANGE, fontWeight = FontWeight.Bold, fontSize = 19.sp)
-                Text(WrongWayCardText.subtitle(lang, view.name, view.incidents, view.leftS), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Button(
-                        onClick = { onAnswer(true) }, modifier = Modifier.weight(1f).height(52.dp).testTag("ww-yes"),
-                        colors = ButtonDefaults.buttonColors(containerColor = BAD_RED, contentColor = Color.White),
-                    ) { Text(WrongWayCardText.yes(lang), fontWeight = FontWeight.Bold) }
-                    OutlinedButton(onClick = { onAnswer(false) }, modifier = Modifier.weight(1f).height(52.dp).testTag("ww-no")) {
-                        Text(WrongWayCardText.no(lang), fontWeight = FontWeight.Bold)
+        val shape = RoundedCornerShape(WeemRadius.panel)
+        Surface(modifier.fillMaxWidth().padding(vertical = WeemSpace.xs).floating(shape).testTag("ww-card"), shape = shape, color = p.surface.color(), contentColor = p.text.color()) {
+            Column(Modifier.padding(WeemSpace.l), verticalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(WeemSpace.m), verticalAlignment = Alignment.CenterVertically) {
+                    IconBox(WeemIcons.Block, tone = WTone.WARN)
+                    Column(Modifier.weight(1f)) {
+                        Text(WrongWayCardText.title(lang), color = p.warn.color(), style = WeemType.titleM)
+                        Text(WrongWayCardText.subtitle(lang, view.name, view.incidents, view.leftS), style = WeemType.bodyS, color = p.muted.color())
                     }
+                }
+                Row(Modifier.fillMaxWidth().padding(top = WeemSpace.xs), horizontalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
+                    WButton(WrongWayCardText.yes(lang), { onAnswer(true) }, Modifier.weight(1f).testTag("ww-yes"), kind = BtnKind.DANGER_FILLED, ride = true)
+                    WButton(WrongWayCardText.no(lang), { onAnswer(false) }, Modifier.weight(1f).testTag("ww-no"), kind = BtnKind.OUTLINE, ride = true)
                 }
             }
         }
         return
     }
     val live = view.liveName ?: return
-    Surface(modifier.fillMaxWidth().padding(vertical = 4.dp).testTag("ww-live"), shape = RoundedCornerShape(14.dp), tonalElevation = 4.dp) {
-        Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(WrongWayCardText.live(lang, live, view.liveRatioPct), Modifier.weight(1f), color = GOOD_GREEN, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-            TextButton(onClick = onReport, modifier = Modifier.testTag("ww-report")) { Text(WrongWayCardText.report(lang), color = BAD_RED) }
+    val shape = RoundedCornerShape(WeemRadius.card)
+    Surface(modifier.fillMaxWidth().padding(vertical = WeemSpace.xs).floating(shape).testTag("ww-live"), shape = shape, color = p.surface.color(), contentColor = p.text.color()) {
+        Row(Modifier.padding(start = WeemSpace.m, end = WeemSpace.xs, top = WeemSpace.xs, bottom = WeemSpace.xs), verticalAlignment = Alignment.CenterVertically) {
+            Icon(WeemIcons.CheckCircleFilled, contentDescription = null, tint = p.positive.color(), modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(WeemSpace.s))
+            Text(WrongWayCardText.live(lang, live, view.liveRatioPct), Modifier.weight(1f), color = p.positive.color(), style = WeemType.labelL)
+            WButton(WrongWayCardText.report(lang), onReport, Modifier.testTag("ww-report"), kind = BtnKind.DANGER, icon = WeemIcons.Flag)
         }
     }
 }
@@ -90,23 +106,25 @@ fun WrongWayCard(view: WrongWayView, lang: Lang, onAnswer: (Boolean) -> Unit, on
 @Composable
 fun QualityPromptCard(ask: QualityAsk, lang: Lang, onSet: (Int) -> Unit, onSave: () -> Unit, onCancel: () -> Unit, modifier: Modifier = Modifier) {
     val c = RoadsText.tone(ask.pct / 100.0).color()
-    Surface(modifier.fillMaxWidth().padding(vertical = 4.dp).testTag("quality-card"), shape = RoundedCornerShape(16.dp), tonalElevation = 6.dp, shadowElevation = 6.dp) {
-        Column(Modifier.padding(14.dp)) {
+    val p = palette()
+    val shape = RoundedCornerShape(WeemRadius.panel)
+    Surface(modifier.fillMaxWidth().padding(vertical = WeemSpace.xs).floating(shape).testTag("quality-card"), shape = shape, color = p.surface.color(), contentColor = p.text.color()) {
+        Column(Modifier.padding(WeemSpace.l), verticalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text(QualityPrompt.title(lang), color = c, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                    Text(ask.name, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(QualityPrompt.title(lang), color = c, style = WeemType.titleM)
+                    Text(ask.name, style = WeemType.bodyS, color = p.muted.color())
                 }
-                Text("%${ask.pct}", color = c, fontWeight = FontWeight.ExtraBold, fontSize = 34.sp, modifier = Modifier.testTag("quality-pct"))
+                Text("%${ask.pct}", color = c, style = WeemType.displayM, modifier = Modifier.testTag("quality-pct"))
             }
-            Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                for (p in QualityPrompt.CHIPS) FilterChip(selected = ask.pct == p, onClick = { onSet(p) }, label = { Text("%$p", fontSize = 12.sp) })
+            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                for (v in QualityPrompt.CHIPS) WChip("%$v", ask.pct == v, { onSet(v) })
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = onCancel) { Text(QualityPrompt.cancelLabel(lang)) }
-                Button(onClick = onSave, modifier = Modifier.testTag("quality-save")) { Text(QualityPrompt.saveLabel(lang)) }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(WeemSpace.s, Alignment.End)) {
+                WButton(QualityPrompt.cancelLabel(lang), onCancel, kind = BtnKind.TEXT)
+                WButton(QualityPrompt.saveLabel(lang), onSave, Modifier.testTag("quality-save"), icon = WeemIcons.Check)
             }
-            Text(QualityPrompt.hint(lang), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(QualityPrompt.hint(lang), style = WeemType.bodyS, color = p.muted.color())
         }
     }
 }

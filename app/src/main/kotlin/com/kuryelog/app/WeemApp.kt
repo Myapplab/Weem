@@ -1,62 +1,72 @@
 package com.kuryelog.app
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.kuryelog.app.core.CrashLog
 import com.kuryelog.app.core.Store
 import com.kuryelog.app.map.MapScreen
+import com.kuryelog.app.map.MapSettingsScreen
+import com.kuryelog.app.map.NavRuntime
 import com.kuryelog.app.map.ReminderCard
 import com.kuryelog.app.map.ReminderRuntime
 import com.kuryelog.app.map.TaskAlertCard
 import com.kuryelog.app.map.TaskRuntime
-import com.kuryelog.app.map.MapSettingsScreen
 import com.kuryelog.app.map.WeatherRuntime
-import com.kuryelog.logic.core.Lang
+import com.kuryelog.app.ui.BtnKind
+import com.kuryelog.app.ui.ListRow
+import com.kuryelog.app.ui.NavItem
+import com.kuryelog.app.ui.RadioRow
+import com.kuryelog.app.ui.ScreenTitle
+import com.kuryelog.app.ui.SettingsGroup
+import com.kuryelog.app.ui.StatusPill
+import com.kuryelog.app.ui.SubScreen
+import com.kuryelog.app.ui.WButton
+import com.kuryelog.app.ui.WTone
+import com.kuryelog.app.ui.WeemIcons
+import com.kuryelog.app.ui.WeemNavBar
+import com.kuryelog.app.ui.WeemSpace
+import com.kuryelog.app.ui.WeemType
+import com.kuryelog.app.ui.isDark
 import com.kuryelog.logic.app.Permissions
 import com.kuryelog.logic.app.SetupText
 import com.kuryelog.logic.app.Tab
-import com.kuryelog.app.map.NavRuntime
 import com.kuryelog.logic.app.Text as Str
 import com.kuryelog.logic.app.ThemeMode
 import com.kuryelog.logic.app.label
+import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.link.LinkText
 
-private val tabIcon = mapOf(
-    Tab.MAP to "🗺", Tab.ORDERS to "📋", Tab.SCOOTER to "🛵", Tab.REMOTE to "📱", Tab.MORE to "⋯",
-)
+/** Alt menü simgeleri (A10.4d, `docs/TASARIM.md` 7): seçiliyken dolu. */
+private fun tabIcons(tab: Tab): Pair<ImageVector, ImageVector> = when (tab) {
+    Tab.MAP -> WeemIcons.Map to WeemIcons.MapFilled
+    Tab.ORDERS -> WeemIcons.ReceiptLong to WeemIcons.ReceiptLongFilled
+    Tab.SCOOTER -> WeemIcons.ElectricScooter to WeemIcons.ElectricScooterFilled
+    Tab.REMOTE -> WeemIcons.Devices to WeemIcons.DevicesFilled
+    Tab.MORE -> WeemIcons.Menu to WeemIcons.Menu
+}
 
 /**
  * Alt menü kabuğu (A1.3). Her sekmenin kendi durumu (kaydırma, sayaç…) sekme değişince saklanır. Her sekme kendi hata sınırında
@@ -91,16 +101,11 @@ fun WeemApp(
     }
     Box(Modifier.fillMaxSize()) {
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            if (!(selected == Tab.SCOOTER && scooterImmersive)) NavigationBar {
-                for (tab in Tab.entries) {
-                    NavigationBarItem(
-                        selected = tab == selected,
-                        onClick = { selectedKey = tab.key },
-                        icon = { Text(tabIcon.getValue(tab)) },
-                        label = { Text(tab.label.get(lang)) },
-                    )
-                }
+            if (!(selected == Tab.SCOOTER && scooterImmersive)) {
+                val items = Tab.entries.map { tab -> tabIcons(tab).let { (icon, on) -> NavItem(tab.key, tab.label.get(lang), icon, on, tag = "tab_${tab.key}") } }
+                WeemNavBar(items, selected.key, { selectedKey = it })
             }
         },
     ) { padding ->
@@ -194,48 +199,43 @@ private fun MoreScreen(
         HomeScreen(lang) { home = false }
         return
     }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-        Text(Str.SETTINGS_TITLE.get(lang), style = MaterialTheme.typography.headlineMedium)
-
-        // G5 (A7.2): izinler kartı ve pil rehberi her zaman burada; eksik izin başlıkta "! n/m".
-        Section(SetupText.PERMS_TITLE.get(lang)) {
-            val perms = rememberPermissionState()
-            TextButton(onClick = { permissions = true }) {
-                Text(SetupText.PERMS_OPEN.get(lang) + "  " + Permissions.badge(perms),
-                    color = if (Permissions.allOk(perms)) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
-            }
+    val perms = rememberPermissionState()
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = WeemSpace.l, vertical = WeemSpace.s)) {
+        ScreenTitle(Str.SETTINGS_TITLE.get(lang), Modifier.padding(bottom = WeemSpace.m))
+        // K4 (A10.4d): her satır tek dokunuşla açılır (simge + başlık + açıklama + ›).
+        SettingsGroup(null, dividerInset = 70.dp) {
+            // G5 (A7.2): izinler kartı ve pil rehberi her zaman burada; eksik izin rozette "! n/m".
+            ListRow(
+                SetupText.PERMS_TITLE.get(lang), subtitle = SetupText.PERMS_OPEN.get(lang), icon = WeemIcons.Shield, chevron = true,
+                trailing = {
+                    val ok = Permissions.allOk(perms)
+                    StatusPill(Permissions.badge(perms), if (ok) WTone.POSITIVE else WTone.DANGER, dot = false)
+                },
+                onClick = { permissions = true },
+            )
+            ListRow(Str.HOME_TITLE.get(lang), subtitle = Str.HOME_OPEN.get(lang), icon = WeemIcons.Home, chevron = true, onClick = { home = true })
+            ListRow(Str.MSET_TITLE.get(lang), subtitle = Str.MSET_OPEN.get(lang), icon = WeemIcons.Map, chevron = true, onClick = { mapSettings = true })
+            ListRow(Str.OSET_TITLE.get(lang), subtitle = Str.OSET_OPEN.get(lang), icon = WeemIcons.ReceiptLong, chevron = true, onClick = { ordersSettings = true })
+            ListRow(Str.RECORDS_TITLE.get(lang), subtitle = Str.RECORDS_OPEN.get(lang), icon = WeemIcons.Folder, chevron = true, onClick = { records = true })
+            // A8.3: 2 telefon modu (LINK.md 4.10).
+            ListRow(LinkText.TITLE.get(lang), subtitle = LinkText.OPEN.get(lang), icon = WeemIcons.Devices, chevron = true, onClick = { twoPhone = true })
         }
-        Section(Str.HOME_TITLE.get(lang)) {
-            TextButton(onClick = { home = true }) { Text(Str.HOME_OPEN.get(lang)) }
+        SettingsGroup(Str.SETTINGS_LANGUAGE.get(lang), dividerInset = 52.dp, selectableGroup = true) {
+            RadioRow(Str.LANG_SYSTEM.get(lang), langSetting.isEmpty(), { onLangSetting("") })
+            RadioRow(Str.LANG_TR.get(lang), langSetting == Lang.TR.key, { onLangSetting(Lang.TR.key) })
+            RadioRow(Str.LANG_AZ.get(lang), langSetting == Lang.AZ.key, { onLangSetting(Lang.AZ.key) })
         }
-        Section(Str.MSET_TITLE.get(lang)) {
-            TextButton(onClick = { mapSettings = true }) { Text(Str.MSET_OPEN.get(lang)) }
-        }
-        Section(Str.OSET_TITLE.get(lang)) {
-            TextButton(onClick = { ordersSettings = true }) { Text(Str.OSET_OPEN.get(lang)) }
-        }
-        Section(Str.RECORDS_TITLE.get(lang)) {
-            TextButton(onClick = { records = true }) { Text(Str.RECORDS_OPEN.get(lang)) }
-        }
-        // A8.3: 2 telefon modu (LINK.md 4.10).
-        Section(LinkText.TITLE.get(lang)) {
-            TextButton(onClick = { twoPhone = true }) { Text(LinkText.OPEN.get(lang)) }
-        }
-
-        Section(Str.SETTINGS_LANGUAGE.get(lang)) {
-            Choice(Str.LANG_SYSTEM.get(lang), langSetting.isEmpty()) { onLangSetting("") }
-            Choice(Str.LANG_TR.get(lang), langSetting == Lang.TR.key) { onLangSetting(Lang.TR.key) }
-            Choice(Str.LANG_AZ.get(lang), langSetting == Lang.AZ.key) { onLangSetting(Lang.AZ.key) }
-        }
-        Section(Str.SETTINGS_THEME.get(lang)) {
-            Choice(Str.THEME_SYSTEM.get(lang), theme == ThemeMode.SYSTEM) { onTheme(ThemeMode.SYSTEM) }
-            Choice(Str.THEME_LIGHT.get(lang), theme == ThemeMode.LIGHT) { onTheme(ThemeMode.LIGHT) }
-            Choice(Str.THEME_DARK.get(lang), theme == ThemeMode.DARK) { onTheme(ThemeMode.DARK) }
+        SettingsGroup(Str.SETTINGS_THEME.get(lang), dividerInset = 52.dp, selectableGroup = true) {
+            RadioRow(Str.THEME_SYSTEM.get(lang), theme == ThemeMode.SYSTEM, { onTheme(ThemeMode.SYSTEM) }, trailingIcon = WeemIcons.Contrast)
+            RadioRow(Str.THEME_LIGHT.get(lang), theme == ThemeMode.LIGHT, { onTheme(ThemeMode.LIGHT) }, trailingIcon = WeemIcons.LightMode)
+            RadioRow(Str.THEME_DARK.get(lang), theme == ThemeMode.DARK, { onTheme(ThemeMode.DARK) }, trailingIcon = WeemIcons.DarkMode)
         }
         Text(
             Str.VERSION.get(lang).format(versionName),
+            style = WeemType.bodyS,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 24.dp),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(top = WeemSpace.xxl, bottom = WeemSpace.l),
         )
     }
 }
@@ -243,30 +243,9 @@ private fun MoreScreen(
 /** Daha fazla → İzinler (G5): izinler kartı, pil rehberi ve kurulumu yeniden gösterme. */
 @Composable
 private fun PermissionsScreen(lang: Lang, onSetupAgain: () -> Unit, onBack: () -> Unit) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onBack) { Text(Str.BACK.get(lang)) }
-            Text(SetupText.PERMS_TITLE.get(lang), style = MaterialTheme.typography.headlineMedium)
-        }
-        PermissionsCard(lang, Modifier.padding(top = 12.dp))
-        BatteryGuideCard(lang, Modifier.padding(top = 12.dp))
-        TextButton(onClick = onSetupAgain, modifier = Modifier.padding(top = 12.dp)) { Text(SetupText.SETUP_AGAIN.get(lang)) }
-    }
-}
-
-@Composable
-private fun Section(title: String, content: @Composable () -> Unit) {
-    Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 24.dp, bottom = 4.dp))
-    Column(Modifier.selectableGroup()) { content() }
-}
-
-@Composable
-internal fun Choice(label: String, selected: Boolean, onClick: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().selectable(selected = selected, onClick = onClick, role = Role.RadioButton).padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        RadioButton(selected = selected, onClick = null)
-        Text(label, modifier = Modifier.padding(start = 12.dp))
+    SubScreen(SetupText.PERMS_TITLE.get(lang), Str.BACK.get(lang), onBack) {
+        PermissionsCard(lang)
+        BatteryGuideCard(lang)
+        WButton(SetupText.SETUP_AGAIN.get(lang), onSetupAgain, kind = BtnKind.TONAL, icon = WeemIcons.Refresh, fill = true)
     }
 }

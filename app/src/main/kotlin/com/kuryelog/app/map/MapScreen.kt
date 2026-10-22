@@ -1,26 +1,25 @@
 package com.kuryelog.app.map
 
-import kotlinx.coroutines.flow.drop
-import com.kuryelog.logic.map.route.QualityRating
 import android.os.VibrationEffect
 import android.os.Vibrator
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -36,6 +35,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -46,49 +46,63 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.compose.ui.unit.sp
 import com.kuryelog.app.BuildConfig
 import com.kuryelog.app.ShiftCard
 import com.kuryelog.app.core.Home
 import com.kuryelog.app.core.ShiftHub
 import com.kuryelog.app.safely
+import com.kuryelog.app.ui.Banner
+import com.kuryelog.app.ui.ConfirmDialog
+import com.kuryelog.app.ui.IconBox
+import com.kuryelog.app.ui.ListRow
+import com.kuryelog.app.ui.NoticeDialog
+import com.kuryelog.app.ui.RadioRow
+import com.kuryelog.app.ui.SettingsGroup
+import com.kuryelog.app.ui.WButton
+import com.kuryelog.app.ui.WCard
+import com.kuryelog.app.ui.WTone
+import com.kuryelog.app.ui.WeemIcons
+import com.kuryelog.app.ui.WeemRadius
+import com.kuryelog.app.ui.WeemSpace
+import com.kuryelog.app.ui.WeemType
+import com.kuryelog.app.ui.color
+import com.kuryelog.app.ui.palette
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.core.NavOrigin
 import com.kuryelog.logic.map.geo.Geo
 import com.kuryelog.logic.map.geo.GeoPoint
+import com.kuryelog.logic.map.graph.MapDataPhase
+import com.kuryelog.logic.map.graph.MapDataState
+import com.kuryelog.logic.map.graph.Poi
+import com.kuryelog.logic.map.graph.WayFlag
 import com.kuryelog.logic.map.nav.ApproachZoom
 import com.kuryelog.logic.map.nav.ArrivalFocus
 import com.kuryelog.logic.map.nav.ArrivalFocusTracker
 import com.kuryelog.logic.map.nav.NavHaptic
 import com.kuryelog.logic.map.nav.Refollow
-import com.kuryelog.logic.map.graph.Poi
-import com.kuryelog.logic.map.graph.WayFlag
+import com.kuryelog.logic.map.route.QualityRating
+import com.kuryelog.logic.map.route.RideMode
 import com.kuryelog.logic.map.ui.BikewayLayerRules
-import com.kuryelog.logic.map.ui.SurfaceLayerRules
 import com.kuryelog.logic.map.ui.BikewayMenu
-import com.kuryelog.logic.map.ui.BikewayMenuAction
+import com.kuryelog.logic.map.ui.LocateAction
+import com.kuryelog.logic.map.ui.LocateButtonRules
+import com.kuryelog.logic.map.ui.LongPressAction
+import com.kuryelog.logic.map.ui.LongPressMenu
+import com.kuryelog.logic.map.ui.MapCamera
+import com.kuryelog.logic.map.ui.MapPalette
+import com.kuryelog.logic.map.ui.MapStyles
+import com.kuryelog.logic.map.ui.MapText
+import com.kuryelog.logic.map.ui.PlaceText
 import com.kuryelog.logic.map.ui.PoiLayerRules
 import com.kuryelog.logic.map.ui.PressedPlace
 import com.kuryelog.logic.map.ui.PressedRoad
-import com.kuryelog.logic.map.ui.PlaceText
-import com.kuryelog.logic.map.ui.Toasts
-import com.kuryelog.logic.map.ui.LongPressAction
-import com.kuryelog.logic.map.ui.LongPressMenu
-import com.kuryelog.logic.map.ui.MapPalette
 import com.kuryelog.logic.map.ui.RouteLayer
-import com.kuryelog.logic.map.ui.MapText
-import com.kuryelog.logic.map.graph.MapDataPhase
-import com.kuryelog.logic.map.graph.MapDataState
-import com.kuryelog.logic.map.ui.LocateAction
-import com.kuryelog.logic.map.ui.LocateButtonRules
-import com.kuryelog.logic.map.ui.MapCamera
-import com.kuryelog.logic.map.ui.MapStyles
-import kotlinx.coroutines.delay
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import com.kuryelog.logic.map.route.RideMode
-import kotlinx.coroutines.launch
+import com.kuryelog.logic.map.ui.SurfaceLayerRules
+import com.kuryelog.logic.map.ui.Toasts
 import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.launch
 
 /**
  * Harita sekmesi (MAP.md 6.2, 6.3, 6.9): graf yokken vardiya kartı + kurulum kartı (harita yüzeyi yok); graf hazırsa harita yüzeyi (altlık `mapStyle`, tema) + HUD.
@@ -121,7 +135,7 @@ fun MapScreen(lang: Lang, dark: Boolean) {
     }
     if (data.graph == null) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-            ShiftCard(lang)
+            ShiftCard(lang, Modifier.padding(horizontal = WeemSpace.l, vertical = WeemSpace.s))
             MapSetupCard(data, settings.region, lang,
                 onRegion = { r -> ctx.safely { MapSettingsRepo.update(ctx) { it.copy(region = r) } } },
                 onDownload = { scope.launch { runCatching { controller.download(settings.region) } } })
@@ -153,7 +167,7 @@ fun MapDataStep(lang: Lang, ready: String) {
         }
     }
     if (data.graph != null && data.phase != MapDataPhase.BUILDING) {
-        Text(ready, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(12.dp))
+        Banner(ready, tone = WTone.POSITIVE)
         return
     }
     MapSetupCard(data, settings.region, lang,
@@ -423,8 +437,10 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
                 MapSurface(model, events, Modifier.fillMaxSize(), userAgent = MapStyles.userAgent(BuildConfigInfo.versionName(ctx)))
                 MapStyles.attribution(base)?.let { a ->
                     Text(
-                        a.text, fontSize = 9.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.align(Alignment.BottomStart).padding(4.dp).clickable { a.url?.let { u -> runCatching { uri.openUri(u) } } },
+                        a.text, style = WeemType.labelS, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.align(Alignment.BottomStart).padding(4.dp)
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = .8f), RoundedCornerShape(WeemRadius.badge))
+                            .clickable { a.url?.let { u -> runCatching { uri.openUri(u) } } }.padding(horizontal = 6.dp, vertical = 2.dp),
                     )
                 }
             }
@@ -469,7 +485,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
                 onRoadDetails = { roadsOpen = true },
             )
         },
-        topCard = { if (!active || interrupted) ShiftCard(lang) },
+        topCard = { if (!active || interrupted) ShiftCard(lang, Modifier.padding(bottom = WeemSpace.m), floating = true) },
     )
     if (searching) {
         BackHandler { searching = false; runtime.search.clear() }
@@ -580,35 +596,24 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
     }
     if (askHome) {
         val hasHome = remember { Home.point(ctx) != null }
-        AlertDialog(
-            onDismissRequest = { askHome = false },
-            title = { Text(MapText.HOME.get(lang)) },
-            text = {
-                Text(
-                    if (hasHome) MapText.HOME_ASK.get(lang)
-                    else MapText.HOME_MISSING.get(lang),
-                )
-            },
-            confirmButton = { if (hasHome) Button(onClick = { askHome = false; runtime.goHome() }) { Text(MapText.HOME.get(lang)) } },
-            dismissButton = { TextButton(onClick = { askHome = false }) { Text(MapText.CANCEL.get(lang)) } },
+        if (hasHome) ConfirmDialog(
+            title = MapText.HOME.get(lang), text = MapText.HOME_ASK.get(lang), confirm = MapText.HOME.get(lang), dismiss = MapText.CANCEL.get(lang),
+            onConfirm = { askHome = false; runtime.goHome() }, onDismiss = { askHome = false },
         )
+        else NoticeDialog(MapText.HOME_MISSING.get(lang), MapText.CANCEL.get(lang), { askHome = false }, title = MapText.HOME.get(lang))
     }
     if (askEnd) {
-        AlertDialog(
-            onDismissRequest = { askEnd = false },
-            title = { Text(MapText.END_ASK.get(lang)) },
-            text = { Text(MapText.END_TEXT.get(lang)) },
-            confirmButton = {
-                Button(onClick = {
-                    askEnd = false
-                    // Elle bitişten sonra İstatistik o güne odaklı açılır, rota temizlenir (MAP.md 12.8, 11.14).
-                    val start = dayRt.activeDay()?.startedAtMs
-                    ctx.safely { ShiftHub.stop() }
-                    navCtl.clearRoute()
-                    if (start != null) { statsFocus = start; statsOpen = true }
-                }) { Text(MapText.END_CONFIRM.get(lang)) }
+        ConfirmDialog(
+            title = MapText.END_ASK.get(lang), text = MapText.END_TEXT.get(lang), confirm = MapText.END_CONFIRM.get(lang), dismiss = MapText.CANCEL.get(lang), danger = true,
+            onConfirm = {
+                askEnd = false
+                // Elle bitişten sonra İstatistik o güne odaklı açılır, rota temizlenir (MAP.md 12.8, 11.14).
+                val start = dayRt.activeDay()?.startedAtMs
+                ctx.safely { ShiftHub.stop() }
+                navCtl.clearRoute()
+                if (start != null) { statsFocus = start; statsOpen = true }
             },
-            dismissButton = { TextButton(onClick = { askEnd = false }) { Text(MapText.CANCEL.get(lang)) } },
+            onDismiss = { askEnd = false },
         )
     }
 }
@@ -652,40 +657,35 @@ internal object BuildConfigInfo {
  */
 @Composable
 fun MapSetupCard(state: MapDataState, region: String, lang: Lang, onRegion: (String) -> Unit, onDownload: () -> Unit) {
-    Card(Modifier.fillMaxWidth().padding(12.dp)) {
-        Column(Modifier.padding(16.dp)) {
-            if (state.phase == MapDataPhase.CHECKING || state.phase == MapDataPhase.UNPACKING) {
-                Text(MapText.SETUP_PREPARING.get(lang), style = MaterialTheme.typography.titleMedium)
-                LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 12.dp))
-                return@Column
-            }
-            Text(MapText.SETUP_TITLE.get(lang), style = MaterialTheme.typography.titleMedium)
-            Text(
-                MapText.SETUP_TEXT.get(lang),
-                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            val building = state.phase == MapDataPhase.BUILDING
-            var info by remember { mutableStateOf(false) }
-            TextButton(onClick = { info = true }) { Text("ⓘ ${PlaceText.REGION_WHAT.get(lang)}") }
-            if (info) RegionInfoSheet(lang) { info = false }
-            for ((key, label) in listOf("central" to MapText.REGION_CENTRAL.get(lang), "wide" to MapText.REGION_WIDE.get(lang))) {
-                androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable(enabled = !building) { onRegion(key) }) {
-                    RadioButton(selected = region == key, onClick = { onRegion(key) }, enabled = !building)
-                    Text(label)
-                }
-            }
-            if (building) {
-                LinearProgressIndicator(progress = { state.progress.toFloat() }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
-                Text("%${(state.progress * 100).roundToInt()} · ${state.stage}", style = MaterialTheme.typography.bodySmall)
-                Text(MapText.SETUP_KEEP_ON.get(lang), style = MaterialTheme.typography.bodySmall)
-            } else {
-                Button(onClick = onDownload, modifier = Modifier.padding(top = 8.dp)) { Text(MapText.SETUP_DOWNLOAD.get(lang)) }
-            }
-            state.error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp)) }
-            Text(
-                MapText.SETUP_ATTRIBUTION.get(lang),
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 12.dp),
-            )
+    val p = palette()
+    WCard(Modifier.padding(horizontal = WeemSpace.l, vertical = WeemSpace.s), large = true) {
+        if (state.phase == MapDataPhase.CHECKING || state.phase == MapDataPhase.UNPACKING) {
+            Text(MapText.SETUP_PREPARING.get(lang), style = WeemType.titleM)
+            LinearProgressIndicator(Modifier.fillMaxWidth(), color = p.accent.color(), strokeCap = StrokeCap.Round)
+            return@WCard
         }
+        Row(horizontalArrangement = Arrangement.spacedBy(WeemSpace.m), verticalAlignment = Alignment.CenterVertically) {
+            IconBox(WeemIcons.Layers, tone = WTone.ACCENT)
+            Text(MapText.SETUP_TITLE.get(lang), style = WeemType.titleM, modifier = Modifier.weight(1f))
+        }
+        Text(MapText.SETUP_TEXT.get(lang), style = WeemType.bodyM, color = p.muted.color())
+        val building = state.phase == MapDataPhase.BUILDING
+        var info by remember { mutableStateOf(false) }
+        SettingsGroup(null, dividerInset = 52.dp, selectableGroup = true) {
+            ListRow(PlaceText.REGION_WHAT.get(lang), icon = WeemIcons.Info, chevron = true, onClick = { info = true })
+            for ((key, label) in listOf("central" to MapText.REGION_CENTRAL.get(lang), "wide" to MapText.REGION_WIDE.get(lang))) {
+                RadioRow(label, region == key, { onRegion(key) }, enabled = !building)
+            }
+        }
+        if (info) RegionInfoSheet(lang) { info = false }
+        if (building) {
+            LinearProgressIndicator(progress = { state.progress.toFloat() }, modifier = Modifier.fillMaxWidth(), color = p.accent.color(), strokeCap = StrokeCap.Round)
+            Text("%${(state.progress * 100).roundToInt()} · ${state.stage}", style = WeemType.numS)
+            Text(MapText.SETUP_KEEP_ON.get(lang), style = WeemType.bodyS, color = p.muted.color())
+        } else {
+            WButton(MapText.SETUP_DOWNLOAD.get(lang), onDownload, icon = WeemIcons.Download, ride = true, fill = true)
+        }
+        state.error?.let { Banner(it, tone = WTone.DANGER) }
+        Text(MapText.SETUP_ATTRIBUTION.get(lang), style = WeemType.bodyS, color = p.muted.color())
     }
 }

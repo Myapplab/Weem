@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.kuryelog.app.WeemTheme
@@ -50,7 +51,8 @@ class RoutePanelTest {
         compose.onNodeWithText("13 dk · 07:45").assertIsDisplayed()
         compose.onNodeWithText("Mənzil 45").assertIsDisplayed()
         compose.onNodeWithText("Güzergâh: Nizami → Füzuli → Azadlıq").assertIsDisplayed()
-        compose.onNodeWithText("⚠ Adres emin değil — pini kontrol et").assertIsDisplayed()
+        // A10.4d (K4 #6): "⚠ " öneki simgeye döndü, metin aynı.
+        compose.onNodeWithText("Adres emin değil — pini kontrol et").assertIsDisplayed()
         compose.onNodeWithTag("route-finish").assertIsDisplayed()
     }
 
@@ -82,7 +84,7 @@ class RoutePanelTest {
         show(NavState(arrived = Stop(p, "Nizami 12", unitNote = "Kod 1234")), actions = RoutePanelActions(dismissArrived = { closed++ }))
         compose.onNodeWithText("Vardın: Nizami 12").assertIsDisplayed()
         compose.onNodeWithText("Kod 1234").assertIsDisplayed()
-        compose.onNodeWithText("✕").performClick()
+        compose.onNodeWithContentDescription("Kapat").performClick() // A10.4d: "✕" yazısı yerine kapat simgesi
         assertEquals(1, closed)
     }
 }

@@ -18,18 +18,15 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -37,6 +34,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.kuryelog.app.link.LinkHub
 import com.kuryelog.app.remote.RemoteHub
+import com.kuryelog.app.ui.Banner
+import com.kuryelog.app.ui.BtnKind
+import com.kuryelog.app.ui.Dot
+import com.kuryelog.app.ui.EmptyState
+import com.kuryelog.app.ui.IconBox
+import com.kuryelog.app.ui.ScreenTitle
+import com.kuryelog.app.ui.WButton
+import com.kuryelog.app.ui.WCard
+import com.kuryelog.app.ui.WTone
+import com.kuryelog.app.ui.WeemIcons
+import com.kuryelog.app.ui.WeemRadius
+import com.kuryelog.app.ui.WeemSpace
+import com.kuryelog.app.ui.WeemType
+import com.kuryelog.app.ui.color
+import com.kuryelog.app.ui.palette
+import com.kuryelog.logic.app.Text as Str
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.link.LinkRole
 import com.kuryelog.logic.link.LinkStatus
@@ -62,9 +75,15 @@ fun RemoteScreen(lang: Lang) {
     val vv by RemoteHub.viewerView.collectAsState()
     val hv by RemoteHub.hostView.collectAsState()
     val ctx = LocalContext.current
-    Column(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    val p = palette()
+    // A10.4d (`docs/TASARIM.md` 12): sekme başlığı, öteki telefonun ekranı büyük kartta, paylaşım kartı, ipucu altta.
+    Column(
+        Modifier.fillMaxSize().padding(start = WeemSpace.l, end = WeemSpace.l, top = WeemSpace.s, bottom = WeemSpace.l),
+        verticalArrangement = Arrangement.spacedBy(WeemSpace.m),
+    ) {
+        ScreenTitle(Str.TAB_REMOTE.get(lang))
         if (role == LinkRole.OFF || peer == null) {
-            Text(RemoteText.NEED_LINK.get(lang), Modifier.testTag("remote_need_link"))
+            EmptyState(RemoteText.NEED_LINK.get(lang), Modifier.testTag("remote_need_link"), icon = WeemIcons.Devices)
             return@Column
         }
         val linkIssue = when {
@@ -73,32 +92,33 @@ fun RemoteScreen(lang: Lang) {
             else -> null
         }
         val watching = !RemoteLines.canView(vv)
-        Card(Modifier.fillMaxWidth().weight(1f)) {
-            Column(Modifier.padding(12.dp).fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(RemoteText.VIEW_TITLE.get(lang), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                    if (watching) {
-                        OutlinedButton(onClick = RemoteHub::stopViewing) { Text(RemoteText.VIEW_STOP.get(lang)) }
-                    } else {
-                        Button(
-                            onClick = {
-                                val dm = ctx.resources.displayMetrics
-                                RemoteHub.startViewing(maxOf(dm.widthPixels, dm.heightPixels))
-                            },
-                            enabled = linkIssue == null,
-                            modifier = Modifier.testTag("remote_view"),
-                        ) { Text(RemoteText.VIEW_START.get(lang)) }
-                    }
+        WCard(Modifier.weight(1f), large = true, spacing = WeemSpace.s) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(WeemSpace.m)) {
+                IconBox(WeemIcons.Devices, tone = WTone.ACCENT)
+                Text(RemoteText.VIEW_TITLE.get(lang), style = WeemType.titleM, modifier = Modifier.weight(1f))
+                if (watching) {
+                    WButton(RemoteText.VIEW_STOP.get(lang), RemoteHub::stopViewing, kind = BtnKind.OUTLINE)
+                } else {
+                    WButton(
+                        RemoteText.VIEW_START.get(lang),
+                        {
+                            val dm = ctx.resources.displayMetrics
+                            RemoteHub.startViewing(maxOf(dm.widthPixels, dm.heightPixels))
+                        },
+                        Modifier.testTag("remote_view"),
+                        icon = WeemIcons.PlayArrow,
+                        enabled = linkIssue == null,
+                    )
                 }
-                val line = if (!watching && linkIssue != null) linkIssue.get(lang) else RemoteLines.viewer(vv, lang)
-                line?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                RemoteLines.viewOnly(vv, lang)?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("remote_view_only")) }
-                if (vv.state == ViewerView.State.CONNECTING || vv.state == ViewerView.State.PLAYING) Video(vv)
-                if (vv.control) Keys(lang)
             }
+            val line = if (!watching && linkIssue != null) linkIssue.get(lang) else RemoteLines.viewer(vv, lang)
+            line?.let { Text(it, style = WeemType.bodyM, color = p.muted.color()) }
+            RemoteLines.viewOnly(vv, lang)?.let { Banner(it, Modifier.testTag("remote_view_only"), tone = WTone.NEUTRAL) }
+            if (vv.state == ViewerView.State.CONNECTING || vv.state == ViewerView.State.PLAYING) Video(vv)
+            if (vv.control) Keys(lang)
         }
-        Card(Modifier.fillMaxWidth()) { Share(hv, lang) }
-        Text(RemoteText.HINT.get(lang), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        WCard(padding = 0.dp) { Share(hv, lang) }
+        Text(RemoteText.HINT.get(lang), style = WeemType.bodyS, color = p.muted.color(), modifier = Modifier.padding(horizontal = WeemSpace.xs))
     }
 }
 
@@ -107,7 +127,10 @@ fun RemoteScreen(lang: Lang) {
 @Composable
 private fun ColumnScope.Video(v: ViewerView) {
     val ratio = if (v.width > 0 && v.height > 0) v.width.toFloat() / v.height else 9f / 20f
-    Box(Modifier.fillMaxWidth().weight(1f).background(Color.Black), contentAlignment = Alignment.Center) {
+    Box(
+        Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(WeemRadius.tile)).background(Color.Black),
+        contentAlignment = Alignment.Center,
+    ) {
         AndroidView(
             factory = { c ->
                 SurfaceView(c).apply {
@@ -149,15 +172,15 @@ private fun forward(v: View, e: MotionEvent) {
     }
 }
 
-/** Öteki telefonun sistem tuşları. */
+/** Öteki telefonun sistem tuşları: dört eşit, 48 dp hap (`docs/TASARIM.md` 11). */
 @Composable
 private fun Keys(lang: Lang) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
         for ((a, t) in listOf(
             GlobalAction.BACK to RemoteText.KEY_BACK, GlobalAction.HOME to RemoteText.KEY_HOME,
             GlobalAction.RECENTS to RemoteText.KEY_RECENTS, GlobalAction.NOTIFICATIONS to RemoteText.KEY_NOTIFICATIONS,
         )) {
-            TextButton(onClick = { RemoteHub.action(a) }, modifier = Modifier.testTag("remote_key_${a.name.lowercase()}")) { Text(t.get(lang)) }
+            WButton(t.get(lang), { RemoteHub.action(a) }, Modifier.weight(1f).testTag("remote_key_${a.name.lowercase()}"), kind = BtnKind.TONAL, fill = true)
         }
     }
 }
@@ -169,28 +192,29 @@ private fun openAccessibilitySettings(ctx: Context) {
 @Composable
 internal fun Share(hv: HostView, lang: Lang) {
     val ctx = LocalContext.current
-    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    val p = palette()
+    Column(Modifier.padding(WeemSpace.l), verticalArrangement = Arrangement.spacedBy(WeemSpace.m)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(WeemSpace.m)) {
+            IconBox(WeemIcons.ScreenShare, tone = if (hv.state == HostView.State.OFF) WTone.NEUTRAL else WTone.POSITIVE)
             Column(Modifier.weight(1f)) {
-                Text(RemoteText.SHARE_TITLE.get(lang), style = MaterialTheme.typography.titleSmall)
-                Text(RemoteLines.host(hv, lang), color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            if (hv.state == HostView.State.OFF) {
-                Button(onClick = RemoteHub::requestShare, modifier = Modifier.testTag("remote_share")) { Text(RemoteText.SHARE_START.get(lang)) }
-            } else {
-                OutlinedButton(onClick = RemoteHub::stopShare) { Text(RemoteText.SHARE_STOP.get(lang)) }
+                Text(RemoteText.SHARE_TITLE.get(lang), style = WeemType.titleS)
+                Text(RemoteLines.host(hv, lang), style = WeemType.bodyS, color = p.muted.color())
             }
         }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (hv.state == HostView.State.OFF) {
+            WButton(RemoteText.SHARE_START.get(lang), RemoteHub::requestShare, Modifier.testTag("remote_share"), icon = WeemIcons.ScreenShare, fill = true)
+        } else {
+            WButton(RemoteText.SHARE_STOP.get(lang), RemoteHub::stopShare, kind = BtnKind.DANGER, icon = WeemIcons.StopScreenShare, fill = true)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
+            Dot((if (hv.touch) p.positive else p.muted).color())
             Text(
                 (if (hv.touch) RemoteText.TOUCH_ON else RemoteText.TOUCH_OFF).get(lang),
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = WeemType.bodyS, color = p.muted.color(),
                 modifier = Modifier.weight(1f).testTag("remote_touch_state"),
             )
             if (!hv.touch) {
-                TextButton(onClick = { openAccessibilitySettings(ctx) }, modifier = Modifier.testTag("remote_touch_settings")) {
-                    Text(RemoteText.TOUCH_SETTINGS.get(lang))
-                }
+                WButton(RemoteText.TOUCH_SETTINGS.get(lang), { openAccessibilitySettings(ctx) }, Modifier.testTag("remote_touch_settings"), kind = BtnKind.TEXT)
             }
         }
     }

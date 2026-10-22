@@ -1,6 +1,6 @@
 # WEEM tasarım dili (A10.4d)
 
-Durum: **onaylandı** (S36, 22 Ekim: önerilerin hepsi; vurgu laciverte yaklaştırıldı) — uygulama sürüyor (Bölüm 13). Örnek ekranlar: Artifact tuvali <https://claude.ai/artifact/UNcHAcWBebiWH9Xqg373W5> (17 çalışma alanı; yalnız bu Claude hesabında açılır); kaynakları `docs/tasarim/project/` (`.dc.html`: düz HTML'e yakın, renk ve ölçüler doğrudan okunur; başka hesap tuvali açamazsa buradan okur). Bu belge eski `docs/TASARIM_PROMPTU.md`'nin yerini alır (sınırlar burada).
+Durum: **onaylandı** (S36, 22 Ekim: önerilerin hepsi; vurgu laciverte yaklaştırıldı) — **uygulandı** (22 Ekim, A10.4d bitti; kabul ölçütleri Bölüm 14 `AcceptanceTest` ve APK +88 KB; cihazda denenmedi). Örnek ekranlar: Artifact tuvali <https://claude.ai/artifact/UNcHAcWBebiWH9Xqg373W5> (17 çalışma alanı; yalnız bu Claude hesabında açılır); kaynakları `docs/tasarim/project/` (`.dc.html`: düz HTML'e yakın, renk ve ölçüler doğrudan okunur; başka hesap tuvali açamazsa buradan okur). Bu belge eski `docs/TASARIM_PROMPTU.md`'nin yerini alır (sınırlar burada).
 
 Kural: **davranış, veri, metin anlamı ve kimlik değişmez** (`AGENTS.md`); yalnız görünüm, yerleşim, hareket ve etkileşim değişir. Metin kuralı sürer: `:app`'te yerel harfli düz metin yok, metinler `logic/*` iki dilli tablolarda (`TextCoverageTest`). Yeni kütüphane yok: Compose Material 3 + yerel simge seti (+ isteğe bağlı gömülü yazı tipi, K2).
 

@@ -1,6 +1,7 @@
 package com.kuryelog.app.map
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,9 +13,8 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -26,13 +26,16 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.kuryelog.app.ui.Fab
+import com.kuryelog.app.ui.WeemIcons
+import com.kuryelog.app.ui.WeemSize
+import com.kuryelog.app.ui.color
+import com.kuryelog.app.ui.palette
 import com.kuryelog.logic.core.Lang
-import com.kuryelog.logic.map.ui.MapText
 import com.kuryelog.logic.map.ui.CameraMode
 import com.kuryelog.logic.map.ui.HudLayout
+import com.kuryelog.logic.map.ui.MapText
 
 /** Kipin anahtar adı (`locate-<kip>`, YolGo `CameraMode.name`). */
 internal val CameraMode.key: String
@@ -45,37 +48,33 @@ internal val CameraMode.key: String
 /** Konum düğmesi (`smart-locate`, 64×64 dp): kipe göre simge (`locate-free`, `locate-followNorth`, `locate-followHeading`) ve ipucu; dokunuş [onTap]. */
 @Composable
 fun SmartLocateButton(mode: CameraMode, onTap: () -> Unit, modifier: Modifier = Modifier, lang: Lang = Lang.TR) {
-    val (glyph, hint) = when (mode) {
-        CameraMode.FREE -> "◎" to MapText.LOCATE_FREE.get(lang)
-        CameraMode.FOLLOW_NORTH -> "⌖" to MapText.LOCATE_HEADING.get(lang)
-        CameraMode.FOLLOW_HEADING -> "➤" to MapText.LOCATE_NORTH.get(lang)
+    val (icon, hint) = when (mode) {
+        CameraMode.FREE -> WeemIcons.MyLocation to MapText.LOCATE_FREE.get(lang)
+        CameraMode.FOLLOW_NORTH -> WeemIcons.Explore to MapText.LOCATE_HEADING.get(lang)
+        CameraMode.FOLLOW_HEADING -> WeemIcons.NavigationFilled to MapText.LOCATE_NORTH.get(lang)
     }
-    RoundHudButton(glyph, hint, "smart-locate", onTap, modifier, glyphTag = "locate-${mode.key}")
-}
-
-/** Alt yer düğmesi (`route-fab`): rota panelini açar/kapatır ([open] ✕); hesap sürerken "…", hata varken kırmızı; boyu konum düğmesiyle aynı. */
-@Composable
-fun RouteFab(onClick: () -> Unit, modifier: Modifier = Modifier, lang: Lang = Lang.TR, open: Boolean = false, busy: Boolean = false, error: Boolean = false) {
-    val glyph = if (busy) "…" else if (open) "✕" else "⇅"
-    RoundHudButton(glyph, MapText.ROUTE.get(lang), "route-fab", onClick, modifier, tint = if (error) MaterialTheme.colorScheme.error else null)
-}
-
-@Composable
-private fun RoundHudButton(glyph: String, hint: String, tag: String, onClick: () -> Unit, modifier: Modifier, glyphTag: String? = null, tint: androidx.compose.ui.graphics.Color? = null) {
+    val p = palette()
     // Kip anahtarı dış kutuda: tıklanabilir yüzey alt düğümlerin anlamını birleştirir.
-    Box(if (glyphTag != null) modifier.testTag(glyphTag) else modifier) {
-    Surface(
-        onClick = onClick,
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = .95f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = 3.dp,
-        modifier = Modifier.size(HudLayout.LOCATE_BUTTON_DP.dp).testTag(tag).semantics { contentDescription = hint },
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(glyph, fontSize = 26.sp, color = tint ?: MaterialTheme.colorScheme.primary)
+    Box(modifier.testTag("locate-${mode.key}")) {
+        Fab(icon, hint, onTap, Modifier.size(HudLayout.LOCATE_BUTTON_DP.dp).testTag("smart-locate")) {
+            Icon(icon, contentDescription = null, tint = (if (mode == CameraMode.FREE) p.text else p.accentText).color(), modifier = Modifier.size(WeemSize.iconRide))
         }
     }
+}
+
+/**
+ * Rota düğmesi (`route-fab`): rota panelini açar/kapatır; panel açıkken seçili (tonal), hesap sürerken ilerleme halkası, hata varken sağ üstte kırmızı nokta;
+ * boyu konum düğmesiyle aynı.
+ */
+@Composable
+fun RouteFab(onClick: () -> Unit, modifier: Modifier = Modifier, lang: Lang = Lang.TR, open: Boolean = false, busy: Boolean = false, error: Boolean = false) {
+    val p = palette()
+    Box(modifier) {
+        Fab(WeemIcons.AltRoute, MapText.ROUTE.get(lang), onClick, Modifier.size(HudLayout.LOCATE_BUTTON_DP.dp).testTag("route-fab"), selected = open) {
+            if (busy) CircularProgressIndicator(Modifier.size(26.dp), strokeWidth = 3.dp, color = p.accent.color())
+            else Icon(if (open) WeemIcons.AltRouteFilled else WeemIcons.AltRoute, contentDescription = null, modifier = Modifier.size(WeemSize.iconRide))
+        }
+        if (error) Box(Modifier.align(Alignment.TopEnd).padding(4.dp).size(12.dp).background(p.danger.color(), CircleShape).border(2.dp, p.surface.color(), CircleShape))
     }
 }
 

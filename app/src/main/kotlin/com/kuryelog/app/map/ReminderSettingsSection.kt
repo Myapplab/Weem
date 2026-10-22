@@ -1,21 +1,24 @@
 package com.kuryelog.app.map
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
@@ -26,8 +29,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.kuryelog.app.ui.BtnKind
+import com.kuryelog.app.ui.ConfirmDialog
+import com.kuryelog.app.ui.IconBox
+import com.kuryelog.app.ui.SwitchRow
+import com.kuryelog.app.ui.WButton
+import com.kuryelog.app.ui.WCard
+import com.kuryelog.app.ui.WChip
+import com.kuryelog.app.ui.WIconButton
+import com.kuryelog.app.ui.WTone
+import com.kuryelog.app.ui.WeemIcons
+import com.kuryelog.app.ui.WeemRadius
+import com.kuryelog.app.ui.WeemSpace
+import com.kuryelog.app.ui.WeemType
+import com.kuryelog.app.ui.weemSwitchColors
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.map.reminders.ReminderItem
 import com.kuryelog.logic.map.reminders.ReminderKind
@@ -51,29 +67,54 @@ internal fun reminderSummary(it: ReminderItem, lang: Lang): String {
  * Harita ayarları → "Hatırlatıcılar" (Y20; MAP.md 13.16): her tür bir satır (`reminder-tile-<tür>`): özet, açma anahtarı; açık satıra dokununca ayrıntı (aralık/saat, gün içinde,
  * metin, "Dene"); altta "Nasıl çalışır". Değişiklikler [onChange] ile (sayaç kuralları denetleyicide).
  */
+/** Hatırlatıcı simgesi (emoji yerine; metin ve bildirim aynı kalır). */
+internal fun ReminderKind.icon() = when (this) {
+    ReminderKind.WATER -> WeemIcons.WaterDrop
+    ReminderKind.CHECK -> WeemIcons.Tune
+    ReminderKind.FOOD -> WeemIcons.Restaurant
+}
+
 @Composable
 fun ReminderSettingsSection(settings: ReminderSettings, lang: Lang, onChange: (ReminderKind, (ReminderItem) -> ReminderItem) -> Unit, onPreview: (ReminderKind) -> Unit, modifier: Modifier = Modifier, onEnable: () -> Unit = {}) {
     var expanded by remember { mutableStateOf<ReminderKind?>(null) }
     var how by remember { mutableStateOf(false) }
-    Column(modifier.fillMaxWidth().padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(ReminderText.SECTION.get(lang), style = MaterialTheme.typography.titleMedium)
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(WeemSpace.m)) {
         for (item in settings.items) {
-            Card(Modifier.fillMaxWidth().testTag("reminder-tile-${item.kind.key}")) {
-                Column(Modifier.padding(12.dp)) {
-                    Row(Modifier.fillMaxWidth().clickable { if (item.enabled) expanded = if (expanded == item.kind) null else item.kind }, verticalAlignment = Alignment.CenterVertically) {
-                        Text(item.emoji, Modifier.padding(end = 10.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(item.title(lang), fontWeight = if (item.enabled) FontWeight.Bold else FontWeight.Normal, color = if (item.enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
-                            Text(reminderSummary(item, lang), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Switch(checked = item.enabled, onCheckedChange = { on -> onChange(item.kind) { it.copy(enabled = on) }; if (on) onEnable() }, Modifier.testTag("reminder-switch-${item.kind.key}"))
+            WCard(Modifier.testTag("reminder-tile-${item.kind.key}"), padding = 0.dp, spacing = 0.dp) {
+                Row(
+                    Modifier.fillMaxWidth().clickable(enabled = item.enabled) { expanded = if (expanded == item.kind) null else item.kind }
+                        .heightIn(min = 72.dp).padding(start = WeemSpace.l, end = WeemSpace.m, top = WeemSpace.s, bottom = WeemSpace.s),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconBox(item.kind.icon(), tone = if (item.enabled) WTone.ACCENT else WTone.NEUTRAL)
+                    Column(Modifier.weight(1f)) {
+                        Text(item.title(lang), style = WeemType.titleS)
+                        Text(reminderSummary(item, lang), style = WeemType.bodyS, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    if (item.enabled && expanded == item.kind) ReminderDetail(item, lang, onChange, onPreview)
+                    Switch(
+                        checked = item.enabled, onCheckedChange = { on -> onChange(item.kind) { it.copy(enabled = on) }; if (on) onEnable() },
+                        Modifier.testTag("reminder-switch-${item.kind.key}"), colors = weemSwitchColors(),
+                    )
+                }
+                AnimatedVisibility(item.enabled && expanded == item.kind) {
+                    Column {
+                        HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                        ReminderDetail(item, lang, onChange, onPreview)
+                    }
                 }
             }
         }
-        TextButton(onClick = { how = !how }, Modifier.testTag("reminder-how")) { Text((if (how) "▾ " else "▸ ") + ReminderText.HOW.get(lang)) }
-        if (how) Text(ReminderText.HOW_TEXT.get(lang), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(
+            Modifier.fillMaxWidth().clickable { how = !how }.testTag("reminder-how").heightIn(min = 48.dp).padding(horizontal = WeemSpace.xs),
+            horizontalArrangement = Arrangement.spacedBy(WeemSpace.s),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(WeemIcons.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+            Text(ReminderText.HOW.get(lang), style = WeemType.labelL, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
+            Icon(if (how) WeemIcons.ExpandLess else WeemIcons.ExpandMore, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        }
+        if (how) Text(ReminderText.HOW_TEXT.get(lang), style = WeemType.bodyS, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -82,56 +123,59 @@ fun ReminderSettingsSection(settings: ReminderSettings, lang: Lang, onChange: (R
 private fun ReminderDetail(item: ReminderItem, lang: Lang, onChange: (ReminderKind, (ReminderItem) -> ReminderItem) -> Unit, onPreview: (ReminderKind) -> Unit) {
     var picking by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf(false) }
-    Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(selected = !item.useTimes, onClick = { onChange(item.kind) { it.copy(useTimes = false) } }, label = { Text(ReminderText.MODE_INTERVAL.get(lang)) }, modifier = Modifier.testTag("reminder-mode-interval-${item.kind.key}"))
-            FilterChip(selected = item.useTimes, onClick = { onChange(item.kind) { it.copy(useTimes = true) } }, label = { Text(ReminderText.MODE_TIMES.get(lang)) }, modifier = Modifier.testTag("reminder-mode-times-${item.kind.key}"))
+    Column(Modifier.padding(vertical = WeemSpace.m), verticalArrangement = Arrangement.spacedBy(WeemSpace.m)) {
+        Row(Modifier.padding(horizontal = WeemSpace.l), horizontalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
+            WChip(ReminderText.MODE_INTERVAL.get(lang), !item.useTimes, { onChange(item.kind) { it.copy(useTimes = false) } }, Modifier.testTag("reminder-mode-interval-${item.kind.key}"))
+            WChip(ReminderText.MODE_TIMES.get(lang), item.useTimes, { onChange(item.kind) { it.copy(useTimes = true) } }, Modifier.testTag("reminder-mode-times-${item.kind.key}"))
         }
         if (!item.useTimes) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(ReminderText.EVERY_LABEL.get(lang))
-                OutlinedButton(onClick = { onChange(item.kind) { it.copy(intervalMin = (it.intervalMin - 5).coerceAtLeast(10)) } }, Modifier.testTag("reminder-minus-${item.kind.key}")) { Text("−") }
-                Text(ReminderText.MINUTES.fmt(lang, item.intervalMin), fontWeight = FontWeight.Bold)
-                OutlinedButton(onClick = { onChange(item.kind) { it.copy(intervalMin = (it.intervalMin + 5).coerceAtMost(240)) } }, Modifier.testTag("reminder-plus-${item.kind.key}")) { Text("+") }
+            Row(Modifier.padding(horizontal = WeemSpace.l), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
+                Text(ReminderText.EVERY_LABEL.get(lang), style = WeemType.bodyM, modifier = Modifier.weight(1f))
+                WIconButton(WeemIcons.Remove, "−5", { onChange(item.kind) { it.copy(intervalMin = (it.intervalMin - 5).coerceAtLeast(10)) } },
+                    Modifier.testTag("reminder-minus-${item.kind.key}"), tinted = true)
+                Text(ReminderText.MINUTES.fmt(lang, item.intervalMin), style = WeemType.numS)
+                WIconButton(WeemIcons.Add, "+5", { onChange(item.kind) { it.copy(intervalMin = (it.intervalMin + 5).coerceAtMost(240)) } },
+                    Modifier.testTag("reminder-plus-${item.kind.key}"), tinted = true)
             }
         } else {
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                for (m in item.times) FilterChip(selected = true, onClick = { onChange(item.kind) { it.copy(times = it.times - m) } }, label = { Text(fmtMinuteOfDay(m) + " ✕") })
+            FlowRow(Modifier.padding(horizontal = WeemSpace.l), horizontalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
+                for (m in item.times) WChip(fmtMinuteOfDay(m), false, { onChange(item.kind) { it.copy(times = it.times - m) } }, icon = WeemIcons.Close)
             }
-            OutlinedButton(onClick = { picking = true }, Modifier.testTag("reminder-add-time-${item.kind.key}")) { Text(ReminderText.ADD_TIME.get(lang)) }
+            WButton(ReminderText.ADD_TIME.get(lang), { picking = true }, Modifier.padding(horizontal = WeemSpace.l).testTag("reminder-add-time-${item.kind.key}"),
+                kind = BtnKind.TONAL, icon = WeemIcons.Add)
         }
-        Row(Modifier.fillMaxWidth().clickable { onChange(item.kind) { it.copy(onlyShift = !it.onlyShift) } }, verticalAlignment = Alignment.CenterVertically) {
-            Text(ReminderText.ONLY_SHIFT.get(lang), Modifier.weight(1f))
-            Switch(checked = item.onlyShift, onCheckedChange = null)
-        }
-        Text(item.message(lang), style = MaterialTheme.typography.bodySmall, maxLines = 2)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = { editing = true }, Modifier.testTag("reminder-edit-${item.kind.key}")) { Text(ReminderText.EDIT_TEXT.get(lang)) }
-            TextButton(onClick = { onPreview(item.kind) }, Modifier.testTag("reminder-try-${item.kind.key}")) { Text(ReminderText.TRY.get(lang)) }
+        SwitchRow(ReminderText.ONLY_SHIFT.get(lang), item.onlyShift, { onChange(item.kind) { it.copy(onlyShift = !it.onlyShift) } })
+        Text(
+            item.message(lang), style = WeemType.bodyS, maxLines = 2,
+            modifier = Modifier.padding(horizontal = WeemSpace.l).fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(WeemRadius.tile)).padding(WeemSpace.m),
+        )
+        Row(Modifier.padding(horizontal = WeemSpace.s), horizontalArrangement = Arrangement.spacedBy(WeemSpace.xs)) {
+            WButton(ReminderText.EDIT_TEXT.get(lang), { editing = true }, Modifier.testTag("reminder-edit-${item.kind.key}"), kind = BtnKind.TEXT, icon = WeemIcons.Edit)
+            WButton(ReminderText.TRY.get(lang), { onPreview(item.kind) }, Modifier.testTag("reminder-try-${item.kind.key}"), kind = BtnKind.TEXT, icon = WeemIcons.Notifications)
         }
     }
     if (picking) {
         val state = rememberTimePickerState(15, 15, true)
-        AlertDialog(
-            onDismissRequest = { picking = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    val m = state.hour * 60 + state.minute
-                    picking = false
-                    onChange(item.kind) { if (m in it.times) it else it.copy(times = (it.times + m).sorted()) }
-                }) { Text(ReminderText.SAVE.get(lang)) }
+        ConfirmDialog(
+            title = ReminderText.ADD_TIME.get(lang), confirm = ReminderText.SAVE.get(lang), dismiss = ReminderText.CANCEL.get(lang), onDismiss = { picking = false },
+            onConfirm = {
+                val m = state.hour * 60 + state.minute
+                picking = false
+                onChange(item.kind) { if (m in it.times) it else it.copy(times = (it.times + m).sorted()) }
             },
-            text = { TimePicker(state) },
-        )
+        ) { TimePicker(state) }
     }
     if (editing) {
         var text by remember { mutableStateOf(item.text) }
-        AlertDialog(
-            onDismissRequest = { editing = false },
-            title = { Text(ReminderText.DIALOG_TITLE.fmt(lang, item.emoji, item.title(lang))) },
-            text = { OutlinedTextField(text, { text = it }, Modifier.fillMaxWidth().testTag("reminder-text-field"), placeholder = { Text(ReminderItem.defaultText(item.kind, lang)) }, maxLines = 3) },
-            confirmButton = { TextButton(onClick = { editing = false; onChange(item.kind) { it.copy(text = text.trim()) } }, Modifier.testTag("reminder-text-save")) { Text(ReminderText.SAVE.get(lang)) } },
-            dismissButton = { TextButton(onClick = { editing = false }) { Text(ReminderText.CANCEL.get(lang)) } },
-        )
+        ConfirmDialog(
+            title = ReminderText.DIALOG_TITLE.fmt(lang, item.emoji, item.title(lang)), confirm = ReminderText.SAVE.get(lang), dismiss = ReminderText.CANCEL.get(lang),
+            confirmTag = "reminder-text-save", onDismiss = { editing = false },
+            onConfirm = { editing = false; onChange(item.kind) { it.copy(text = text.trim()) } },
+        ) {
+            OutlinedTextField(
+                text, { text = it }, Modifier.fillMaxWidth().testTag("reminder-text-field"), placeholder = { Text(ReminderItem.defaultText(item.kind, lang)) }, maxLines = 3,
+                shape = RoundedCornerShape(WeemRadius.tile),
+            )
+        }
     }
 }

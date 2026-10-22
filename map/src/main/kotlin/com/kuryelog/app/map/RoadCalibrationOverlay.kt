@@ -3,12 +3,12 @@ package com.kuryelog.app.map
 import android.animation.ValueAnimator
 import android.app.AlertDialog
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PixelFormat
 import android.graphics.Rect
-import android.graphics.Typeface
 import android.os.SystemClock
 import android.text.InputType
 import android.view.Gravity
@@ -17,6 +17,9 @@ import android.view.View
 import android.view.ViewConfiguration
 import android.view.WindowManager
 import android.widget.EditText
+import com.kuryelog.app.core.OwnOverlays
+import com.kuryelog.app.core.WeemFonts
+import com.kuryelog.logic.core.OverlayPalette
 import com.kuryelog.logic.map.calibration.CalibrationPhase
 import com.kuryelog.logic.map.calibration.CalibrationState
 import kotlin.math.hypot
@@ -141,22 +144,31 @@ internal class RoadCalibrationOverlay(private val context: Context, private val 
         private var startY = 0
         private var dragged = false
         private val slop = ViewConfiguration.get(c).scaledTouchSlop
-        private val surface = 0xf51e1e1e.toInt()
-        private val accent = 0xffa4d8b9.toInt()
+        // A10.4d (`docs/TASARIM.md` 4): renkler `OverlayPalette`'ten (telefonun gece/gündüz ayarı); metinler YolGo'daki gibi.
+        // Çizim başına bir kez çözülür; gece/gündüz değişince yeniden çizilir.
+        private var pal: OverlayPalette = OwnOverlays.palette(c)
+        private val surface get() = (pal.surface and 0x00ffffff) or 0xf5000000.toInt()
+        private val accent get() = pal.accentText
 
         init { contentDescription = "Yol kalitesi kalibrasyonu; açmak veya kapatmak için dokun, taşımak için sürükle"; isClickable = true }
 
-        private fun text(c: Canvas, value: String, x: Float, y: Float, size: Float, color: Int = 0xffececec.toInt(), room: Float = width.toFloat()) {
+        private fun text(c: Canvas, value: String, x: Float, y: Float, size: Float, color: Int = pal.text, room: Float = width.toFloat()) {
             p.style = Paint.Style.FILL; p.color = color; p.textAlign = Paint.Align.CENTER
-            p.typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL); p.textSize = size * d
+            p.typeface = WeemFonts.get(WeemFonts.SEMIBOLD); p.textSize = size * d
             val measured = p.measureText(value)
             if (measured > room * .94f) p.textSize *= room * .94f / measured
             c.drawText(value, x, y, p)
         }
 
+        override fun onConfigurationChanged(newConfig: Configuration) {
+            super.onConfigurationChanged(newConfig)
+            invalidate()
+        }
+
         override fun onDraw(c: Canvas) {
+            pal = OwnOverlays.palette(context)
             val w = width.toFloat(); val h = height.toFloat(); val barH = 108 * d
-            p.style = Paint.Style.FILL; p.color = if (phase == CalibrationPhase.DONE) 0xf5205938.toInt() else surface
+            p.style = Paint.Style.FILL; p.color = if (phase == CalibrationPhase.DONE) (pal.positiveBg and 0x00ffffff) or 0xf5000000.toInt() else surface
             if (!expanded) c.drawCircle(w / 2, h / 2, w / 2, p) else c.drawRoundRect(0f, 0f, w, barH, 34 * d, 34 * d, p)
             p.style = Paint.Style.STROKE; p.color = accent; p.strokeWidth = 2 * d
             if (!expanded) c.drawCircle(w / 2, h / 2, w / 2 - d, p) else c.drawRoundRect(d, d, w - d, barH - d, 34 * d, 34 * d, p)
@@ -178,8 +190,8 @@ internal class RoadCalibrationOverlay(private val context: Context, private val 
             val captions = listOf("", "", "YOL KALİTESİ", "SÜRE", "HIZ MODU")
             for (i in 0..4) {
                 val enabled = if (i == 1) phase == CalibrationPhase.RECORDING || phase == CalibrationPhase.COUNTDOWN else !busy && (i != 0 || state.ready)
-                text(c, labels[i], (i + .5f) * w / 5, 58 * d, 12f, if (enabled) accent else 0xff777777.toInt(), w / 5)
-                text(c, captions[i], (i + .5f) * w / 5, 74 * d, 8f, 0xffa6a6a6.toInt(), w / 5)
+                text(c, labels[i], (i + .5f) * w / 5, 58 * d, 12f, if (enabled) accent else (pal.muted and 0x00ffffff) or 0x80000000.toInt(), w / 5)
+                text(c, captions[i], (i + .5f) * w / 5, 74 * d, 8f, pal.muted, w / 5)
             }
             if (phase == CalibrationPhase.RECORDING) {
                 val path = Path(); val t = SystemClock.uptimeMillis() / 180.0

@@ -20,7 +20,8 @@ class MapPaletteTest {
     fun `paletler YolGo değerleri`() {
         assertEquals(0xFF8BB5FF.toInt(), MapPalette.of(dark = true).blue)
         assertEquals(0xFF1765D1.toInt(), MapPalette.of(dark = false).blue)
-        assertEquals(0xFFB68CFF.toInt(), MapPalette.NIGHT.pink)
+        // A10.4d (`docs/TASARIM.md` 4): gece durak/müşteri rengi mor #B68CFF → pembe; lacivert vurgu ve aşama renkleriyle karışmasın.
+        assertEquals(0xFFFF7AC6.toInt(), MapPalette.NIGHT.pink)
         assertEquals(0xFFC0008A.toInt(), MapPalette.DAY.pink)
         assertEquals(0xFF3DDCE8.toInt(), MapPalette.NIGHT.bikeway)
         assertEquals(0xFF00838F.toInt(), MapPalette.DAY.bikeway)

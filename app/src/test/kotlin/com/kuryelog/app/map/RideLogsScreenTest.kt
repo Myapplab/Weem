@@ -62,7 +62,7 @@ class RideLogsScreenTest {
         show(Rec())
         compose.waitForIdle()
         text("Sürüş kayıtları").assertCountEquals(1)
-        text("● Kayıt sürüyor").assertCountEquals(1)
+        text("Kayıt sürüyor").assertCountEquals(1) // A10.4d: "● " öneki hapın noktası
         text("02.10.2026").assertCountEquals(1)
         text("01.10.2026").assertCountEquals(1)
         text("1 sürüş · 2 kayıt").assertCountEquals(1)

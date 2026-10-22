@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.kuryelog.app.WeemTheme
@@ -19,7 +20,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** Yollarım (A6.11, MAP.md 9.8): sekmeler, kalite sayfası 👍, ters yön satır menüsü, eşik adımlayıcı, "Tümünü sil" onayı. */
+/** Yollarım (A6.11, MAP.md 9.8): sekmeler, kalite sayfası (başparmak), ters yön satır menüsü, eşik adımlayıcı, "Tümünü sil" onayı. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
 class RoadsScreenTest {
@@ -43,10 +44,10 @@ class RoadsScreenTest {
         compose.onAllNodes(hasText("Elle girilen puanlar")).assertCountEquals(1)
         compose.onAllNodes(hasText("Trafik kayıtları")).assertCountEquals(1)
         compose.onNodeWithTag("quality-row-7").performClick()
-        compose.onNodeWithText("👍 Kaliteli yüzey · kullanıcı puanı").performClick()
+        compose.onNodeWithText("Kaliteli yüzey · kullanıcı puanı").performClick() // A10.4d: 👍 öneki simgeye döndü
         compose.onNodeWithTag("roads-tab-1").performClick()
         compose.onAllNodes(hasText("4 geçiş · 2.5 sorun · kaçınılıyor")).assertCountEquals(1)
-        compose.onNodeWithText("+").performClick()
+        compose.onNodeWithContentDescription("+5").performClick() // A10.4d: "+" yazısı yerine artı simgesi
         compose.onNodeWithTag("ww-row-9").performClick()
         compose.onNodeWithText("Sorunlu geçiş ekle").performClick()
         compose.onNodeWithTag("roads-tab-2").performClick()

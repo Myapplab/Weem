@@ -8,13 +8,8 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -27,22 +22,24 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.kuryelog.app.core.Downloads
+import com.kuryelog.app.ui.SubScreen
+import com.kuryelog.logic.app.Text as Str
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.map.day.DayState
-import com.kuryelog.logic.map.logs.RideLogEntry
 import com.kuryelog.logic.map.logs.JournalFormatException
+import com.kuryelog.logic.map.logs.RideLogEntry
 import com.kuryelog.logic.map.stats.DayHistory
+import com.kuryelog.logic.map.ui.ReminderText
 import com.kuryelog.logic.map.ui.RideLogText
 import com.kuryelog.logic.map.ui.StatsText
 import com.kuryelog.logic.map.ui.importSummary
+import java.io.File
+import java.time.ZoneId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.time.ZoneId
 
 /** Dosyayı İndirilenler/WEEM'e yazar (`Downloads`, izin gerekmez) ve adresini döner. */
 private fun saveToDownloads(ctx: Context, file: File, name: String, mime: String): Uri =
@@ -203,15 +200,11 @@ fun ReminderSettingsHost(lang: Lang, onBack: () -> Unit) {
     val rt = remember { ReminderRuntime.get(ctx) }
     val settings by rt.settings.collectAsState()
     val ask = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { rt.permissionAsked() }
-    BackHandler(onBack = onBack)
-    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)) {
-            TextButton(onClick = onBack) { Text("←") }
-            ReminderSettingsSection(
-                settings, lang, onChange = rt::updateItem, onPreview = rt::preview,
-                onEnable = { if (android.os.Build.VERSION.SDK_INT >= 33) ask.launch(android.Manifest.permission.POST_NOTIFICATIONS) },
-            )
-        }
+    SubScreen(ReminderText.SECTION.get(lang), Str.BACK.get(lang), onBack) {
+        ReminderSettingsSection(
+            settings, lang, onChange = rt::updateItem, onPreview = rt::preview,
+            onEnable = { if (android.os.Build.VERSION.SDK_INT >= 33) ask.launch(android.Manifest.permission.POST_NOTIFICATIONS) },
+        )
     }
 }
 
@@ -240,9 +233,8 @@ fun DatasetHost(lang: Lang, shiftDay: String?, onBack: () -> Unit) {
     BackHandler(onBack = onBack)
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxSize()) {
-            TextButton(onClick = onBack, Modifier.padding(start = 8.dp)) { Text("←") }
             androidx.compose.runtime.key(refresh) { DatasetScreen(
-                runtime, lang, shiftDay, Modifier.fillMaxWidth(),
+                runtime, lang, shiftDay, Modifier.fillMaxWidth(), onBack = onBack,
                 onManual = { day -> manualDay = day },
                 onShare = { day ->
                     scope.launch {

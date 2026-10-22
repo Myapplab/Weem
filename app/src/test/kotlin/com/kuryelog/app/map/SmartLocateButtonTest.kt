@@ -12,6 +12,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import com.kuryelog.app.WeemTheme
 import com.kuryelog.logic.map.ui.CameraMode
+import com.kuryelog.logic.map.ui.HudLayout
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -44,7 +45,8 @@ class SmartLocateButtonTest {
         compose.onNodeWithTag("smart-locate").performClick()
         assertEquals(1, taps)
         val b = compose.onNodeWithTag("smart-locate").getBoundsInRoot()
-        assertEquals(64.dp, b.right - b.left)
-        assertEquals(64.dp, b.bottom - b.top)
+        // A10.4d: harita düğmeleri 56 dp (`docs/TASARIM.md` 11; eskiden 64).
+        assertEquals(HudLayout.LOCATE_BUTTON_DP.dp, b.right - b.left)
+        assertEquals(HudLayout.LOCATE_BUTTON_DP.dp, b.bottom - b.top)
     }
 }

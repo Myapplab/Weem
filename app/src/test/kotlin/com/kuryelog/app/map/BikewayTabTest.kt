@@ -11,6 +11,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.kuryelog.app.WeemTheme
 import com.kuryelog.logic.core.Lang
 import org.junit.Assert.assertEquals
@@ -45,11 +46,12 @@ class BikewayTabTest {
         compose.onAllNodes(hasText("×0.85")).assertCountEquals(1)
         compose.onAllNodes(hasText("OSM: 3 ", substring = true)).assertCountEquals(1)
         compose.onAllNodes(hasText("Batı küçəsi")).assertCountEquals(1)
-        compose.onNodeWithContentDescription("İşareti kaldır").performClick()
+        // A10.4d: kartlar ve boşluklar büyüdü; küçük test ekranında satıra önce kaydırılır.
+        compose.onNodeWithContentDescription("İşareti kaldır").performScrollTo().performClick()
         compose.waitForIdle()
         assertTrue(state.marks.isEmpty())
         compose.onAllNodes(hasText("Batı küçəsi")).assertCountEquals(0)
-        compose.onNodeWithText("Haritada bisiklet yolları").performClick()
+        compose.onNodeWithText("Haritada bisiklet yolları").performScrollTo().performClick()
         compose.waitForIdle()
         assertEquals(false, layer)
         lang = Lang.AZ

@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PixelFormat
 import android.graphics.Rect
@@ -25,6 +24,7 @@ import android.view.WindowManager
 import android.view.animation.PathInterpolator
 import com.kuryelog.app.core.OwnOverlays
 import com.kuryelog.app.core.Store
+import com.kuryelog.logic.core.OverlayPalette
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.scooter.FloatGeometry
 import com.kuryelog.logic.scooter.FloatRules
@@ -204,9 +204,11 @@ class FloatingPanel private constructor(private val context: Context) {
                 val line = Paint(Paint.ANTI_ALIAS_FLAG)
                 override fun onDraw(c: Canvas) {
                     val r = width / 2f * if (hot) 1f else .82f
-                    fill.color = if (hot) 0xf0d9534f.toInt() else 0xd0263445.toInt()
+                    // A10.4d: paletten — yakınken tehlike, değilken koyu yüzey (`OverlayPalette` gece; harita/uygulama üstünde okunur).
+                    val pal = OverlayPalette.forMode(true)
+                    fill.color = if (hot) pal.danger else (pal.raised and 0x00ffffff) or 0xe0000000.toInt()
                     c.drawCircle(width / 2f, height / 2f, r, fill)
-                    line.color = Color.WHITE
+                    line.color = if (hot) pal.bg else pal.text
                     line.strokeWidth = r * .12f
                     line.strokeCap = Paint.Cap.ROUND
                     val a = r * .36f
@@ -275,9 +277,10 @@ class FloatingPanel private constructor(private val context: Context) {
                 val line = Paint(Paint.ANTI_ALIAS_FLAG)
                 override fun onDraw(c: Canvas) {
                     val r = width / 2f
-                    fill.color = 0xe0263445.toInt()
+                    val pal = OverlayPalette.forMode(true)
+                    fill.color = (pal.raised and 0x00ffffff) or 0xe0000000.toInt()
                     c.drawCircle(r, r, r, fill)
-                    line.color = Color.WHITE
+                    line.color = pal.text
                     line.strokeWidth = r * .16f
                     line.strokeCap = Paint.Cap.ROUND
                     c.save()

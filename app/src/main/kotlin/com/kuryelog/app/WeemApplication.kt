@@ -7,6 +7,7 @@ import com.kuryelog.app.core.CrashLog
 import com.kuryelog.app.core.LogImport
 import com.kuryelog.app.core.ShiftHub
 import com.kuryelog.app.core.Store
+import com.kuryelog.app.core.WeemFonts
 import com.kuryelog.app.economics.Economics
 import com.kuryelog.app.map.DatasetRecording
 import com.kuryelog.app.map.NavRuntime
@@ -23,6 +24,16 @@ class WeemApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // A10.4d: Sürüş Paneli çizimleri ve sistem üstü pencereler de Inter yazar (dosyalar yalnız :app'te).
+        WeemFonts.install { w ->
+            resources.getFont(when (w) {
+                WeemFonts.REGULAR -> R.font.inter_regular
+                WeemFonts.MEDIUM -> R.font.inter_medium
+                WeemFonts.SEMIBOLD -> R.font.inter_semibold
+                WeemFonts.BOLD -> R.font.inter_bold
+                else -> R.font.inter_extrabold
+            })
+        }
         // ShiftPort durumu tercihlerden (süreç vardiya sürerken yeniden başlamış olabilir).
         ShiftHub.attach(this)
         // Ekonomi dikişi (ECONOMICS.md 3): akışın ilk girişinden önce (kancalar `restart`/`restored` ilk girişte bir kez); `:orders`

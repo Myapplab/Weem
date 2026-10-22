@@ -36,7 +36,7 @@ class CrashGuardTest {
         assertTrue(guard.contains("remember(page, key) { attempt(\"page_\$page\", Store.sink(ctx), build) }"))
         assertTrue(guard.contains("fun Context.safely(source: String = \"tap\", block: () -> Unit) {\n    attempt(source, Store.sink(this), block)"))
         // Kart düğmeleri de korumalı.
-        assertEquals(3, Regex("""onClick = \{ ctx\.safely \{""").findAll(guard).count())
+        assertEquals(3, Regex("""\{ ctx\.safely \{""").findAll(guard).count())
         assertTrue(RepoSource.text(app + "MainActivity.kt").contains("safely(\"start\") { Store.ensureManualMode(this)"))
         // İçe aktarma iş parçacığı: bellek hatası da yakalanır (RS 16 Eki), bayrak her durumda ana iş parçacığında iner.
         val import = RepoSource.text(core + "LogImport.kt")

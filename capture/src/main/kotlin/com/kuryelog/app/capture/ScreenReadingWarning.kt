@@ -9,7 +9,6 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
-import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
@@ -20,6 +19,7 @@ import android.view.WindowManager
 import android.widget.TextView
 import com.kuryelog.app.WatchService
 import com.kuryelog.app.core.OwnOverlays
+import com.kuryelog.app.core.WeemFonts
 import com.kuryelog.app.core.Store
 import com.kuryelog.logic.capture.CaptureText
 import com.kuryelog.logic.capture.ScreenReading
@@ -76,9 +76,9 @@ class ScreenReadingWarning(ctx: Context) : ShiftMachine.Hooks {
             val d = app.resources.displayMetrics.density
             val dark = OwnOverlays.dark(app)
             val tv = TextView(app).apply {
-                text = title; textSize = 13f; typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-                setTextColor(if (dark) 0xff121212.toInt() else 0xffffffff.toInt()); setPadding((12 * d).toInt(), (8 * d).toInt(), (12 * d).toInt(), (8 * d).toInt())
-                background = GradientDrawable().apply { cornerRadius = 16 * d; setColor(red) }; elevation = 6 * d
+                text = title; textSize = 13f; typeface = WeemFonts.get(WeemFonts.SEMIBOLD)
+                setTextColor(OwnOverlays.palette(app).let { if (dark) it.bg else it.surface }); setPadding((12 * d).toInt(), (8 * d).toInt(), (12 * d).toInt(), (8 * d).toInt())
+                background = GradientDrawable().apply { cornerRadius = 8 * d; setColor(red) }; elevation = 6 * d
                 setOnClickListener { runCatching { app.startActivity(CaptureStatus.accessibilitySettings(app)) } }
             }
             val lp = WindowManager.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT,

@@ -58,6 +58,8 @@ class RecordsScreenTest {
 
     private fun seed() {
         val root = ApplicationProvider.getApplicationContext<Context>().let(Store::logsRoot)
+        // Aynı JVM'deki önceki denemeler (kabuğu açan AcceptanceTest) bugünün gününü yazmış olabilir: yalnız bu tohum kalsın.
+        root.listFiles()?.forEach { it.deleteRecursively() }
         for (day in listOf("2026-10-14", "2026-10-13")) File(root, day).apply { mkdirs() }.let { File(it, "events.jsonl").writeText("{\"type\":\"shift_end\",\"min\":60,\"km\":5}\n") }
         records().archive("2026-10-13", enabled = true)
     }

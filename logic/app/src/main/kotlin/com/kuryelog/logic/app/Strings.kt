@@ -83,6 +83,10 @@ enum class Text(override val tr: String, override val az: String) : Bilingual {
     BACK("Geri", "Geri"),
     SAVE("Kaydet", "Yadda saxla"),
     CANCEL("İptal", "Ləğv et"),
+    /** Kapat simge düğmesinin ekran okuyucu adı (A10.4d). */
+    CLOSE("Kapat", "Bağla"),
+    /** Satır menüsü (⋮) simge düğmesinin ekran okuyucu adı (A10.4d). */
+    MORE_ACTIONS("Seçenekler", "Seçimlər"),
 
     // G1 vardiya kartı (CORE.md 1.2; RS `I18n` shift_start/shift_stop).
     SHIFT_START("▶  Vardiyayı BAŞLAT", "▶  Növbəni BAŞLAT"),

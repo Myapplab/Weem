@@ -7,8 +7,10 @@ import android.os.Bundle
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,7 +45,16 @@ class MainActivity : ComponentActivity() {
             var setupDone by remember { mutableStateOf(prefs.setupDone) }
             val lang = Lang.resolve(langSetting, Locale.getDefault().language)
             val onLangSetting: (String) -> Unit = { prefs.langSetting = it; langSetting = it }
-            WeemTheme(dark = theme.isDark(isSystemInDarkTheme())) {
+            val dark = theme.isDark(isSystemInDarkTheme())
+            // A10.4d: durum ve gezinme çubuğu simgeleri uygulama temasına uyar (sistem gündüzken uygulama gece seçilmiş olabilir).
+            DisposableEffect(dark) {
+                enableEdgeToEdge(
+                    statusBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT) { dark },
+                    navigationBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT) { dark },
+                )
+                onDispose {}
+            }
+            WeemTheme(dark = dark) {
                 // G5 (A7.2): ilk açılışta kurulum (dil, izinler, harita verisi, pil rehberi); bitince ya da atlanınca kabuk.
                 if (!setupDone) SetupScreen(lang, langSetting, onLangSetting) { prefs.setupDone = true; setupDone = true }
                 else WeemApp(
