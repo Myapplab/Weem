@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Harita · Rotada</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0..1,0&amp;icon_names=accessibility_new,add,alt_route,arrow_back,backup,bar_chart,battery_5_bar,battery_alert,battery_full,bluetooth,bluetooth_searching,bolt,check,check_circle,chevron_left,chevron_right,close,contrast,dark_mode,delete,devices,door_front,edit,electric_bolt,electric_scooter,error,expand_less,expand_more,explore,fiber_manual_record,folder,folder_zip,fullscreen,gps_off,history,home,info,inventory_2,keyboard_arrow_right,language,light_mode,link,location_on,lock,map,menu,more_horiz,my_location,navigation,notifications,palette,partly_cloudy_day,payments,person,phone_android,play_arrow,punch_clock,qr_code_scanner,radio_button_checked,radio_button_unchecked,receipt_long,refresh,restaurant,route,schedule,search,settings,share,shield,speed,splitscreen,sports_score,stop,storefront,thermostat,thumb_down,thumb_up,timer,touch_app,trending_up,tune,visibility_off,warning,water_drop,wifi&amp;display=block">
+<style>
+body{margin:0}
+:where(.ph) *{box-sizing:border-box}
+:where(.ph) button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;text-align:inherit}
+.ph{--bg:#F4F5F8;--sf:#FFFFFF;--r1:#ECEEF2;--r2:#E3E6EB;--ol:#DCDFE5;--olS:#C5CAD3;--tx:#0E1015;--mu:#565C6A;--ok:#0B7A43;--okC:#DDF4E7;--wn:#8A4B00;--wnC:#FFEDD5;--dg:#C4291C;--dgC:#FDE8E6;--wo:#00668F;--woC:#E0F3FB;--bo:#0B6E3B;--boC:#DFF5E8;--mv:#0B4FB3;--mvC:#E3EDFF;--rt:#9A3E00;--rtC:#FFE9D9;--pk:#0B6B47;--pkC:#DDF4EA;--cu:#A0156E;--cuC:#FDE4F3;--pw:#B45309;--sun:#E09400;--ac:#5B3DF5;--acI:#FFFFFF;--acT:#5236E0;--acC:#ECE8FF;--acO:#3A23A8;--e0:none;--e1:0 1px 2px rgba(14,16,21,.10),0 4px 12px rgba(14,16,21,.08);--e2:0 -8px 32px rgba(14,16,21,.18);--mL:#EDEFEA;--mW:#B9D7F0;--mP:#CFE7C8;--mR:#FFFFFF;--mRc:#D6DAE0;--mM:#FFFFFF;--mMc:#C6CCD5;--mT:#5B6170;--mRt:#1765D1;--mRtc:#FFFFFF;--mSl:#D45D00;--mSt:#C0008A;--mCone:rgba(23,101,209,.20);--mHalo:rgba(23,101,209,.16);position:relative;overflow:hidden;background:var(--bg);color:var(--tx);font-family:Inter,Roboto,system-ui,sans-serif;font-size:15px;line-height:22px;-webkit-font-smoothing:antialiased}
+.ph.night{--bg:#0E0F13;--sf:#17191F;--r1:#21242C;--r2:#2B2F38;--ol:#2E323C;--olS:#3D424E;--tx:#F3F4F7;--mu:#A5ABB8;--ok:#62D69B;--okC:#102E1F;--wn:#FFC27A;--wnC:#382607;--dg:#FF8A80;--dgC:#3A1614;--wo:#66CCF2;--woC:#0A2633;--bo:#66D99A;--boC:#0E2A1B;--mv:#A9C8FF;--mvC:#13264A;--rt:#FFB37A;--rtC:#3A220E;--pk:#7FE0B3;--pkC:#0F2E22;--cu:#FF9AD5;--cuC:#3A1430;--pw:#FFB547;--sun:#FFC27A;--ac:#A898FF;--acI:#14102E;--acT:#B4A7FF;--acC:#2B2462;--acO:#E0DAFF;--e0:inset 0 0 0 1px var(--ol);--e1:0 0 0 1px var(--ol),0 4px 16px rgba(0,0,0,.40);--e2:0 0 0 1px var(--ol),0 -8px 32px rgba(0,0,0,.50);--mL:#1A1D23;--mW:#0E2233;--mP:#16291D;--mR:#2C313B;--mRc:#1A1D23;--mM:#3A404C;--mMc:#1A1D23;--mT:#8B93A3;--mRt:#8BB5FF;--mRtc:#0E0F13;--mSl:#FF9F1C;--mSt:#FF7AC6;--mCone:rgba(139,181,255,.22);--mHalo:rgba(139,181,255,.18)}
+.ph.acc-mono{--ac:#0E1015;--acI:#FFFFFF;--acT:#0E1015;--acC:#E3E6EB;--acO:#0E1015}
+.ph.night.acc-mono{--ac:#F3F4F7;--acI:#0E0F13;--acT:#F3F4F7;--acC:#2B2F38;--acO:#F3F4F7}
+.i{font-family:'Material Symbols Rounded';font-weight:400;font-style:normal;font-size:24px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;direction:ltr;font-feature-settings:'liga';-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;flex:none;user-select:none}
+.i.f{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+.s16{font-size:16px}.s18{font-size:18px}.s20{font-size:20px}.s28{font-size:28px}
+.dxl{font-size:88px;line-height:92px;font-weight:800;letter-spacing:-.04em}
+.dm{font-size:40px;line-height:44px;font-weight:800;letter-spacing:-.025em}
+.hl{font-size:28px;line-height:34px;font-weight:700;letter-spacing:-.015em}
+.tl{font-size:22px;line-height:28px;font-weight:700;letter-spacing:-.01em}
+.tm{font-size:18px;line-height:24px;font-weight:600;letter-spacing:-.005em}
+.ts{font-size:16px;line-height:22px;font-weight:600}
+.bl{font-size:16px;line-height:24px}
+.bm{font-size:15px;line-height:22px}
+.bs{font-size:13px;line-height:18px}
+.ll{font-size:15px;line-height:20px;font-weight:600}
+.lm{font-size:13px;line-height:16px;font-weight:600}
+.ls{font-size:12px;line-height:16px;font-weight:600}
+.nm{font-size:22px;line-height:26px;font-weight:700;letter-spacing:-.01em}
+.ns{font-size:16px;line-height:20px;font-weight:600}
+.tn{font-variant-numeric:tabular-nums}
+.mu{color:var(--mu)}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.x{display:flex;align-items:center}
+.y{display:flex;flex-direction:column}
+.f1{flex:1 1 0;min-width:0}
+.card{background:var(--sf);border-radius:16px;padding:16px;box-shadow:var(--e0)}
+.card.l{border-radius:24px}
+.btn{height:48px;border-radius:999px;padding:0 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:15px;line-height:20px;font-weight:600;white-space:nowrap;flex:none}
+.btn.h56{height:56px;font-size:16px;padding:0 24px}
+.btn.pri{background:var(--ac);color:var(--acI)}
+.btn.ton{background:var(--acC);color:var(--acO)}
+.btn.out{box-shadow:inset 0 0 0 1.5px var(--olS);color:var(--tx)}
+.btn.dgt{background:var(--dgC);color:var(--dg)}
+.btn.w{width:100%}
+.ib{width:48px;height:48px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx);flex:none}
+.ib.h56{width:56px;height:56px}
+.fab{width:56px;height:56px;border-radius:999px;background:var(--sf);box-shadow:var(--e1);display:inline-flex;align-items:center;justify-content:center;color:var(--tx);flex:none}
+.fab.on{background:var(--acC);color:var(--acO)}
+.pill{height:28px;border-radius:999px;padding:0 10px;display:inline-flex;align-items:center;gap:6px;font-size:13px;line-height:16px;font-weight:600;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:999px;background:currentColor;flex:none;display:inline-block}
+.ban{display:flex;align-items:center;gap:12px;border-radius:16px;padding:12px 14px;font-size:15px;line-height:20px;font-weight:500}
+.ban.wn{background:var(--wnC);color:var(--wn)}
+.ban.dg{background:var(--dgC);color:var(--dg)}
+.ibox{width:40px;height:40px;border-radius:12px;background:var(--r1);display:inline-flex;align-items:center;justify-content:center;flex:none;color:var(--tx)}
+.nav{position:absolute;left:0;right:0;bottom:0;height:84px;padding:8px 4px 12px;background:var(--sf);box-shadow:0 -1px 0 var(--ol);display:grid;grid-template-columns:repeat(5,minmax(0,1fr))}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--mu);font-size:12px;line-height:16px;font-weight:600;min-width:0}
+.nav .ind{width:56px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center}
+.nav .nl{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav button.on{color:var(--tx)}
+.nav button.on .ind{background:var(--acC);color:var(--acO)}
+.nav button.on .i{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+.map{position:absolute;left:0;top:0;width:390px;height:760px;overflow:hidden;background:var(--mL)}
+.map svg{position:absolute;left:0;top:0;width:390px;height:760px}
+.land{fill:var(--mL)}.park{fill:var(--mP)}.water{fill:var(--mW)}
+.rc{stroke:var(--mRc);stroke-width:10;fill:none}.r{stroke:var(--mR);stroke-width:7;fill:none}
+.mc{stroke:var(--mMc);stroke-width:16;fill:none}.m{stroke:var(--mM);stroke-width:12;fill:none}
+.lb{fill:var(--mT);font-size:11px;font-weight:600;letter-spacing:.01em;paint-order:stroke;stroke:var(--mL);stroke-width:3px;stroke-linejoin:round}
+.lw{fill:var(--mT);font-size:12px;font-style:italic;font-weight:500;opacity:.8}
+.rtc{stroke:var(--mRtc);stroke-width:13;fill:none;stroke-linejoin:round;stroke-linecap:round}
+.rt{stroke:var(--mRt);stroke-width:8;fill:none;stroke-linejoin:round;stroke-linecap:round}
+.sl{stroke:var(--mSl);stroke-width:8;fill:none;stroke-linejoin:round;stroke-linecap:round}
+.poi{position:absolute;width:26px;height:26px;border-radius:999px;background:var(--sf);color:var(--rt);box-shadow:var(--e1);display:flex;align-items:center;justify-content:center;transform:translate(-13px,-13px)}
+.puck{position:absolute;width:22px;height:22px;border-radius:999px;background:var(--mRt);border:3px solid #FFFFFF;box-shadow:0 0 0 7px var(--mHalo),0 2px 6px rgba(0,0,0,.30);transform:translate(-11px,-11px)}
+.cone{position:absolute;width:0;height:0;border-left:15px solid transparent;border-right:15px solid transparent;border-bottom:40px solid var(--mCone);transform:translate(-15px,-48px)}
+.stop{position:absolute;display:flex;flex-direction:column;align-items:center;transform:translate(-18px,-46px)}
+.stop b{width:36px;height:36px;border-radius:999px;background:var(--mSt);color:#FFFFFF;border:3px solid #FFFFFF;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.stop i{display:block;width:3px;height:10px;background:var(--mSt);border-radius:2px}
+.top{position:absolute;left:12px;right:12px;top:36px;display:flex;flex-direction:column;gap:12px}
+.srch{flex:1 1 0;min-width:0;height:56px;border-radius:999px;background:var(--sf);box-shadow:var(--e1);display:flex;align-items:center;gap:12px;padding:0 18px;color:var(--mu);font-size:16px;line-height:24px}
+.wx{height:56px;border-radius:999px;background:var(--sf);box-shadow:var(--e1);display:inline-flex;align-items:center;gap:6px;padding:0 16px 0 12px;flex:none}
+.mcol{display:flex;flex-direction:column;gap:6px;width:82px}
+.mt{position:relative;overflow:hidden;background:var(--sf);border-radius:16px;box-shadow:var(--e1);padding:8px 8px 9px;display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:82px}
+.mt .v{display:flex;align-items:baseline;gap:3px}
+.bar{position:absolute;left:0;bottom:0;height:4px;background:var(--ok)}
+.bot{position:absolute;left:12px;right:12px;bottom:96px;display:flex;flex-direction:column;gap:10px}
+.rcard{box-shadow:var(--e1);display:flex;flex-direction:column;gap:12px}
+.dp{height:56px;border-radius:999px;background:var(--sf);box-shadow:var(--e1);display:flex;align-items:center;padding:0 4px 0 6px;flex:none}
+.pdot{width:12px;height:12px;border-radius:999px;background:var(--c);box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 22%,transparent);margin:0 10px 0 10px;flex:none}
+</style>
+</helmet>
+<div class="ph {{mode}}" style="width: 390px; height: 844px">
+<div class="map">
+<svg viewBox="0 0 390 760" aria-hidden="true">
+<rect class="land" x="0" y="0" width="390" height="760"></rect>
+<rect class="park" x="222" y="72" width="72" height="72" rx="6"></rect>
+<rect class="park" x="44" y="428" width="74" height="64" rx="6"></rect>
+<path class="rc" d="M0 64H390M0 152H390M0 330H390M0 420H390M0 500H390M36 0V600M214 0V580M302 0V560M372 0V540M214 420L302 330"></path>
+<path class="r" d="M0 64H390M0 152H390M0 330H390M0 420H390M0 500H390M36 0V600M214 0V580M302 0V560M372 0V540M214 420L302 330"></path>
+<path class="mc" d="M0 240H390M126 0V600"></path>
+<path class="m" d="M0 240H390M126 0V600"></path>
+<path class="park" d="M0 616C90 588 170 576 250 562C300 553 350 540 390 528V552C350 564 300 575 250 584C170 598 90 612 0 640Z"></path>
+<path class="water" d="M0 640C90 612 170 598 250 584C300 575 350 564 390 552V760H0Z"></path>
+<path class="mc" d="M0 606C90 578 170 566 250 552C300 543 350 530 390 518"></path>
+<path class="m" d="M0 606C90 578 170 566 250 552C300 543 350 530 390 518"></path>
+<text class="lb" x="262" y="244" text-anchor="middle">Nizami küç.</text>
+<text class="lb" x="342" y="334" text-anchor="middle">Füzuli küç.</text>
+<text class="lb" transform="translate(130 395) rotate(-90)" text-anchor="middle">Bülbül pr.</text>
+<text class="lb" transform="translate(218 196) rotate(-90)" text-anchor="middle">Zərifə Əliyeva küç.</text>
+<text class="lb" transform="translate(306 376) rotate(-90)" text-anchor="middle">Rəşid Behbudov küç.</text>
+<text class="lw" x="300" y="700" text-anchor="middle">Bakı buxtası</text>
+<path class="rtc" d="M214 470V330H302V170"></path>
+<path class="rt" d="M214 470V330H302V240"></path>
+<path class="sl" d="M302 240V170"></path>
+</svg>
+<span class="poi" style="left: 170px; top: 286px"><span class="i f s16">restaurant</span></span>
+<span class="poi" style="left: 350px; top: 108px"><span class="i f s16">restaurant</span></span>
+<span class="poi" style="left: 258px; top: 380px"><span class="i f s16">storefront</span></span>
+<span class="cone" style="left: 214px; top: 470px"></span>
+<span class="puck" style="left: 214px; top: 470px"></span>
+<span class="stop" style="left: 302px; top: 170px"><b>1</b><i></i></span>
+</div>
+<div class="top">
+<div class="x" style="gap: 8px">
+<button class="srch" aria-label="Adres veya mekân ara"><span class="i" style="color: var(--tx)">search</span><span class="ell">Adres veya mekân ara</span></button>
+<button class="wx" aria-label="Hava 23°"><span class="i f s28" style="color: var(--sun)">partly_cloudy_day</span><span class="ts tn">23°</span></button>
+</div>
+<div class="mcol">
+<button class="mt" aria-label="Batarya: 78% · +64%"><span class="v"><span class="i f s16" style="color: var(--ok); align-self: center">battery_5_bar</span><span class="nm tn">78%</span></span><span class="ls mu tn">+64%</span><span class="bar" style="width: 78%"></span></button>
+<button class="mt" aria-label="Rota süresi: 12 dk · 14:44"><span class="v"><span class="i s16" style="color: var(--acT); align-self: center">schedule</span><span class="nm tn">12</span><span class="lm mu">dk</span></span><span class="ls mu tn">14:44</span></button>
+<button class="mt" aria-label="Durağa kalan: 2.4 km · yürüme dahil"><span class="ls mu">Durağa kalan</span><span class="v"><span class="nm tn">2.4</span><span class="lm mu">km</span></span><span class="ls mu">yürüme dahil</span></button>
+<button class="mt" aria-label="Rota ortalama hızı: 18 ort. km/s"><span class="v"><span class="i s16" style="color: var(--acT); align-self: center">speed</span><span class="nm tn">18</span></span><span class="ls mu">ort. km/s</span></button>
+<button class="mt" aria-label="Farklı hızlarda süre"><span class="i s16" style="color: var(--acT)">timer</span><span class="lm tn">15 · 14dk</span><span class="lm tn">20 · 11dk</span><span class="lm tn">25 · 9dk</span></button>
+</div>
+</div>
+<div class="bot">
+<div class="x" style="justify-content: flex-end">
+<button class="fab" aria-label="Kuzey yukarı"><span class="i f s28" style="color: var(--acT)">navigation</span></button>
+</div>
+<div class="card l rcard">
+<div class="x" style="gap: 12px">
+<span class="ibox" style="background: var(--cuC); color: var(--cu)"><span class="i f">location_on</span></span>
+<div class="f1">
+<div class="tm ell">Rəşid Behbudov küç. 45</div>
+<div class="bs mu ell">Güzergâh: Zərifə Əliyeva küç. → Füzuli küç. → Rəşid Behbudov küç.</div>
+</div>
+</div>
+<div class="ban wn" style="padding: 10px 14px"><span class="i">door_front</span><span style="font-size: 20px; line-height: 26px; font-weight: 800">Blok 2, mərtəbə 5, mənzil 18</span></div>
+<div class="x" style="gap: 8px">
+<span class="nm tn f1" style="color: var(--acT)">12 dk · 14:44</span>
+<button class="btn dgt" style="padding: 0 18px"><span class="i s20">close</span>Bitir</button>
+</div>
+</div>
+<div class="x" style="gap: 8px">
+<div class="dp">
+<span class="pdot" style="--c: var(--mv)"></span>
+<button class="ib h56" aria-label="Eve dön"><span class="i">home</span></button>
+<button class="ib h56" aria-label="İstatistik"><span class="i">bar_chart</span></button>
+<button class="ib h56" aria-label="Günü bitir"><span class="i">sports_score</span></button>
+<span class="i mu" style="padding: 0 8px 0 2px" aria-hidden="true">expand_less</span>
+</div>
+<span class="f1"></span>
+<button class="fab on" aria-label="Rota"><span class="i f s28">alt_route</span></button>
+</div>
+</div>
+<nav class="nav" aria-label="Alt menü">
+<button class="on" aria-current="page"><span class="ind"><span class="i">map</span></span><span class="nl">Harita</span></button>
+<button><span class="ind"><span class="i">receipt_long</span></span><span class="nl">Siparişler</span></button>
+<button><span class="ind"><span class="i">electric_scooter</span></span><span class="nl">Scooter</span></button>
+<button><span class="ind"><span class="i">devices</span></span><span class="nl">Uzaktan</span></button>
+<button><span class="ind"><span class="i">menu</span></span><span class="nl">Daha fazla</span></button>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"accent":{"editor":"enum","options":["mor","mono"],"default":"mor"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.dark ?? false;
+    const mono = (this.props.accent ?? 'mor') === 'mono';
+    return { mode: (dark ? 'night' : 'day') + (mono ? ' acc-mono' : '') };
+  }
+}
+</script>
+</body>
+</html>
