@@ -90,6 +90,19 @@ class SurfacePipelineTest {
         assertEquals("boot-1", ev.first().boot); assertEquals(5.0, ev.first().speed, 0.0); assertTrue(ev.first().orientationReliable)
     }
 
+    @Test fun rawSinkGetsEverySampleOnlyWhileOnAndNotPaused() {
+        val r = Rig(); r.feed.configure(config())
+        r.run(1.0, 5.0)
+        val got = ArrayList<RawSample>(); r.feed.rawSink = { got += it }
+        r.run(1.0, 5.0)
+        assertEquals(100, got.size)
+        assertEquals("boot-1", got.first().boot); assertEquals("yolgo-1:free", got.first().leg); assertTrue(got.first().linear)
+        r.feed.configure(config(paused = true)); got.clear(); r.run(1.0, 5.0)
+        assertTrue("duraklatılmışken ham kayıt yok", got.isEmpty())
+        r.feed.configure(config()); r.feed.rawSink = null; r.run(1.0, 5.0)
+        assertTrue(got.isEmpty())
+    }
+
     @Test fun legChangeEmitsABoundaryForTheOldLegAndClosingSaysClosed() {
         val r = Rig(); r.feed.configure(config("yolgo-1:free"))
         r.feed.configure(config("yolgo-1:3:toRestaurant:1000"))
