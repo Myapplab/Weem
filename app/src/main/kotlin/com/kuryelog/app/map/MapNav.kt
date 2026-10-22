@@ -1,7 +1,6 @@
 package com.kuryelog.app.map
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,24 +11,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,15 +37,34 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kuryelog.app.ui.Banner
+import com.kuryelog.app.ui.BtnKind
+import com.kuryelog.app.ui.EmptyState
+import com.kuryelog.app.ui.FitText
+import com.kuryelog.app.ui.IconBox
+import com.kuryelog.app.ui.ListRow
+import com.kuryelog.app.ui.StatusPill
+import com.kuryelog.app.ui.WButton
+import com.kuryelog.app.ui.WIconButton
+import com.kuryelog.app.ui.WSheet
+import com.kuryelog.app.ui.WTone
+import com.kuryelog.app.ui.WeemIcons
+import com.kuryelog.app.ui.WeemRadius
+import com.kuryelog.app.ui.WeemSpace
+import com.kuryelog.app.ui.WeemType
+import com.kuryelog.app.ui.color
+import com.kuryelog.app.ui.floating
+import com.kuryelog.app.ui.mark
+import com.kuryelog.app.ui.palette
+import com.kuryelog.app.ui.withoutGlyph
+import com.kuryelog.logic.app.Text as Str
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.map.geo.GeoPoint
 import com.kuryelog.logic.map.graph.Poi
@@ -63,8 +79,6 @@ import com.kuryelog.logic.map.nav.StopConfidence
 import com.kuryelog.logic.map.nav.ToastTone
 import com.kuryelog.logic.map.ui.LongPressAction
 import com.kuryelog.logic.map.ui.LongPressRow
-import com.kuryelog.logic.map.ui.MapPalette
-import com.kuryelog.logic.map.ui.RouteLayer
 import com.kuryelog.logic.map.ui.RoutePin
 import com.kuryelog.logic.map.ui.RouteStroke
 import java.time.LocalDateTime
@@ -89,102 +103,130 @@ fun NavState.hasPanelInfo(): Boolean = stops.isNotEmpty() || arrived != null || 
  */
 @Composable
 fun RoutePanel(nav: NavState, lang: Lang, dark: Boolean, actions: RoutePanelActions, now: LocalDateTime = LocalDateTime.now()) {
-    val pal = MapPalette.of(dark)
-    val orange = Color(pal.orange)
-    val red = Color(pal.red)
+    val p = palette()
+    val shape = RoundedCornerShape(WeemRadius.panel)
     Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = .97f),
-        shadowElevation = 4.dp,
-        modifier = Modifier.fillMaxWidth().heightIn(max = 220.dp).testTag("route-panel"),
+        shape = shape,
+        color = p.surface.color(),
+        contentColor = p.text.color(),
+        modifier = Modifier.fillMaxWidth().heightIn(max = 260.dp).floating(shape).testTag("route-panel"),
     ) {
-        Column(Modifier.verticalScroll(rememberScrollState()).padding(12.dp)) {
+        Column(Modifier.verticalScroll(rememberScrollState()).padding(WeemSpace.l), verticalArrangement = Arrangement.spacedBy(WeemSpace.m)) {
             if (nav.homeSuggest) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 10.dp)) {
-                    Text("🔋", color = orange)
-                    Spacer(Modifier.width(8.dp))
-                    Text(NavText.HOME_SUGGEST.get(lang), color = orange, modifier = Modifier.weight(1f))
-                    TextButton(onClick = actions.goHome) { Text(NavText.HOME_GO.get(lang)) }
-                    TextButton(onClick = actions.dismissHomeSuggest) { Text("✕") }
+                // Eve dön önerisi bandı: dolgu uyarı rengi "Eve git" + kapat.
+                Row(
+                    Modifier.fillMaxWidth().background(p.warnBg.color(), RoundedCornerShape(WeemRadius.card)).padding(start = WeemSpace.m, top = WeemSpace.xs, bottom = WeemSpace.xs),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(WeemIcons.BatteryAlertFilled, contentDescription = null, tint = p.warn.color(), modifier = Modifier.size(20.dp))
+                    Text(NavText.HOME_SUGGEST.get(lang), color = p.warn.color(), style = WeemType.bodyM, modifier = Modifier.weight(1f).padding(horizontal = WeemSpace.s))
+                    WButton(NavText.HOME_GO.get(lang), actions.goHome, kind = BtnKind.WARN_FILLED, icon = WeemIcons.Home)
+                    WIconButton(WeemIcons.Close, Str.CLOSE.get(lang), actions.dismissHomeSuggest)
                 }
             }
             val arrived = nav.arrived
-            if (arrived != null && (nav.hasRoute || nav.busy) && nav.pending == null) {
-                Box(Modifier.padding(bottom = 10.dp)) { ArrivedCard(arrived, lang, orange, actions.dismissArrived) }
-            }
+            if (arrived != null && (nav.hasRoute || nav.busy) && nav.pending == null) ArrivedCard(arrived, lang, actions.dismissArrived)
             val stop = nav.activeStop
             val pending = nav.pending
+            var finishShown = false
             when {
-                pending != null -> PendingCard(pending, lang, Color(pal.pink), actions)
+                pending != null -> PendingCard(pending, lang, actions)
                 nav.busy -> Row(verticalAlignment = Alignment.CenterVertically) {
-                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                    Spacer(Modifier.width(12.dp))
-                    Text(nav.busyText ?: NavText.WORKING.get(lang), fontSize = 14.sp)
+                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = p.accent.color())
+                    Spacer(Modifier.width(WeemSpace.m))
+                    Text(nav.busyText ?: NavText.WORKING.get(lang), style = WeemType.bodyM)
                 }
-                stop != null && nav.hasRoute -> ActiveStop(stop, nav, lang, now, Color(pal.blue), orange, Color(pal.pink))
-                arrived != null -> ArrivedCard(arrived, lang, orange, actions.dismissArrived)
+                stop != null && nav.hasRoute -> {
+                    ActiveStop(stop, nav, lang, now, actions.clear)
+                    finishShown = true
+                }
+                arrived != null -> ArrivedCard(arrived, lang, actions.dismissArrived)
                 else -> nav.error?.let { e ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("⚠", color = red)
-                        Spacer(Modifier.width(8.dp))
-                        Text(e, color = red, fontSize = 15.sp, modifier = Modifier.weight(1f).testTag("route-error"))
-                        if (nav.stops.isNotEmpty()) TextButton(onClick = actions.retry) { Text(NavText.RETRY.get(lang)) }
+                        Icon(WeemIcons.WarningFilled, contentDescription = null, tint = p.danger.color(), modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(WeemSpace.s))
+                        Text(e, color = p.danger.color(), style = WeemType.bodyM, modifier = Modifier.weight(1f).testTag("route-error"))
+                        if (nav.stops.isNotEmpty()) WButton(NavText.RETRY.get(lang), actions.retry, kind = BtnKind.TEXT, icon = WeemIcons.Refresh)
                     }
                 }
             }
-            if (nav.hasRoute || nav.stops.isNotEmpty()) {
-                Spacer(Modifier.size(10.dp))
-                Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
-                    TextButton(onClick = actions.clear, modifier = Modifier.testTag("route-finish")) { Text("✕  " + NavText.FINISH.get(lang), color = red) }
+            if (!finishShown && (nav.hasRoute || nav.stops.isNotEmpty())) {
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) { FinishButton(lang, actions.clear) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FinishButton(lang: Lang, onClick: () -> Unit) {
+    WButton(NavText.FINISH.get(lang), onClick, Modifier.testTag("route-finish"), kind = BtnKind.DANGER, icon = WeemIcons.Close)
+}
+
+/** Kapı notu bandı: uyarı zemini, kapı simgesi, büyük kalın yazı (sürüşte okunur). */
+@Composable
+private fun DoorNote(text: String, sizeSp: Int = 20) {
+    val p = palette()
+    Row(
+        Modifier.fillMaxWidth().background(p.warnBg.color(), RoundedCornerShape(WeemRadius.card)).padding(horizontal = 14.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(WeemSpace.m), verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(WeemIcons.DoorFront, contentDescription = null, tint = p.warn.color())
+        Text(text, color = p.warn.color(), style = WeemType.titleL.copy(fontSize = sizeSp.sp, lineHeight = (sizeSp + 6).sp, fontWeight = FontWeight.ExtraBold))
+    }
+}
+
+@Composable
+private fun ActiveStop(stop: Stop, nav: NavState, lang: Lang, now: LocalDateTime, onFinish: () -> Unit) {
+    val p = palette()
+    val leg = nav.plan?.legs?.firstOrNull()
+    Column(verticalArrangement = Arrangement.spacedBy(WeemSpace.m)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(WeemSpace.m), verticalAlignment = Alignment.CenterVertically) {
+            IconBox(WeemIcons.LocationOnFilled, tone = WTone.CUSTOMER)
+            Column(Modifier.weight(1f)) {
+                Text(stop.label, style = WeemType.titleM, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                leg?.let { l -> NavPanelText.streets(l.streets, lang) }?.let {
+                    Text(it, style = WeemType.bodyS, color = p.muted.color(), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun ActiveStop(stop: Stop, nav: NavState, lang: Lang, now: LocalDateTime, blue: Color, orange: Color, pink: Color) {
-    val leg = nav.plan?.legs?.firstOrNull()
-    Column {
+        stop.unitNote?.let { DoorNote(it) }
+        if (stop.confidence == StopConfidence.LOW) Banner(NavText.LOW_CONFIDENCE.get(lang).withoutGlyph(), tone = WTone.WARN)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("📍", color = pink)
-            Spacer(Modifier.width(6.dp))
-            Text(stop.label, fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
             if (leg != null) {
-                Text(NavPanelText.eta(leg.timeS, now, lang), fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, color = blue, modifier = Modifier.testTag("route-eta"))
-            }
+                FitText(NavPanelText.eta(leg.timeS, now, lang), style = WeemType.numM, color = p.accentText.color(), modifier = Modifier.weight(1f).testTag("route-eta"))
+            } else Spacer(Modifier.weight(1f))
+            FinishButton(lang, onFinish)
         }
-        stop.unitNote?.let { Text(it, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = orange, modifier = Modifier.padding(top = 6.dp)) }
-        leg?.let { l -> NavPanelText.streets(l.streets, lang) }?.let {
-            Text(it, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
-        }
-        if (stop.confidence == StopConfidence.LOW) Text(NavText.LOW_CONFIDENCE.get(lang), fontSize = 13.sp, color = orange, modifier = Modifier.padding(top = 4.dp))
     }
 }
 
 @Composable
-private fun ArrivedCard(stop: Stop, lang: Lang, orange: Color, onClose: () -> Unit) {
+private fun ArrivedCard(stop: Stop, lang: Lang, onClose: () -> Unit) {
+    val p = palette()
     Row(verticalAlignment = Alignment.Top, modifier = Modifier.testTag("route-arrived")) {
-        Text("✔", fontSize = 22.sp, color = Color(0xFF2E9E6B))
-        Spacer(Modifier.width(10.dp))
-        Column(Modifier.weight(1f)) {
-            Text(NavPanelText.arrived(stop.label, lang), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            stop.unitNote?.let { Text(it, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = orange) }
+        Icon(WeemIcons.CheckCircleFilled, contentDescription = null, tint = p.positive.color(), modifier = Modifier.padding(top = 12.dp).size(24.dp))
+        Spacer(Modifier.width(WeemSpace.m))
+        Column(Modifier.weight(1f).padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
+            Text(NavPanelText.arrived(stop.label, lang), style = WeemType.titleS)
+            stop.unitNote?.let { DoorNote(it, sizeSp = 24) }
         }
-        TextButton(onClick = onClose) { Text("✕") }
+        WIconButton(WeemIcons.Close, Str.CLOSE.get(lang), onClose)
     }
 }
 
 @Composable
-private fun PendingCard(stop: Stop, lang: Lang, pink: Color, actions: RoutePanelActions) {
-    Column(Modifier.testTag("route-pending")) {
-        Text(NavText.NEW_ADDRESS.get(lang), color = pink, fontWeight = FontWeight.ExtraBold)
-        Text(stop.label, fontSize = 16.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 10.dp)) {
-            Button(onClick = { actions.acceptPending(true) }, modifier = Modifier.weight(1f)) { Text(NavText.ADD_STOP.get(lang)) }
-            Spacer(Modifier.width(8.dp))
-            OutlinedButton(onClick = { actions.acceptPending(false) }, modifier = Modifier.weight(1f)) { Text(NavText.NEW_ROUTE.get(lang)) }
-            TextButton(onClick = actions.dismissPending) { Text("✕") }
+private fun PendingCard(stop: Stop, lang: Lang, actions: RoutePanelActions) {
+    val p = palette()
+    Column(Modifier.testTag("route-pending"), verticalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            StatusPill(NavText.NEW_ADDRESS.get(lang), WTone.CUSTOMER, icon = WeemIcons.AddLocationAlt, modifier = Modifier.weight(1f, fill = false))
+            Spacer(Modifier.weight(1f))
+            WIconButton(WeemIcons.Close, Str.CLOSE.get(lang), actions.dismissPending)
+        }
+        Text(stop.label, style = WeemType.titleM, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Row(horizontalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
+            WButton(NavText.ADD_STOP.get(lang), { actions.acceptPending(true) }, Modifier.weight(1f), icon = WeemIcons.AddLocationAlt)
+            WButton(NavText.NEW_ROUTE.get(lang), { actions.acceptPending(false) }, Modifier.weight(1f), kind = BtnKind.OUTLINE, icon = WeemIcons.AltRoute)
         }
     }
 }
@@ -201,23 +243,25 @@ fun NavToastBanner(toast: NavToast?, dark: Boolean) {
         }
     }
     val t = shown ?: return
-    val pal = MapPalette.of(dark)
-    val color = Color(
-        when (t.tone) {
-            ToastTone.INFO -> pal.blue
-            ToastTone.WARN -> pal.orange
-            ToastTone.DANGER -> pal.red
-            ToastTone.WALK -> pal.walk
-        },
-    )
+    val p = palette()
+    val (icon, tone) = when (t.tone) {
+        ToastTone.INFO -> WeemIcons.InfoFilled to WTone.ACCENT
+        ToastTone.WARN -> WeemIcons.WarningFilled to WTone.WARN
+        ToastTone.DANGER -> WeemIcons.ErrorFilled to WTone.DANGER
+        ToastTone.WALK -> WeemIcons.Route to WTone.MOVE
+    }
+    val shape = RoundedCornerShape(WeemRadius.card)
     Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = .97f),
-        border = BorderStroke(1.5.dp, color),
-        shadowElevation = 3.dp,
-        modifier = Modifier.fillMaxWidth().padding(top = 4.dp).clickable { shown = null },
+        onClick = { shown = null },
+        shape = shape,
+        color = p.surface.color(),
+        contentColor = p.text.color(),
+        modifier = Modifier.fillMaxWidth().padding(top = WeemSpace.xs).floating(shape),
     ) {
-        Text(t.text, color = color, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp))
+        Row(Modifier.padding(horizontal = WeemSpace.l, vertical = 14.dp), horizontalArrangement = Arrangement.spacedBy(WeemSpace.m), verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, contentDescription = null, tint = p.mark(tone).color(), modifier = Modifier.size(22.dp))
+            Text(t.text.withoutGlyph(), style = WeemType.titleS, modifier = Modifier.weight(1f))
+        }
     }
 }
 
@@ -233,42 +277,44 @@ fun SearchOverlay(view: SearchView, lang: Lang, onQuery: (String) -> Unit, onSub
         onQuery("")
         runCatching { focus.requestFocus() }
     }
-    Surface(color = MaterialTheme.colorScheme.background.copy(alpha = .98f), modifier = Modifier.fillMaxSize().testTag("search-overlay")) {
-        Column(Modifier.fillMaxSize().padding(12.dp)) {
+    val p = palette()
+    Surface(color = p.bg.color(), contentColor = p.text.color(), modifier = Modifier.fillMaxSize().testTag("search-overlay")) {
+        Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = WeemSpace.m, vertical = WeemSpace.s)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = onClose) { Text("←", fontSize = 20.sp) }
+                WIconButton(WeemIcons.ArrowBack, Str.BACK.get(lang), onClose)
                 OutlinedTextField(
                     value = text,
                     onValueChange = { text = it; onQuery(it) },
                     placeholder = { Text(NavText.SEARCH_FIELD.get(lang), maxLines = 1) },
+                    leadingIcon = { Icon(WeemIcons.Search, contentDescription = null) },
                     singleLine = true,
+                    shape = CircleShape,
+                    textStyle = WeemType.bodyL,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
                     keyboardActions = KeyboardActions(onGo = { if (text.isNotBlank()) onSubmit(text) }),
-                    modifier = Modifier.weight(1f).focusRequester(focus).testTag("search-field"),
+                    modifier = Modifier.weight(1f).padding(horizontal = WeemSpace.xs).focusRequester(focus).testTag("search-field"),
                 )
-                TextButton(onClick = { if (text.isNotBlank()) onSubmit(text) }, enabled = text.isNotBlank()) { Text("→") }
+                WIconButton(WeemIcons.AltRoute, NavText.DRAW_ROUTE.get(lang), { if (text.isNotBlank()) onSubmit(text) }, enabled = text.isNotBlank(), tinted = true)
             }
-            Text(NavText.SEARCH_HINT.get(lang), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 8.dp, top = 4.dp))
-            if (view.busy) androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 6.dp))
-            view.error?.let { Text(it, fontSize = 11.sp, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(start = 8.dp, top = 6.dp)) }
+            Text(NavText.SEARCH_HINT.get(lang), style = WeemType.bodyS, color = p.muted.color(), modifier = Modifier.padding(start = 60.dp, top = WeemSpace.xs))
+            if (view.busy) androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = WeemSpace.s), color = p.accent.color())
+            view.error?.let { Banner(it, Modifier.padding(top = WeemSpace.s), tone = WTone.DANGER) }
             val showList = text.trim().length >= 2 || view.items.isNotEmpty()
             if (showList) {
                 if (view.items.isEmpty() && !view.busy) {
-                    Text(NavText.NO_RESULTS.get(lang), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(16.dp))
+                    EmptyState(NavText.NO_RESULTS.get(lang), icon = WeemIcons.Search)
                 }
-                LazyColumn(Modifier.weight(1f, fill = false)) {
+                LazyColumn(Modifier.weight(1f, fill = false).padding(top = WeemSpace.s)) {
                     items(view.items, key = { it.source + it.id }) { item ->
-                        Row(Modifier.fillMaxWidth().clickable { onPick(item) }.padding(horizontal = 8.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(if (item.offline) "⊙" else "📍", modifier = Modifier.width(28.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text(item.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
-                                if (item.address.isNotEmpty()) Text(item.address, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
+                        ListRow(
+                            item.title, subtitle = item.address.ifEmpty { null },
+                            icon = if (item.offline) WeemIcons.Map else WeemIcons.LocationOn, iconTone = if (item.offline) WTone.NEUTRAL else WTone.CUSTOMER,
+                            onClick = { onPick(item) },
+                        )
                     }
                 }
                 if (view.items.any { it.source == "google" }) {
-                    Text(NavText.GOOGLE_ATTRIBUTION.get(lang), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(8.dp))
+                    Text(NavText.GOOGLE_ATTRIBUTION.get(lang), style = WeemType.labelS, color = p.muted.color(), modifier = Modifier.padding(WeemSpace.s))
                 }
             }
         }
@@ -285,20 +331,16 @@ fun LongPressSheet(
     onThumb: ((Boolean) -> Unit)? = null,
     thumbHints: Pair<String, String> = "" to "",
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = 24.dp).testTag("long-press-sheet")) {
+    WSheet(onDismiss = onDismiss, padded = false) {
+        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).testTag("long-press-sheet")) {
             for (r in rows) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Column(
-                        Modifier.weight(1f).clickable(enabled = r.enabled) { onPick(r.action) }.padding(horizontal = 20.dp, vertical = 12.dp),
-                    ) {
-                        Text(r.title, fontWeight = FontWeight.SemiBold, color = if (r.enabled) Color.Unspecified else MaterialTheme.colorScheme.onSurfaceVariant)
-                        r.subtitle?.let { Text(it, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    }
-                    // Elle puan satırı: 👍 (%90) / 👎 (%25) (MAP.md 9.4.2).
+                Row(Modifier.fillMaxWidth().padding(end = WeemSpace.m), verticalAlignment = Alignment.CenterVertically) {
+                    ListRow(r.title, Modifier.weight(1f).padding(start = WeemSpace.s), subtitle = r.subtitle, enabled = r.enabled, onClick = { onPick(r.action) })
+                    // Elle puan satırı: başparmak yukarı (%90) / aşağı (%25) (MAP.md 9.4.2).
                     if (r.thumbs && onThumb != null) {
-                        TextButton(onClick = { onThumb(true) }, modifier = Modifier.semantics { contentDescription = thumbHints.first }.testTag("thumb-up")) { Text("👍") }
-                        TextButton(onClick = { onThumb(false) }, modifier = Modifier.semantics { contentDescription = thumbHints.second }.testTag("thumb-down")) { Text("👎") }
+                        WIconButton(WeemIcons.ThumbUp, thumbHints.first, { onThumb(true) }, Modifier.testTag("thumb-up"), tone = WTone.POSITIVE)
+                        Spacer(Modifier.width(WeemSpace.s))
+                        WIconButton(WeemIcons.ThumbDown, thumbHints.second, { onThumb(false) }, Modifier.testTag("thumb-down"), tone = WTone.DANGER)
                     }
                 }
             }

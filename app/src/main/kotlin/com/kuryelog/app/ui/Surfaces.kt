@@ -240,3 +240,8 @@ fun Skeleton(modifier: Modifier = Modifier, height: Dp = 16.dp) {
     )
     Box(modifier.fillMaxWidth().height(height).alpha(pulse).background(palette().high.color(), RoundedCornerShape(WeemRadius.badge)))
 }
+
+private val leadingGlyph = Regex("^[▶■⚠✕⌕●✔⏹↻✎⇅⌂▥◉◎›‹⤓]️?\\s+")
+
+/** Metnin başındaki işaret önekini ("▶  ", "⚠ " …) atar; yerine simge çizilir (K4 #6). Metnin kendisi aynı kalır. */
+fun String.withoutGlyph(): String = replace(leadingGlyph, "")
