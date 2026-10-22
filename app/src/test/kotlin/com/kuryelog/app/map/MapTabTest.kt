@@ -60,6 +60,6 @@ class MapTabTest {
         compose.onAllNodes(hasTestTag("record-chip")).assertCountEquals(0)
         compose.onAllNodes(hasTestTag("open-settings")).assertCountEquals(0)
         compose.onNodeWithTag("map-search").assertExists()
-        compose.onAllNodes(hasText("● Kayıt sürüyor")).assertCountEquals(0) // durum Yollarım → Sürüş kayıtları'nda
+        compose.onAllNodes(hasText("Kayıt sürüyor")).assertCountEquals(0) // durum Yollarım → Sürüş kayıtları'nda
     }
 }

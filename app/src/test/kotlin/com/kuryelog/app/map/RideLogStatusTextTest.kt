@@ -27,7 +27,7 @@ class RideLogStatusTextTest {
         var logging by mutableStateOf(true)
         var active by mutableStateOf(true)
         compose.setContent { WeemTheme(false) { RideLogStatusText(logging, active, Lang.TR) } }
-        for ((l, a, text) in listOf(Triple(true, true, "● Kayıt sürüyor"), Triple(true, false, "Gün başlayınca kaydedilir"), Triple(false, true, "Kayıt kapalı"))) {
+        for ((l, a, text) in listOf(Triple(true, true, "Kayıt sürüyor"), Triple(true, false, "Gün başlayınca kaydedilir"), Triple(false, true, "Kayıt kapalı"))) {
             logging = l; active = a
             compose.waitForIdle()
             compose.onNodeWithTag("ride-log-status").assertExists()

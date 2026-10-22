@@ -1,10 +1,11 @@
 package com.kuryelog.app.map
 
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import com.kuryelog.app.ui.StatusPill
+import com.kuryelog.app.ui.WTone
+import com.kuryelog.app.ui.withoutGlyph
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.map.logs.RideLogStatus
 
@@ -12,10 +13,9 @@ import com.kuryelog.logic.map.logs.RideLogStatus
 @Composable
 fun RideLogStatusText(logging: Boolean, dayActive: Boolean, lang: Lang, modifier: Modifier = Modifier) {
     val (tr, az) = RideLogStatus.texts(logging, dayActive)
-    Text(
-        if (lang == Lang.AZ) az else tr,
+    // A10.4d: "● " öneki hapın noktasına döner; kayıt sürerken kırmızı nokta.
+    StatusPill(
+        (if (lang == Lang.AZ) az else tr).withoutGlyph(), if (logging && dayActive) WTone.DANGER else WTone.NEUTRAL,
         modifier.testTag("ride-log-status"),
-        style = MaterialTheme.typography.bodySmall,
-        color = if (logging && dayActive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
