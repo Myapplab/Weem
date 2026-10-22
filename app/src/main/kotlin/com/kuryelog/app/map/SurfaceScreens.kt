@@ -1,6 +1,11 @@
 package com.kuryelog.app.map
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.clickable
@@ -265,6 +270,10 @@ fun SurfaceSetupScreen(lang: Lang, onBack: () -> Unit, onCalibration: () -> Unit
     val vehicle = MapSettingsRepo.settings(ctx).collectAsState().value.vehicleId
     var newProfile by remember { mutableStateOf(false) }
     var diagnostics by remember { mutableStateOf(false) }
+    var rawOn by remember { mutableStateOf(rt.rawEnabled) }
+    // Etkinlik tanıma izni (Android 10+): verilince sensörler yeniden kaydedilir ki adım dedektörü açılsın.
+    var motionGranted by remember { mutableStateOf(Build.VERSION.SDK_INT < 29 || ctx.checkSelfPermission(Manifest.permission.ACTIVITY_RECOGNITION) == PackageManager.PERMISSION_GRANTED) }
+    val askMotion = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> motionGranted = ok; rt.motionPermissionChanged(); rev++ }
     fun toast(text: String) = Toast.makeText(ctx, text, Toast.LENGTH_SHORT).show()
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) { TextButton(onClick = onBack) { Text("←") }; Text(SurfaceUiText.SETUP_TITLE.get(lang), style = MaterialTheme.typography.titleLarge) }
@@ -303,9 +312,27 @@ fun SurfaceSetupScreen(lang: Lang, onBack: () -> Unit, onCalibration: () -> Unit
         OutlinedButton(onClick = { runCatching { store.calibrate() }; rev++ }, modifier = Modifier.fillMaxWidth()) { Text(SurfaceUiText.CALCULATE.get(lang)) }
         Button(onClick = onCalibration, modifier = Modifier.fillMaxWidth().testTag("surface-road-calibration")) { Text(SurfaceUiText.ROAD_CALIBRATION.get(lang)) }
         HorizontalDivider()
-        Text(SurfaceUiText.MOTION_PERMISSION.get(lang), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(SurfaceUiText.MOTION_TITLE.get(lang))
+                Text((if (motionGranted) SurfaceUiText.MOTION_ALLOWED else SurfaceUiText.MOTION_LIMITED).get(lang), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (!motionGranted) TextButton(onClick = { askMotion.launch(Manifest.permission.ACTIVITY_RECOGNITION) }, modifier = Modifier.testTag("surface-motion-grant")) { Text(SurfaceUiText.MOTION_GRANT.get(lang)) }
+        }
         TextButton(onClick = { diagnostics = !diagnostics }) { Text(SurfaceUiText.DIAGNOSTICS.get(lang)) }
         if (diagnostics) {
+            Row(Modifier.fillMaxWidth().clickable { rawOn = !rawOn; rt.rawEnabled = rawOn }, verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(SurfaceUiText.RAW_TITLE.get(lang))
+                    Text(SurfaceUiText.RAW_HINT.get(lang), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(checked = rawOn, onCheckedChange = null, modifier = Modifier.testTag("surface-raw-switch"))
+            }
+            TextButton(onClick = {
+                val file = rt.exportRaw()
+                if (file == null) toast(SurfaceUiText.RAW_EMPTY.get(lang))
+                else runCatching { shareFile(ctx, "WEEM-surface-raw-last-10-minutes.jsonl", file.readBytes(), "application/x-ndjson") }.onFailure { toast(it.message ?: SurfaceUiText.ERROR.get(lang)) }
+            }) { Text(SurfaceUiText.RAW_EXPORT.get(lang)) }
             Text(SurfaceText.diagnostics(view, profile), fontSize = 12.sp)
             for (row in store.decisions.takeLast(10).reversed()) Text("${row.optString("state")} · ${row.optString("reason")}\n${row.optString("leg")}", fontSize = 12.sp)
             TextButton(onClick = {

@@ -55,7 +55,7 @@ Ayrıntılı alan listeleri ve satır başvuruları: `docs/sartname/bulgular/` (
 | `POST_NOTIFICATIONS`, `WAKE_LOCK`, `VIBRATE` | var | var | var | var |
 | `BLUETOOTH_SCAN`, `BLUETOOTH_CONNECT` (+ `BLUETOOTH`/`_ADMIN` maxSdk 30), feature `bluetooth_le` required=false | — | var | — | var |
 | `SYSTEM_ALERT_WINDOW` | — | var (yüzen panel) | var | var |
-| `ACTIVITY_RECOGNITION` | — | — | var | **yok** (A10.2; A10.4b Y13 adım dedektörü bu izne bağlı ama izin eklenmedi: kullanıcı kararı SORU-Y13-1, yokken kapı sınırlı kanıtla çalışır) |
+| `ACTIVITY_RECOGNITION` | — | — | var | **var** (A10.4c, kullanıcı kararı SORU-Y13-1, 22 Ekim): yalnız `:map` bildirir (Y13 adım dedektörü); "Ölçüm ve kalibrasyon" ekranından istenir, verilmezse ölçüm sensör + GPS ile sürer |
 | 2 telefon / uzaktan | — | — | — | A8.1: `ACCESS_NETWORK_STATE` (`yeni`; taşıma `INTERNET` + `BLUETOOTH_CONNECT` ile; klasik Bluetooth olduğundan `BLUETOOTH_ADVERTISE` ve `NEARBY_WIFI_DEVICES` gerekmez, S23). targetSdk 37'de `ACCESS_LOCAL_NETWORK` (Android 17). A8.2/A9'da: `CAMERA` (QR), `FOREGROUND_SERVICE_MEDIA_PROJECTION` |
 
 ## 4. Sağlayıcılar, intent'ler, URI'ler (iki uygulama sözleşmesi)
@@ -241,7 +241,7 @@ Dışa aktarma ZIP'i `NinebotLogger-<ms>.zip`: `manifest.json` (`schema` 1, `app
 | `files/mapdata/graph_<region>.bin`, `pois_<region>.json`, `dem/N40E049.hgt`, `dem/N40E050.hgt`, `parts_graph_<region>/` | harita verisi (Y7) | yeniden üret (CI `ci/osm_extract.py` + Overpass); WEEM'de aynı yol ve biçim (`MAP.md` 2.12) |
 | `files/telemetry-v2.jsonl` (≤3000 satır) | yerel telemetri | hayır (Y13 ile gelir; `MAP.md` 12.11) |
 | `app_flutter/TeklifVeriSeti/<gün>/…` | veri seti (Y19) | hayır (S1: dışa aktarma yolu yok); WEEM'de yeni veri seti `files/TeklifVeriSeti/` (7.5) |
-| `files/surface-v2/` (`observations.jsonl`, `metadata.json`, `decisions.jsonl`, `history.json`, `<k>.unreadable.jsonl`, `WEEM-surface-diagnostics.json`), `files/road-calibration-v1/<id>.json` (+ `WEEM-yol-kalibrasyonu.json`) | Y13/Y14 | evet (A10.4b, `MAP.md` 18; `surface-raw-v2` yok) |
+| `files/surface-v2/` (`observations.jsonl`, `metadata.json`, `decisions.jsonl`, `history.json`, `<k>.unreadable.jsonl`, `WEEM-surface-diagnostics.json`), `files/road-calibration-v1/<id>.json` (+ `WEEM-yol-kalibrasyonu.json`) | Y13/Y14 | evet (A10.4b, `MAP.md` 18; ham tanı kaydı `files/surface-raw-v2/<gün>-<boot>-<dakika>.jsonl`, son 10 dk, varsayılan kapalı, tercih `surface.raw.debug`; A10.4c) |
 
 ### 7.4 WEEM 2 telefon kuyruğu `files/link/` — WEEM: **yeni** (A8.2, `LINK.md` 3.7–3.8, 3.12)
 

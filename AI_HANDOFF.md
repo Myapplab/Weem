@@ -2,6 +2,12 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-22 — A10.4c ACTIVITY_RECOGNITION izni + ham tanı kaydı (Claude Sonnet · high; dal `ccr-03d281e4-dglbwh`; S34)
+- Yapılan: kullanıcı kararı. `:map` manifestine `ACTIVITY_RECOGNITION`; "Ölçüm ve kalibrasyon"da izin satırı + "İzin ver" (verilince `SurfaceRuntime.motionPermissionChanged`). Ham tanı kaydı: `logic/map` `RawDiagnostics`/`RawSample`, `SurfaceFeed.rawSink`, `files/surface-raw-v2/` (son 10 dk, `surface.raw.debug`, varsayılan kapalı, konumsuz), ekranda anahtar + "Ham JSONL kaydını paylaş". `PrivacyAuditTest`: izin yalnız `:map`'te. S15 (a), M-Y13-1 onayı plan Bölüm 8'de (S34).
+- Doğrulama: `-p logic test --rerun-tasks` yeşil; `:app` derleme + lint 0 hata + `SurfaceScreensTest`; telefonda ve CI'da (PR sonucu aşağıda/ISLER'de) denenmedi.
+- Açık kalan: izin penceresi ve adım dedektörünün gerçek etkisi cihazda; ilk açılış kurulumunun izin listesine eklenmedi (yalnız Ölçüm ve kalibrasyon ekranından istenir). Bekleyen kullanıcı cevapları: T1-1, S17, S18, A6.1, A6.5 (`WEEM_ISLER.md` Açık sorular).
+- Sıradaki: A10.4 (K, kullanıcı geçişi) → A10.5.
+
 ## 2026-10-22 — A10.4b PR #15 kırmızısı kapandı: ekran metinleri logic/map'e (Claude Opus · high; dal `ccr-4b659265-9jxyuk`, PR #16)
 - Yapılan: PR #15 dalı + `main` birleştirildi. `TextCoverageTest` (`:app`'te yerel harfli düz metin yok) için `SurfaceScreens.kt` ve `RoadCalibrationScreen.kt` metinleri `logic/map`'e: `SurfaceUiText` (TR/AZ), `SurfaceText.detailLines/impactTitle/impactSubtitle/technical/bandStatus/diagnostics/conflictLine`, `CalibrationText` sabitleri + `profileLine/levelLine/customLabel/remaining/failed` (yalnız TR, YolGo gibi). Çelişki satırı artık `roadScore` satırlarında "ve/və" aranarak bulunmuyor (`conflictLine`). `MAP.md` 18.2/18.3.
 - Doğrulama: `-p logic test --rerun-tasks` 2.116 test, 0 kırmızı; `:app` ana kaynağı derlendi; `:app`/`:map` Robolectric + lint yerelde Maven Central 429 (repo.maven.apache.org ve repo1); **PR #16 CI yeşil** (13 dk) → `main` `a4ffac3` (PR #15 de birleşmiş sayıldı). Telefonda denenmedi.
