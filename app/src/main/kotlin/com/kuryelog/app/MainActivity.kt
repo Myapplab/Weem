@@ -1,6 +1,7 @@
 package com.kuryelog.app
 
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
@@ -23,6 +24,7 @@ import com.kuryelog.app.map.NavRuntime
 import com.kuryelog.app.map.AppForeground
 import com.kuryelog.app.scooter.FloatingPanel
 import com.kuryelog.app.scooter.Scooter
+import com.kuryelog.logic.app.ScreenOrientation
 import com.kuryelog.logic.core.Lang
 import java.util.Locale
 
@@ -39,9 +41,11 @@ class MainActivity : ComponentActivity() {
         // Wolt/Bolt navigasyon bağlantısı ya da paylaşılan metin (Y5, MAP.md 8.2); yeniden kurulan Activity aynı intent'i ikinci kez işlemez.
         if (savedInstanceState == null) safely("link") { LinkIntake.handle(this, intent) }
         val prefs = ShellPrefs(this)
+        applyOrientation(prefs.orientation)
         setContent {
             var langSetting by remember { mutableStateOf(prefs.langSetting) }
             var theme by remember { mutableStateOf(prefs.theme) }
+            var orientation by remember { mutableStateOf(prefs.orientation) }
             var setupDone by remember { mutableStateOf(prefs.setupDone) }
             val lang = Lang.resolve(langSetting, Locale.getDefault().language)
             val onLangSetting: (String) -> Unit = { prefs.langSetting = it; langSetting = it }
@@ -64,10 +68,17 @@ class MainActivity : ComponentActivity() {
                     versionName = BuildInfo.versionName(this),
                     onLangSetting = onLangSetting,
                     onTheme = { prefs.theme = it; theme = it },
+                    orientation = orientation,
+                    onOrientation = { prefs.orientation = it; orientation = it; applyOrientation(it) },
                     onSetupAgain = { prefs.setupDone = false; setupDone = false },
                 )
             }
         }
+    }
+
+    /** A10.4g: kilit sensörle iki yöne de döner (ters dikey/yatay); serbest telefonun döndürme ayarını izler. */
+    private fun applyOrientation(o: ScreenOrientation) {
+        requestedOrientation = orientationFlag(o)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -134,6 +145,13 @@ class MainActivity : ComponentActivity() {
         // Ev izleyicinin sürücülerinden biri uygulama açılışı (CORE.md 1.7); en çok 5 sn'de bir denetler.
         HomeWatch.refresh(this)
     }
+}
+
+/** [ScreenOrientation] → `ActivityInfo` değeri (A10.4g). */
+internal fun orientationFlag(o: ScreenOrientation): Int = when (o) {
+    ScreenOrientation.FREE -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+    ScreenOrientation.PORTRAIT -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+    ScreenOrientation.LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
 }
 
 internal object BuildInfo {

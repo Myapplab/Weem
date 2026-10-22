@@ -34,3 +34,20 @@ enum class ThemeMode(val key: String) {
         fun fromKey(key: String?): ThemeMode = entries.firstOrNull { it.key == key } ?: SYSTEM
     }
 }
+
+/**
+ * Ekran yönü (SORU-N6, S35): dikey ya da yatay kilit, ya da serbest (telefonun döndürme ayarı). Yeni tercih anahtarı `orientation`
+ * (`kuryelog` dosyası). Kilit bütün uygulamaya uyar; Scooter tam ekranı kilitle döner (gösterge iki yöne de çizilir), küçük pencere
+ * (PiP) kilitten etkilenmez.
+ */
+enum class ScreenOrientation(val key: String) {
+    FREE("free"),
+    PORTRAIT("portrait"),
+    LANDSCAPE("landscape");
+
+    companion object {
+        const val PREF_KEY = "orientation"
+
+        fun fromKey(key: String?): ScreenOrientation = entries.firstOrNull { it.key == key } ?: FREE
+    }
+}

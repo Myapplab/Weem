@@ -24,6 +24,10 @@ enum class Text(override val tr: String, override val az: String) : Bilingual {
     THEME_SYSTEM("Telefonu izle", "Telefona uyğun"),
     THEME_LIGHT("Gündüz", "Gündüz"),
     THEME_DARK("Gece", "Gecə"),
+    SETTINGS_ORIENTATION("Ekran yönü", "Ekranın istiqaməti"),
+    ORIENTATION_FREE("Serbest", "Sərbəst"),
+    ORIENTATION_PORTRAIT("Dikey kilit", "Şaquli kilid"),
+    ORIENTATION_LANDSCAPE("Yatay kilit", "Üfüqi kilid"),
     VERSION("Sürüm %s", "Versiya %s"),
 
     // R20 çökme kartı ve çizilemeyen sekme (CORE.md 4.1; Rawstats metinleri, ad "WEEM").

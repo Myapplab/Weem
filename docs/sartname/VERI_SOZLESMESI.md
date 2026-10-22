@@ -86,6 +86,7 @@ Bugünkü mesajlar (alan alan: `bulgular/X_protocol.md` P1–P11; WEEM'deki kar�
 |---|---|---|---|
 | `lang` | String `tr`\|`az`\|yok | dil | `:app` · A1.3 |
 | `theme` | String `system`\|`light`\|`dark` | **yeni** (A1.3) | `:app` |
+| `orientation` | String `free`\|`portrait`\|`landscape` (yoksa `free`) | **yeni** (A10.4g, SORU-N6) | `:app` |
 | `shift`, `manualSession`, `autoStarted`, `autoShift` | Bool (false) | `CORE` 1.1 | `:core` · A2.4 |
 | `manualPolicy` | **Int** (0) | göç işareti | `:core` · A2.4 |
 | `shiftStart`, `shiftEndedAt`, `shiftInterruptedAt` | Long ms (0) | `CORE` 1.1, 1.5 | `:core` · A2.4 |
