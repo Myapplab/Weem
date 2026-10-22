@@ -45,7 +45,7 @@ class MapPalette private constructor(
         val NIGHT = MapPalette(
             background = 0xFF0A101B.toInt(), panel = 0xF20F1725.toInt(), surface = 0xFF101827.toInt(), surfaceHigh = 0xFF1B2638.toInt(),
             stroke = 0xFF2B384C.toInt(), blue = 0xFF8BB5FF.toInt(), orange = 0xFFFF9F1C.toInt(), red = 0xFFFF2D55.toInt(), green = 0xFF8ACDB8.toInt(),
-            pink = 0xFFB68CFF.toInt(), slope = 0xFFB26BFF.toInt(), food = 0xFFFF8A3D.toInt(), walk = 0xFFE8F7FF.toInt(), text = 0xFFE8F7FF.toInt(),
+            pink = 0xFFFF7AC6.toInt(), slope = 0xFFB26BFF.toInt(), food = 0xFFFF8A3D.toInt(), walk = 0xFFE8F7FF.toInt(), text = 0xFFE8F7FF.toInt(),
             textLo = 0xFFA5B0C1.toInt(), shadow = 0x99000000.toInt(), bikeway = 0xFF3DDCE8.toInt(),
         )
         val DAY = MapPalette(
