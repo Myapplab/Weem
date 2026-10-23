@@ -59,9 +59,10 @@ class ScooterOrderEnergyTest {
         c.addEnergy(31.0, 1.0, 18 * 60_000L); c.addDistance(2_500.0); c.closeEnergy(t); c.confirmDelivered(t.id, 20 * 60_000L)
         // The G3 has no regenerative braking: the headline is what left the batteries, the inflow (external battery feeding
         // the internal one, or a charger) is named for what it is and never subtracted.
-        assertEquals("Scooter enerjisi: 31.0 Wh · 12.4 Wh/km · bataryaya giren 1.0 Wh (harici batarya/şarj) · ölçülen 18/20 dk", OrderHistory.energyLine(t, tr))
+        // WEEM A10.4f: the 2 unread minutes are named ("veri eksik").
+        assertEquals("Scooter enerjisi: 31.0 Wh · 12.4 Wh/km · bataryaya giren 1.0 Wh (harici batarya/şarj) · ölçülen 18/20 dk · veri eksik 2 dk", OrderHistory.energyLine(t, tr))
         t.energyShared = true; t.recoveredWh = 0.0; t.distanceM = 100.0
-        assertEquals("Skuter enerjisi: 31.0 Wh · ölçülən 18/20 dəq · başqa sifarişlə eyni vaxtda", OrderHistory.energyLine(t, az))
+        assertEquals("Skuter enerjisi: 31.0 Wh · ölçülən 18/20 dəq · məlumat əskik 2 dəq · başqa sifarişlə eyni vaxtda", OrderHistory.energyLine(t, az))
     }
 
     /** D10 (13 Ekim): the order's energy is both packs' V×A only; an internal-only step (external pack known, not read) adds
@@ -73,12 +74,12 @@ class ScooterOrderEnergyTest {
         c.addEnergy(20.0, 0.0, 12 * 60_000L); c.addDistance(2_000.0); c.closeEnergy(t); c.confirmDelivered(t.id, 20 * 60_000L)
         assertEquals(20.0, t.usedWh, 1e-12); assertEquals(0.0, t.recoveredWh, 0.0); assertEquals(12 * 60_000L, t.energyCoveredMs); assertEquals(6 * 60_000L, t.energyPartialMs)
         // No Wh/km while part of the order was measured on one pack only.
-        assertEquals("Scooter enerjisi: 20.0 Wh · ölçülen 12/20 dk · harici batarya okunmayan 6 dk", OrderHistory.energyLine(t, tr))
+        assertEquals("Scooter enerjisi: 20.0 Wh · ölçülen 12/20 dk · harici batarya okunmayan 6 dk · veri eksik 2 dk", OrderHistory.energyLine(t, tr))
         assertEquals(6 * 60_000L, RecordJson.trip(RecordJson.trip(t)).energyPartialMs)
         // Only internal-only steps: no Wh at all ("—"), never "0 Wh" or a negative figure.
         val c2 = DeliveryCore(); c2.start(); c2.observe(pickup(at = 0)); val u = c2.active(bolt)!!
         c2.addEnergy(0.0, 1.7, 8 * 60_000L, complete = false); c2.closeEnergy(u); c2.confirmDelivered(u.id, 10 * 60_000L)
-        assertEquals("Scooter enerjisi: — · ölçülen 0/10 dk · harici batarya okunmayan 8 dk", OrderHistory.energyLine(u, tr))
+        assertEquals("Scooter enerjisi: — · ölçülen 0/10 dk · harici batarya okunmayan 8 dk · veri eksik 2 dk", OrderHistory.energyLine(u, tr))
         // The average leaves out orders measured on one pack for over a fifth of the time.
         val a = OrderHistory.averages(listOf(t, u)) { "Bolt Food" }
         assertNull(a.energyWh)

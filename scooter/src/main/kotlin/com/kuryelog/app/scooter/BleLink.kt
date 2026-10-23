@@ -53,6 +53,9 @@ class BleLink(private val context: Context, private val handler: Handler, privat
         fun dashboard(frame: NinebotDashboard.Snapshot?) {}
         fun warning(text: String) {}
 
+        /** WEEM S18 (b), A10.4f: true = bağlantı boşta kaldı, [Timing.IDLE_RETRY_MS] sonra yeniden denenecek ("koptu" bildirimi); false = kalktı. */
+        fun dropped(on: Boolean) {}
+
         /** Per-packet rows: the payload is built only if the log policy keeps the row (detailed mode); counters still move. */
         fun frequent(kind: String, data: () -> JSONObject) {
             event(kind, data())
@@ -97,6 +100,16 @@ class BleLink(private val context: Context, private val handler: Handler, privat
     private val chars = HashMap<String, BluetoothGattCharacteristic>()
     private val cccd = UUID.fromString(GattPlan.CCCD)
     private val reconnect = Runnable { connect() }
+    /** S18 (b): boşta kalan bağlantının yeniden denemesi bekliyor; "koptu" bildirimi gösterildi (okuma gelince kalkar). */
+    private var idlePending = false
+    private var droppedShown = false
+    private val idleRetry = Runnable {
+        if (retry.closed || !idlePending) return@Runnable
+        idlePending = false
+        sink.event("ble_state", json("state", "idle_retry", "attempt", retry.attempt))
+        closeGatt()
+        connect()
+    }
     private val timeout = Runnable { failed("Bluetooth işlem zaman aşımı") }
     private val startProtocol = Runnable {
         if (!retry.closed && gatt != null && link?.protocolReady() == true) {
@@ -116,6 +129,33 @@ class BleLink(private val context: Context, private val handler: Handler, privat
         if (!retry.closed && gatt != null && s.stage != NinebotSession.Stage.CLOSED && s.stage != NinebotSession.Stage.FAILED &&
             s.stage != NinebotSession.Stage.NEEDS_KEY
         ) handler.postDelayed(pulse, s.nextDelayMs(SystemClock.elapsedRealtime()))
+        else if (s.stage == NinebotSession.Stage.FAILED) idle(noChannel = false)
+    }
+
+    /**
+     * WEEM S18 (b), A10.4f (SCOOTER.md 5.1, 14 R-S3): `fail` bağlantıyı açık ve boşta bıraktı. "Scooter bağlantısı koptu" bildirimi
+     * ([Sink.dropped]); kullanıcı durdurmaz ya da "Şimdi dene" demezse [Timing.IDLE_RETRY_MS] sonra yeni bağlantı. Anahtar yoksa beklenmez.
+     */
+    private fun idle(noChannel: Boolean) {
+        val ms = LinkRetry.idleRetryMs(session?.stage, noChannel) ?: return
+        if (retry.closed || idlePending) return
+        idlePending = true
+        droppedShown = true
+        sink.event("ble_idle", json("stage", session?.stage?.name, "no_channel", noChannel, "retry_ms", ms))
+        sink.dropped(true)
+        handler.postDelayed(idleRetry, ms)
+    }
+
+    /** "Şimdi dene" (bildirim düğmesi): bekleyen boşta yeniden denemeyi hemen yapar; bekleyen yoksa bir şey yapmaz. [handler] üstünde. */
+    fun retryNow() {
+        if (retry.closed || !idlePending) return
+        handler.removeCallbacks(idleRetry)
+        idleRetry.run()
+    }
+
+    private fun cancelIdle() {
+        idlePending = false
+        handler.removeCallbacks(idleRetry)
     }
 
     private var power: PowerManager? = null
@@ -173,6 +213,7 @@ class BleLink(private val context: Context, private val handler: Handler, privat
 
     private fun connect() {
         if (retry.closed) return
+        cancelIdle()
         try {
             val m = context.getSystemService(BluetoothManager::class.java)
             val a = m?.adapter
@@ -189,6 +230,7 @@ class BleLink(private val context: Context, private val handler: Handler, privat
 
     private fun failed(reason: String) {
         if (retry.closed) return
+        cancelIdle()
         handler.removeCallbacks(timeout)
         handler.removeCallbacks(reconnect)
         closeGatt()
@@ -226,9 +268,11 @@ class BleLink(private val context: Context, private val handler: Handler, privat
     /** User or service stop: no reconnect after this. */
     fun close() {
         retry.close()
+        cancelIdle()
         handler.removeCallbacks(timeout)
         handler.removeCallbacks(reconnect)
         closeGatt()
+        if (droppedShown) { droppedShown = false; sink.dropped(false) }
     }
 
     private fun dispatch(g: BluetoothGatt, r: () -> Unit) {
@@ -349,6 +393,7 @@ class BleLink(private val context: Context, private val handler: Handler, privat
 
         override fun reading(value: NinebotMetrics.Value, bytes: ByteArray) {
             retry.reading()
+            if (droppedShown) { droppedShown = false; sink.dropped(false) }
             val s = session
             if (s != null) {
                 latestValues = ArrayList(s.metrics.values())
@@ -432,7 +477,7 @@ class BleLink(private val context: Context, private val handler: Handler, privat
                 }
                 sink.event("gatt_inventory", json("services", services))
                 handler.removeCallbacks(timeout)
-                if (notify.isEmpty()) { sink.state("GATT kaydedildi; desteklenen kanal yok"); return@dispatch }
+                if (notify.isEmpty()) { sink.state("GATT kaydedildi; desteklenen kanal yok"); idle(noChannel = true); return@dispatch }
                 val nameChar = deviceName
                 val readName = nameChar != null && (nameChar.properties and BluetoothGattCharacteristic.PROPERTY_READ) != 0
                 if (!l.servicesReady(readName)) return@dispatch

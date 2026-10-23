@@ -98,6 +98,34 @@ object ScooterShiftLink : ShiftMachine.Hooks {
         nm.notify(NotificationIds.SCOOTER_LINK, b.build())
     }
 
+    // ---- A10.4f (S18 b): bağlantı koptu, boşta ----
+
+    @Volatile private var droppedShown = false
+
+    /**
+     * "Scooter bağlantısı koptu" (4902, kanal `scooter_link`): `fail` bağlantıyı boşta bıraktı, 60 sn sonra kendiliğinden yeniden denenir;
+     * "Şimdi dene" hemen dener ([ScooterService.RETRY]). [on] false: okuma geri geldi ya da bağlantı durdu, bu bildirim gösterildiyse kalkar.
+     * Scooter'a bağlı telefonda çıkar (2 telefonda Receiver; Provider BLE açmaz, S11).
+     */
+    fun droppedNotice(ctx: Context, on: Boolean) {
+        runCatching {
+            val nm = ctx.getSystemService(NotificationManager::class.java)
+            if (!on) { if (droppedShown) { droppedShown = false; nm.cancel(NotificationIds.SCOOTER_LINK) }; return }
+            val lang = Store.lang(ctx)
+            nm.createNotificationChannel(NotificationChannel(CHANNEL, ScooterText.LINK_CHANNEL.get(lang), NotificationManager.IMPORTANCE_DEFAULT))
+            val retry = PendingIntent.getService(ctx, NotificationIds.SCOOTER_LINK,
+                android.content.Intent(ctx, ScooterService::class.java).setAction(ScooterService.RETRY), PendingIntent.FLAG_IMMUTABLE)
+            val b = Notification.Builder(ctx, CHANNEL).setSmallIcon(android.R.drawable.stat_sys_data_bluetooth).setAutoCancel(true)
+                .setContentTitle(ScooterText.DROPPED_TITLE.get(lang)).setContentText(ScooterText.DROPPED_TEXT.get(lang))
+                .addAction(Notification.Action.Builder(null, ScooterText.RETRY_NOW.get(lang), retry).build())
+            ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)?.let {
+                b.setContentIntent(PendingIntent.getActivity(ctx, NotificationIds.SCOOTER_LINK, it, PendingIntent.FLAG_IMMUTABLE))
+            }
+            nm.notify(NotificationIds.SCOOTER_LINK, b.build())
+            droppedShown = true
+        }
+    }
+
     // ---- Vardiya başı / sonu ----
 
     private fun facts(ctx: Context) = ScooterLinkRules.Facts(Scooter.selected(ctx), Scooter.paired(ctx), Scooter.permitted(ctx), Scooter.active, providerRole())
