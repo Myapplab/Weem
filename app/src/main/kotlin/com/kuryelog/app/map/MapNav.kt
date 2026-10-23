@@ -353,11 +353,11 @@ internal fun RouteStroke.toMapLine() = MapLine(id, points, color, widthDp.toFloa
 
 internal fun RoutePin.toMarker() = MapMarker(id, point, if (reached) MarkerKind.REACHED else if (first) MarkerKind.STOP_FIRST else MarkerKind.STOP, if (reached) "" else number.toString())
 
-/** Yer noktası → işaret (MAP.md 5.3 türleri); kimlik sıra + konum. */
-internal fun Poi.toMarker(i: Int) = MapMarker(
+/** Yer noktası → işaret (MAP.md 5.3 türleri); kimlik sıra + konum. [onRoute] rotanın üstündeki ışık (S38, büyük). */
+internal fun Poi.toMarker(i: Int, onRoute: Boolean = false) = MapMarker(
     "poi-$i-$lat-$lon", GeoPoint(lat, lon),
     when (kind) {
-        'l' -> MarkerKind.POI_LIGHT
+        'l' -> if (onRoute) MarkerKind.POI_LIGHT_ROUTE else MarkerKind.POI_LIGHT
         's' -> MarkerKind.POI_METRO
         'm' -> MarkerKind.POI_MALL
         'f' -> MarkerKind.POI_FASTFOOD

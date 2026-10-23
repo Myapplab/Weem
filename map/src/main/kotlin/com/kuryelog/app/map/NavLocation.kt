@@ -19,18 +19,22 @@ import kotlinx.coroutines.withTimeoutOrNull
 /**
  * Navigasyonun konum kaynağı (MAP.md 7.6, 7.16 `NavLocation`): GPS 500 ms; harita önde, gün açık ya da yalnız-nav iken açılır ([setActive]).
  * Gün açıkken ön plan servisi `:core` vardiya servisidir; bu istek onun yanında ikinci istek olarak çalışır (Android birleştirir).
+ * S38 (pil): harita arkadayken ve rota yokken 1 sn ([SLOW_INTERVAL_MS]); gün motoru, sürüş günlüğü ve öğrenme zamana göre çalışır, 1 sn yeter.
  * Süzgeç (`_emit`): doğruluk 0–65 m, ≤15 sn taze, zaman damgası bir öncekinden büyük.
  */
 internal class NavLocation(private val app: Context, private val onFix: (NavFix) -> Unit) : NavLocator {
     private val lm = app.getSystemService(LocationManager::class.java)
     private var listening = false
+    private var intervalMs = INTERVAL_MS
     private var lastAt = 0L
     private val listener = LocationListener { loc -> emit(loc.toNavFix()) }
 
+    /** [fast] harita önde ya da rota açık: 500 ms; değilse 1 sn. Aralık değişince istek yenilenir (aynı dinleyici: Android eskisinin yerine koyar). */
     @SuppressLint("MissingPermission")
     @Synchronized
-    fun setActive(on: Boolean) {
-        if (on == listening) return
+    fun setActive(on: Boolean, fast: Boolean = true) {
+        val interval = if (fast) INTERVAL_MS else SLOW_INTERVAL_MS
+        if (on == listening && (!on || interval == intervalMs)) return
         if (!on) {
             runCatching { lm?.removeUpdates(listener) }
             listening = false
@@ -38,9 +42,10 @@ internal class NavLocation(private val app: Context, private val onFix: (NavFix)
         }
         if (lm == null || !granted()) return
         listening = runCatching {
-            lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, INTERVAL_MS, 0f, listener, Looper.getMainLooper())
+            lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, interval, 0f, listener, Looper.getMainLooper())
             true
         }.getOrDefault(false)
+        if (listening) intervalMs = interval
     }
 
     @Synchronized
@@ -85,6 +90,7 @@ internal class NavLocation(private val app: Context, private val onFix: (NavFix)
 
     companion object {
         const val INTERVAL_MS = 500L
+        const val SLOW_INTERVAL_MS = 1_000L
         private val executor = Executors.newSingleThreadExecutor()
     }
 }

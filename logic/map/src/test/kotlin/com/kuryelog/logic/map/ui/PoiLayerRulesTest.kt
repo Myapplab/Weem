@@ -2,8 +2,10 @@ package com.kuryelog.logic.map.ui
 
 import com.kuryelog.logic.map.day.LightSpot
 import com.kuryelog.logic.map.geo.BBox
+import com.kuryelog.logic.map.geo.GeoPoint
 import com.kuryelog.logic.map.graph.Poi
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -53,5 +55,38 @@ class PoiLayerRulesTest {
         val b = PoiLayerRules.bounds(lat, lon, 400.0, 800.0, 17.0)
         assertTrue(a.contains(lat, lon))
         assertTrue(b.east - b.west < a.east - a.west)
+    }
+
+    @Test
+    fun `rota ışıkları rotanın 20 m yakınında, 13'ten itibaren ve listenin sonunda`() {
+        // Doğu-batı rota, enlem 40.41 boyunca.
+        val route = RouteLights(listOf(listOf(GeoPoint(lat, 49.81), GeoPoint(lat, 49.83))))
+        assertTrue(route.near(lat + 0.0001, 49.82)) // ~11 m
+        assertFalse(route.near(lat + 0.0003, 49.82)) // ~33 m
+        assertFalse(route.near(lat, 49.835)) // rotanın ucundan ~420 m ötede
+        val onRoute = Poi(lat + 0.0001, 49.82, 'l', "")
+        val off = Poi(lat + 0.003, 49.82, 'l', "")
+        val metro = Poi(lat, lon, 's', "M")
+        val pois = listOf(onRoute, off, metro)
+        // 14'te sıradan ışık görünmez (16,5), rota ışığı görünür; sona eklenir.
+        assertEquals(listOf(metro, onRoute), PoiLayerRules.select(pois, box, 14.0, route = route))
+        assertEquals(listOf(metro), PoiLayerRules.select(pois, box, 14.0))
+        // 12,5'te yalnız metro yok (13 altı), rota ışığı da yok (13 altı).
+        assertEquals(emptyList<Poi>(), PoiLayerRules.select(pois, box, 12.5, route = route))
+        // 17'de rota ışığı iki kez gelmez.
+        val at17 = PoiLayerRules.select(pois, box, 17.0, route = route)
+        assertEquals(1, at17.count { it === onRoute })
+        assertEquals(onRoute, at17.last())
+    }
+
+    @Test
+    fun `simge seçimi yalnız belirgin kayma ya da yakınlık değişince yenilenir`() {
+        // 16 yakınlıkta 360 dp kısa kenar: çeyreği 90 dp ≈ 90·0,0000215° ≈ 0,0019° boylam.
+        assertFalse(PoiLayerRules.refreshNeeded(lat, lon, 16.0, lat, lon + 0.0005, 16.1, 360.0, 760.0))
+        assertTrue(PoiLayerRules.refreshNeeded(lat, lon, 16.0, lat, lon + 0.003, 16.0, 360.0, 760.0))
+        assertTrue(PoiLayerRules.refreshNeeded(lat, lon, 16.0, lat, lon, 16.3, 360.0, 760.0))
+        val wide = PoiLayerRules.bounds(lat, lon, 400.0, 800.0, 16.0, margin = PoiLayerRules.SELECT_MARGIN)
+        val plain = PoiLayerRules.bounds(lat, lon, 400.0, 800.0, 16.0)
+        assertEquals((plain.east - plain.west) * PoiLayerRules.SELECT_MARGIN, wide.east - wide.west, 1e-12)
     }
 }

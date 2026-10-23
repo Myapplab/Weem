@@ -40,7 +40,7 @@ import java.util.Locale
  * Çizgiler, işaretler ve konum işareti kendi kaynak ve katmanlarında (`weem-*`); stil değişince yeniden kurulur.
  */
 @Composable
-fun MapLibreSurface(model: MapSurfaceModel, events: MapSurfaceEvents, modifier: Modifier = Modifier, userAgent: String = "") {
+fun MapLibreSurface(model: MapSurfaceModel, events: MapSurfaceEvents, modifier: Modifier = Modifier, userAgent: String = "", live: MapLive? = null) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val holder = remember { MapLibreHolder(context.applicationContext, userAgent) }
@@ -64,11 +64,16 @@ fun MapLibreSurface(model: MapSurfaceModel, events: MapSurfaceEvents, modifier: 
     AndroidView(
         modifier = modifier,
         factory = { ctx -> holder.create(ctx) { currentEvents.value } },
-        update = { holder.apply(model) },
+        // [live] durumları burada okunur: değişince yalnız bu blok yeniden çalışır (sekme yeniden oluşturulmaz).
+        update = { holder.apply(model, live?.puck?.value ?: model.puck, live?.camera?.value ?: model.camera) },
     )
 }
 
-/** MapView'in yaşam döngüsü ve çizim durumu (Compose dışı; tek iş parçacığı: ana). */
+/**
+ * MapView'in yaşam döngüsü ve çizim durumu (Compose dışı; tek iş parçacığı: ana). S38: her kaynak yalnız içeriği değişince yeniden yüklenir (önceden her karede
+ * bütün çizgiler `setGeoJson` ile baştan yükleniyordu: MapLibre karoları bitiremiyor, rota ve yollar karo sınırında kesik/yarım görünüyordu; ana iş parçacığı ve
+ * pil boşa yanıyordu). Alt çizgiler (bisiklet yolu …) ve rota ayrı kaynakta: rota değişince binlerce bisiklet yolu noktası yeniden karolanmaz.
+ */
 internal class MapLibreHolder(private val app: Context, private val userAgent: String) {
     var view: MapView? = null
         private set
@@ -76,8 +81,19 @@ internal class MapLibreHolder(private val app: Context, private val userAgent: S
     private var style: Style? = null
     private var styleKey: String? = null
     private var pending: MapSurfaceModel? = null
+    private var pendingPuck: MapPuck? = null
+    private var pendingCamera: MapCameraCommand? = null
     private var appliedCameraSeq = -1
     private val density = app.resources.displayMetrics.density
+    // Son çizilenler (stil yeniden kurulunca sıfırlanır): aynıysa kaynak yeniden yüklenmez.
+    private var drawnBase: List<MapLine>? = null
+    private var drawnLines: List<MapLine>? = null
+    private var drawnMarkers: List<MapMarker>? = null
+    private var drawnMarkersDark: Boolean? = null
+    private var drawnPuck: MapPuck? = null
+    private var puckDrawn = false
+    private var drawnCircle: Pair<GeoPoint, Double>? = null
+    private var circleDrawn = false
 
     fun create(ctx: Context, events: () -> MapSurfaceEvents): MapView {
         MapLibre.getInstance(app)
@@ -105,7 +121,7 @@ internal class MapLibreHolder(private val app: Context, private val userAgent: S
                 val c = m.cameraPosition
                 c.target?.let { t -> events().onCameraIdle(GeoPoint(t.latitude, t.longitude), c.zoom, c.bearing) }
             }
-            pending?.let { apply(it) }
+            pending?.let { apply(it, pendingPuck, pendingCamera) }
         }
         view = v
         return v
@@ -114,28 +130,38 @@ internal class MapLibreHolder(private val app: Context, private val userAgent: S
     fun destroy() {
         view?.let { it.onPause(); it.onStop(); it.onDestroy() }
         view = null; map = null; style = null; styleKey = null
+        forget()
     }
 
-    fun apply(model: MapSurfaceModel) {
+    /** Stil yeniden kurulunca kaynaklar boştur: hepsi yeniden çizilir. */
+    private fun forget() {
+        drawnBase = null; drawnLines = null; drawnMarkers = null; drawnMarkersDark = null
+        drawnPuck = null; puckDrawn = false; drawnCircle = null; circleDrawn = false
+    }
+
+    fun apply(model: MapSurfaceModel, puck: MapPuck? = model.puck, camera: MapCameraCommand? = model.camera) {
         pending = model
+        pendingPuck = puck
+        pendingCamera = camera
         val m = map ?: return
-        m.uiSettings.setRotateGesturesEnabled(model.rotateGestures)
+        if (m.uiSettings.isRotateGesturesEnabled != model.rotateGestures) m.uiSettings.setRotateGesturesEnabled(model.rotateGestures)
         val key = "${model.base}|${model.dark}"
         if (key != styleKey) {
             styleKey = key
             style = null
+            forget()
             val builder = if (model.base == BaseMap.OSM) Style.Builder().fromJson(MapStyles.osmRasterStyle(model.dark))
             else Style.Builder().fromUri(MapStyles.vectorStyleUrl(model.dark))
             m.setStyle(builder) { s ->
                 if (styleKey != key) return@setStyle
                 installLayers(s)
                 style = s
-                pending?.let { draw(s, it) }
+                pending?.let { draw(s, it, pendingPuck) }
             }
         } else {
-            style?.let { draw(it, model) }
+            style?.let { draw(it, model, puck) }
         }
-        model.camera?.let { cam ->
+        camera?.let { cam ->
             if (cam.seq == appliedCameraSeq) return@let
             appliedCameraSeq = cam.seq
             val b = CameraPosition.Builder().target(LatLng(cam.center.lat, cam.center.lon))
@@ -147,11 +173,12 @@ internal class MapLibreHolder(private val app: Context, private val userAgent: S
     }
 
     private fun installLayers(s: Style) {
-        for (id in listOf(SRC_ACC, SRC_CIRCLE, SRC_LINES, SRC_MARKERS, SRC_PUCK)) s.addSource(GeoJsonSource(id))
+        for (id in listOf(SRC_ACC, SRC_CIRCLE, SRC_BASE_LINES, SRC_LINES, SRC_MARKERS, SRC_PUCK)) s.addSource(GeoJsonSource(id))
         s.addLayer(FillLayer("weem-circle-fill", SRC_CIRCLE).withProperties(PropertyFactory.fillColor(Expression.toColor(Expression.get("color"))), PropertyFactory.fillOpacity(.15f)))
         s.addLayer(LineLayer("weem-circle-line", SRC_CIRCLE).withProperties(PropertyFactory.lineColor(Expression.toColor(Expression.get("color"))), PropertyFactory.lineWidth(2f)))
-        for ((pattern, dash) in listOf("solid" to null, "dash" to arrayOf(2f, 1.5f), "dot" to arrayOf(0f, 2f))) {
-            val l = LineLayer("weem-lines-$pattern", SRC_LINES).withProperties(
+        // Alt çizgiler rotanın altında (iki kaynak; her biri üç desen katmanı).
+        for (src in listOf(SRC_BASE_LINES, SRC_LINES)) for ((pattern, dash) in listOf("solid" to null, "dash" to arrayOf(2f, 1.5f), "dot" to arrayOf(0f, 2f))) {
+            val l = LineLayer("$src-$pattern", src).withProperties(
                 PropertyFactory.lineColor(Expression.toColor(Expression.get("color"))),
                 PropertyFactory.lineOpacity(Expression.get("opacity")),
                 PropertyFactory.lineWidth(Expression.get("width")),
@@ -184,36 +211,65 @@ internal class MapLibreHolder(private val app: Context, private val userAgent: S
         s.addImage(IMG_BEAM, PuckBitmaps.render(density, arrow = false, beam = true))
     }
 
-    private fun draw(s: Style, model: MapSurfaceModel) {
-        s.getSourceAs<GeoJsonSource>(SRC_LINES)?.setGeoJson(GeoJson.collection(model.lines.map { l ->
-            GeoJson.line(l.points, mapOf(
-                "color" to rgbCss(l.color), "opacity" to ((l.color ushr 24) / 255.0), "width" to l.widthDp, "z" to l.z,
-                "pattern" to l.pattern.name.lowercase(Locale.ROOT),
-            ))
-        }))
-        val markerFeatures = model.markers.map { mk ->
-            val icon = MarkerBitmaps.key(mk, model.dark)
-            if (s.getImage(icon) == null) s.addImage(icon, MarkerBitmaps.of(mk, density, model.dark))
-            GeoJson.point(mk.point, mapOf("icon" to icon))
+    private fun draw(s: Style, model: MapSurfaceModel, p: MapPuck?) {
+        if (model.baseLines != drawnBase) {
+            drawnBase = model.baseLines
+            s.getSourceAs<GeoJsonSource>(SRC_BASE_LINES)?.setGeoJson(lineCollection(model.baseLines))
         }
-        s.getSourceAs<GeoJsonSource>(SRC_MARKERS)?.setGeoJson(GeoJson.collection(markerFeatures))
-        val p = model.puck
-        val puck = buildList {
+        if (model.lines != drawnLines) {
+            drawnLines = model.lines
+            s.getSourceAs<GeoJsonSource>(SRC_LINES)?.setGeoJson(lineCollection(model.lines))
+        }
+        if (model.markers != drawnMarkers || model.dark != drawnMarkersDark) {
+            drawnMarkers = model.markers
+            drawnMarkersDark = model.dark
+            val features = GeoJson.Builder()
+            for (mk in model.markers) {
+                val icon = MarkerBitmaps.key(mk, model.dark)
+                if (s.getImage(icon) == null) s.addImage(icon, MarkerBitmaps.of(mk, density, model.dark))
+                features.point(mk.point) { prop("icon", icon) }
+            }
+            s.getSourceAs<GeoJsonSource>(SRC_MARKERS)?.setGeoJson(features.build())
+        }
+        if (!puckDrawn || p != drawnPuck) {
+            val accuracyChanged = !puckDrawn || p?.point != drawnPuck?.point || p?.accuracyM != drawnPuck?.accuracyM
+            drawnPuck = p
+            puckDrawn = true
+            val puck = GeoJson.Builder()
             if (p != null) {
-                if (!(p.arrow && p.course != null) && p.beam != null) add(GeoJson.point(p.point, mapOf("icon" to IMG_BEAM, "rot" to p.beam)))
-                if (p.arrow && p.course != null) add(GeoJson.point(p.point, mapOf("icon" to IMG_ARROW, "rot" to p.course)))
-                else add(GeoJson.point(p.point, mapOf("icon" to IMG_DOT, "rot" to 0)))
+                val arrow = PuckStyle.showsArrow(p.arrow, p.course)
+                if (!arrow && p.beam != null) puck.point(p.point) { prop("icon", IMG_BEAM); prop("rot", p.beam) }
+                if (arrow) puck.point(p.point) { prop("icon", IMG_ARROW); prop("rot", p.course!!) }
+                else puck.point(p.point) { prop("icon", IMG_DOT); prop("rot", 0.0) }
+            }
+            s.getSourceAs<GeoJsonSource>(SRC_PUCK)?.setGeoJson(puck.build())
+            if (accuracyChanged) {
+                val acc = GeoJson.Builder()
+                if (p != null && PuckStyle.showsAccuracy(p.accuracyM)) acc.polygon(circlePolygon(p.point, p.accuracyM!!)) {}
+                s.getSourceAs<GeoJsonSource>(SRC_ACC)?.setGeoJson(acc.build())
             }
         }
-        s.getSourceAs<GeoJsonSource>(SRC_PUCK)?.setGeoJson(GeoJson.collection(puck))
-        val acc = p?.takeIf { PuckStyle.showsAccuracy(it.accuracyM) }?.let { listOf(GeoJson.polygon(circlePolygon(it.point, it.accuracyM!!), emptyMap())) } ?: emptyList()
-        s.getSourceAs<GeoJsonSource>(SRC_ACC)?.setGeoJson(GeoJson.collection(acc))
-        val circle = model.circle?.let { (c, r) -> listOf(GeoJson.polygon(circlePolygon(c, r), mapOf("color" to rgbCss(model.circleColor)))) } ?: emptyList()
-        s.getSourceAs<GeoJsonSource>(SRC_CIRCLE)?.setGeoJson(GeoJson.collection(circle))
+        if (!circleDrawn || model.circle != drawnCircle) {
+            drawnCircle = model.circle
+            circleDrawn = true
+            val circle = GeoJson.Builder()
+            model.circle?.let { (c, r) -> circle.polygon(circlePolygon(c, r)) { prop("color", rgbCss(model.circleColor)) } }
+            s.getSourceAs<GeoJsonSource>(SRC_CIRCLE)?.setGeoJson(circle.build())
+        }
+    }
+
+    private fun lineCollection(lines: List<MapLine>): String {
+        val b = GeoJson.Builder()
+        for (l in lines) b.line(l.points) {
+            prop("color", rgbCss(l.color)); prop("opacity", (l.color ushr 24) / 255.0); prop("width", l.widthDp.toDouble()); prop("z", l.z.toDouble())
+            prop("pattern", l.pattern.name.lowercase(Locale.ROOT))
+        }
+        return b.build()
     }
 
     companion object {
         private const val SRC_LINES = "weem-lines"
+        private const val SRC_BASE_LINES = "weem-base-lines"
         private const val SRC_MARKERS = "weem-markers"
         private const val SRC_PUCK = "weem-puck"
         private const val SRC_ACC = "weem-accuracy"
@@ -228,25 +284,65 @@ internal class MapLibreHolder(private val app: Context, private val userAgent: S
     }
 }
 
-/** Küçük GeoJSON yazıcı (geojson kütüphanesinin nesneleri yerine metin; MapLibre `setGeoJson(String)`). */
+/**
+ * Küçük GeoJSON yazıcı (geojson kütüphanesinin nesneleri yerine metin; MapLibre `setGeoJson(String)`). S38: `String.format` yerine `StringBuilder`
+ * (binlerce noktalı bisiklet yolu katmanı nokta başına biçimlendirme yüzünden ana iş parçacığını meşgul ediyordu).
+ */
 internal object GeoJson {
-    private fun coords(p: GeoPoint) = String.format(Locale.US, "[%.7f,%.7f]", p.lon, p.lat)
+    class Props internal constructor(private val sb: StringBuilder) {
+        private var first = true
 
-    private fun props(m: Map<String, Any?>) = m.entries.joinToString(",", "{", "}") { (k, v) ->
-        "\"$k\":" + when (v) {
-            null -> "null"
-            is Number, is Boolean -> v.toString()
-            else -> "\"" + v.toString().replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+        private fun key(k: String) {
+            if (!first) sb.append(',')
+            first = false
+            sb.append('"').append(k).append("\":")
+        }
+
+        fun prop(k: String, v: Double) { key(k); if (v.isFinite()) sb.append(v) else sb.append("null") }
+
+        fun prop(k: String, v: String) {
+            key(k)
+            sb.append('"')
+            for (c in v) when (c) {
+                '"' -> sb.append("\\\"")
+                '\\' -> sb.append("\\\\")
+                else -> sb.append(c)
+            }
+            sb.append('"')
         }
     }
 
-    fun point(p: GeoPoint, properties: Map<String, Any?>) = """{"type":"Feature","geometry":{"type":"Point","coordinates":${coords(p)}},"properties":${props(properties)}}"""
+    class Builder {
+        private val sb = StringBuilder(256).append("""{"type":"FeatureCollection","features":[""")
+        private var count = 0
 
-    fun line(points: List<GeoPoint>, properties: Map<String, Any?>) =
-        """{"type":"Feature","geometry":{"type":"LineString","coordinates":${points.joinToString(",", "[", "]") { coords(it) }}},"properties":${props(properties)}}"""
+        private fun coords(p: GeoPoint) {
+            sb.append('[').append(p.lon).append(',').append(p.lat).append(']')
+        }
 
-    fun polygon(ring: List<GeoPoint>, properties: Map<String, Any?>) =
-        """{"type":"Feature","geometry":{"type":"Polygon","coordinates":[${ring.joinToString(",", "[", "]") { coords(it) }}]},"properties":${props(properties)}}"""
+        private fun feature(type: String, props: Props.() -> Unit, geometry: () -> Unit) {
+            if (count++ > 0) sb.append(',')
+            sb.append("""{"type":"Feature","geometry":{"type":"""").append(type).append("""","coordinates":""")
+            geometry()
+            sb.append("""},"properties":{""")
+            Props(sb).props()
+            sb.append("}}")
+        }
 
-    fun collection(features: List<String>) = features.joinToString(",", """{"type":"FeatureCollection","features":[""", "]}")
+        fun point(p: GeoPoint, props: Props.() -> Unit) = feature("Point", props) { coords(p) }
+
+        fun line(points: List<GeoPoint>, props: Props.() -> Unit) = feature("LineString", props) {
+            sb.append('[')
+            points.forEachIndexed { i, p -> if (i > 0) sb.append(','); coords(p) }
+            sb.append(']')
+        }
+
+        fun polygon(ring: List<GeoPoint>, props: Props.() -> Unit) = feature("Polygon", props) {
+            sb.append("[[")
+            ring.forEachIndexed { i, p -> if (i > 0) sb.append(','); coords(p) }
+            sb.append("]]")
+        }
+
+        fun build(): String = sb.append("]}").toString()
+    }
 }

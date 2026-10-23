@@ -50,6 +50,7 @@ object MarkerBitmaps {
                 val dot = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFFB13D.toInt() }
                 for (dy in listOf(-3.2f, 0f, 3.2f)) c.drawCircle(SIZE / 2, SIZE / 2 + dy, 1.6f, dot)
             }
+            MarkerKind.POI_LIGHT_ROUTE -> routeLight(c)
             else -> {
                 disc(13f, MapPalette.of(dark).food)
                 letter(
@@ -57,6 +58,25 @@ object MarkerBitmaps {
                     14f,
                 )
             }
+        }
+    }
+
+    /**
+     * S38 rota ışığı: gerçek trafik ışığı gibi dikey kutu (16×30 dp, beyaz kenar, gölge) ve kırmızı/sarı/yeşil üç lamba; sıradan ışık işaretinin (16 dp daire)
+     * yaklaşık iki katı, uzaktan seçilir.
+     */
+    private fun routeLight(c: Canvas) {
+        val w = 16f
+        val h = 30f
+        val l = SIZE / 2 - w / 2
+        val t = SIZE / 2 - h / 2
+        c.drawRoundRect(l, t + 1f, l + w, t + h + 1f, 6f, 6f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x55000000; maskFilter = BlurMaskFilter(2f, BlurMaskFilter.Blur.NORMAL) })
+        c.drawRoundRect(l, t, l + w, t + h, 6f, 6f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF1E1E1E.toInt() })
+        c.drawRoundRect(l, t, l + w, t + h, 6f, 6f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFFFFFF.toInt(); style = Paint.Style.STROKE; strokeWidth = 1.5f })
+        val lamp = Paint(Paint.ANTI_ALIAS_FLAG)
+        for ((i, color) in listOf(0xFFFF3B30, 0xFFFFB13D, 0xFF34C759).withIndex()) {
+            lamp.color = color.toInt()
+            c.drawCircle(SIZE / 2, t + 6f + i * 9f, 3.6f, lamp)
         }
     }
 

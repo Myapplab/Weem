@@ -1,5 +1,6 @@
 package com.kuryelog.app.map
 
+import android.os.SystemClock
 import android.os.VibrationEffect
 import android.os.Vibrator
 import androidx.activity.compose.BackHandler
@@ -24,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -33,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
@@ -83,6 +86,7 @@ import com.kuryelog.logic.map.nav.Refollow
 import com.kuryelog.logic.map.route.QualityRating
 import com.kuryelog.logic.map.route.RideMode
 import com.kuryelog.logic.map.ui.BikewayLayerRules
+import com.kuryelog.logic.map.ui.CameraEase
 import com.kuryelog.logic.map.ui.BikewayMenu
 import com.kuryelog.logic.map.ui.LocateAction
 import com.kuryelog.logic.map.ui.LocateButtonRules
@@ -97,6 +101,7 @@ import com.kuryelog.logic.map.ui.PoiLayerRules
 import com.kuryelog.logic.map.ui.PressedPlace
 import com.kuryelog.logic.map.ui.PressedRoad
 import com.kuryelog.logic.map.ui.RouteLayer
+import com.kuryelog.logic.map.ui.RouteLights
 import com.kuryelog.logic.map.ui.SurfaceLayerRules
 import com.kuryelog.logic.map.ui.Toasts
 import kotlin.math.roundToInt
@@ -203,7 +208,6 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
     val weatherState by weather.state.collectAsState()
     val weatherStrip by weather.strip.collectAsState()
     val battery by batteryRt.state.collectAsState()
-    val scooter by batteryRt.live.collectAsState()
     var nowMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -243,15 +247,15 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
     LaunchedEffect(navCtl) { navCtl.haptics.collect { vibrate(ctx, it) } }
     val base = MapStyles.resolve(settings.mapStyle, BuildConfig.MAPS_ENABLED)
     val google = base == com.kuryelog.logic.map.ui.BaseMap.GOOGLE
-    val puck by rememberMapPuck(enabled = true, graph = data.graph)
+    // S38: işaret ve kamera kare başına değişir; bu sekme onları okumaz (yalnız yüzey okur), yoksa her karede bütün harita ekranı yeniden oluşuyordu.
+    val puckState = rememberMapPuck(enabled = true, graph = data.graph)
     var follow by remember { mutableStateOf(true) }
     var headingUp by remember { mutableStateOf(true) }
     var autoZoom by remember { mutableStateOf(true) }
-    var zoom by remember { mutableDoubleStateOf(MapCamera.STANDARD_ZOOM) }
+    val spot = remember { CameraSpot() }
     var navZoom by remember { mutableDoubleStateOf(MapCamera.STANDARD_ZOOM) }
     var cameraSeq by remember { mutableIntStateOf(0) }
-    var lastMoveMs by remember { mutableLongStateOf(0L) }
-    var camera by remember { mutableStateOf<MapCameraCommand?>(null) }
+    val cameraState = remember { mutableStateOf<MapCameraCommand?>(null) }
     // Takip elle dokunmayla mı bırakıldı (yeni rotada sığdırma da bırakır; o 5 sn sonra kendisi döner).
     var freeByGesture by remember { mutableStateOf(false) }
     var lastGestureMs by remember { mutableLongStateOf(0L) }
@@ -274,7 +278,9 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
     var bikeRev by remember { mutableIntStateOf(0) }
     var lightsRev by remember { mutableIntStateOf(0) }
     var poiRev by remember { mutableIntStateOf(0) }
-    var center by remember { mutableStateOf<GeoPoint?>(null) }
+    // Simge seçiminin kamerası: yalnız belirgin kayma ya da yakınlık değişince güncellenir (PoiLayerRules.refreshNeeded).
+    var poiCenter by remember { mutableStateOf<GeoPoint?>(null) }
+    var poiZoom by remember { mutableDoubleStateOf(MapCamera.STANDARD_ZOOM) }
     var poiEdit by remember { mutableStateOf<PoiEditTarget?>(null) }
     // Gün motoru: toast ve titreşim yalnız harita görünürken (kaçan toast sonradan gösterilmez; MAP.md 11.14).
     LaunchedEffect(dayRt) {
@@ -304,19 +310,21 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
             WrongWayView()
         }
     }
-    val moveEveryMs = if (google) MapCamera.GOOGLE_MOVE_MS else MapCamera.MAPLIBRE_MOVE_MS
     val navNow by rememberUpdatedState(nav)
 
-    fun command(center: GeoPoint, z: Double?, bearing: Double?) {
+    fun command(center: GeoPoint, z: Double?, bearing: Double?, force: Boolean = false) {
+        val last = cameraState.value
+        // Takipte aynı kamera yeniden gönderilmez (duran işaret, kuzey-yukarıda dönen koni); konuma dönüş ve sığdırma her zaman gider (arada elle kaydırılmış olabilir).
+        if (!force && last != null && last.center == center && last.zoom == z && last.bearing == bearing) return
         cameraSeq++
-        camera = MapCameraCommand(cameraSeq, center, zoom = z, bearing = bearing)
+        cameraState.value = MapCameraCommand(cameraSeq, center, zoom = z, bearing = bearing)
     }
     fun recenter(resetZoom: Boolean = true, bearingNow: Double? = null) {
         follow = true
         freeByGesture = false
-        if (resetZoom) { autoZoom = true; navZoom = zoom }
-        val p = puck ?: return
-        command(p.point, if (resetZoom && !navNow.hasRoute) MapCamera.STANDARD_ZOOM else null, bearingNow ?: if (headingUp) p.course else 0.0)
+        if (resetZoom) { autoZoom = true; navZoom = spot.zoom }
+        val p = puckState.value ?: return
+        command(p.point, if (resetZoom && !navNow.hasRoute) MapCamera.STANDARD_ZOOM else null, bearingNow ?: if (headingUp) p.heading else 0.0, force = true)
     }
     // Hata ya da bekleyen adres gelince rota paneli kendiliğinden açılır (YolGo `RouteFab`).
     LaunchedEffect(nav.error, nav.pending) { if (nav.error != null || nav.pending != null) panelOpen = true }
@@ -326,7 +334,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
     // Yeni rota: bütün rota + konum ekrana sığar, takip durur, 5 sn sonra konuma dönülür.
     LaunchedEffect(nav.seq) {
         if (nav.seq == 0 || !nav.hasRoute || viewport == IntSize.Zero) return@LaunchedEffect
-        val pts = RouteLayer.fitPoints(nav.plan, puck?.point ?: navCtl.here())
+        val pts = RouteLayer.fitPoints(nav.plan, puckState.value?.point ?: navCtl.here())
         val w = with(density) { viewport.width.toDp().value.toDouble() }
         val h = with(density) { viewport.height.toDp().value.toDouble() }
         val cam = if (google) {
@@ -337,7 +345,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
         } ?: return@LaunchedEffect
         follow = false
         freeByGesture = false
-        command(GeoPoint(cam.lat, cam.lon), cam.zoom, 0.0)
+        command(GeoPoint(cam.lat, cam.lon), cam.zoom, 0.0, force = true)
         val fittedAt = System.currentTimeMillis()
         delay(RouteLayer.REFOLLOW_AFTER_FIT_MS)
         if (!follow && lastGestureMs < fittedAt) recenter()
@@ -354,34 +362,41 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
             }
         }
     }
-    // Takip: işaret her kayışta kamera da kayar (en sık 80/160 ms); rota açıkken yaklaşma zoom'u, varış odağında ben + hedef aynı karede.
-    LaunchedEffect(puck, follow, headingUp, focusOn) {
-        val p = puck ?: return@LaunchedEffect
+    // Takip (S38): işaret her değişince (kayma ~30 fps, pusulayla dönüş) kamera da kayar ve döner; yön-yukarıda kamera yönü işaretin yönü (dururken pusula,
+    // hareketteyken GPS yönü + anlık dönüş). Rota açıkken yaklaşma zoom'u, varış odağında ben + hedef aynı karede; yaklaşma zamana bağlı.
+    val measuredNow by rememberUpdatedState(measured)
+    LaunchedEffect(follow, headingUp, focusOn) {
         if (!follow) return@LaunchedEffect
-        val now = System.currentTimeMillis()
-        if (now - lastMoveMs < moveEveryMs) return@LaunchedEffect
-        lastMoveMs = now
-        val bearing = if (headingUp) (p.course ?: p.cameraHeading) else 0.0
-        val st = navNow
-        val dest = st.activeStop?.point
-        if (focusOn && dest != null && viewport != IntSize.Zero) {
-            val shortPx = with(density) { minOf(viewport.width, viewport.height).toDp().value.toInt() }
-            val f = ArrivalFocus.focusCamera(p.point.lat, p.point.lon, dest.lat, dest.lon, shortPx)
-            navZoom += (f.zoom - navZoom) * FOCUS_EASE
-            command(GeoPoint(f.lat, f.lon), navZoom, bearing)
-            return@LaunchedEffect
+        var lastMs = 0L
+        snapshotFlow { puckState.value }.collect { p ->
+            if (p == null) return@collect
+            val now = SystemClock.uptimeMillis()
+            val dt = if (lastMs == 0L) EASE_STEP_MS else now - lastMs
+            lastMs = now
+            val bearing = if (headingUp) p.heading else 0.0
+            val st = navNow
+            val dest = st.activeStop?.point
+            if (focusOn && dest != null && viewport != IntSize.Zero) {
+                val shortPx = with(density) { minOf(viewport.width, viewport.height).toDp().value.toInt() }
+                val f = ArrivalFocus.focusCamera(p.point.lat, p.point.lon, dest.lat, dest.lon, shortPx)
+                navZoom += (f.zoom - navZoom) * CameraEase.factor(FOCUS_EASE, EASE_STEP_MS, dt)
+                command(GeoPoint(f.lat, f.lon), navZoom, bearing)
+                return@collect
+            }
+            val z = if (autoZoom && st.hasRoute) {
+                val park = st.plan?.legs?.firstOrNull()?.parkPoint
+                val remaining = measuredNow ?: park?.let { Geo.haversine(p.point.lat, p.point.lon, it.lat, it.lon) }
+                navZoom += (ApproachZoom.zoomFor(runtime.speedKmh, remaining) - navZoom) * CameraEase.factor(ZOOM_EASE, EASE_STEP_MS, dt)
+                navZoom
+            } else if (autoZoom && cameraState.value == null) MapCamera.STANDARD_ZOOM else null
+            command(p.point, z, bearing)
         }
-        val z = if (autoZoom && st.hasRoute) {
-            val park = st.plan?.legs?.firstOrNull()?.parkPoint
-            val remaining = measured ?: park?.let { Geo.haversine(p.point.lat, p.point.lon, it.lat, it.lon) }
-            navZoom += (ApproachZoom.zoomFor(runtime.speedKmh, remaining) - navZoom) * ZOOM_EASE
-            navZoom
-        } else if (autoZoom && camera == null) MapCamera.STANDARD_ZOOM else null
-        command(p.point, z, bearing)
     }
     val mode = LocateButtonRules.cameraModeOf(follow, headingUp)
     val day = dayView
     val lines = remember(nav.plans, nav.mode, dark) { RouteLayer.strokes(nav, MapPalette.of(dark)).map { it.toMapLine() } }
+    // S38: rotanın üstündeki trafik ışıkları büyük ve uzaktan görünür (plan değişince bir kez hesaplanır).
+    val routeLights = remember(nav.plan) { nav.plan?.let { plan -> RouteLights(plan.legs.map { l -> l.ride.map { GeoPoint(it.lat, it.lon) } }) }?.takeUnless { it.isEmpty } }
     val routeMarkers = remember(nav.plans, nav.mode, nav.reached) { RouteLayer.pins(nav).map { it.toMarker() } }
     // Bisiklet yolu katmanı (MAP.md 5.1): OSM düz, elle işaretli kesikli; rota çizgilerinin altında.
     val graph = data.graph
@@ -400,34 +415,50 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
         }
     }
     // Y13 (A10.4b) "Haritada yüzey renkleri": yalnız ölçülmüş 50 m kesimler; kesin olanlar düz, diğerleri kesikli.
-    val surfacePieces by runtime.surface.summaries.collectAsState()
+    // Yalnız katman açıkken dinlenir (ölçüm her kesimde yayınlar; kapalıyken harita sekmesi boşa yeniden oluşmasın).
+    val surfacePieces = if (settings.showQualityLayer) runtime.surface.summaries.collectAsState().value else emptyList()
     val surfaceLines = remember(graph, surfacePieces, settings.showQualityLayer) {
         if (graph == null) emptyList()
         else SurfaceLayerRules.lines(graph, surfacePieces, settings.showQualityLayer).map { l ->
             MapLine("surface-${l.key}", l.points, ((l.alpha * 255).toInt() shl 24) or l.rgb, l.width.toFloat(), if (l.dashed) LinePattern.DASH else LinePattern.SOLID, -1)
         }
     }
-    // Yer ve ışık işaretleri (MAP.md 5.3): düzeltilmiş yerler + ışık işaretleri, yakınlığa ve görünür kutuya göre süzülür.
-    val poiMarkers = remember(center, zoom, viewport, poiRev, lightsRev, data.pois) {
-        val c = center ?: return@remember emptyList<MapMarker>()
+    // Yer ve ışık işaretleri (MAP.md 5.3): düzeltilmiş yerler + ışık işaretleri, yakınlığa ve görünür kutuya (S38: 1,6 kat payla) göre süzülür.
+    val poiMarkers = remember(poiCenter, poiZoom, viewport, poiRev, lightsRev, data.pois, routeLights) {
+        val c = poiCenter ?: return@remember emptyList<MapMarker>()
         if (viewport == IntSize.Zero) return@remember emptyList<MapMarker>()
         val wDp = with(density) { viewport.width.toDp().value.toDouble() }
         val hDp = with(density) { viewport.height.toDp().value.toDouble() }
-        val box = PoiLayerRules.bounds(c.lat, c.lon, wDp, hDp, zoom)
+        val box = PoiLayerRules.bounds(c.lat, c.lon, wDp, hDp, poiZoom, PoiLayerRules.SELECT_MARGIN)
         val all = PoiLayerRules.withLights(MapPois.all(ctx), dayRt.lightSpots())
-        PoiLayerRules.select(all, box, zoom).mapIndexed { i, p -> p.toMarker(i) }
+        PoiLayerRules.select(all, box, poiZoom, route = routeLights).mapIndexed { i, p ->
+            p.toMarker(i, onRoute = p.kind == 'l' && routeLights?.near(p.lat, p.lon) == true)
+        }
     }
-    val markers = routeMarkers + poiMarkers
-    val model = MapSurfaceModel(
-        base = base, dark = dark, camera = camera, lines = surfaceLines + bikeLines + roadLines + lines, markers = markers,
-        puck = puck?.let { MapPuck(it.point, it.course, it.beam, arrow = nav.hasRoute, accuracyM = it.accuracyM) },
-    )
+    val markers = remember(routeMarkers, poiMarkers) { routeMarkers + poiMarkers }
+    val baseLines = remember(surfaceLines, bikeLines, roadLines) { surfaceLines + bikeLines + roadLines }
+    val model = MapSurfaceModel(base = base, dark = dark, lines = lines, baseLines = baseLines, markers = markers)
+    // Ok yalnız rota açık ve hareketteyken (YolGo); dönüşü gerçek zamanlı yön. Dururken nokta + yön konisi (pusula).
+    val hasRoute = rememberUpdatedState(nav.hasRoute)
+    val surfacePuck = remember(puckState) {
+        derivedStateOf {
+            puckState.value?.let { p -> MapPuck(p.point, course = if (p.moving) p.heading else null, beam = p.heading, arrow = hasRoute.value, accuracyM = p.accuracyM) }
+        }
+    }
+    val live = remember(surfacePuck) { MapLive(surfacePuck, cameraState) }
     val events = MapSurfaceEvents(
         // S37: dokunuş panelleri gizlemez (kullanıcı: "tıklayınca ekran gidiyor").
         onTap = {},
         onLongPress = { pressed = it },
         onGesture = { follow = false; autoZoom = false; freeByGesture = true; lastGestureMs = System.currentTimeMillis() },
-        onCameraIdle = { c, z, _ -> zoom = z; center = c },
+        onCameraIdle = { c, z, _ ->
+            spot.center = c; spot.zoom = z
+            // Takipte kamera her karede durur: simge seçimi her karede değil, belirgin değişimde (S38).
+            val pc = poiCenter
+            val wDp = with(density) { viewport.width.toDp().value.toDouble() }
+            val hDp = with(density) { viewport.height.toDp().value.toDouble() }
+            if (pc == null || PoiLayerRules.refreshNeeded(pc.lat, pc.lon, poiZoom, c.lat, c.lon, z, wDp, hDp)) { poiCenter = c; poiZoom = z }
+        },
     )
     val panelActions = RoutePanelActions(
         acceptPending = { navCtl.acceptPending(it) }, dismissPending = navCtl::dismissPending, retry = { navCtl.requestReplan() },
@@ -443,7 +474,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
         lang = lang,
         mapSurface = {
             Box(Modifier.fillMaxSize().onSizeChanged { viewport = it }) {
-                MapSurface(model, events, Modifier.fillMaxSize(), userAgent = MapStyles.userAgent(BuildConfigInfo.versionName(ctx)))
+                MapSurface(model, events, Modifier.fillMaxSize(), userAgent = MapStyles.userAgent(BuildConfigInfo.versionName(ctx)), live = live)
                 MapStyles.attribution(base)?.let { a ->
                     Text(
                         a.text, style = WeemType.labelS, color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -484,7 +515,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
         metrics = {
             MapMetrics(
                 MapMetricsState(
-                    plan = nav.plan, mode = nav.mode, measure = progress, battery = battery, scooter = scooter, speeds = speeds, avgKmh = routeSpeed.first, nowMs = nowMs,
+                    plan = nav.plan, mode = nav.mode, measure = progress, battery = battery, scooterSource = batteryRt.live, speeds = speeds, avgKmh = routeSpeed.first, nowMs = nowMs,
                     speedChoices = settings.speedChoices, lowBatteryPct = settings.lowBatteryPct,
                 ),
                 lang,
@@ -628,9 +659,16 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
 
 /** Hareket hâli (rota yokken dokunmadan sonra takibe dönüş). */
 private const val MOVING_KMH = 3.0
-/** Otomatik yakınlık her kamera adımında hedefe bu oranda yaklaşır (YolGo kare başı %4; WEEM 80/160 ms adımında). */
+/** Otomatik yakınlık her [EASE_STEP_MS]'lik adımda hedefe bu oranda yaklaşır (YolGo kare başı %4; WEEM 80 ms'de; S38: kare temposundan bağımsız). */
 private const val ZOOM_EASE = 0.15
 private const val FOCUS_EASE = 0.25
+private const val EASE_STEP_MS = 80L
+
+/** Kameranın son durduğu yer (her karede değişir; durum değil, okuyan yeniden oluşmaz). */
+private class CameraSpot {
+    var center: GeoPoint? = null
+    var zoom = MapCamera.STANDARD_ZOOM
+}
 private val DAY_ROWS = setOf(
     LongPressAction.GO_TO, LongPressAction.ADD_STOP, LongPressAction.GO_TO_RESTAURANT, LongPressAction.PICK_AS_RESTAURANT, LongPressAction.CURB_WAIT,
     LongPressAction.CURB_REMOVE, LongPressAction.BIKEWAY, LongPressAction.LIGHT_HERE, LongPressAction.NO_LIGHT, LongPressAction.POI_EDIT,

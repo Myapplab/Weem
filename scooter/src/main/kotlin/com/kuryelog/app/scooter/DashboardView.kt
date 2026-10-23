@@ -67,7 +67,7 @@ class DashboardView(context: Context) : View(context) {
 
     private fun sameShown(a: NinebotDashboard.Snapshot, b: NinebotDashboard.Snapshot): Boolean =
         a.speedKmh == b.speedKmh && a.powerW == b.powerW && a.voltageV == b.voltageV && a.currentA == b.currentA &&
-            a.batteryPct == b.batteryPct && a.rangeKm == b.rangeKm && a.tempC == b.tempC
+            a.batteryPct == b.batteryPct && a.rangeKm == b.rangeKm && a.tempC == b.tempC && a.extBatteryPct == b.extBatteryPct
 
     fun refreshStale() { if (live() != lastDrawnLive) invalidate() }
 
@@ -295,7 +295,7 @@ class DashboardView(context: Context) : View(context) {
         val y2 = y + h + gap
         val pct = s?.batteryPct
         dialTile(c, x, y, tw, h, T.BATTERY.get(lang), NinebotDashboard.whole(pct), "%", if (fresh) ScooterPanel.frac(pct, 0.0, 100.0) else null,
-            tone(ScooterPanel.batteryTone(pct)), T.RANGE_SUB.get(lang).format(NinebotDashboard.oneDecimal(s?.rangeKm)), alpha, k)
+            tone(ScooterPanel.batteryTone(pct)), ScooterPanel.batterySub(s?.rangeKm, s?.extBatteryPct, lang), alpha, k)
         dialTile(c, x + tw + gap, y, tw, h, T.VOLTAGE.get(lang), NinebotDashboard.oneDecimal(s?.voltageV), "V",
             if (fresh) ScooterPanel.frac(s?.voltageV, 30.0, 55.0) else null, ink.accent, null, alpha, k)
         dialTile(c, x, y2, tw, h, T.CURRENT.get(lang), NinebotDashboard.oneDecimal(s?.currentA), "A",

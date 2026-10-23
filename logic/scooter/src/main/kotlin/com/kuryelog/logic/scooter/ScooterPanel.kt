@@ -49,6 +49,17 @@ object ScooterPanel {
         return mode + if (s.linked) T.LINKED.get(lang) + secondPack(s, lang) else T.WAITING.get(lang)
     }
 
+    /**
+     * Batarya kutusunun alt satırı: ikinci (harici) batarya görünürken "2. batarya %100" (menzil biliniyorsa " · 23.4 km"), yoksa "23.4 km menzil" (S38: ikinci
+     * batarya yalnız durum satırındaydı, kutuda görünmüyordu).
+     */
+    fun batterySub(rangeKm: Double?, extPct: Double?, lang: Lang): String {
+        val range = NinebotDashboard.oneDecimal(rangeKm)
+        if (extPct == null) return T.RANGE_SUB.get(lang).format(range)
+        val ext = T.EXT_SUB.get(lang).format(NinebotDashboard.whole(extPct))
+        return if (rangeKm == null) ext else "$ext · $range km"
+    }
+
     /** 0.18.0: bağlıyken ikinci (harici) bataryanın cevap verip vermediği. */
     fun secondPack(s: State, lang: Lang): String = when {
         s.extBatteryPct != null -> T.PACK_VISIBLE.get(lang).format(Math.round(s.extBatteryPct).toString())

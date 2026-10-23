@@ -59,6 +59,16 @@ class ScooterUiTest {
         assertEquals("dəq:san", PanelField.RIDE_TIME.unit(Lang.AZ))
     }
 
+    // ---- Batarya kutusu (S38: ikinci batarya kutuda da) ----
+
+    @Test fun batteryTileShowsTheSecondPack() {
+        assertEquals("– km menzil", ScooterPanel.batterySub(null, null, Lang.TR))
+        assertEquals("23.4 km menzil", ScooterPanel.batterySub(23.44, null, Lang.TR))
+        assertEquals("2. batarya %100", ScooterPanel.batterySub(null, 99.6, Lang.TR))
+        assertEquals("2. batarya %96 · 23.4 km", ScooterPanel.batterySub(23.44, 96.0, Lang.TR))
+        assertEquals("2-ci batareya %96", ScooterPanel.batterySub(null, 96.0, Lang.AZ))
+    }
+
     // ---- Durum satırı, nokta, eylem çubuğu ----
 
     @Test fun statusLineFollowsTheDashboard() {

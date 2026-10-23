@@ -43,6 +43,8 @@ enum class ScooterUiText(override val tr: String, override val az: String) : Bil
     NO_DATA("VERİ BEKLENİYOR", "MƏLUMAT GÖZLƏNİLİR"),
     BATTERY("BATARYA", "BATAREYA"),
     RANGE_SUB("%s km menzil", "%s km məsafə"),
+    /** S38: batarya kutusunda ikinci (harici) batarya. */
+    EXT_SUB("2. batarya %%%s", "2-ci batareya %%%s"),
     VOLTAGE("VOLTAJ", "GƏRGİNLİK"),
     CURRENT("AKIM", "CƏRƏYAN"),
     TEMP("SICAKLIK", "TEMPERATUR"),

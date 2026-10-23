@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -69,6 +70,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.Locale
 import kotlin.math.roundToInt
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Sol gösterge sütununun girdisi (YolGo `ModePager`; MAP.md 7.11, 10.5): [plan] varsa rota süresi (`metric-time`), canlı ölçüm [measure] rotadaysa "Durağa kalan"
@@ -81,6 +83,8 @@ data class MapMetricsState(
     val measure: RouteMeasure? = null,
     val battery: BatteryState = BatteryState(),
     val scooter: ScooterLive? = null,
+    /** S38: canlı değerlerin kaynağı; verilirse yalnız değer penceresi açıkken okunur (harita sekmesi scooter karesi başına yeniden oluşmaz). */
+    val scooterSource: StateFlow<ScooterLive?>? = null,
     val speeds: List<SpeedOption> = emptyList(),
     val avgKmh: Double? = null,
     val nowMs: Long = 0,
@@ -176,7 +180,10 @@ fun MapMetrics(
         }
     }
     when (sheet) {
-        Sheet.SCOOTER -> WSheet(onDismiss = { sheet = null }) { ScooterValuesSheet(state.scooter, lang) }
+        Sheet.SCOOTER -> WSheet(onDismiss = { sheet = null }) {
+            val live = state.scooterSource?.collectAsState()?.value ?: state.scooter
+            ScooterValuesSheet(live, lang)
+        }
         Sheet.SPEED -> WSheet(onDismiss = { sheet = null }) { SpeedSheet(state.speedChoices, state.speeds, battery.capacityWh, lang, onSpeedChoices) }
         null -> {}
     }

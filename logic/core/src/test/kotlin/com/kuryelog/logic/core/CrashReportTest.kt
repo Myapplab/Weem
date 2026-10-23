@@ -75,6 +75,12 @@ class CrashReportTest {
         assertTrue(CrashReport.exitShown(CrashReport.EXIT_INIT_FAILURE, now, now))
         // A Java crash (4) is in our own report; low memory (3), user swipe (10), update (11) are not crashes.
         for (reason in listOf(3, 4, 10, 11, 0)) assertFalse("$reason", CrashReport.exitShown(reason, now, now))
+        // S38: a low-memory or resource-usage kill while visible or in the foreground service ("closes and reopens"), not in the background.
+        assertTrue(CrashReport.exitShown(CrashReport.EXIT_LOW_MEMORY, now, now, importance = 125))
+        assertTrue(CrashReport.exitShown(CrashReport.EXIT_EXCESSIVE_RESOURCE_USAGE, now, now, importance = 100))
+        assertFalse(CrashReport.exitShown(CrashReport.EXIT_LOW_MEMORY, now, now, importance = 400))
+        assertFalse(CrashReport.exitShown(10, now, now, importance = 100))
+        assertEquals("LowMemoryKill", CrashReport.summary(CrashReport.exitJson(now, "?", CrashReport.EXIT_LOW_MEMORY, null, null)))
         // Older than three days: an old record from before the update.
         assertFalse(CrashReport.exitShown(CrashReport.EXIT_NATIVE, now - 4 * 86_400_000L, now))
         val j = CrashReport.exitJson(now, "?", CrashReport.EXIT_ANR, "Input dispatching timed out\nmore", "com.kuryelog.app")
