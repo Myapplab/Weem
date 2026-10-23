@@ -1,7 +1,6 @@
 package com.kuryelog.app.map
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -31,7 +29,6 @@ import com.kuryelog.app.ui.SettingsGroup
 import com.kuryelog.app.ui.SubScreen
 import com.kuryelog.app.ui.SwitchRow
 import com.kuryelog.app.ui.WButton
-import com.kuryelog.app.ui.WCard
 import com.kuryelog.app.ui.WIconButton
 import com.kuryelog.app.ui.WTone
 import com.kuryelog.app.ui.WeemIcons
@@ -40,11 +37,7 @@ import com.kuryelog.app.ui.WeemType
 import com.kuryelog.logic.app.Text as Str
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.map.input.ApiText
-import com.kuryelog.logic.map.ui.DatasetText
 import com.kuryelog.logic.map.ui.MapText
-import com.kuryelog.logic.map.ui.ReminderText
-import com.kuryelog.logic.map.ui.RideLogText
-import com.kuryelog.logic.map.ui.TaskText
 import com.kuryelog.logic.map.ui.WeatherUiText
 import com.kuryelog.logic.map.weather.WeatherReport
 import java.time.Instant
@@ -126,59 +119,31 @@ fun MapWeatherSettings(
 }
 
 /**
- * Harita ayarları ekranı (6.9): bölümler "Harita görünümü", "Harita verisi", Google Maps (A6.5), "Hava durumu" (A6.7, başlığa dokununca açılır), "API ve bağlantılar" (A6.6, 8.9), "Yollarım", … Rawstats bilgileri bölümü yok (WEEM).
- * Daha fazla → Harita ayarları; [onBack] varsa üstte geri düğmesi.
+ * Harita ayarları ekranı (6.9; S37'den beri yalnız haritayla ilgili): "Harita görünümü", "Harita verisi", Ev konumu ([onHome]), Google Maps (A6.5) ve
+ * "API ve bağlantılar" (A6.6, 8.9). Hava, günlük işler ve hatırlatıcılar [DailyToolsScreen]'de; Yollarım ve Sürüş kayıtları [RoadInfoScreen]'de;
+ * teklif veri seti Sipariş ayarlarında. Daha fazla → Harita ayarları; [onBack] varsa üstte geri düğmesi.
  */
 @Composable
 fun MapSettingsScreen(
     lang: Lang,
-    weatherStrip: Boolean,
-    onWeatherStripChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
-    weatherNotify: Boolean = true,
-    onWeatherNotifyChange: (Boolean) -> Unit = {},
-    onWeatherFetch: ((WeatherReport?) -> Unit) -> Unit = { it(null) },
+    onHome: () -> Unit = {},
 ) {
-    var weatherOpen by remember { mutableStateOf(false) }
     var api by remember { mutableStateOf(false) }
-    var sub by remember { mutableStateOf<String?>(null) }
     if (api) {
         BackHandler { api = false }
         MapApiSettingsScreen(lang, onBack = { api = false })
         return
     }
-    // A6.9: Sürüş kayıtları, Teklif veri seti, Günlük işler, Hatırlatıcılar (MAP.md 6.9, 12.10, 13.8, 13.14, 13.16).
-    when (sub) {
-        "ridelogs" -> { RideLogsHost(lang) { sub = null }; return }
-        "dataset" -> { DatasetHost(lang, shiftDay = null) { sub = null }; return }
-        "tasks" -> { TasksHost(lang) { sub = null }; return }
-        "reminders" -> { ReminderSettingsHost(lang) { sub = null }; return }
-        "roads" -> { RoadsHost(lang, onBack = { sub = null }); return }
-    }
     SubScreen(MapText.SETTINGS_TITLE.get(lang), Str.BACK.get(lang), onBack, modifier, spacing = 0.dp) {
         MapBaseSection(lang)
-        WCard(Modifier.padding(top = WeemSpace.xxl), padding = 0.dp, spacing = 0.dp) {
-            ListRow(
-                WeatherUiText.SECTION_TITLE.get(lang), icon = WeemIcons.PartlyCloudyDay, iconTone = WTone.ACCENT, onClick = { weatherOpen = !weatherOpen },
-                trailing = { Icon(if (weatherOpen) WeemIcons.ExpandLess else WeemIcons.ExpandMore, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-            )
-            AnimatedVisibility(weatherOpen) {
-                Column {
-                    HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
-                    MapWeatherSettings(weatherStrip, onWeatherStripChange, lang, notifyOn = weatherNotify, onNotifyChange = onWeatherNotifyChange, onFetch = onWeatherFetch)
-                }
-            }
+        SettingsGroup(null, Modifier.padding(top = WeemSpace.xxl), dividerInset = 70.dp) {
+            ListRow(Str.HOME_TITLE.get(lang), Modifier.testTag("open-home"), subtitle = Str.HOME_OPEN.get(lang), icon = WeemIcons.Home, chevron = true, onClick = onHome)
         }
         MapDataSection(lang)
         MapsKeySection(lang)
-        RoadsSettingsSection(lang, onOpen = { sub = "roads" })
-        // A6.9 ve A6.6: kayıt ve araç ekranları, "API ve bağlantılar" (MAP.md 8.9).
         SettingsGroup(null, Modifier.padding(top = WeemSpace.xxl), dividerInset = 70.dp) {
-            for ((key, title, icon) in listOf(
-                Triple("ridelogs", RideLogText.TITLE.get(lang), WeemIcons.History), Triple("dataset", DatasetText.TITLE.get(lang), WeemIcons.Analytics),
-                Triple("tasks", TaskText.TITLE.get(lang), WeemIcons.TaskAlt), Triple("reminders", ReminderText.SECTION.get(lang), WeemIcons.Alarm),
-            )) ListRow(title, Modifier.testTag("open-$key"), icon = icon, chevron = true, onClick = { sub = key })
             ListRow(ApiText.OPEN.get(lang), Modifier.testTag("open-api-settings"), icon = WeemIcons.Key, chevron = true, onClick = { api = true })
         }
     }

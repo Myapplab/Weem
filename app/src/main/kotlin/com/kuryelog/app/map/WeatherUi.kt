@@ -30,7 +30,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -62,6 +61,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.kuryelog.app.ui.BtnKind
 import com.kuryelog.app.ui.WButton
+import com.kuryelog.app.ui.WSheet
 import com.kuryelog.app.ui.WIconButton
 import com.kuryelog.app.ui.WeemIcons
 import com.kuryelog.app.ui.WeemRadius
@@ -100,7 +100,7 @@ private fun Long.color() = Color(this)
 
 /**
  * Harita üstündeki hava şeridi (YolGo `LiveWeatherChip`; MAP.md 10.9): kapalıyken `live-weather` 62 dp kare (`weather-compact`: şimdiki saat simgesi, sıcaklık "23°",
- * yağış ihtimali ≥%10 ise "40%"); dokununca 4 saatlik şerit ("Şimdi" + saatler, `weather-strip-i`); `weather-toggle` 8 saatlik listeyi açar (`weather-hour-0…7`, `weather-refresh`);
+ * yağış ihtimali ≥%10 ise "40%"); dokununca 4 saatlik şerit ("Şimdi" + saatler, `weather-strip-i`); `weather-toggle` 8 saatlik listeyi alttan açılan sayfada açar (`weather-list`, `weather-hour-0…7`, `weather-refresh`; S37);
  * `weather-collapse` küçültür; bir saate dokununca ayrıntı ([WeatherDetailSheet]). [onRefresh] "Yenile" (zorla); liste açılınca rapor 8 saatten kısaysa [onRefresh] çağrılır.
  */
 @Composable
@@ -184,35 +184,35 @@ fun WeatherChip(
                         Modifier.testTag("weather-toggle"),
                     )
                 }
-                if (open) {
-                    HorizontalDivider(thickness = 1.dp, color = p.outline.color())
-                    Column(Modifier.padding(start = WeemSpace.m, end = WeemSpace.m, top = WeemSpace.xs, bottom = WeemSpace.s)) {
-                        hours.forEachIndexed { i, h ->
-                            Row(
-                                Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable { detail = i }.testTag("weather-hour-$i"),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                HourTile(h, 40.dp, null, modifier = Modifier.padding(vertical = 4.dp)) { detail = i }
-                                Spacer(Modifier.width(WeemSpace.m))
-                                Text(
-                                    "${if (i == 0) WeatherUiText.NOW.get(lang) else clock(h.at)} · ${WeatherIcons.kind(h).get(lang)}", Modifier.weight(1f), maxLines = 1,
-                                    style = if (i == 0) WeemType.titleS else WeemType.bodyM, overflow = TextOverflow.Ellipsis,
-                                )
-                                Text("${value(h.temperature, "°")} · ${value(h.rainChance, "%")}", style = WeemType.numS)
-                                Icon(WeemIcons.ChevronRight, contentDescription = null, tint = p.muted.color(), modifier = Modifier.padding(start = 4.dp))
-                            }
-                        }
+            }
+        }
+        // S37 (23 Ekim): 8 saatlik liste haritanın üst panelinde kesiliyordu; alttan açılan sayfada, kendi içinde kaydırılır.
+        if (open) WSheet(onDismiss = { open = false }, title = WeatherUiText.SHOW_EIGHT.get(lang), padded = false) {
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).padding(horizontal = WeemSpace.l).testTag("weather-list")) {
+                hours.forEachIndexed { i, h ->
+                    Row(
+                        Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable { detail = i }.testTag("weather-hour-$i"),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        HourTile(h, 40.dp, null, modifier = Modifier.padding(vertical = 4.dp)) { detail = i }
+                        Spacer(Modifier.width(WeemSpace.m))
                         Text(
-                            (if (stale || view.failed) WeatherUiText.STALE.get(lang) else "") +
-                                (if (view.failed) WeatherUiText.FAILED.get(lang) else "Open-Meteo · ${report?.let { bakuClock(it.fetchedAtMs) } ?: "—"}"),
-                            style = WeemType.bodyS, color = p.muted.color(), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = WeemSpace.s),
+                            "${if (i == 0) WeatherUiText.NOW.get(lang) else clock(h.at)} · ${WeatherIcons.kind(h).get(lang)}", Modifier.weight(1f), maxLines = 1,
+                            style = if (i == 0) WeemType.titleS else WeemType.bodyM, overflow = TextOverflow.Ellipsis,
                         )
-                        WButton(
-                            WeatherUiText.REFRESH.get(lang), onRefresh, Modifier.testTag("weather-refresh").align(Alignment.CenterHorizontally),
-                            kind = BtnKind.TEXT, icon = WeemIcons.Refresh, enabled = !view.busy,
-                        )
+                        Text("${value(h.temperature, "°")} · ${value(h.rainChance, "%")}", style = WeemType.numS)
+                        Icon(WeemIcons.ChevronRight, contentDescription = null, tint = p.muted.color(), modifier = Modifier.padding(start = 4.dp))
                     }
                 }
+                Text(
+                    (if (stale || view.failed) WeatherUiText.STALE.get(lang) else "") +
+                        (if (view.failed) WeatherUiText.FAILED.get(lang) else "Open-Meteo · ${report?.let { bakuClock(it.fetchedAtMs) } ?: "—"}"),
+                    style = WeemType.bodyS, color = p.muted.color(), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = WeemSpace.s),
+                )
+                WButton(
+                    WeatherUiText.REFRESH.get(lang), onRefresh, Modifier.testTag("weather-refresh").align(Alignment.CenterHorizontally),
+                    kind = BtnKind.TEXT, icon = WeemIcons.Refresh, enabled = !view.busy,
+                )
             }
         }
     }

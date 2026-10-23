@@ -39,9 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.kuryelog.app.ui.BtnKind
 import com.kuryelog.app.ui.IconBox
-import com.kuryelog.app.ui.WButton
 import com.kuryelog.app.ui.WTone
 import com.kuryelog.app.ui.WeemIcons
 import com.kuryelog.app.ui.WeemRadius
@@ -67,8 +65,6 @@ data class MapTabState(
     val arrivalFocus: Boolean = false,
     val cameraMode: CameraMode = CameraMode.FOLLOW_HEADING,
     val nowMs: Long = 0,
-    /** Yalnız harita kipi (haritaya tek dokunuş açar/kapatır). */
-    val mapOnly: Boolean = false,
     /** Klavye açık: sol göstergeler ve alt panel yok. */
     val keyboard: Boolean = false,
     /** Rota paneli açık (`route-fab` ✕ gösterir). */
@@ -80,14 +76,13 @@ class MapTabActions(
     val onLocate: () -> Unit = {},
     val onRouteFab: () -> Unit = {},
     val onSearch: () -> Unit = {},
-    val onShowPanels: () -> Unit = {},
     val onWeatherRefresh: () -> Unit = {},
 )
 
 /**
  * Harita sekmesi (YolGo `nav_screen.dart:57-153`; MAP.md 6.3): harita yüzeyi + HUD (arama çubuğu `map-search`, hava şeridi, sol göstergeler, gün eylemleri, konum düğmesi,
  * alt yer düğmesi); sekmede menü, ayar düğmesi ve kayıt noktası yok. Varış odağında yalnız harita, bildirim şeridi (`toast-banner`), hatırlatıcı yuvası (`reminder-slot`), görev
- * uyarıları (`task-alerts`), ters yön kartı ve alttaki `arrival-address` kartı. Yalnız harita kipinde sağ üstte "Panelleri göster" (`show-panels`) ve konum düğmesi.
+ * uyarıları (`task-alerts`), ters yön kartı ve alttaki `arrival-address` kartı. Haritaya dokunmak panelleri gizlemez (S37; eski "yalnız harita" kipi kaldırıldı).
  * Dışarı dokunuş açık gün kartını katlar. Yuvalar ([toast], [reminder], [taskAlerts], [wrongWay], [routePanel]) sahip görevlerde dolar; [metrics] sol göstergeler (A6.7),
  * [topCard] arama çubuğunun üstünde (vardiya kapalıyken `ShiftCard`).
  */
@@ -125,20 +120,6 @@ fun MapTab(
                     wrongWay()
                     state.nav.activeStop?.let { ArrivalAddressCard(it.label, it.unitNote) }
                 }
-            },
-        )
-        return
-    }
-    if (state.mapOnly) {
-        MapHudLayout(
-            keyboard = keyboard, map = map, modifier = modifier, alerts = alerts,
-            header = {
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopEnd) {
-                    WButton(MapText.SHOW_PANELS.get(lang), actions.onShowPanels, Modifier.floating(CircleShape).testTag("show-panels"), kind = BtnKind.TONAL, icon = WeemIcons.Layers)
-                }
-            },
-            footer = {
-                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) { SmartLocateButton(state.cameraMode, actions.onLocate, lang = lang) }
             },
         )
         return

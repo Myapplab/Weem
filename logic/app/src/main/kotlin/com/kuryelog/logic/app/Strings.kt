@@ -98,6 +98,8 @@ enum class Text(override val tr: String, override val az: String) : Bilingual {
     // G1 vardiya kartı (CORE.md 1.2; RS `I18n` shift_start/shift_stop).
     SHIFT_START("▶  Vardiyayı BAŞLAT", "▶  Növbəni BAŞLAT"),
     SHIFT_STOP("■  Vardiyayı BİTİR", "■  Növbəni BİTİR"),
+    /** Haritadaki tek satırlık vardiya kartının düğmesi (S37). */
+    SHIFT_START_SHORT("BAŞLAT", "BAŞLAT"),
     SHIFT_ON("Vardiya açık · başlangıç %s", "Növbə açıqdır · başlanğıc %s"),
     SHIFT_OFF("Vardiya kapalı", "Növbə bağlıdır"),
     SHIFT_INTERRUPTED("GPS kaydı durdu; sürdürmek için başlat düğmesine dokun.", "GPS qeydi dayandı; davam etmək üçün başlat düyməsinə toxun."),
@@ -131,9 +133,15 @@ enum class Text(override val tr: String, override val az: String) : Bilingual {
 
     // A4.2 Siparişler ayarları (S20 (b); RS "Özel ayarlar") ve net kazanç / günlük hedef (N4, N8).
     MSET_TITLE("Harita ayarları", "Xəritə tənzimləmələri"),
-    MSET_OPEN("Harita görünümü, harita verisi, Google Maps", "Xəritənin görünüşü, xəritə məlumatları, Google Maps"),
+    MSET_OPEN("Harita görünümü, harita verisi, ev konumu, API", "Xəritənin görünüşü, xəritə məlumatları, ev məkanı, API"),
+    // S37: Daha fazla'nın yeni satırları.
+    ROADINFO_TITLE("Yol bilgileri", "Yol məlumatları"),
+    ROADINFO_OPEN("Yol kalitesi, ses tuşları, yollar, sürüş kayıtları", "Yol keyfiyyəti, səs düymələri, yollar, sürüş tarixçəsi"),
+    DAILY_TITLE("Hava ve günlük işler", "Hava və gündəlik işlər"),
+    DAILY_OPEN("Hava durumu, günlük işler, hatırlatıcılar", "Hava, gündəlik işlər, xatırlatmalar"),
+    SSET_OPEN("Panel, yüzen top, bağlantı, tanı", "Panel, üzən top, bağlantı, diaqnostika"),
     OSET_TITLE("Siparişler ayarları", "Sifariş ayarları"),
-    OSET_OPEN("Komisyon, ekran, net kazanç ve günlük hedef", "Komissiya, ekran, xalis qazanc və gündəlik hədəf"),
+    OSET_OPEN("Komisyon, ekran, net kazanç, günlük hedef, teklif veri seti", "Komissiya, ekran, xalis qazanc, gündəlik hədəf, təklif məlumat dəsti"),
     OSET_COMMISSION("Filo komisyonları", "Filo komissiyaları"),
     OSET_COMMISSION_NOTE("Teklif fiyatı brüt sayılır; net = brüt − komisyon + bahşiş. Komisyon girilmezse 0 sayılır.", "Təklif qiyməti ümumi sayılır; xalis = ümumi − komissiya + çaypulu. Komissiya daxil edilməsə 0 sayılır."),
     OSET_COMMISSION_ASK("%s komisyonu (yüzde, 0–99,99)", "%s komissiyası (faiz, 0–99,99)"),

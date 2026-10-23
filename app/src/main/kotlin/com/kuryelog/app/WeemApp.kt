@@ -23,12 +23,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.kuryelog.app.core.CrashLog
 import com.kuryelog.app.core.Store
 import com.kuryelog.app.map.MapScreen
+import com.kuryelog.app.map.DailyToolsScreen
 import com.kuryelog.app.map.MapSettingsScreen
+import com.kuryelog.app.map.RoadInfoScreen
+import com.kuryelog.logic.scooter.ScooterUiText
 import com.kuryelog.app.map.NavRuntime
 import com.kuryelog.app.map.ReminderCard
 import com.kuryelog.app.map.ReminderRuntime
@@ -38,7 +42,8 @@ import com.kuryelog.app.map.WeatherRuntime
 import com.kuryelog.app.ui.BtnKind
 import com.kuryelog.app.ui.ListRow
 import com.kuryelog.app.ui.NavItem
-import com.kuryelog.app.ui.RadioRow
+import com.kuryelog.app.ui.SectionLabel
+import com.kuryelog.app.ui.Segmented
 import com.kuryelog.app.ui.ScreenTitle
 import com.kuryelog.app.ui.SettingsGroup
 import com.kuryelog.app.ui.StatusPill
@@ -171,6 +176,9 @@ private fun MoreScreen(
     var home by rememberSaveable { mutableStateOf(false) }
     var ordersSettings by rememberSaveable { mutableStateOf(false) }
     var mapSettings by rememberSaveable { mutableStateOf(false) }
+    var scooterSettings by rememberSaveable { mutableStateOf(false) }
+    var roadInfo by rememberSaveable { mutableStateOf(false) }
+    var daily by rememberSaveable { mutableStateOf(false) }
     var twoPhone by rememberSaveable { mutableStateOf(false) }
     if (twoPhone) {
         TwoPhoneScreen(lang, versionName) { twoPhone = false }
@@ -181,15 +189,32 @@ private fun MoreScreen(
         PermissionsScreen(lang, onSetupAgain) { permissions = false }
         return
     }
+    // S37: Ev konumu Harita ayarlarının içinden açılır; geri dönünce Harita ayarları kalır.
+    if (home) {
+        HomeScreen(lang) { home = false }
+        return
+    }
     if (mapSettings) {
+        MapSettingsScreen(lang, onBack = { mapSettings = false }, onHome = { home = true })
+        return
+    }
+    if (daily) {
         val ctx = LocalContext.current
         val weather = remember { WeatherRuntime.get(ctx) }
         val strip by weather.strip.collectAsState()
         val notify by weather.enabled.collectAsState()
-        MapSettingsScreen(
-            lang, weatherStrip = strip, onWeatherStripChange = weather::setStrip, onBack = { mapSettings = false },
+        DailyToolsScreen(
+            lang, weatherStrip = strip, onWeatherStripChange = weather::setStrip, onBack = { daily = false },
             weatherNotify = notify, onWeatherNotifyChange = weather::setEnabled, onWeatherFetch = weather::fetchNow,
         )
+        return
+    }
+    if (roadInfo) {
+        RoadInfoScreen(lang) { roadInfo = false }
+        return
+    }
+    if (scooterSettings) {
+        ScooterSettingsScreen(lang) { scooterSettings = false }
         return
     }
     if (ordersSettings) {
@@ -200,14 +225,10 @@ private fun MoreScreen(
         RecordsScreen(lang, onBack = { records = false })
         return
     }
-    if (home) {
-        HomeScreen(lang) { home = false }
-        return
-    }
     val perms = rememberPermissionState()
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = WeemSpace.l, vertical = WeemSpace.s)) {
         ScreenTitle(Str.SETTINGS_TITLE.get(lang), Modifier.padding(bottom = WeemSpace.m))
-        // K4 (A10.4d): her satır tek dokunuşla açılır (simge + başlık + açıklama + ›).
+        // K4 (A10.4d): her satır tek dokunuşla açılır (simge + başlık + açıklama + ›). S37: konuya göre ayrılmış ayar ekranları.
         SettingsGroup(null, dividerInset = 70.dp) {
             // G5 (A7.2): izinler kartı ve pil rehberi her zaman burada; eksik izin rozette "! n/m".
             ListRow(
@@ -218,29 +239,38 @@ private fun MoreScreen(
                 },
                 onClick = { permissions = true },
             )
-            ListRow(Str.HOME_TITLE.get(lang), subtitle = Str.HOME_OPEN.get(lang), icon = WeemIcons.Home, chevron = true, onClick = { home = true })
             ListRow(Str.MSET_TITLE.get(lang), subtitle = Str.MSET_OPEN.get(lang), icon = WeemIcons.Map, chevron = true, onClick = { mapSettings = true })
             ListRow(Str.OSET_TITLE.get(lang), subtitle = Str.OSET_OPEN.get(lang), icon = WeemIcons.ReceiptLong, chevron = true, onClick = { ordersSettings = true })
+            ListRow(ScooterUiText.SETTINGS_TITLE.get(lang), Modifier.testTag("open-scooter-settings"), subtitle = Str.SSET_OPEN.get(lang), icon = WeemIcons.ElectricScooter,
+                chevron = true, onClick = { scooterSettings = true })
+            ListRow(Str.ROADINFO_TITLE.get(lang), Modifier.testTag("open-road-info"), subtitle = Str.ROADINFO_OPEN.get(lang), icon = WeemIcons.Route, chevron = true,
+                onClick = { roadInfo = true })
+            ListRow(Str.DAILY_TITLE.get(lang), Modifier.testTag("open-daily"), subtitle = Str.DAILY_OPEN.get(lang), icon = WeemIcons.PartlyCloudyDay, chevron = true,
+                onClick = { daily = true })
             ListRow(Str.RECORDS_TITLE.get(lang), subtitle = Str.RECORDS_OPEN.get(lang), icon = WeemIcons.Folder, chevron = true, onClick = { records = true })
             // A8.3: 2 telefon modu (LINK.md 4.10).
             ListRow(LinkText.TITLE.get(lang), subtitle = LinkText.OPEN.get(lang), icon = WeemIcons.Devices, chevron = true, onClick = { twoPhone = true })
         }
-        SettingsGroup(Str.SETTINGS_LANGUAGE.get(lang), dividerInset = 52.dp, selectableGroup = true) {
-            RadioRow(Str.LANG_SYSTEM.get(lang), langSetting.isEmpty(), { onLangSetting("") })
-            RadioRow(Str.LANG_TR.get(lang), langSetting == Lang.TR.key, { onLangSetting(Lang.TR.key) })
-            RadioRow(Str.LANG_AZ.get(lang), langSetting == Lang.AZ.key, { onLangSetting(Lang.AZ.key) })
-        }
-        SettingsGroup(Str.SETTINGS_THEME.get(lang), dividerInset = 52.dp, selectableGroup = true) {
-            RadioRow(Str.THEME_SYSTEM.get(lang), theme == ThemeMode.SYSTEM, { onTheme(ThemeMode.SYSTEM) }, trailingIcon = WeemIcons.Contrast)
-            RadioRow(Str.THEME_LIGHT.get(lang), theme == ThemeMode.LIGHT, { onTheme(ThemeMode.LIGHT) }, trailingIcon = WeemIcons.LightMode)
-            RadioRow(Str.THEME_DARK.get(lang), theme == ThemeMode.DARK, { onTheme(ThemeMode.DARK) }, trailingIcon = WeemIcons.DarkMode)
-        }
+        // S37: dil, tema ve ekran yönü en altta üçlü seçim (Segmented).
+        SectionLabel(Str.SETTINGS_LANGUAGE.get(lang))
+        val langKeys = listOf("", Lang.TR.key, Lang.AZ.key)
+        Segmented(
+            listOf(Str.LANG_SYSTEM.get(lang), Str.LANG_TR.get(lang), Str.LANG_AZ.get(lang)), langKeys.indexOf(langSetting).coerceAtLeast(0),
+            { onLangSetting(langKeys[it]) }, tags = listOf("lang-system", "lang-tr", "lang-az"),
+        )
+        SectionLabel(Str.SETTINGS_THEME.get(lang))
+        val themes = listOf(ThemeMode.SYSTEM, ThemeMode.LIGHT, ThemeMode.DARK)
+        Segmented(
+            listOf(Str.THEME_SYSTEM.get(lang), Str.THEME_LIGHT.get(lang), Str.THEME_DARK.get(lang)), themes.indexOf(theme).coerceAtLeast(0),
+            { onTheme(themes[it]) }, tags = listOf("theme-system", "theme-light", "theme-dark"),
+        )
         // A10.4g (SORU-N6): ekran yönü; varsayılan serbest.
-        SettingsGroup(Str.SETTINGS_ORIENTATION.get(lang), dividerInset = 52.dp, selectableGroup = true) {
-            RadioRow(Str.ORIENTATION_FREE.get(lang), orientation == ScreenOrientation.FREE, { onOrientation(ScreenOrientation.FREE) }, trailingIcon = WeemIcons.ScreenRotation)
-            RadioRow(Str.ORIENTATION_PORTRAIT.get(lang), orientation == ScreenOrientation.PORTRAIT, { onOrientation(ScreenOrientation.PORTRAIT) }, trailingIcon = WeemIcons.StayCurrentPortrait)
-            RadioRow(Str.ORIENTATION_LANDSCAPE.get(lang), orientation == ScreenOrientation.LANDSCAPE, { onOrientation(ScreenOrientation.LANDSCAPE) }, trailingIcon = WeemIcons.StayCurrentLandscape)
-        }
+        SectionLabel(Str.SETTINGS_ORIENTATION.get(lang))
+        val orientations = listOf(ScreenOrientation.FREE, ScreenOrientation.PORTRAIT, ScreenOrientation.LANDSCAPE)
+        Segmented(
+            listOf(Str.ORIENTATION_FREE.get(lang), Str.ORIENTATION_PORTRAIT.get(lang), Str.ORIENTATION_LANDSCAPE.get(lang)), orientations.indexOf(orientation).coerceAtLeast(0),
+            { onOrientation(orientations[it]) }, tags = listOf("orientation-free", "orientation-portrait", "orientation-landscape"),
+        )
         Text(
             Str.VERSION.get(lang).format(versionName),
             style = WeemType.bodyS,
