@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -49,6 +50,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -81,12 +84,17 @@ import com.kuryelog.app.ui.WeemSpace
 import com.kuryelog.app.ui.WeemType
 import com.kuryelog.app.ui.color
 import com.kuryelog.app.ui.palette
+import com.kuryelog.app.ui.container
+import com.kuryelog.app.ui.ink
+import com.kuryelog.app.ui.mark
 import com.kuryelog.app.scooter.BleScan
 import com.kuryelog.app.scooter.DashboardView
 import com.kuryelog.app.scooter.FloatingPanel
 import com.kuryelog.app.scooter.LoggerPreferences
 import com.kuryelog.app.scooter.PairAttention
 import com.kuryelog.app.scooter.Scooter
+import com.kuryelog.app.scooter.ScooterShiftLink
+import com.kuryelog.app.core.Store
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.scooter.FloatRules
 import com.kuryelog.logic.scooter.NinebotDashboard
@@ -116,8 +124,6 @@ object ScooterNav {
 
 private sealed interface Ask {
     data class Message(val text: String) : Ask
-    data object RecordSwitch : Ask
-    data object HowStart : Ask
     data object Pair : Ask
     data object ExportChoices : Ask
     data class ExportWarn(val choice: ScooterPanel.ExportChoice) : Ask
@@ -125,7 +131,8 @@ private sealed interface Ask {
 }
 
 /**
- * Scooter sekmesi (S2, A5.4; NB `DashboardActivity`): başlık ve durum satırı, eylem çubuğu (ayarlar, eşleştir, ara, başlat, durdur, ZIP),
+ * Scooter sekmesi (S2, A5.4; NB `DashboardActivity`): başlık ve durum satırı, eylem çubuğu (ayarlar, eşleştir, ara, ZIP; S37: "Kaydı başlat"
+ * yerine kayıt durumu — kayıt vardiyayla başlar ve biter — ve yalnız vardiya dışı bağlantıyı kesen durdur),
  * eşleştirme uyarısı ve canlı gösterge. Göstergeye dokunma tam ekran (başlık, çubuk ve alt menü kayar; geri tuşu çıkar). Görünürken
  * `Scooter.Viewers.dashboard` (hızlı okuma temposu). Ayarlar ve tanı [ScooterSettingsScreen]'de.
  */
@@ -182,7 +189,11 @@ fun ScooterTab(lang: Lang, dark: Boolean, immersive: Boolean, onImmersive: (Bool
     }
 
     val state = remember(tick, scanVersion) { Scooter.state(ctx) }
-    val dock = ScooterPanel.dock(state, Scooter.exporting, scan.scanning)
+    val shiftOn = remember(tick) { Store.shiftOn(ctx) }
+    val dock = ScooterPanel.dock(state, Scooter.exporting, scan.scanning, shiftOn)
+    val badge = remember(tick, scanVersion) {
+        ScooterPanel.badge(state, Scooter.selected(ctx), Scooter.paired(ctx), shiftOn, ScooterShiftLink.providerRole())
+    }
 
     // Ekran açık ve PiP yedeği (NB `syncToolbar`), değiştikçe.
     val view = LocalView.current
@@ -268,7 +279,7 @@ fun ScooterTab(lang: Lang, dark: Boolean, immersive: Boolean, onImmersive: (Bool
             },
             modifier = Modifier.fillMaxWidth().weight(1f),
         )
-        // K4 #7: eylem çubuğu başparmak bölgesinde — dört simge düğmesi, altında büyük "Kaydı başlat" ve yuvarlak durdur.
+        // K4 #7: eylem çubuğu başparmak bölgesinde — dört simge düğmesi, altında kayıt durumu (S37) ve yuvarlak durdur.
         AnimatedVisibility(visible = !immersive, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
             Column(
                 Modifier.padding(start = WeemSpace.l, end = WeemSpace.l, top = WeemSpace.xs, bottom = WeemSpace.m),
@@ -300,17 +311,11 @@ fun ScooterTab(lang: Lang, dark: Boolean, immersive: Boolean, onImmersive: (Bool
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(WeemSpace.s), verticalAlignment = Alignment.CenterVertically) {
-                    WButton(
-                        T.DOCK_START.get(lang),
-                        {
-                            ctx.safely("scooter_start") {
-                                if (Scooter.active) { if (!Scooter.recording) ask = Ask.RecordSwitch; return@safely }
-                                if (Scooter.device(ctx).isEmpty()) { if (permissions()) Scooter.startRecording(ctx, false); bump(); return@safely }
-                                ask = Ask.HowStart
-                            }
-                        },
-                        Modifier.weight(1f), icon = WeemIcons.FiberManualRecordFilled, enabled = dock.start, ride = true, haptic = HapticFeedbackType.Confirm,
-                    )
+                    // S37: vardiya açık, kayıt yok → dokununca vardiya kaydına bağlanır (ana karttaki "Scooter'a şimdi bağlan" ile aynı).
+                    val connect: (() -> Unit)? = if (badge == ScooterPanel.Badge.NOT_CONNECTED && ScooterShiftLink.canConnectNow(ctx)) {
+                        { ctx.safely("scooter_connect") { ScooterShiftLink.connectNow(ctx); bump() } }
+                    } else null
+                    RecordBadge(badge, lang, connect)
                     val haptics = LocalHapticFeedback.current
                     WIconButton(
                         WeemIcons.StopFilled, T.DOCK_STOP.get(lang),
@@ -325,23 +330,11 @@ fun ScooterTab(lang: Lang, dark: Boolean, immersive: Boolean, onImmersive: (Bool
     when (val a = ask) {
         null -> {}
         is Ask.Message -> NoticeDialog(a.text, T.OK.get(lang), onDismiss = { ask = null })
-        Ask.RecordSwitch -> ConfirmDialog(
-            title = T.RECORD_TITLE.get(lang), text = T.RECORD_TEXT.get(lang), confirm = T.DOCK_START.get(lang), dismiss = T.CANCEL.get(lang),
-            onConfirm = { ask = null; ctx.safely("scooter_record") { Scooter.record(ctx); bump() } }, onDismiss = { ask = null },
-        )
         // K4: çok seçenekli pencereler alttan açılan sayfada.
-        Ask.HowStart -> WSheet(onDismiss = { ask = null }, title = T.HOW_START.get(lang)) {
-            SettingsGroup(null, dividerInset = 70.dp) {
-                ListRow(T.START_LIVE.get(lang), icon = WeemIcons.Speed, chevron = true,
-                    onClick = { ask = null; ctx.safely("scooter_start") { if (permissions()) Scooter.startLive(ctx); bump() } })
-                ListRow(T.START_RECORD.get(lang), icon = WeemIcons.FiberManualRecord, iconTone = WTone.DANGER, chevron = true,
-                    onClick = { ask = null; ctx.safely("scooter_start") { if (permissions()) Scooter.startRecording(ctx, false); bump() } })
-            }
-            WButton(T.CANCEL.get(lang), { ask = null }, kind = BtnKind.TEXT, fill = true)
-        }
         Ask.Pair -> ConfirmDialog(
             title = T.DOCK_PAIR.get(lang), text = T.PAIR_TEXT.get(lang), confirm = T.PAIR_GO.get(lang), dismiss = T.CANCEL.get(lang),
-            onConfirm = { ask = null; ctx.safely("scooter_pair") { scan.stop(); Scooter.startRecording(ctx, true); bump() } }, onDismiss = { ask = null },
+            // S37: eşleştirme kayıt başlatmaz (kayıtsız canlı bağlantı); eşleşince "Eşleşildi · kayda hazır".
+            onConfirm = { ask = null; ctx.safely("scooter_pair") { scan.stop(); Scooter.pair(ctx); bump() } }, onDismiss = { ask = null },
         )
         Ask.ExportChoices -> WSheet(onDismiss = { ask = null }, title = T.EXPORT_TITLE.get(lang)) {
             SettingsGroup(null, dividerInset = 70.dp) {
@@ -383,6 +376,31 @@ private fun PairAttentionBanner(text: String) {
         }
         Text(text, style = WeemType.titleL.copy(fontWeight = FontWeight.ExtraBold), color = p.warn.color(), modifier = Modifier.weight(1f))
     }
+}
+
+/** S37: kayıt durumu hapı (eski "Kaydı başlat" yerinde, 56 dp): tonlu zemin, nokta ve metin; [onClick] varsa dokunulur. */
+@Composable
+private fun RowScope.RecordBadge(badge: ScooterPanel.Badge, lang: Lang, onClick: (() -> Unit)?) {
+    val p = palette()
+    val tone = when (badge.tone) {
+        null -> WTone.NEUTRAL
+        ScooterPanel.Tone.ACCENT -> WTone.ACCENT
+        ScooterPanel.Tone.POWER -> WTone.POWER
+        ScooterPanel.Tone.POSITIVE -> WTone.POSITIVE
+        ScooterPanel.Tone.WARN -> WTone.WARN
+        ScooterPanel.Tone.DANGER -> WTone.DANGER
+    }
+    val modifier = Modifier.weight(1f).heightIn(min = WeemSize.ride).testTag("scooter-record-badge")
+    val body: @Composable () -> Unit = {
+        Row(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Dot((if (tone == WTone.NEUTRAL) p.muted else p.mark(tone)).color())
+            Text(badge.text.get(lang), style = WeemType.labelL.copy(fontSize = 16.sp, lineHeight = 20.sp), maxLines = 2)
+        }
+    }
+    val bg = p.container(tone).color()
+    val ink = p.ink(tone).color()
+    if (onClick != null) Surface(onClick = onClick, shape = CircleShape, color = bg, contentColor = ink, modifier = modifier) { Box(contentAlignment = Alignment.CenterStart) { body() } }
+    else Surface(shape = CircleShape, color = bg, contentColor = ink, modifier = modifier) { Box(contentAlignment = Alignment.CenterStart) { body() } }
 }
 
 /** Eylem çubuğunun simge düğmesi: 48 dp yükseklik, köşe 16, `raised` zemin; ad ekran okuyucuya (NB `icon`). */

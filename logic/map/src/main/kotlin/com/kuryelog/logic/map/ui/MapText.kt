@@ -9,6 +9,11 @@ import com.kuryelog.logic.core.Bilingual
 enum class MapText(override val tr: String, override val az: String) : Bilingual {
     BASE_INFO("Rota ve sokak kararlarını her altlıkta WEEM hesaplar; Google Maps yalnız görüntüdür.", "Marşrutu və küçə qaydalarını hər altlıqda WEEM hesablayır; Google Maps yalnız görüntüdür."),
     BASE_TITLE("Harita görünümü", "Xəritənin görünüşü"),
+    /** S37: anahtarsız derlemede Google Maps satırı pasif; neden ve çözüm (anahtar APK'ya derlemede girer, uygulamadan girilemez). */
+    BASE_GOOGLE_NO_KEY(
+        "Bu APK Maps anahtarı olmadan derlendi. Google Maps için anahtar GitHub'da GOOGLE_MAPS_API_KEY gizli değişkenine girilip APK yeniden derlenmeli; uygulamadaki Places anahtarı haritayı açmaz.",
+        "Bu APK Maps açarı olmadan yığılıb. Google Maps üçün açar GitHub-da GOOGLE_MAPS_API_KEY gizli dəyişəninə yazılıb APK yenidən yığılmalıdır; tətbiqdəki Places açarı xəritəni açmır.",
+    ),
     CANCEL("Vazgeç", "Ləğv et"),
     COMPLETED_ORDERS("Tamamlanan sipariş", "Tamamlanan sifariş"),
     DATA_DOWNLOAD("İndir / güncelle", "Yüklə / yenilə"),
@@ -63,7 +68,6 @@ enum class MapText(override val tr: String, override val az: String) : Bilingual
     SETUP_PREPARING("Bakü haritası hazırlanıyor…", "Bakı xəritəsi hazırlanır…"),
     SETUP_TEXT("Rota, yokuş ve batarya tahmini için Bakü yolları bir kez indirilir.", "Marşrut, yoxuş və batareya hesabı üçün Bakı yolları bir dəfə yüklənir."),
     SETUP_TITLE("Bakü yol haritası", "Bakı yol xəritəsi"),
-    SHOW_PANELS("Panelleri göster", "Panelləri göstər"),
     STATS("İstatistik", "Statistika"),
     YES("var", "var");
 }

@@ -6,10 +6,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.kuryelog.app.WeemTheme
 import com.kuryelog.logic.core.Lang
@@ -22,7 +22,8 @@ import org.robolectric.annotation.Config
 
 /**
  * YolGo `weather_section_test.dart` (4; A6.2b, MAP.md 10.9, 16.3). İlk 2 test bölüm düzeyinde (şerit anahtarı varsayılan açık ve saklanır; açıklama bilgi penceresinde); son 2 test
- * UYARLANIR (WEEM ayar yapısı: Daha fazla → Harita ayarları → "Hava durumu"; "Rawstats bilgileri" bölümü yok): Harita ayarlarında "Hava durumu" bir kez; kayıtlı kapalı ayar korunur.
+ * UYARLANIR (WEEM ayar yapısı, S37: Daha fazla → Hava ve günlük işler → "Hava durumu"; "Rawstats bilgileri" bölümü yok): orada "Hava durumu" bir kez, Harita ayarlarında
+ * hiç; kayıtlı kapalı ayar korunur.
  * Kalıcılık (`weather.strip.v1`) yerine geri çağrı değeri denetlenir.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -52,17 +53,27 @@ class MapWeatherSettingsTest {
     }
 
     @Test
-    fun haritaAyarlarindaHavaDurumuBolumuVarRawstatsBilgileriYok() {
-        compose.setContent { WeemTheme(false) { MapSettingsScreen(Lang.TR, weatherStrip = true, onWeatherStripChange = {}) } }
+    fun havaVeGunlukIslerdeHavaDurumuBolumuVarRawstatsBilgileriYok() {
+        compose.setContent { WeemTheme(false) { DailyToolsScreen(Lang.TR, weatherStrip = true, onWeatherStripChange = {}) } }
         compose.onAllNodes(hasText("Hava durumu")).assertCountEquals(1)
         compose.onAllNodes(hasText("Rawstats bilgileri")).assertCountEquals(0)
+        compose.onNodeWithTag("open-tasks").assertExists()
+        compose.onNodeWithTag("open-reminders").assertExists()
+    }
+
+    @Test
+    fun haritaAyarlariYalnizHaritayla() {
+        compose.setContent { WeemTheme(false) { MapSettingsScreen(Lang.TR) } }
+        // S37: hava, yol kalitesi, ses tuşları, teklif veri seti, günlük işler, hatırlatıcılar ve sürüş kayıtları Harita ayarlarında yok; Ev konumu var.
+        compose.onAllNodes(hasText("Hava durumu")).assertCountEquals(0)
+        for (tag in listOf("road-learning", "open-ridelogs", "open-dataset", "open-tasks", "open-reminders")) compose.onAllNodes(hasTestTag(tag)).assertCountEquals(0)
+        compose.onNodeWithTag("open-home").assertExists()
+        compose.onNodeWithTag("open-api-settings").assertExists()
     }
 
     @Test
     fun kayitliKapaliAyarKorunur() {
-        compose.setContent { WeemTheme(false) { MapSettingsScreen(Lang.TR, weatherStrip = false, onWeatherStripChange = {}) } }
-        compose.onNodeWithText("Hava durumu").performClick()
-        compose.waitForIdle()
+        compose.setContent { WeemTheme(false) { DailyToolsScreen(Lang.TR, weatherStrip = false, onWeatherStripChange = {}) } }
         compose.onNodeWithTag("weather-strip-toggle").assertIsOff() // eski kayıtlı "kapalı" aynen okunur
     }
 }

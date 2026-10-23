@@ -20,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -40,6 +41,8 @@ import com.kuryelog.app.ui.WTone
 import com.kuryelog.app.ui.WeemIcons
 import com.kuryelog.app.ui.WeemRadius
 import com.kuryelog.app.ui.WeemSpace
+import com.kuryelog.app.map.DatasetHost
+import com.kuryelog.logic.map.ui.DatasetText
 import com.kuryelog.app.ui.WeemType
 import com.kuryelog.logic.app.Text as Str
 import com.kuryelog.logic.core.KuryelogPrefs
@@ -53,12 +56,19 @@ import com.kuryelog.logic.orders.RestaurantBubble
  * Daha fazla → Siparişler ayarları (A4.2, S20 (b); RS `renderSettings` "Özel ayarlar"): filo komisyonu (platform başına), ekran ve kart
  * tercihleri, izlenen uygulamalar; ve yeni: kWh fiyatı, şarj verimi, günlük net hedef (N4, N8). Tercihler hemen yazılır ([Store.values]);
  * anahtarlar ve varsayılanlar `OrderSettings` / `NetSettings`'te. Sayı kutuları boş kaydedilirse değeri siler (komisyon hariç: 0).
+ * En altta Teklif veri seti (Y19; S37'den beri burada).
  */
 @Composable
 fun OrdersSettingsScreen(lang: Lang, onBack: () -> Unit) {
     val ctx = LocalContext.current
     var version by remember { mutableIntStateOf(0) }
     var dialog by remember { mutableStateOf<Dialog?>(null) }
+    // S37: teklif veri seti (Y19) Harita ayarlarından buraya taşındı.
+    var dataset by remember { mutableStateOf(false) }
+    if (dataset) {
+        DatasetHost(lang, shiftDay = null) { dataset = false }
+        return
+    }
     // `version` her yazıdan sonra artar; değerler Compose durumundan değil tercihlerden okunur.
     val values = remember(version) { Store.values(ctx) }
     fun write(map: Map<String, Any?>) { ctx.safely { Store.values(ctx).put(map); version++ } }
@@ -120,6 +130,9 @@ fun OrdersSettingsScreen(lang: Lang, onBack: () -> Unit) {
             if (targets.isEmpty()) ListRow(Str.OSET_APPS_NONE.get(lang), icon = WeemIcons.Warning, iconTone = WTone.DANGER, titleTone = WTone.DANGER)
             targets.sorted().forEach { ListRow(it, icon = WeemIcons.PhoneAndroid) }
             ListRow(Str.OSET_APPS_PICK.get(lang), icon = WeemIcons.Tune, iconTone = WTone.ACCENT, titleTone = WTone.ACCENT, chevron = true, onClick = { dialog = Dialog.Apps })
+        }
+        SettingsGroup(null, Modifier.padding(top = WeemSpace.xxl), dividerInset = 70.dp) {
+            ListRow(DatasetText.TITLE.get(lang), Modifier.testTag("open-dataset"), icon = WeemIcons.Analytics, chevron = true, onClick = { dataset = true })
         }
     }
 

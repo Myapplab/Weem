@@ -38,15 +38,15 @@ enum class ScooterText(override val tr: String, override val az: String) : Bilin
 }
 
 /**
- * Vardiya bağlantısı kararları (SCOOTER.md 5.3, 11.3; RS `ScooterLink.kt:86-219`): bir vardiya başlayınca canlı bağlantı açılır mı,
- * biterken kapanır mı, ana kartta ne yazar. Saf; Android tarafı olguları ([Facts]) toplar ve sonucu uygular. Her çağrı korumalı
+ * Vardiya bağlantısı kararları (SCOOTER.md 5.3, 11.3; RS `ScooterLink.kt:86-219`): bir vardiya başlayınca scooter kaydı açılır mı
+ * (S37'den beri canlı bağlantı değil, GPS'li Sürüş Paneli kaydı; vardiyayla başlar, vardiyayla biter), biterken kapanır mı, ana kartta ne yazar. Saf; Android tarafı olguları ([Facts]) toplar ve sonucu uygular. Her çağrı korumalı
  * olmalı: scooter hatası vardiyayı ve sipariş kaydını durdurmaz.
  */
 object ScooterLinkRules {
     /** A live frame older than this does not tell the scooter's current battery (RS `ScooterLink.FRESH_MS`). */
     const val FRESH_MS = 15_000L
 
-    /** `kuryelog` tercihi: vardiya başında canlı bağlantıyı aç (varsayılan açık). */
+    /** `kuryelog` tercihi: vardiya başında scooter kaydını aç (varsayılan açık). */
     const val PREF_AUTO = "scooter.autoConnect"
 
     /** `kuryelog` tercihi: bu vardiya canlı bağlantıyı kendisi açtı (bitişte yalnız o kapatılır). */
@@ -60,7 +60,10 @@ object ScooterLinkRules {
         const val SKIP = "skip"
         const val START = "start"
         const val FAILED = "failed"
-        const val KEPT_RECORDING = "kept_recording"
+        /** S37: canlı bağlantı (eşleştirme sonrası) bağlantı kopmadan kayda çevrildi. */
+        const val UPGRADE = "upgrade"
+        /** S37: süren kayıt (yapışkan yeniden başlatma) vardiyaya bağlandı. */
+        const val ADOPT = "adopt"
         const val STOP = "stop"
         const val STOP_FAILED = "stop_failed"
         const val DATA_BACK = "scooter_data_back"
@@ -71,7 +74,6 @@ object ScooterLinkRules {
     object Reason {
         const val AUTO_OFF = "auto_off"
         const val ROLE_PROVIDER = "role_provider"
-        const val ALREADY_ACTIVE = "already_active"
         const val NO_SCOOTER = "no_scooter"
         const val NOT_PAIRED = "not_paired"
         const val NO_BLUETOOTH_PERMISSION = "no_bluetooth_permission"
@@ -79,8 +81,10 @@ object ScooterLinkRules {
         const val REFUSED = "refused"
     }
 
-    /** Android'in topladığı olgular. [providerRole]: 2 telefon modunda Provider (S11; tek telefonda hep false). */
-    data class Facts(val selected: Boolean, val paired: Boolean, val permitted: Boolean, val active: Boolean, val providerRole: Boolean = false)
+    /** Android'in topladığı olgular. [providerRole]: 2 telefon modunda Provider (S11; tek telefonda hep false); [recording]: bağlantı kayıtta. */
+    data class Facts(
+        val selected: Boolean, val paired: Boolean, val permitted: Boolean, val active: Boolean, val providerRole: Boolean = false, val recording: Boolean = false,
+    )
 
     /** `events.jsonl` `scooter_link` satırının gövdesi (`type` ve zamanı kayıt katmanı ekler). */
     fun event(action: String, reason: String?): JSONObject = JSONObject().put("action", action).put("reason", reason ?: JSONObject.NULL)
@@ -88,33 +92,39 @@ object ScooterLinkRules {
     /** Vardiya başı (yapışkan yeniden başlatma dahil): bağlantı açılmayacaksa nedeni, açılacaksa null. */
     fun startSkip(autoConnect: Boolean, f: Facts): String? = if (!autoConnect) Reason.AUTO_OFF else openSkip(f)
 
-    /** `open` (vardiya içinde "şimdi bağlan" dahil): sırayla `role_provider`, `already_active`, `no_scooter`, `not_paired`, `no_bluetooth_permission`. */
+    /**
+     * `open` (vardiya içinde "şimdi bağlan" dahil): sırayla `role_provider`, `no_scooter`, `not_paired`, `no_bluetooth_permission`. S37: açık bir
+     * bağlantı engel değil ([openAction] onu kayda çevirir ya da vardiyaya bağlar); izin yalnız yeni bağlantıda gerekir.
+     */
     fun openSkip(f: Facts): String? = when {
         f.providerRole -> Reason.ROLE_PROVIDER
-        f.active -> Reason.ALREADY_ACTIVE
         !f.selected -> Reason.NO_SCOOTER
         !f.paired -> Reason.NOT_PAIRED
-        !f.permitted -> Reason.NO_BLUETOOTH_PERMISSION
+        !f.active && !f.permitted -> Reason.NO_BLUETOOTH_PERMISSION
         else -> null
     }
 
-    /** Ana kartta "Scooter'a şimdi bağlan": vardiya açık, bağlantı yok, seçili + eşleşmiş + izinli (Provider'da değil). */
-    fun canConnectNow(shiftOn: Boolean, f: Facts): Boolean = shiftOn && openSkip(f) == null
+    /** S37: vardiya kaydı nasıl açılır — yeni kayıt, canlı bağlantıyı (eşleştirme sonrası) kopmadan kayda çevirme ya da süren kaydı sahiplenme. */
+    enum class Open(val action: String) { RECORD(Action.START), UPGRADE(Action.UPGRADE), ADOPT(Action.ADOPT) }
 
-    /** Vardiya sonunda ne yapılır. */
-    enum class End { NOTHING, KEEP_RECORDING, STOP }
-
-    /** [owned]: vardiya bağlantıyı kendisi açtı; kullanıcının kendi açtığı bağlantıya dokunulmaz. */
-    fun shiftEnd(owned: Boolean, active: Boolean, recording: Boolean): End = when {
-        !owned || !active -> End.NOTHING
-        recording -> End.KEEP_RECORDING
-        else -> End.STOP
+    fun openAction(f: Facts): Open = when {
+        !f.active -> Open.RECORD
+        !f.recording -> Open.UPGRADE
+        else -> Open.ADOPT
     }
 
-    /** Vardiya sonu olayı (`kept_recording` / `stop`); yapılacak bir şey yoksa null. */
+    /** Ana kartta "Scooter'a şimdi bağlan": vardiya açık, kayıt yok, seçili + eşleşmiş + izinli (Provider'da değil). */
+    fun canConnectNow(shiftOn: Boolean, f: Facts): Boolean = shiftOn && !(f.active && f.recording) && openSkip(f) == null
+
+    /** Vardiya sonunda ne yapılır. */
+    enum class End { NOTHING, STOP }
+
+    /** S37: vardiyanın açtığı (ya da sahiplendiği) kayıt vardiyayla biter; [owned] değilse bağlantıya dokunulmaz. */
+    fun shiftEnd(owned: Boolean, active: Boolean): End = if (owned && active) End.STOP else End.NOTHING
+
+    /** Vardiya sonu olayı (`stop`); yapılacak bir şey yoksa null. */
     fun endAction(end: End): String? = when (end) {
         End.NOTHING -> null
-        End.KEEP_RECORDING -> Action.KEPT_RECORDING
         End.STOP -> Action.STOP
     }
 

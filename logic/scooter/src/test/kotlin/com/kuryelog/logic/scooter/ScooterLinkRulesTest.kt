@@ -11,7 +11,9 @@ class ScooterLinkRulesTest {
     @Test fun startOpensOnlyWhenEverythingIsReadyAndNamesTheFirstMissingThing() {
         assertNull(ScooterLinkRules.startSkip(true, ready))
         assertEquals("auto_off", ScooterLinkRules.startSkip(false, ready))
-        assertEquals("already_active", ScooterLinkRules.startSkip(true, ready.copy(active = true)))
+        // S37: açık bağlantı engel değil (kayda çevrilir); izinsiz ama bağlıyken de açılır.
+        assertNull(ScooterLinkRules.startSkip(true, ready.copy(active = true)))
+        assertNull(ScooterLinkRules.startSkip(true, ready.copy(active = true, permitted = false)))
         assertEquals("no_scooter", ScooterLinkRules.startSkip(true, ready.copy(selected = false, paired = false)))
         assertEquals("not_paired", ScooterLinkRules.startSkip(true, ready.copy(paired = false, permitted = false)))
         assertEquals("no_bluetooth_permission", ScooterLinkRules.startSkip(true, ready.copy(permitted = false)))
@@ -29,17 +31,25 @@ class ScooterLinkRulesTest {
     @Test fun connectNowNeedsOpenShiftAndAReadyScooter() {
         assertTrue(ScooterLinkRules.canConnectNow(true, ready))
         assertFalse(ScooterLinkRules.canConnectNow(false, ready))
-        assertFalse(ScooterLinkRules.canConnectNow(true, ready.copy(active = true)))
+        // S37: canlı bağlantı (eşleştirme sonrası) kayda çevrilebilir; zaten kayıttaysa düğme yok.
+        assertTrue(ScooterLinkRules.canConnectNow(true, ready.copy(active = true)))
+        assertFalse(ScooterLinkRules.canConnectNow(true, ready.copy(active = true, recording = true)))
         assertFalse(ScooterLinkRules.canConnectNow(true, ready.copy(permitted = false)))
     }
 
-    @Test fun shiftEndClosesOnlyTheLinkTheShiftOpened() {
-        assertEquals(ScooterLinkRules.End.NOTHING, ScooterLinkRules.shiftEnd(owned = false, active = true, recording = false)) // kullanıcının bağlantısı
-        assertEquals(ScooterLinkRules.End.NOTHING, ScooterLinkRules.shiftEnd(owned = true, active = false, recording = false))
-        assertEquals(ScooterLinkRules.End.KEEP_RECORDING, ScooterLinkRules.shiftEnd(owned = true, active = true, recording = true))
-        assertEquals(ScooterLinkRules.End.STOP, ScooterLinkRules.shiftEnd(owned = true, active = true, recording = false))
+    @Test fun shiftOpensARecordingUpgradesALiveLinkOrAdoptsARunningRecording() {
+        assertEquals(ScooterLinkRules.Open.RECORD, ScooterLinkRules.openAction(ready))
+        assertEquals(ScooterLinkRules.Open.UPGRADE, ScooterLinkRules.openAction(ready.copy(active = true)))
+        assertEquals(ScooterLinkRules.Open.ADOPT, ScooterLinkRules.openAction(ready.copy(active = true, recording = true)))
+        assertEquals(listOf("start", "upgrade", "adopt"), ScooterLinkRules.Open.entries.map { it.action })
+    }
+
+    @Test fun shiftEndStopsTheRecordingTheShiftOwnsAndNothingElse() {
+        assertEquals(ScooterLinkRules.End.NOTHING, ScooterLinkRules.shiftEnd(owned = false, active = true)) // vardiyanın olmayan bağlantı (ör. eşleştirme)
+        assertEquals(ScooterLinkRules.End.NOTHING, ScooterLinkRules.shiftEnd(owned = true, active = false))
+        // S37: kayıt vardiyayla aynı anda biter (eskiden kullanıcı kayda çevirdiyse sürerdi).
+        assertEquals(ScooterLinkRules.End.STOP, ScooterLinkRules.shiftEnd(owned = true, active = true))
         assertNull(ScooterLinkRules.endAction(ScooterLinkRules.End.NOTHING))
-        assertEquals("kept_recording", ScooterLinkRules.endAction(ScooterLinkRules.End.KEEP_RECORDING))
         assertEquals("stop", ScooterLinkRules.endAction(ScooterLinkRules.End.STOP))
     }
 

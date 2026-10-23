@@ -142,7 +142,16 @@ fun MapScreen(lang: Lang, dark: Boolean) {
         }
         return
     }
-    LiveMap(lang, dark, data, settings, shift.active, shift.startedAtMs, shift.interrupted)
+    MapScreenLayers { LiveMap(lang, dark, data, settings, shift.active, shift.startedAtMs, shift.interrupted) }
+}
+
+/**
+ * S37: harita, arama, Yollarım ve İstatistik üst üste. Kabuk sekmeyi bir Column'a koyar; Box'sız tam ekran katmanlar haritanın altına, ekran dışına
+ * düşüyordu (arama yazılınca sonuç görünmüyordu).
+ */
+@Composable
+internal fun MapScreenLayers(content: @Composable () -> Unit) {
+    Box(Modifier.fillMaxSize()) { content() }
 }
 
 private object MapScreenLoad {
@@ -249,7 +258,6 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
     var viewport by remember { mutableStateOf(IntSize.Zero) }
     val focusTracker = remember { ArrivalFocusTracker() }
     var focusOn by remember { mutableStateOf(false) }
-    var mapOnly by remember { mutableStateOf(false) }
     var askHome by remember { mutableStateOf(false) }
     var askEnd by remember { mutableStateOf(false) }
     var statsOpen by remember { mutableStateOf(false) }
@@ -415,7 +423,8 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
         puck = puck?.let { MapPuck(it.point, it.course, it.beam, arrow = nav.hasRoute, accuracyM = it.accuracyM) },
     )
     val events = MapSurfaceEvents(
-        onTap = { mapOnly = !mapOnly },
+        // S37: dokunuş panelleri gizlemez (kullanıcı: "tıklayınca ekran gidiyor").
+        onTap = {},
         onLongPress = { pressed = it },
         onGesture = { follow = false; autoZoom = false; freeByGesture = true; lastGestureMs = System.currentTimeMillis() },
         onCameraIdle = { c, z, _ -> zoom = z; center = c },
@@ -427,7 +436,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
     )
     MapTab(
         state = MapTabState(
-            day = day, nav = nav, cameraMode = mode, mapOnly = mapOnly, weatherStrip = weatherStrip, nowMs = nowMs, arrivalFocus = focusOn,
+            day = day, nav = nav, cameraMode = mode, weatherStrip = weatherStrip, nowMs = nowMs, arrivalFocus = focusOn,
             weather = WeatherView(weatherState.report, weatherState.failed, weatherState.busy),
             routeOpen = panelOpen && nav.hasPanelInfo(),
         ),
@@ -460,7 +469,6 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
             },
             onRouteFab = { panelOpen = !panelOpen },
             onSearch = { searching = true },
-            onShowPanels = { mapOnly = false },
             onWeatherRefresh = { weather.refresh(force = true) },
         ),
         toast = { NavToastBanner(toast, dark); DayToastBanner(banner, dark) },

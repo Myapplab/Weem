@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.kuryelog.app.capture.CaptureStatus
 import com.kuryelog.app.core.Home
@@ -49,7 +50,8 @@ import com.kuryelog.logic.app.Text as Str
 
 /**
  * Vardiya kartı (G1, CORE.md 1.2): durum (`ShiftPort.state`) ve tek düğme. A10.4d (`docs/TASARIM.md` 12): büyük kart, saat simgesi +
- * başlık, uyarılar banner, tam genişlik 56 dp "BAŞLAT"; kesilmişken altında tonal tehlike "BİTİR". [floating] haritada yüzer (`e1`).
+ * başlık, uyarılar banner, tam genişlik 56 dp "BAŞLAT"; kesilmişken altında tonal tehlike "BİTİR". [floating] haritada yüzer (`e1`) ve S37'den
+ * beri tek satırdır: küçük simge, durum, sağda "BAŞLAT".
  */
 @Composable
 fun ShiftCard(lang: Lang, modifier: Modifier = Modifier, floating: Boolean = false) {
@@ -61,15 +63,23 @@ fun ShiftCard(lang: Lang, modifier: Modifier = Modifier, floating: Boolean = fal
             if (Home.hasFine(ctx)) { status = null; ShiftHub.start() } else status = Str.SHIFT_NEEDS_LOCATION.get(lang)
         }
     }
+    val start: () -> Unit = {
+        ctx.safely {
+            if (Home.hasFine(ctx)) ShiftHub.start()
+            else askLocation.launch(locationPermissions())
+        }
+    }
     GuardedPage("shift_card", lang, key = shift, build = { Triple(shift.active, shift.startedAtMs ?: 0L, shift.interrupted) }) { (on, startedAt, interrupted) ->
-        val shape = RoundedCornerShape(WeemRadius.panel)
-        WCard(if (floating) modifier.floating(shape) else modifier, large = true, spacing = WeemSpace.m) {
-            Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconBox(WeemIcons.PunchClock, big = true)
-                Text(
-                    if (on) Str.SHIFT_ON.get(lang).format(SimpleDateFormat("HH:mm", Locale.US).format(Date(startedAt))) else Str.SHIFT_OFF.get(lang),
-                    style = WeemType.titleL,
-                    modifier = Modifier.weight(1f),
+        val title = if (on) Str.SHIFT_ON.get(lang).format(SimpleDateFormat("HH:mm", Locale.US).format(Date(startedAt))) else Str.SHIFT_OFF.get(lang)
+        val shape = RoundedCornerShape(if (floating) WeemRadius.card else WeemRadius.panel)
+        // S37 (23 Ekim): haritada yüzen kart tek satır (simge + durum + "BAŞLAT"); büyük kart yalnız harita verisi yokken.
+        WCard(if (floating) modifier.floating(shape) else modifier, large = !floating, padding = if (floating) WeemSpace.m else WeemSpace.xl, spacing = WeemSpace.m) {
+            Row(horizontalArrangement = Arrangement.spacedBy(if (floating) WeemSpace.m else 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                IconBox(WeemIcons.PunchClock, big = !floating)
+                Text(title, style = if (floating) WeemType.titleS else WeemType.titleL, modifier = Modifier.weight(1f))
+                if (floating && (!on || interrupted)) WButton(
+                    Str.SHIFT_START_SHORT.get(lang), start, Modifier.testTag("shift-start"),
+                    icon = WeemIcons.PlayArrowFilled, haptic = HapticFeedbackType.Confirm,
                 )
             }
             if (interrupted) Banner(Str.SHIFT_INTERRUPTED.get(lang), tone = WTone.DANGER, icon = WeemIcons.GpsOff)
@@ -90,17 +100,13 @@ fun ShiftCard(lang: Lang, modifier: Modifier = Modifier, floating: Boolean = fal
                     kind = BtnKind.DANGER, icon = WeemIcons.StopFilled, ride = true, fill = true, haptic = HapticFeedbackType.Confirm,
                 )
             } else {
-                Spacer(Modifier.height(WeemSpace.xs))
-                WButton(
-                    Str.SHIFT_START.get(lang).withoutGlyph(),
-                    {
-                        ctx.safely {
-                            if (Home.hasFine(ctx)) ShiftHub.start()
-                            else askLocation.launch(locationPermissions())
-                        }
-                    },
-                    icon = WeemIcons.PlayArrowFilled, ride = true, fill = true, haptic = HapticFeedbackType.Confirm,
-                )
+                if (!floating) {
+                    Spacer(Modifier.height(WeemSpace.xs))
+                    WButton(
+                        Str.SHIFT_START.get(lang).withoutGlyph(), start, Modifier.testTag("shift-start"),
+                        icon = WeemIcons.PlayArrowFilled, ride = true, fill = true, haptic = HapticFeedbackType.Confirm,
+                    )
+                }
                 if (interrupted) WButton(
                     Str.SHIFT_STOP.get(lang).withoutGlyph(), { ctx.safely { ShiftHub.stop() } },
                     kind = BtnKind.DANGER, icon = WeemIcons.StopFilled, fill = true, haptic = HapticFeedbackType.Confirm,

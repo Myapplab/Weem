@@ -24,8 +24,9 @@ import com.kuryelog.logic.scooter.ScooterSamples
 import com.kuryelog.logic.scooter.ScooterText
 
 /**
- * Vardiya bağlantısı (SCOOTER.md 5.3, 8.4; RS `ScooterLink.kt` @ 6388c04, `ShiftListeners` dinleyicisi, ORDERS.md 4.2): vardiya scooter'ın canlı
- * bağlantısını açar (Sürüş Paneli kaydı yok: ikinci GPS ve SQLite satırı yok), bitince yalnız kendi açtığını kapatır; vardiyanın her 1 Hz
+ * Vardiya bağlantısı (SCOOTER.md 5.3, 8.4; RS `ScooterLink.kt` @ 6388c04, `ShiftListeners` dinleyicisi, ORDERS.md 4.2): S37'den beri vardiya
+ * scooter'ın Sürüş Paneli kaydını açar (GPS + oturum; eşleştirmeden kalan canlı bağlantı kopmadan kayda çevrilir) ve kayıt vardiyayla biter;
+ * yalnız kendi açtığını (ya da sahiplendiğini) kapatır; vardiyanın her 1 Hz
  * örneği gün klasörüne `economics-scooter.jsonl` satırı olur, siparişe enerji adımı verir ([Scooter.steps]) ve D8 odometresini besler;
  * M23 "Scooter verileri alınıyor/alınamıyor" bildirimi her GPS fix'inde sürülür. Kararlar saf [ScooterLinkRules]'ta. Her çağrı korumalı:
  * scooter hatası vardiyayı ve sipariş kaydını durdurmaz. 2 telefonda Provider rolünde bağlantı açılmaz ([providerRole], A8 takar).
@@ -128,7 +129,8 @@ object ScooterShiftLink : ShiftMachine.Hooks {
 
     // ---- Vardiya başı / sonu ----
 
-    private fun facts(ctx: Context) = ScooterLinkRules.Facts(Scooter.selected(ctx), Scooter.paired(ctx), Scooter.permitted(ctx), Scooter.active, providerRole())
+    private fun facts(ctx: Context) =
+        ScooterLinkRules.Facts(Scooter.selected(ctx), Scooter.paired(ctx), Scooter.permitted(ctx), Scooter.active, providerRole(), Scooter.recording)
 
     fun autoConnect(ctx: Context): Boolean = Store.prefs(ctx).getBoolean(PREF_AUTO, true)
 
@@ -137,7 +139,7 @@ object ScooterShiftLink : ShiftMachine.Hooks {
     @get:SuppressLint("InlinedApi")
     val bluetoothPermissions: Array<String> get() = arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
 
-    /** Vardiya başı, yapışkan yeniden başlatma da: eşleşmiş scooter hazırsa canlı bağlantıyı aç. */
+    /** Vardiya başı, yapışkan yeniden başlatma da: eşleşmiş scooter hazırsa kaydı aç (S37). */
     fun onShiftStart(ctx: Context) {
         install(ctx)
         val skip = runCatching { ScooterLinkRules.startSkip(autoConnect(ctx), facts(ctx)) }.getOrElse { ScooterLinkRules.Reason.CHECK_FAILED }
@@ -157,11 +159,19 @@ object ScooterShiftLink : ShiftMachine.Hooks {
     }
 
     private fun open(ctx: Context) {
+        // S37: yeni kayıt, canlı bağlantıyı (eşleştirme sonrası) kopmadan kayda çevir ya da süren kaydı sahiplen; kayıt vardiyayla biter.
         // Arka plandan başlatma reddi (ForegroundServiceStartNotAllowedException) kaydedilir; vardiya scooter'sız sürer.
-        val started = runCatching { Scooter.startLive(ctx) }
+        val how = ScooterLinkRules.openAction(facts(ctx))
+        val started = runCatching {
+            when (how) {
+                ScooterLinkRules.Open.RECORD -> Scooter.startRecording(ctx)
+                ScooterLinkRules.Open.UPGRADE -> { Scooter.record(ctx); true }
+                ScooterLinkRules.Open.ADOPT -> true
+            }
+        }
         if (started.getOrDefault(false)) {
             Store.prefs(ctx).edit().putBoolean(ScooterLinkRules.PREF_OWNED, true).apply()
-            event(ctx, ScooterLinkRules.Action.START, null)
+            event(ctx, how.action, null)
             Notices.cancel(ctx, NotificationIds.SCOOTER_AUTO_START)
         } else {
             event(ctx, ScooterLinkRules.Action.FAILED, started.exceptionOrNull()?.javaClass?.simpleName ?: ScooterLinkRules.Reason.REFUSED)
@@ -185,14 +195,14 @@ object ScooterShiftLink : ShiftMachine.Hooks {
         }
     }
 
-    /** Vardiya sonu: vardiyanın açtığı bağlantıyı kapat, kullanıcı arada Sürüş Paneli kaydına çevirdiyse dokunma. */
+    /** Vardiya sonu: vardiyanın açtığı (ya da sahiplendiği) kaydı kapat (S37: kayıt vardiyayla aynı anda biter). */
     fun onShiftEnd(ctx: Context) {
         val p = Store.prefs(ctx)
         val owned = p.getBoolean(ScooterLinkRules.PREF_OWNED, false)
         if (!owned) return
         p.edit().remove(ScooterLinkRules.PREF_OWNED).apply()
         runCatching {
-            val end = ScooterLinkRules.shiftEnd(owned, Scooter.active, Scooter.recording)
+            val end = ScooterLinkRules.shiftEnd(owned, Scooter.active)
             if (end == ScooterLinkRules.End.STOP) Scooter.stop(ctx)
             ScooterLinkRules.endAction(end)?.let { event(ctx, it, null) }
         }.onFailure { event(ctx, ScooterLinkRules.Action.STOP_FAILED, it.javaClass.simpleName) }

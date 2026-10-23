@@ -8,10 +8,13 @@ import android.os.Looper
 import android.widget.Toast
 import com.kuryelog.app.core.Downloads
 import com.kuryelog.app.core.Store
+import com.kuryelog.app.scooter.Scooter
+import com.kuryelog.logic.core.AllExport
 import com.kuryelog.logic.core.BackupExport
 import com.kuryelog.logic.core.DailyPack
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.orders.AnalysisExport
+import com.kuryelog.logic.scooter.LogExport
 import org.json.JSONObject
 import java.io.File
 import com.kuryelog.logic.app.Text as Str
@@ -27,6 +30,25 @@ object RecordExport {
     fun exportLogs(ctx: Context, lang: Lang, date: String? = null, file: String? = null) = export(ctx, lang, "export") { app, staging ->
         val entries = stage(app, staging, date, file)
         Downloads.save(app, BackupExport.FOLDER, BackupExport.fileName(date, file, System.currentTimeMillis())) { BackupExport.zip(entries, it) }
+    }
+
+    /**
+     * S37: bütün kayıtlar tek ZIP'te ([AllExport]): sipariş kayıtları (tam yedek, içe aktarılabilir), scooter kayıtları (bütün oturumlar, GPS rotaları
+     * dahil; kayıt sürerken yerine not) ve sürüş günlükleri (`files/map/logs`, `.tmp` hariç). Her bölüm kendi ZIP'i.
+     */
+    fun exportEverything(ctx: Context, lang: Lang) = export(ctx, lang, "export_all") { app, staging ->
+        val now = System.currentTimeMillis()
+        val parts = mutableListOf<AllExport.Part>()
+        val orders = try { stage(app, staging, null, null) } catch (e: BackupExport.NoLogs) { emptyList() }
+        if (orders.isNotEmpty()) parts += AllExport.Part(AllExport.ORDERS + BackupExport.fileName(null, null, now)) { BackupExport.zip(orders, it) }
+        val scooter = Scooter.allRecordsPart(app, now)
+        if (scooter != null) parts += AllExport.Part(AllExport.SCOOTER + LogExport.fileName(now), scooter)
+        else if (Scooter.recording) parts += AllExport.Part(AllExport.SCOOTER + "KAYIT_SURUYOR.txt") { it.write(Str.RECORDS_SCOOTER_BUSY.get(lang).toByteArray()) }
+        // Sürüş günlüğünün klasörü (`RideLogRuntime.dir`); yazılmakta olan `.tmp` girmez.
+        val rides = File(app.filesDir, "map/logs").takeIf { it.isDirectory }?.let { BackupExport.entries(it) }.orEmpty().filterNot { it.first.endsWith(".tmp") }
+        if (rides.isNotEmpty()) parts += AllExport.Part(AllExport.RIDES + AllExport.RIDES_FILE) { BackupExport.zip(rides, it) }
+        if (parts.isEmpty()) throw BackupExport.NoLogs()
+        Downloads.save(app, BackupExport.FOLDER, AllExport.fileName(now)) { AllExport.zip(parts, it) }
     }
 
     /** Anonim analiz ZIP'i (R18): bütün günler, her dışa aktarmada yeni gizli anahtar, sonda `ANALIZ_ANONIM.json`; geri yükleme için değil. */

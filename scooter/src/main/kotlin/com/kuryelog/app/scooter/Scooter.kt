@@ -184,10 +184,17 @@ object Scooter {
 
     fun device(ctx: Context): String = LoggerPreferences.get(ctx).getString("device", "") ?: ""
 
-    /** Kayıt ya da eşleştirme ile başlat (NB `startRecording`); canlı panel için [startLive]. Çağıran izinlere sahip. */
-    fun startRecording(ctx: Context, pair: Boolean): Boolean {
+    /** Kayıt (GPS + oturum; NB `startRecording`): S37'den beri yalnız vardiya açar ([ScooterShiftLink]); canlı panel için [startLive]. */
+    fun startRecording(ctx: Context): Boolean {
         if (active || exporting || maintenance || ScooterShiftLink.providerRole() || !ScooterService.permissions(ctx, false)) return false
-        ctx.startForegroundService(ScooterService.startIntent(ctx, pair, live = false))
+        ctx.startForegroundService(ScooterService.startIntent(ctx, pair = false, live = false))
+        return true
+    }
+
+    /** S37: G3 eşleştirmesi kayıtsız canlı bağlantıyla; eşleşince bağlantı canlı panel olarak sürer, kayıt vardiyayla başlar. Çağıran izinlere sahip. */
+    fun pair(ctx: Context): Boolean {
+        if (active || exporting || maintenance || ScooterShiftLink.providerRole() || !ScooterService.permissions(ctx, true)) return false
+        ctx.startForegroundService(ScooterService.startIntent(ctx, pair = true, live = true))
         return true
     }
 
@@ -226,6 +233,20 @@ object Scooter {
                 done(msg)
             }
         }, "scooter-export").start()
+    }
+
+    /**
+     * S37 "tüm kayıtlar tek ZIP"in scooter bölümü: bütün oturumlar, GPS rotaları dahil ([ScooterPanel.ExportChoice.ALL_GPS]). Kayıt, temizlik ya da
+     * başka bir dışa aktarma sürerken ya da hiç oturum yoksa null. Dönen yazıcı çağıranın iş parçacığında çalışır; yazarken [exporting] (kayıt beklemede).
+     */
+    fun allRecordsPart(ctx: Context, nowMs: Long): ((java.io.OutputStream) -> Unit)? {
+        val app = ctx.applicationContext
+        if (recording || maintenance || exporting) return null
+        if (!LogStore(app).use { it.hasSessions() }) return null
+        return { out ->
+            exporting = true
+            try { LogStore(app).use { it.export(out, ScooterPanel.ExportChoice.ALL_GPS.options(), nowMs) } } finally { exporting = false }
+        }
     }
 
     /** "30 günden eski kayıtları temizle" (NB `cleanOldRecords`): tamamlanmış eski oturumlar; anahtarlar ve son 30 gün kalır. */

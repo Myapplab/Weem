@@ -19,6 +19,7 @@ import com.kuryelog.logic.core.Clock
 import com.kuryelog.logic.core.DailyRecords
 import com.kuryelog.logic.core.KuryelogPrefs
 import com.kuryelog.logic.core.Lang
+import com.kuryelog.logic.scooter.ScooterPanel
 import com.kuryelog.logic.orders.CourierRecords
 import com.kuryelog.logic.orders.LogOrdersSource
 import com.kuryelog.logic.orders.OrdersSource
@@ -97,5 +98,15 @@ class RecordsScreenTest {
         reveal("14 Ekim 2026 · Çarşamba")
         reveal("1 / 2 gün")
         reveal("Arşivden çıkar")
+    }
+
+    @Test fun everythingInOneZipAndScooterRecordsAreInRecords() {
+        seed()
+        compose.setContent { WeemTheme(dark = false) { RecordsScreen(Lang.TR, onBack = {}, source = source) } }
+        // S37: tüm kayıtlar tek ZIP'te ve scooter kayıtları (Sürüş Paneli ZIP'leri) Kayıtlar'da.
+        reveal("Tüm kayıtlar tek ZIP'te")
+        reveal("Sipariş kayıtlarını paylaş (.zip)")
+        reveal("Scooter kayıtları")
+        for (c in ScooterPanel.ExportChoice.entries) reveal(c.text.get(Lang.TR))
     }
 }

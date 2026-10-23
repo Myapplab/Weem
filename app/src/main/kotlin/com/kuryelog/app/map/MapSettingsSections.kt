@@ -47,15 +47,20 @@ import java.util.Locale
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
-/** Harita ayarları → "Harita görünümü" (MAP.md 6.9, SORU-N5 (a)): Vektör (varsayılan) · OpenStreetMap · Google Maps (yalnız anahtarlı derlemede). */
+/**
+ * Harita ayarları → "Harita görünümü" (MAP.md 6.9, SORU-N5 (a)): Vektör (varsayılan) · OpenStreetMap · Google Maps. S37: anahtarsız derlemede Google Maps
+ * satırı pasif görünür ve altında nedeni yazar (Maps SDK anahtarı yalnız manifestten okunur; uygulamada girilen anahtar Places içindir).
+ */
 @Composable
-fun MapBaseSection(lang: Lang) {
+fun MapBaseSection(lang: Lang, mapsEnabled: Boolean = BuildConfig.MAPS_ENABLED) {
     val ctx = LocalContext.current
     val settings by MapSettingsRepo.settings(ctx).collectAsState()
-    val current = MapStyles.resolve(settings.mapStyle, BuildConfig.MAPS_ENABLED)
-    SettingsGroup(MapText.BASE_TITLE.get(lang), footer = MapText.BASE_INFO.get(lang), dividerInset = 52.dp, selectableGroup = true) {
-        for (b in MapStyles.choices(BuildConfig.MAPS_ENABLED)) {
-            RadioRow(MapStyles.label(b).get(lang), b == current, { ctx.safely { MapSettingsRepo.update(ctx) { it.copy(mapStyle = b.key) } } })
+    val current = MapStyles.resolve(settings.mapStyle, mapsEnabled)
+    val footer = if (mapsEnabled) MapText.BASE_INFO.get(lang) else MapText.BASE_INFO.get(lang) + "\n" + MapText.BASE_GOOGLE_NO_KEY.get(lang)
+    SettingsGroup(MapText.BASE_TITLE.get(lang), footer = footer, dividerInset = 52.dp, selectableGroup = true) {
+        for (b in MapStyles.choices(true)) {
+            val usable = b in MapStyles.choices(mapsEnabled)
+            RadioRow(MapStyles.label(b).get(lang), b == current, { ctx.safely { MapSettingsRepo.update(ctx) { it.copy(mapStyle = b.key) } } }, enabled = usable)
         }
     }
 }

@@ -30,7 +30,7 @@ class ScooterUiTest {
     @Test fun onlyNamesAndSharedWordsAreIdenticalInBothLanguages() {
         val same = setOf(
             "TITLE", "BACK", "LATER", "DOCK_SETTINGS", "ENERGY", "STATUS_VERSION", "PROTOCOL", "SECTION_PANEL", "SECTION_SYSTEM",
-            "SECTION_LINK", "GPS_SETTINGS", "SIZE_BALL", "ORDER_DOWN", "INFO_FULL_T",
+            "SECTION_LINK", "SIZE_BALL", "ORDER_DOWN", "INFO_FULL_T",
         )
         assertEquals(emptySet<String>(), ScooterUiText.entries.filter { it.tr == it.az }.map { it.name }.toSet() - same)
     }
@@ -83,18 +83,36 @@ class ScooterUiTest {
     }
 
     @Test fun dockEnablesWhatTheStateAllows() {
-        assertEquals(ScooterPanel.Dock(start = true, pair = true, stop = false, scan = true, export = true), ScooterPanel.dock(idle, false, false))
+        assertEquals(ScooterPanel.Dock(pair = true, stop = false, scan = true, export = true), ScooterPanel.dock(idle, false, false))
         assertFalse(ScooterPanel.dock(idle, false, scanning = true).scan)
-        // Kayıtsız canlı panel: başlat = "kayda geç", eşleştir ve ara kapalı, dışa aktarma açık.
-        assertEquals(ScooterPanel.Dock(start = true, pair = false, stop = true, scan = false, export = true), ScooterPanel.dock(idle.copy(active = true), false, false))
-        // Kayıt: başlat ve dışa aktarma kapalı.
-        assertEquals(ScooterPanel.Dock(start = false, pair = false, stop = true, scan = false, export = false),
-            ScooterPanel.dock(idle.copy(active = true, recording = true), false, false))
+        // Kayıtsız canlı panel (eşleştirme sonrası): eşleştir ve ara kapalı, kesilebilir, dışa aktarma açık.
+        assertEquals(ScooterPanel.Dock(pair = false, stop = true, scan = false, export = true), ScooterPanel.dock(idle.copy(active = true), false, false))
+        // S37: vardiya kaydı vardiyayla biter; durdur kapalı, dışa aktarma kapalı.
+        assertEquals(ScooterPanel.Dock(pair = false, stop = false, scan = false, export = false),
+            ScooterPanel.dock(idle.copy(active = true, recording = true), false, false, shiftOn = true))
         // Temizlik ya da dışa aktarma sürerken hiçbir şey başlamaz.
-        assertEquals(ScooterPanel.Dock(start = false, pair = false, stop = false, scan = false, export = false), ScooterPanel.dock(idle.copy(maintenance = true), false, false))
-        assertFalse(ScooterPanel.dock(idle, exporting = true, scanning = false).start)
+        assertEquals(ScooterPanel.Dock(pair = false, stop = false, scan = false, export = false), ScooterPanel.dock(idle.copy(maintenance = true), false, false))
+        assertFalse(ScooterPanel.dock(idle, exporting = true, scanning = false).pair)
         assertTrue(ScooterPanel.keepScreenOn(true, true))
         assertFalse(ScooterPanel.keepScreenOn(false, true) || ScooterPanel.keepScreenOn(true, false))
+    }
+
+    @Test fun badgeReplacesTheStartButtonAndFollowsShiftAndPairing() {
+        fun b(s: ScooterPanel.State = idle, selected: Boolean = true, paired: Boolean = true, shift: Boolean = false, provider: Boolean = false) =
+            ScooterPanel.badge(s, selected, paired, shift, provider)
+        assertEquals(ScooterPanel.Badge.READY, b())
+        assertEquals("Eşleşildi · kayda hazır", b().text.get(Lang.TR))
+        assertEquals(ScooterPanel.Tone.POSITIVE, b().tone)
+        // Eşleştirme sonrası canlı panel kayıt değildir.
+        assertEquals(ScooterPanel.Badge.READY, b(idle.copy(active = true, linked = true)))
+        assertEquals(ScooterPanel.Badge.PAIRING, b(idle.copy(active = true), paired = false))
+        assertEquals(ScooterPanel.Badge.NOT_PAIRED, b(paired = false))
+        assertEquals(ScooterPanel.Badge.NO_SCOOTER, b(selected = false, paired = false))
+        assertEquals(ScooterPanel.Badge.NOT_CONNECTED, b(shift = true))
+        assertEquals(ScooterPanel.Badge.WAITING, b(idle.copy(active = true, recording = true), shift = true))
+        assertEquals(ScooterPanel.Badge.RECORDING, b(idle.copy(active = true, recording = true, linked = true), shift = true))
+        assertEquals("Qeyd açıqdır · növbə ilə bitir", ScooterPanel.Badge.RECORDING.text.get(Lang.AZ))
+        assertEquals(ScooterPanel.Badge.PROVIDER, b(shift = true, provider = true))
     }
 
     // ---- Gösterge ----
