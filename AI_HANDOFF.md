@@ -2,7 +2,7 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
-## 2026-10-23 — A10.4e–i bitti: S35'in beş işi (Claude Opus; dal `ccr-6c3acbb6-bsytto`; PR #19 CI yeşil, `main` `e792b61`; APK `weem-build-N`)
+## 2026-10-23 — A10.4e–i bitti: S35'in beş işi (Claude Opus; dal `ccr-6c3acbb6-bsytto`; PR #19 CI yeşil, `main` `e792b61`; APK `weem-build-8`)
 - Yapılan: g ekran yönü (`ScreenOrientation`, `orientation`); h harita verisi haftalık yedekte (`MapBackup`, `EncryptedBackup` `map/…`, açılışta bekleyen geri yükleme); e N5 menzil uyarısı (`OfferRange`, `ShadowEvaluator.Range`, `OverlayText.rangeWarning`, `OfferSummary.rangeWarnKm`, `RangeWarnings`, `range.warn`); f S18 (b) boşta bağlantıda bildirim + 60 sn yeniden deneme (`LinkRetry.idleRetryMs`, `ScooterService.RETRY`), "veri eksik"; i `DaySnapshot`/`DayReport` R→P, `DayRuntime.setRemote`, görev/hatırlatıcı iki telefonda.
 - Doğrulama: `-p logic test` 2.144/0; `:app` 111/111, `:map` 9/9; 5 modülde lint 0 hata; telefonda denenmedi.
 - Açık kalan: N5 yalnız kartta Plus Code/DMS varsa (adres geokodlama kullanıcı kararı); Provider'da İstatistik ışık sorusu yereldir; `logic/map` `RangeInputs` artık kullanılmıyor (A10.6'da silinebilir).
