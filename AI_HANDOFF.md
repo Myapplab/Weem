@@ -7,6 +7,7 @@ Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 
 - Doğrulama: `-p logic test` 2.164/0; `:app` 114/114, `:map` 10/10; 4 modülde lint 0 hata; telefonda denenmedi.
 - Açık kalan: pusula ekseni ve gidonda yön telefonda doğrulanmadı; kapanıp açılmanın nedeni cihazda görülmedi (kart çıkarsa metni istenecek); Google anahtarı GitHub'da yoksa APK yine vektörle derlenir (günlük satırı söyler).
 - CI notu: `PhoneBridgeTest.receiverDayReachesTheProvider` yarışı (Default'ta geç abonelik) CI'da iki kez kırmızıydı → `UNDISPATCHED` abonelik + zaman aşımlı bekleme.
+- APK `weem-build-10` (57.805.586 bayt) hazır; Maps anahtarı Weem'in beş adında da boş (günlük `Google Maps anahtarı yok`): kullanıcı Weem → Settings → Secrets and variables → Actions'a `GOOGLE_MAPS_API_KEY` eklemeli (ya da kuruluş gizli değişkenini Weem'e açmalı), sonra APK yeniden.
 - Sıradaki: kullanıcı `weem-build-10`'u telefonda dener (pusula, harita dönüşü, çizgiler, pil, Google Maps); sonra A10.5 (K) / A10.6.
 
 ## 2026-10-23 — A10.4j bitti: S37 telefon geri bildirimi (Claude Opus; dal `ccr-6f346ba4-mrxlzj`)
