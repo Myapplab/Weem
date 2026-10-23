@@ -57,7 +57,7 @@ WEEM ilk açılışta 4 adımlık kurulum açar (**İleri** / **Geri** / **Kurul
 
 | Nerede | Ne gireceksin |
 |---|---|
-| Daha fazla → Ev konumu ve otomatik vardiya | Ev konumu (evden çıkınca vardiya kendiliğinden başlar; "her zaman" konum gerekir) |
+| Daha fazla → Harita ayarları → Ev konumu (S37) | Ev konumu (evden çıkınca vardiya kendiliğinden başlar; "her zaman" konum gerekir) |
 | Daha fazla → Siparişler ayarları | **Filo komisyonları** (Wolt/Bolt), günlük hedef, kWh fiyatı (net kazanç) |
 | Daha fazla → Harita ayarları | Harita görünümü, harita verisi, Google Maps; yol kalitesi öğrenme varsayılan kapalı |
 | Daha fazla → Kayıtlar → Şifreli yedek | İsteğe bağlı: parola belirle (haftalık şifreli yedek, İndirilenler/WEEM/yedek) |
@@ -70,7 +70,7 @@ Anahtar Rawstats'la gitti; yeniden eşleşmen gerekir.
 
 1. Telefonda **Bluetooth** açık, **Segway Mobility** uygulamasında scooter bağlantısı **kapalı** (uygulamayı da kapat).
 2. WEEM → **Scooter** sekmesi → arama (büyüteç) simgesi → listeden **kendi scooter'ına** dokun ("Kayıtlı scooter" olarak görünür).
-3. **Bluetooth (eşleştir)** simgesi ("G3 ile eşleştir") → "Eşleştir ve kaydet"; istendiğinde scooter'ın **güç düğmesine kısa bas**. Eşleşme GPS kaydını da başlatır; "Scooter yanıt verdi" bildirimi gelir.
+3. **Bluetooth (eşleştir)** simgesi ("G3 ile eşleştir") → "Eşleştir"; istendiğinde scooter'ın **güç düğmesine kısa bas**. Eşleşme kayıt başlatmaz (S37): altta yeşil "Eşleşildi · kayda hazır" yazar; scooter kaydı vardiyayla başlar ve vardiyayla biter.
 4. Gerekirse sonra Segway Mobility'de scooter'ı yeniden eşleştir (Bluetooth anahtarı değişir).
 5. Vardiya başlayınca WEEM seçili scooter'a kendisi bağlanır (Scooter ayarlarında kapatılır).
 

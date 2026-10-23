@@ -27,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -36,6 +37,10 @@ import com.kuryelog.app.ui.Banner
 import com.kuryelog.app.ui.BtnKind
 import com.kuryelog.app.ui.ConfirmDialog
 import com.kuryelog.app.ui.ListRow
+import com.kuryelog.app.ui.NoticeDialog
+import com.kuryelog.app.scooter.Scooter
+import com.kuryelog.logic.scooter.ScooterPanel
+import com.kuryelog.logic.scooter.ScooterUiText
 import com.kuryelog.app.ui.SectionLabel
 import com.kuryelog.app.ui.SettingsGroup
 import com.kuryelog.app.ui.StatusPill
@@ -99,6 +104,7 @@ fun RecordsScreen(lang: Lang, onBack: () -> Unit, source: (android.content.Conte
         )
         status?.let { Banner(it, Modifier.padding(top = WeemSpace.m), tone = WTone.NEUTRAL) }
         BackupTools(lang)
+        ScooterRecords(lang)
         EncryptedBackupTools(lang) { version++ }
 
         GuardedPage("records", lang, key = version, build = { source(ctx).let { it to OrdersScreen(it, lang).warm() } }) { (src, screen) ->
@@ -117,6 +123,32 @@ fun RecordsScreen(lang: Lang, onBack: () -> Unit, source: (android.content.Conte
     trip?.let { id -> TripDetailDialog(ctx, lang, id, source) { trip = null } }
 }
 
+/** S37: Kayıtlar → Scooter kayıtları — Sürüş Paneli ZIP seçenekleri (Scooter sekmesindeki ZIP ile aynı; GPS'li ve tam teşhis onaylı). */
+@Composable
+private fun ScooterRecords(lang: Lang) {
+    val ctx = LocalContext.current
+    var ask by remember { mutableStateOf<ScooterPanel.ExportChoice?>(null) }
+    var message by remember { mutableStateOf<String?>(null) }
+    fun run(c: ScooterPanel.ExportChoice) {
+        message = ScooterUiText.EXPORT_PREPARING.get(lang)
+        ctx.safely("scooter_export") { Scooter.export(ctx, c, lang) { message = it } }
+    }
+    SettingsGroup(Str.RECORDS_SCOOTER.get(lang), dividerInset = 70.dp) {
+        for (c in ScooterPanel.ExportChoice.entries) ListRow(
+            c.text.get(lang), Modifier.testTag("scooter-export-${c.name}"), icon = WeemIcons.ElectricScooter, chevron = true,
+            onClick = { if (c.warning() != null) ask = c else run(c) },
+        )
+    }
+    ask?.let { c ->
+        val (title, text, go) = c.warning()!!
+        ConfirmDialog(
+            title = (title ?: c.text).get(lang), text = text.get(lang), confirm = go.get(lang), dismiss = ScooterUiText.CANCEL.get(lang),
+            onConfirm = { ask = null; run(c) }, onDismiss = { ask = null },
+        )
+    }
+    message?.let { NoticeDialog(it, ScooterUiText.OK.get(lang), { message = null }) }
+}
+
 /**
  * Yedek bölümü (R17, R18; RS `renderRecordTools` `:1243-1258`, aynı sıra): günlük paket anahtarı + açıklama, "Tüm kayıtları paylaş (.zip)"
  * (tam yedek), "Analiz için paylaş (anonim)" + açıklama. İçe aktarma düğmesi bunun üstünde (A2.6).
@@ -126,6 +158,11 @@ private fun BackupTools(lang: Lang) {
     val ctx = LocalContext.current
     var daily by remember { mutableStateOf(DailyPack.enabled(Store.values(ctx))) }
     SettingsGroup(Str.RECORDS_BACKUP.get(lang), dividerInset = 70.dp) {
+        // S37: tüm kayıtlar (sipariş + scooter + sürüş) tek ZIP'te.
+        ListRow(
+            Str.RECORDS_EXPORT_EVERYTHING.get(lang), Modifier.testTag("export-everything"), subtitle = Str.RECORDS_EXPORT_EVERYTHING_INFO.get(lang),
+            icon = WeemIcons.FolderZip, iconTone = WTone.ACCENT, chevron = true, onClick = { ctx.safely("export_all") { RecordExport.exportEverything(ctx, lang) } },
+        )
         SwitchRow(
             Str.RECORDS_DAILY_PACK.get(lang), daily,
             { on -> ctx.safely { Store.prefs(ctx).edit().putBoolean(DailyPack.PREF, on).apply(); daily = on } },

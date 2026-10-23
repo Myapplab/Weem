@@ -320,6 +320,8 @@ Sürüş Paneli bağlanma anını dışarı vermez; durum karelerden okunur. `ti
 
 **WEEM:** 5.1 sabitleri, sınıflandırma ve M23 aynen (`TimingTest`, `ScooterReconnectM23Test`). S11: 2 telefon modunda **yalnız Receiver** bağlanır; Provider rolünde `:scooter` BLE'yi hiç açmaz (vardiya başı `open` "role_provider" nedeniyle atlanır, yeni neden adı: 11.3). Tek telefon modunda bugünkü gibi. Bildirim numaraları 4902, 5102 `NotificationIds`'te (`CORE.md` 3.3).
 
+**S37 (23 Ekim, kullanıcı; WEEM farkı):** vardiya bağlantısı artık **Sürüş Paneli kaydıdır** (GPS + SQLite oturumu; 1 Hz ekonomi örnekleri aynı): `ScooterLinkRules.openAction` — bağlantı yoksa `Scooter.startRecording` (`start`), eşleştirmeden kalan canlı bağlantı kopmadan kayda çevrilir (`upgrade`), süren kayıt sahiplenilir (`adopt`); `already_active` nedeni kalktı, izin yalnız yeni bağlantıda aranır. Vardiya sonu sahiplenilen kaydı **her zaman** durdurur (`kept_recording` kalktı: kayıt vardiyayla aynı anda başlar, aynı anda biter). **Eşleştirme kayıt başlatmaz** (`Scooter.pair`: kayıtsız canlı bağlantı, `live_only` artık `pair` ile de true). Scooter sekmesinde "Kaydı başlat" ve "Nasıl başlasın?" yok; yerinde kayıt durumu `ScooterPanel.badge` ("Eşleşildi · kayda hazır" yeşil, "Kayıt açık · vardiyayla biter", "Vardiya açık · scooter bağlı değil" dokununca bağlanır …); durdur yalnız vardiya dışı bağlantıyı keser; canlı bildirimde "Kayda geç" yok. Scooter ayarlarından "Pil ve izin ayarları" ve "GPS ayarları" kalktı (Daha fazla → İzinler). Testler `ScooterLinkRulesTest`, `ScooterUiTest`.
+
 ## 6. S2 — Canlı panel ve S7 — yüzen panel
 
 ### 6.1 Panel karesi (NB `NinebotDashboard.java`, saf)

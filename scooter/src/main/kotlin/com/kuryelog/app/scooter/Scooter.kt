@@ -235,6 +235,20 @@ object Scooter {
         }, "scooter-export").start()
     }
 
+    /**
+     * S37 "tüm kayıtlar tek ZIP"in scooter bölümü: bütün oturumlar, GPS rotaları dahil ([ScooterPanel.ExportChoice.ALL_GPS]). Kayıt, temizlik ya da
+     * başka bir dışa aktarma sürerken ya da hiç oturum yoksa null. Dönen yazıcı çağıranın iş parçacığında çalışır; yazarken [exporting] (kayıt beklemede).
+     */
+    fun allRecordsPart(ctx: Context, nowMs: Long): ((java.io.OutputStream) -> Unit)? {
+        val app = ctx.applicationContext
+        if (recording || maintenance || exporting) return null
+        if (!LogStore(app).use { it.hasSessions() }) return null
+        return { out ->
+            exporting = true
+            try { LogStore(app).use { it.export(out, ScooterPanel.ExportChoice.ALL_GPS.options(), nowMs) } } finally { exporting = false }
+        }
+    }
+
     /** "30 günden eski kayıtları temizle" (NB `cleanOldRecords`): tamamlanmış eski oturumlar; anahtarlar ve son 30 gün kalır. */
     fun cleanOld(ctx: Context, lang: Lang, done: (String) -> Unit) {
         val app = ctx.applicationContext

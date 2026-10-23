@@ -3,6 +3,7 @@ package com.kuryelog.app.scooter
 import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
+import android.database.DatabaseUtils
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.database.sqlite.SQLiteStatement
@@ -103,6 +104,9 @@ class LogStore internal constructor(context: Context, database: String) : SQLite
         db.execSQL("VACUUM")
         return removed
     }
+
+    /** En az bir oturum var mı (S37 tek ZIP: boş scooter bölümü yazılmaz). */
+    fun hasSessions(): Boolean = DatabaseUtils.queryNumEntries(readableDatabase, "sessions") > 0
 
     /** `NinebotLogger-<ms>.zip` içeriği ([LogExport.write]). */
     fun export(output: OutputStream, options: LogExport.Options = LogExport.Options(), nowMs: Long = System.currentTimeMillis()) {

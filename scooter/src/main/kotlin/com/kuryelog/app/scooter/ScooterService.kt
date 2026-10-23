@@ -117,9 +117,20 @@ class ScooterService : Service() {
         // Live-panel-only mode uses no location, so it runs as a connected-device service only.
         fgsType = if (live) ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
         else ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
-        startForeground(
-            NotificationIds.SCOOTER_FGS, notification((if (live) ScooterUiText.N_CONNECTING_LIVE else ScooterUiText.N_STARTING).get(lang), live), fgsType,
-        )
+        var noBackgroundLocation = false
+        try {
+            startForeground(
+                NotificationIds.SCOOTER_FGS, notification((if (live) ScooterUiText.N_CONNECTING_LIVE else ScooterUiText.N_STARTING).get(lang), live), fgsType,
+            )
+        } catch (e: RuntimeException) {
+            // S37: vardiya kaydı arka planda başlayabilir (otomatik vardiya); "her zaman" konum izni yoksa konum türü reddedilir. Uygulama çökmesin:
+            // bağlantı türüyle sürer, GPS uygulama açıkken kaydedilir (yükseltmedeki gibi).
+            if (live) throw e
+            Store.failure(this, "scooter_location_fgs", e)
+            fgsType = ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
+            startForeground(NotificationIds.SCOOTER_FGS, notification(ScooterUiText.N_STARTING.get(lang), false), fgsType)
+            noBackgroundLocation = true
+        }
         // Both flags before the worker runs, so the toolbar never shows a new recording as a live panel.
         Scooter.active = true
         Scooter.recording = !live
@@ -131,6 +142,8 @@ class ScooterService : Service() {
         val sweepFrom = intent.getIntExtra("sweep_from", 0x00)
         val sweepTo = intent.getIntExtra("sweep_to", 0xc0)
         worker.post { begin(device, name, pair, sweep, sweepBoard, sweepFrom, sweepTo, live) }
+        // begin uyarıyı sıfırlar; aynı iş parçacığında ondan sonra.
+        if (noBackgroundLocation) worker.post { Scooter.warning = "Kayıt açık, ancak arka planda konum izni verilmedi; GPS uygulama açıkken kaydedilir" }
         return START_NOT_STICKY
     }
 

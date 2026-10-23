@@ -52,7 +52,16 @@ enum class Text(override val tr: String, override val az: String) : Bilingual {
     RECORDS_ARCHIVED("Arşivde", "Arxivdə"),
     // R17/R18 yedek ve dışa aktarma (A4.3; RS `renderRecordTools`, `I18n` export_all/share/toast_saved/toast_no_logs). Klasör "WEEM".
     RECORDS_BACKUP("Yedek", "Ehtiyat"),
-    RECORDS_EXPORT_ALL("Tüm kayıtları paylaş (.zip)", "Bütün qeydləri paylaş (.zip)"),
+    RECORDS_EXPORT_ALL("Sipariş kayıtlarını paylaş (.zip)", "Sifariş qeydlərini paylaş (.zip)"),
+    // S37: tüm kayıtlar tek ZIP ve Kayıtlar'da scooter kayıtları.
+    RECORDS_EXPORT_EVERYTHING("Tüm kayıtlar tek ZIP'te", "Bütün qeydlər bir ZIP-də"),
+    RECORDS_EXPORT_EVERYTHING_INFO(
+        "Sipariş, scooter ve sürüş kayıtları; her biri içinde kendi ZIP'i. Scooter kaydı sürerken (vardiyada) scooter kısmı atlanır.",
+        "Sifariş, skuter və sürüş qeydləri; hər biri içində öz ZIP-i. Skuter qeydi gedərkən (növbədə) skuter hissəsi buraxılır.",
+    ),
+    RECORDS_SCOOTER("Scooter kayıtları", "Skuter qeydləri"),
+    RECORDS_SCOOTER_BUSY("Scooter kaydı sürüyordu; scooter kayıtları bu ZIP'te yok. Vardiya bitince yeniden dışa aktar.",
+        "Skuter qeydi gedirdi; skuter qeydləri bu ZIP-də yoxdur. Növbə bitəndən sonra yenidən ixrac et."),
     RECORDS_EXPORT_ANON("Analiz için paylaş (anonim)", "Analiz üçün paylaş (anonim)"),
     RECORDS_EXPORT_ANON_INFO("Analiz için ayrı bir ZIP: müşteri adı, adresi, telefonu, notu ve kapı kodu çıkarılır, sipariş kimlikleri takma ada çevrilir, konumlar yaklaşık 100 m'ye yuvarlanır, WEEM panel satırları silinir. Restoran adı ve adresi, ücret, süre ve km kalır. Tam yedek ayrıca durur ve içe aktarma için o kullanılır.",
         "Analiz üçün ayrıca ZIP: müştərinin adı, ünvanı, telefonu, qeydi və qapı kodu çıxarılır, sifariş identifikatorları təxəllüsə çevrilir, yerlər təxminən 100 m-ə yuvarlaqlaşdırılır, WEEM panel sətirləri silinir. Restoranın adı və ünvanı, ödəniş, müddət və km qalır. Tam ehtiyat ayrıca qalır və idxal üçün o istifadə olunur."),
