@@ -15,7 +15,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import java.io.File
 
 /** A10.4i (S35 #17, #18): Provider'da gün Receiver'dan gelir; görev/hatırlatıcı dinleyicileri teslimi duyar; gelen gün raporu İstatistik'e girer. */
 @RunWith(RobolectricTestRunner::class)
@@ -56,7 +55,7 @@ class RemoteDayTest {
         val (n, text) = DaySnapshot.readReport(DaySnapshot.report(name, DayReportFile.encode(day(3).apply { active = false; endedAtMs = t0 + 3_600_000 }, t0, 0))!!)!!
         w.accept(n, text)
         w.waitIdle()
-        assertTrue(File(app.filesDir, "map/logs/$name").isFile)
+        // DayReportWriter süreçte tekil: klasörü ilk kuran uygulamanınki (aynı JVM'deki önceki testler), bu yüzden kendi listesinden bakılır.
         assertTrue(w.files().any { it.startedAtMs == t0 && it.delivered == 3 })
     }
 }

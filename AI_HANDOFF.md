@@ -2,6 +2,12 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-23 — A10.4e–i bitti: S35'in beş işi (Claude Opus; dal `ccr-6c3acbb6-bsytto`)
+- Yapılan: g ekran yönü (`ScreenOrientation`, `orientation`); h harita verisi haftalık yedekte (`MapBackup`, `EncryptedBackup` `map/…`, açılışta bekleyen geri yükleme); e N5 menzil uyarısı (`OfferRange`, `ShadowEvaluator.Range`, `OverlayText.rangeWarning`, `OfferSummary.rangeWarnKm`, `RangeWarnings`, `range.warn`); f S18 (b) boşta bağlantıda bildirim + 60 sn yeniden deneme (`LinkRetry.idleRetryMs`, `ScooterService.RETRY`), "veri eksik"; i `DaySnapshot`/`DayReport` R→P, `DayRuntime.setRemote`, görev/hatırlatıcı iki telefonda.
+- Doğrulama: `-p logic test` 2.144/0; `:app` 111/111, `:map` 9/9; 5 modülde lint 0 hata; telefonda denenmedi.
+- Açık kalan: N5 yalnız kartta Plus Code/DMS varsa (adres geokodlama kullanıcı kararı); Provider'da İstatistik ışık sorusu yereldir; `logic/map` `RangeInputs` artık kullanılmıyor (A10.6'da silinebilir).
+- Sıradaki: A10.4 (K) geçiş; sonra A10.5 (K), A10.6.
+
 ## 2026-10-22 — A10.4d bitti: tasarım yenileme tamam (Claude Opus; dal `ccr-b2a13552-nsq0si`; PR #18 CI yeşil, `main` `efa3df5`)
 - Yapılan: wip dal (`ccr-6a6f738a-pn3a16`) alındı ve doğrulandı; Sürüş Paneli düzeltmeleri; Uzaktan, hata/çökme kartı, sistem üstü katmanlar (rozet metni/biçimi aynı); ev seçici iğnesi; `Segmented` 48 dp; `AcceptanceTest`; `/code-review high` 10 bulgu (7 düzeltildi, 1 değişmedi, 1 belge).
 - Doğrulama: `-p logic test` 2.126/0; `:app` 106/106, `:map` 9/9; 7 modülde lint 0 hata; release APK +88 KB (`main` ile yerelde karşılaştırıldı); telefonda denenmedi.
