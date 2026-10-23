@@ -86,8 +86,8 @@ import com.kuryelog.logic.map.nav.Refollow
 import com.kuryelog.logic.map.route.QualityRating
 import com.kuryelog.logic.map.route.RideMode
 import com.kuryelog.logic.map.ui.BikewayLayerRules
-import com.kuryelog.logic.map.ui.CameraEase
 import com.kuryelog.logic.map.ui.BikewayMenu
+import com.kuryelog.logic.map.ui.CameraEase
 import com.kuryelog.logic.map.ui.LocateAction
 import com.kuryelog.logic.map.ui.LocateButtonRules
 import com.kuryelog.logic.map.ui.LongPressAction

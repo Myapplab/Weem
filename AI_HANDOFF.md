@@ -2,6 +2,12 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-23 — A10.4k: S38 telefon geri bildirimi 2 (Claude Opus; dal `ccr-5395b034-i2z288`)
+- Yapılan: yüzey kaynak farkı (`MapLibreHolder`/`GoogleHolder`, `baseLines`, `MapLive`, `GeoJson.Builder`); `CompassSensor` + `logic/map` `CompassSmoother`, `PuckAnimator`/`PuckHeading`, `CameraEase`; `MapScreen` takip `snapshotFlow`, `CameraSpot`, `PoiLayerRules.refreshNeeded`/`SELECT_MARGIN`, `RouteLights` + `POI_LIGHT_ROUTE`; `BatteryEstimator.EXTERNAL_HOLD_MS`, `ScooterPanel.batterySub`; `MapStyles.DEFAULT=google` + `googleDefault`/`MapSettingsRepo.preferGoogle`; `apk.yml` anahtar adımı; `NavLocation` 500/1000 ms; hava hapı durağan; `CrashReport` LowMemory/ExcessiveResourceUsage.
+- Doğrulama: `-p logic test` 2.164/0; `:app` 114/114, `:map` 10/10; 4 modülde lint 0 hata; telefonda denenmedi.
+- Açık kalan: pusula ekseni ve gidonda yön telefonda doğrulanmadı; kapanıp açılmanın nedeni cihazda görülmedi (kart çıkarsa metni istenecek); Google anahtarı GitHub'da yoksa APK yine vektörle derlenir (günlük satırı söyler).
+- Sıradaki: PR + CI + `main` + APK; sonra A10.5 (K) / A10.6.
+
 ## 2026-10-23 — A10.4j bitti: S37 telefon geri bildirimi (Claude Opus; dal `ccr-6f346ba4-mrxlzj`)
 - Yapılan: harita araması görünür (`MapScreenLayers`), yalnız-harita kipi kalktı, tek satır `ShiftCard(floating)`, hava listesi `WSheet`; ayarlar `MoreScreens.kt` (`RoadInfoScreen`, `DailyToolsScreen`), `MapSettingsScreen(onHome)`, dataset Sipariş ayarlarında, Daha fazla `Segmented`; scooter `Scooter.pair` (canlı), `ScooterLinkRules.openAction`/`shiftEnd(owned, active)`, `ScooterPanel.badge`, konum FGS reddinde bağlantı türüne düşer; `AllExport` + `RecordExport.exportEverything`, Kayıtlar → Scooter kayıtları; `MapBaseSection` anahtarsızda Google pasif.
 - Doğrulama: `-p logic test` 2.149/0; `:app` 114/114, `:map` 9/9; 3 modülde lint 0 hata; telefonda denenmedi.
@@ -139,10 +145,3 @@ Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 
 - Yapılan: tercih `shadowMode` (yalnız `.dev`): açıkken nakit bahşiş/cep nakdi soruları, bildirim 12, rozet ve balon/kart pencereleri kapanır, kayıt sürer (`OrderFlow.shadowMode`, `OrdersHost`, `Orders.AndroidEnv`); Ayarlar'da anahtar; rapor tek taraflı bahşiş cevabını `order.tip_answer`/`day.tip_answer` beklenen sayar. `ORDERS.md` 16.6. Belge onarımı: CHANGELOG ve AI_HANDOFF'taki birleşme işaretleri silindi.
 - Doğrulama: `-p logic :orders:test :app:test` yeşil; `:orders:compileDebugKotlin`, `:app` `OrdersSettingsScreenTest` (7) yeşil. Telefonda denenmedi; lint koşmadı.
 - Açık kalan: **A3.10 (K)** kullanıcıda — `.dev` APK derlet, Pixel'de gölge mod açık 1–2 vardiya, iki ZIP + `shadowReport`. Ekran okuma uyarısı 5104 gölge modda da çıkar (beklenen fark).
-
-## 2026-10-20 — A6.8 bitti: gün motoru, POI, bisiklet yolu, bölge bilgisi (Claude Sonnet · high; dal `ccr-e899edd4-bztcog`)
-- Yapılan: `logic/map` `day` (motor `feed`/`endDay`, `LightTracker`, `LightsDb`, `SidewalkMarks`, `StopReconciler`, `RoadInfoBuilder`, `CourierStageFollower`/`StageFeed`, `DayController`, `DayText`), `graph` (`Pois`/`PoiSet`, `PoiCorrections`, güncelleme sonrası POI indirme), bisiklet (`BikewayMarksStore`, `BikewayMenu`, `BikewayLayerRules`), `ui.PoiLayerRules`/`PlaceText`; Android `DayRuntime`, `MapPois`, `MarkerKind.POI_*`, `MapScreen` (gün kartı gerçek durum, toast/titreşim, yer+ışık işaretleri, bisiklet çizgileri, uzun basış satırları, işletme penceresi), `BikewayTab`, bölge bilgisi ⓘ. `:core` `ShiftFollower.handled()`. Ayrıntı `MAP.md` 5.9, 11.19.
-- Doğrulama: `-p logic test` 1.688 test, 75 kırmızı (A6.9 51, A6.11 24 iskeleti; A6.7 dalıyla birleşik); `:map`/`:app` derleniyor; yeni Robolectric testleri yeşil; `lintDebug` koşmadı (Maven 429). Telefonda denenmedi.
-- Açık kalan: `OrderEvents` Android uygulayıcısı yok → `DayRuntime.bindOrders` çağrılmıyor, aşama izleyici cihazda çalışmaz; yer adı etiketleri ve bölge önizleme haritası yok; `BikewayTab` Yollarım ekranı (A6.11) gelince takılır; sürüş günlüğü/gün raporu A6.9 (`DayRuntime.onStep`).
-- Sıradaki: A6.9 (Sonnet · high) bu daldan, sonra A6.11. (A6.7 başka hesapta bitti, dala birleşti.)
-

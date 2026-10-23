@@ -111,8 +111,9 @@ class PuckAnimator {
 
     private fun target(nowMs: Long): Double? = fusion.current(moving, compass.value, gpsHeading, nowMs)
 
-    /** Kare gerekiyor mu: işaret kayıyor ya da yön hedefe varmadı. */
+    /** Kare gerekiyor mu: işaret kayıyor ya da yön hedefe varmadı. Konum yokken hiç (pusula dönse de çizilecek işaret yok). */
     fun busy(nowMs: Long): Boolean {
+        if (from == null) return false
         if (slideMs > 0 && nowMs - slideStartMs < slideMs) return true
         val t = target(nowMs) ?: return false
         val h = shownHeading ?: return true

@@ -37,6 +37,15 @@ class PuckAnimatorTest {
     }
 
     @Test
+    fun `konum gelmeden pusula dönse de kare istenmez`() {
+        val a = PuckAnimator()
+        a.onCompass(10.0)
+        a.onCompass(50.0)
+        assertFalse(a.busy(0))
+        assertNull(a.frame(0))
+    }
+
+    @Test
     fun `dururken yön pusuladan gelir (önceden yön yoktu)`() {
         val a = PuckAnimator()
         a.onStep(step(p0, course = null, jump = true), 5.0, null, p0, 0)
