@@ -223,6 +223,8 @@ Plan 4.3–4.5'in kodu. Saf kısım `logic/link` (`LinkRoles`, `LinkPayloads`, `
 | `EnergyRequest` | teslim zorunlu | 24 sa | P | ekonomi bir bacak ya da boşta dönem satırı yazarken |
 | `EnergyResult` | teslim zorunlu | 24 sa | R | istek gelince (yerel `ScooterBridge.energy`; kaynak yoksa `not_measured`) |
 | `BatterySummary` | son durum | 5 dk | R | `BatterySummary.due` (60 sn, %1, bağlantı değişimi) ya da kare tazeliğini (≤ 15 sn) yitirince/kazanınca; 10 sn'de bir denenir; scooter hiç yoksa bağlantısız özet |
+| `DaySnapshot` | son durum | 10 dk | R | **A10.4i (S35 #17):** Receiver'ın gün kartı (`:map` `DaySnapshot`: duruşlar ve bütün koordinatlar çıkarılmış gün durumu, ≤ 3.200 karakter, sığmazsa en eski biten siparişler atılır); kart değişince (en çok 5 sn'de bir) ve 60 sn'de bir |
+| `DayReport` | teslim zorunlu | 24 sa | R | **A10.4i:** Receiver gün raporu (`.gun.json`) yazınca: `{schemaVersion, name, report}` (≤ 60.000 karakter; Bluetooth'ta sığmaz, Wi-Fi'ı bekler); Provider ad denetimiyle `files/map/logs/`'a yazar (İstatistik) |
 | `RouteStatus` | son durum | 60 sn | R | hedef ya da rota ölçümü değişince, en çok 1/sn; rota yoksa hedefsiz ve ölçümsüz |
 | `LinkRole` | son durum | 24 sa | ikisi | bağlanınca |
 

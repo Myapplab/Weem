@@ -2131,7 +2131,7 @@ Toplam (bu bölüm): 75 test tanımı; çevrilen 71 (4'ü uyarlanır: `StageFeed
 - Android `:map`: **`DayRuntime`** — `NavLocation` fix'leri → `onFix`; `OrderEvents.stages` → `onStages` (+ 2 sn sonra ikinci okuma); `ShiftPort.state` → `onShift`; 5 sn tık; `map` tercihleri (`shift.v1`, `shift.last`, `courier.follow.v1`, `lights.v1`, `sidewalk.zones.v1`, `day.shift.handled.v1`); sürüş günlüğü ve gün raporu yazıcısı (Bölüm 12); görev sinyalleri (Bölüm 13); `StateFlow<DayView>` (`:app`'e). `MotionReceiver` **yazılmaz** (Y13 ile, 11.1).
 - `:app`: `ShiftCard` satırları (ışık sayacı, aşama satırı, tamamlanan sipariş; SORU-N7, Bölüm 12), harita ışık işareti (6.6), uzun basış satırları 5, 6, 16, 17 (6.7), İstatistik'teki ışık soruları (Bölüm 12), toast şeridi (7.11).
 - `:core`: `ShiftPort`, `ShiftFollower`, `OrderEvents.stages`, `Clock`, ev (`KuryelogPrefs`). Yeni `:core` girdisi gerekmez (SORU-11-1 (a) seçilirse `ShiftState` v1'e `startReason`).
-- **2 telefon (öneri):** gün motoru, ışık ölçer ve ışık soruları **konumun ve haritanın olduğu telefonda** (Receiver; tek telefonda aynı telefon); girdiler `ShiftState` ve `TripStages` P → R mesajlarıyla gelir (plan 4.4). Provider'da gün motoru çalışmaz (çift km ve çift ışık sayımı olmasın); Provider'ın gün kartı ve İstatistik ekranı için R → P mesajı yok → SORU-11-2 (Bölüm 17).
+- **2 telefon (öneri):** gün motoru, ışık ölçer ve ışık soruları **konumun ve haritanın olduğu telefonda** (Receiver; tek telefonda aynı telefon); girdiler `ShiftState` ve `TripStages` P → R mesajlarıyla gelir (plan 4.4). Provider'da gün motoru çalışmaz (çift km ve çift ışık sayımı olmasın). **A10.4i (S35 #17, SORU-11-2 a):** `DayRuntime.setRemote` — Provider rolünde motor girdi almaz (fix, aşama, vardiya, tık; yerel ışık/kaldırım işaretleri kaydedilir), gün kartı ve İstatistik'in süren günü Receiver'ın `DaySnapshot`'ından (`LINK.md` 4.2), biten günler Receiver'ın gönderdiği gün raporlarından (`DayReportWriter.onWritten` → `DayReport` → `accept`). Provider'da İstatistik'teki ışık sorusu Receiver'ın gününü değiştirmez (yerel).
 
 ### 11.18 Farklar ve açık noktalar
 
@@ -2539,7 +2539,7 @@ Toplam (bu bölüm): 47 test tanımı; çevrilen 45 (13'ü uyarlanır: `LogFeedV
 - Android `:orders`: `DatasetRuntime` (kök `files/TeklifVeriSeti/`, tek kilit, `ShiftHub` kancası, belge seçiciden kopya, sürüm). Android `:map`: `RouteMeasurePortImpl` (rota motoru ve DEM, 13.4), `TaskRuntime`, `ReminderRuntime`.
 - `:core`: **`RouteMeasurePort`** (yeni, öneri; `:map` → `:orders`), `NotifyPort` + `NotificationIds` (7100–7102, 7201), `ShiftHub`, `Clock`, `WeatherPort`.
 - `:app`: `DatasetScreen`, `DatasetManualSheet`, `TasksScreen`, `TaskEditorSheet`, `TaskAlertCard` ve `ReminderCard` (kabukta), `ReminderSettingsSection`; girişler Harita ayarları → "Teklif veri seti", "Hatırlatıcılar", "Günlük işler" (6.9), uzun basış satırı 4 (6.7).
-- **2 telefon (öneri):** Y19 Provider'da (13.11); görevler ve hatırlatıcılar Receiver'da (gün motoru, teslim olayı ve konum orada; ekran scooter'da görünür), Provider'da çalışmaz (çift bildirim olmasın) → SORU-13-3.
+- **2 telefon (öneri):** Y19 Provider'da (13.11); görevler ve hatırlatıcılar **iki telefonda** (A10.4i, S35 #18, SORU-13-3 c; çift bildirim kabul): Receiver kendi günüyle, Provider Receiver'ın `DaySnapshot`'ıyla (gün açık mı, açık sipariş, teslim sayısı artınca "delivered") ve kendi konumuyla (`DayRuntime.addStepListener(…, remoteToo = true)`).
 
 ### 13.20 Farklar, açık noktalar ve sorular
 

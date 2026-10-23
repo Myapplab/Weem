@@ -49,15 +49,15 @@ class LinkPayloadsTest {
     fun topicTableMatchesThePlan() {
         val names = LinkTopic.entries.map { it.type }
         assertEquals(listOf("ShiftState", "OfferSummary", "TripStages", "DaySummary", "NavTarget", "EnergyRequest", "EnergyResult",
-            "BatterySummary", "RouteStatus", "TheftState", "TheftCommand", "LinkRole"), names)
+            "BatterySummary", "RouteStatus", "TheftState", "TheftCommand", "DaySnapshot", "DayReport", "LinkRole"), names)
         // S6 ve plan 4.4: hava ve saniyelik scooter verisi tür değil.
         assertFalse(names.any { it.contains("Weather") || it.contains("ScooterLive") })
         for (t in LinkTopic.entries) assertTrue(t.type, Envelope.TYPE.matches(t.type) && !t.type.startsWith("link."))
         val provider = LinkTopic.entries.filter { it.from == LinkRole.PROVIDER }.map { it.type }
         assertEquals(listOf("ShiftState", "OfferSummary", "TripStages", "DaySummary", "NavTarget", "EnergyRequest", "TheftCommand"), provider)
-        assertEquals(listOf("EnergyResult", "BatterySummary", "RouteStatus", "TheftState"), LinkTopic.entries.filter { it.from == LinkRole.RECEIVER }.map { it.type })
+        assertEquals(listOf("EnergyResult", "BatterySummary", "RouteStatus", "TheftState", "DaySnapshot", "DayReport"), LinkTopic.entries.filter { it.from == LinkRole.RECEIVER }.map { it.type })
         // Teslim zorunlu: aşamalar, hedef, enerji (plan 4.5); TTL'ler Messenger sınırlarında.
-        assertEquals(setOf("TripStages", "NavTarget", "EnergyRequest", "EnergyResult", "TheftCommand"), LinkTopic.entries.filter { it.reliable }.map { it.type }.toSet())
+        assertEquals(setOf("TripStages", "NavTarget", "EnergyRequest", "EnergyResult", "TheftCommand", "DayReport"), LinkTopic.entries.filter { it.reliable }.map { it.type }.toSet())
         for (t in LinkTopic.entries) assertTrue(t.type, t.ttlMs in 1_000L..MessengerConfig.DAY_MS)
         // S11 ve LINK.md 1.3.
         assertFalse(LinkRole.PROVIDER.scooterAllowed)

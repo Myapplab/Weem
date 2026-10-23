@@ -70,14 +70,14 @@ class ReminderRuntime private constructor(private val app: Context) {
         val day = DayRuntime.get(app)
         day.view.value.state.let { s -> controller.activeDay(if (s.active) s.startedAtMs?.let { "yolgo-$it" } else null, s.startedAtMs) }
         var wasActive = day.view.value.state.active
-        day.addStepListener { step ->
+        day.addStepListener({ step ->
             val s = step.view.state
             val opened = s.active && !wasActive
             wasActive = s.active
             synchronized(lock) { controller.activeDay(if (s.active) s.startedAtMs?.let { "yolgo-$it" } else null, s.startedAtMs) }
             if (opened) permissionFlow.value = controller.wantsPermission
             publish()
-        }
+        }, remoteToo = true)
         scope.launch {
             var n = 0
             while (isActive) {
