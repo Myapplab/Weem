@@ -137,7 +137,8 @@ fun WeatherChip(
                 Row(Modifier.padding(start = WeemSpace.m, end = WeemSpace.s), verticalAlignment = Alignment.CenterVertically) {
                     val kind = first?.let { WeatherIcons.kind(it) }
                     if (kind == null) Icon(WeemIcons.PartlyCloudyDay, contentDescription = null, tint = p.muted.color(), modifier = Modifier.size(26.dp))
-                    else WeatherMotion(kind, 28.dp)
+                    // S38 (pil): haritada sürekli duran hapta simge durağan; sonsuz animasyon harita açıkken ekranı saniyede 60–120 kez yeniden çizdiriyordu.
+                    else WeatherMotion(kind, 28.dp, animate = false)
                     Spacer(Modifier.width(6.dp))
                     Column {
                         Text(if (first == null) (if (view.busy) "…" else "—") else value(first.temperature, "°"), style = WeemType.titleS.copy(fontWeight = FontWeight.ExtraBold), maxLines = 1)
@@ -306,10 +307,14 @@ fun WeatherDetailSheet(report: WeatherReport, index: Int, availableHeightDp: Dou
     }
 }
 
-/** Hareketli hava simgesi (`WeatherMotion`): güneş/ay ışınları döner, rüzgâr çizgileri sallanır, bulut kayar, yağmur/kar damlaları düşer. Testlerde animasyon durur. */
+/**
+ * Hareketli hava simgesi (`WeatherMotion`): güneş/ay ışınları döner, rüzgâr çizgileri sallanır, bulut kayar, yağmur/kar damlaları düşer. Testlerde animasyon durur.
+ * [animate] false: ilk karede durur (S38: haritadaki hap; animasyon yalnız açılan listede ve ayrıntıda).
+ */
 @Composable
-private fun WeatherMotion(kind: WeatherKind, size: Dp) {
-    val phase by rememberInfiniteTransition(label = "weather").animateFloat(0f, 1f, infiniteRepeatable(tween(3200, easing = LinearEasing), RepeatMode.Restart), label = "phase")
+private fun WeatherMotion(kind: WeatherKind, size: Dp, animate: Boolean = true) {
+    val phase = if (!animate) 0f
+    else rememberInfiniteTransition(label = "weather").animateFloat(0f, 1f, infiniteRepeatable(tween(3200, easing = LinearEasing), RepeatMode.Restart), label = "phase").value
     val ink = MapPalette.of(palette().isDark)
     Canvas(Modifier.size(size)) {
         val s = this.size.width

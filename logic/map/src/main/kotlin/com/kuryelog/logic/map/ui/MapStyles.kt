@@ -3,6 +3,7 @@ package com.kuryelog.logic.map.ui
 import com.kuryelog.logic.core.Bilingual
 import com.kuryelog.logic.map.day.LightSpot
 import com.kuryelog.logic.map.graph.Poi
+import com.kuryelog.logic.map.graph.PoiSet
 import com.kuryelog.logic.map.geo.BBox
 import com.kuryelog.logic.map.geo.Geo
 import com.kuryelog.logic.map.geo.GeoPoint
@@ -134,13 +135,19 @@ object PoiZoomRules {
  * öncelik ışık → metro → AVM → öteki; restoran/fast food/kafe/market ekranın 34 dp ızgarasında hücre başına bir; en çok 180 simge.
  */
 object PoiLayerRules {
-    /** "Yok" işaretinin 25 m içindeki OSM ışığı gizlenir; "var" işareti 25 m içinde OSM ışığı yoksa eklenir. */
+    /**
+     * "Yok" işaretinin 25 m içindeki OSM ışığı gizlenir; "var" işareti 25 m içinde OSM ışığı yoksa eklenir. S38: yakın arama enleme sıralı dizinle ([PoiSet]);
+     * önceden her ışık her işaretle karşılaştırılıyordu (öğrenilen ışıklar çoğaldıkça ana iş parçacığında yüz ms'leri bulabiliyordu).
+     */
     fun withLights(base: List<Poi>, spots: List<LightSpot>): List<Poi> {
-        val hidden = spots.filter { !it.exists }
         val osmLights = base.filter { it.kind == 'l' }
-        val kept = osmLights.filter { l -> hidden.none { Geo.haversine(l.lat, l.lon, it.lat, it.lon) <= LIGHT_NEAR_M } }
-        val added = spots.filter { s -> s.exists && osmLights.none { Geo.haversine(it.lat, it.lon, s.lat, s.lon) <= LIGHT_NEAR_M } }.map { Poi(it.lat, it.lon, 'l', "") }
-        return base.filter { it.kind != 'l' } + kept + added
+        val rest = base.filter { it.kind != 'l' }
+        if (spots.isEmpty()) return rest + osmLights
+        val hidden = PoiSet(spots.filter { !it.exists }.map { Poi(it.lat, it.lon, 'l', "") })
+        val osm = PoiSet(osmLights)
+        val kept = if (hidden.length == 0) osmLights else osmLights.filter { l -> hidden.nearest('l', l.lat, l.lon, LIGHT_NEAR_M) == null }
+        val added = spots.filter { s -> s.exists && osm.nearest('l', s.lat, s.lon, LIGHT_NEAR_M) == null }.map { Poi(it.lat, it.lon, 'l', "") }
+        return rest + kept + added
     }
 
     /** 256 dp'lik dünya (MapLibre/Google standart ölçeği): bir dp'nin boylam derecesi. */

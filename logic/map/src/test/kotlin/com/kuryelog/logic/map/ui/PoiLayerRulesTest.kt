@@ -89,4 +89,21 @@ class PoiLayerRulesTest {
         val plain = PoiLayerRules.bounds(lat, lon, 400.0, 800.0, 16.0)
         assertEquals((plain.east - plain.west) * PoiLayerRules.SELECT_MARGIN, wide.east - wide.west, 1e-12)
     }
+
+    @Test
+    fun `ışık birleştirme eski karşılaştırmayla aynı sonucu verir`() {
+        val rnd = java.util.Random(7)
+        fun r(span: Double) = (rnd.nextDouble() - 0.5) * span
+        val base = List(400) { Poi(lat + r(0.02), lon + r(0.02), if (it % 3 == 0) 'r' else 'l', "p$it") }
+        val spots = List(300) { LightSpot(lat + r(0.02), lon + r(0.02), it % 2 == 0) }
+        // Eski (karesel) tanım.
+        val hidden = spots.filter { !it.exists }
+        val osm = base.filter { it.kind == 'l' }
+        fun near(a: Double, b: Double, c: Double, d: Double) = com.kuryelog.logic.map.geo.Geo.haversine(a, b, c, d) <= 25.0
+        val kept = osm.filter { l -> hidden.none { near(l.lat, l.lon, it.lat, it.lon) } }
+        val added = spots.filter { s -> s.exists && osm.none { near(it.lat, it.lon, s.lat, s.lon) } }
+        val expected = base.filter { it.kind != 'l' }.map { it.name } + kept.map { it.name } + added.map { "${it.lat},${it.lon}" }
+        val got = PoiLayerRules.withLights(base, spots).map { if (it.name.isEmpty()) "${it.lat},${it.lon}" else it.name }
+        assertEquals(expected, got)
+    }
 }
