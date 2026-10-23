@@ -9,6 +9,7 @@ import com.kuryelog.app.link.LinkHub
 import com.kuryelog.app.link.TheftRuntime
 import com.kuryelog.app.remote.RemoteHub
 import com.kuryelog.app.map.BatteryRuntime
+import com.kuryelog.app.map.DayReportWriter
 import com.kuryelog.app.map.DayRuntime
 import com.kuryelog.app.map.NavRuntime
 import com.kuryelog.app.orders.Orders
@@ -17,6 +18,7 @@ import com.kuryelog.app.scooter.ScooterShiftLink
 import com.kuryelog.logic.core.NavPort
 import com.kuryelog.logic.link.LinkRole
 import com.kuryelog.logic.link.PhoneBridge
+import com.kuryelog.logic.map.day.DaySnapshot
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -86,6 +88,10 @@ object TwoPhone {
         val events = Store.guarded(app, "two_phone_events") { Orders.events(app) }
         val day = Store.guarded(app, "two_phone_day") { DayRuntime.get(app) }
         nav?.controller?.forward = null
+        // A10.4i (S35 #17): gün motoru yalnız Receiver'da (tek telefonda yerel); Provider Receiver'ın gününü gösterir.
+        val reports = Store.guarded(app, "two_phone_reports") { DayReportWriter.get(app) }
+        reports?.onWritten = null
+        day?.setRemote(b?.role == LinkRole.PROVIDER)
         when (b?.role) {
             LinkRole.PROVIDER -> {
                 events?.let { day?.bindOrders(it) }
@@ -100,6 +106,8 @@ object TwoPhone {
                     scope.launch {
                         b.scooter.late.collect { Store.guarded(app, "late_energy") { Economics.observer(app).lateEnergy(it.fromWallMs, it.toWallMs, it.energy.json) } }
                     },
+                    day?.let { d -> scope.launch { b.daySnapshot.collect { t -> DaySnapshot.decode(t)?.let { Store.guarded(app, "day_snapshot") { d.showRemote(it) } } } } },
+                    reports?.let { w -> scope.launch { b.dayReports.collect { t -> DaySnapshot.readReport(t)?.let { (name, text) -> Store.guarded(app, "day_report_in") { w.accept(name, text) } } } } },
                 )
             }
             LinkRole.RECEIVER -> {
@@ -109,9 +117,31 @@ object TwoPhone {
                     // Özet değer değişmese de 60 sn'de bir gider (`BatterySummary.due`).
                     scope.launch { while (true) { delay(10_000); b.receiverScooter(Scooter.bridge.live.value) } },
                     nav?.let { n -> scope.launch { n.port.route.collect { b.receiverRoute(it) } } },
+                    day?.let { d -> scope.launch { sendDay(app, d, b) } },
                 )
+                reports?.onWritten = { name, text -> DaySnapshot.report(name, text)?.let(b::receiverDayReport) }
             }
             else -> events?.let { day?.bindOrders(it) }
         }
     }
+
+    /** A10.4i: Receiver'ın gün kartı Provider'a — kart değişince (gün, sipariş, aşama, teslim, ışık; en çok 5 sn'de bir) ve 60 sn'de bir. */
+    private suspend fun sendDay(app: Context, day: DayRuntime, b: PhoneBridge) {
+        var sentKey: String? = null
+        var sentAt = 0L
+        while (true) {
+            val v = day.view.value
+            val s = v.state
+            val key = "${s.active}|${s.startedAtMs}|${s.current?.n}|${s.phase}|${s.queuedOrders.size}|${s.delivered}|${v.lightSinceMs != null}"
+            val now = System.currentTimeMillis()
+            if (key != sentKey || now - sentAt >= DAY_EVERY_MS) {
+                Store.guarded(app, "day_snapshot") { b.receiverDay(DaySnapshot.encode(v, now)) }
+                sentKey = key; sentAt = now
+            }
+            delay(DAY_CHECK_MS)
+        }
+    }
+
+    private const val DAY_EVERY_MS = 60_000L
+    private const val DAY_CHECK_MS = 5_000L
 }

@@ -54,6 +54,7 @@ import com.kuryelog.logic.app.Permissions
 import com.kuryelog.logic.app.SetupText
 import com.kuryelog.logic.app.Tab
 import com.kuryelog.logic.app.Text as Str
+import com.kuryelog.logic.app.ScreenOrientation
 import com.kuryelog.logic.app.ThemeMode
 import com.kuryelog.logic.app.label
 import com.kuryelog.logic.core.Lang
@@ -81,6 +82,8 @@ fun WeemApp(
     onLangSetting: (String) -> Unit,
     onTheme: (ThemeMode) -> Unit,
     onSetupAgain: () -> Unit = {},
+    orientation: ScreenOrientation = ScreenOrientation.FREE,
+    onOrientation: (ScreenOrientation) -> Unit = {},
 ) {
     var selectedKey by rememberSaveable { mutableStateOf(Tab.start.key) }
     val selected = Tab.fromKey(selectedKey)
@@ -127,7 +130,7 @@ fun WeemApp(
                             RemoteOrdersCard(lang)
                             OrdersTab(lang)
                         }
-                        Tab.MORE -> MoreScreen(lang, langSetting, theme, versionName, onLangSetting, onTheme, onSetupAgain)
+                        Tab.MORE -> MoreScreen(lang, langSetting, theme, versionName, onLangSetting, onTheme, onSetupAgain, orientation, onOrientation)
                         // A6.5: Harita sekmesi (graf yokken vardiya kartı + kurulum kartı; G1 vardiya düğmesi açılış sekmesinde).
                         Tab.MAP -> MapScreen(lang, dark)
                         // A5.4: Scooter sekmesi (canlı panel, tarama, eşleştirme, ayarlar, tanı, ZIP).
@@ -161,6 +164,8 @@ private fun MoreScreen(
     onLangSetting: (String) -> Unit,
     onTheme: (ThemeMode) -> Unit,
     onSetupAgain: () -> Unit,
+    orientation: ScreenOrientation,
+    onOrientation: (ScreenOrientation) -> Unit,
 ) {
     var records by rememberSaveable { mutableStateOf(false) }
     var home by rememberSaveable { mutableStateOf(false) }
@@ -229,6 +234,12 @@ private fun MoreScreen(
             RadioRow(Str.THEME_SYSTEM.get(lang), theme == ThemeMode.SYSTEM, { onTheme(ThemeMode.SYSTEM) }, trailingIcon = WeemIcons.Contrast)
             RadioRow(Str.THEME_LIGHT.get(lang), theme == ThemeMode.LIGHT, { onTheme(ThemeMode.LIGHT) }, trailingIcon = WeemIcons.LightMode)
             RadioRow(Str.THEME_DARK.get(lang), theme == ThemeMode.DARK, { onTheme(ThemeMode.DARK) }, trailingIcon = WeemIcons.DarkMode)
+        }
+        // A10.4g (SORU-N6): ekran yönü; varsayılan serbest.
+        SettingsGroup(Str.SETTINGS_ORIENTATION.get(lang), dividerInset = 52.dp, selectableGroup = true) {
+            RadioRow(Str.ORIENTATION_FREE.get(lang), orientation == ScreenOrientation.FREE, { onOrientation(ScreenOrientation.FREE) }, trailingIcon = WeemIcons.ScreenRotation)
+            RadioRow(Str.ORIENTATION_PORTRAIT.get(lang), orientation == ScreenOrientation.PORTRAIT, { onOrientation(ScreenOrientation.PORTRAIT) }, trailingIcon = WeemIcons.StayCurrentPortrait)
+            RadioRow(Str.ORIENTATION_LANDSCAPE.get(lang), orientation == ScreenOrientation.LANDSCAPE, { onOrientation(ScreenOrientation.LANDSCAPE) }, trailingIcon = WeemIcons.StayCurrentLandscape)
         }
         Text(
             Str.VERSION.get(lang).format(versionName),

@@ -415,6 +415,9 @@ class NavController(
         replan(ReplanReason.ROUTE)
     }
 
+    /** N5 (A10.4e): teklifte batarya eve yetmeyebilir → "eve dön?" kartı (zaten açıksa bir şey yapmaz). */
+    fun suggestHome() = synchronized(lock) { if (!stateFlow.value.homeSuggest) set(stateFlow.value.copy(homeSuggest = true)) }
+
     fun dismissHomeSuggest() = synchronized(lock) { set(stateFlow.value.copy(homeSuggest = false)) }
 
     fun clearRoute() = synchronized(lock) {

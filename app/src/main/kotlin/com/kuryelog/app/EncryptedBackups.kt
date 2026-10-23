@@ -16,6 +16,7 @@ import com.kuryelog.logic.core.DailyRecords
 import com.kuryelog.logic.core.EncryptedBackup
 import com.kuryelog.logic.core.LogTime
 import com.kuryelog.logic.core.ShiftMachine
+import com.kuryelog.logic.map.settings.MapBackup
 import org.json.JSONObject
 import java.io.File
 import java.security.KeyStore
@@ -92,7 +93,8 @@ object EncryptedBackups {
             } ?: return false
             val db = CourierDb(app)
             val (trips, offers) = try { week.days.flatMap { db.trips(it) } to week.days.flatMap { db.offers(it) } } finally { db.close() }
-            val content = EncryptedBackup.Content(files, EncryptedBackup.encodePrefs(Store.prefs(app).all), trips, offers)
+            val content = EncryptedBackup.Content(files, EncryptedBackup.encodePrefs(Store.prefs(app).all), trips, offers,
+                mapPrefs = EncryptedBackup.encodePrefs(MapBackup.strip(mapPrefs(app).all)) { false }, mapFiles = stageMap(app, week, staging))
             Downloads.save(app, EncryptedBackup.FOLDER, week.fileName, replace = true, mime = "application/octet-stream") {
                 EncryptedBackup.write(week, content, password, it, RecordExport.versionName(app), System.currentTimeMillis())
             }
@@ -100,6 +102,16 @@ object EncryptedBackups {
             return true
         } finally { password.fill(' '); staging.deleteRecursively() }
     }
+
+    /** A10.4h: haritanın küçük verisi [staging]/`map/`'e kopyalanır (yazan kilidi yok; dosyalar `.tmp` + yeniden adlandırmayla yazılır). Kopyalanamayan atlanır. */
+    private fun stageMap(app: Context, week: EncryptedBackup.Week, staging: File): List<Pair<String, File>> =
+        MapBackup.files(File(app.filesDir, "map"), week.days).mapNotNull { (name, f) ->
+            runCatching { name to f.copyTo(File(staging, name), overwrite = true) }.getOrNull()
+        }
+
+    private fun mapPrefs(app: Context) = app.getSharedPreferences(MAP_PREFS_FILE, Context.MODE_PRIVATE)
+    /** `:map` `MapPrefsStore.FILE` (MAP.md 14.1). */
+    private const val MAP_PREFS_FILE = "map"
 
     const val EVENT = "encrypted_backup"
     const val EVENT_FAILED = "encrypted_backup_failed"
@@ -139,7 +151,8 @@ object EncryptedBackups {
     }
 
     sealed interface Restored {
-        data class Done(val files: Int) : Restored
+        /** [mapPending]: harita verisi bırakıldı, WEEM yeniden açılınca yüklenir (A10.4h). */
+        data class Done(val files: Int, val mapPending: Boolean = false) : Restored
         data object ShiftOn : Restored
         data object Busy : Restored
         data object WrongPassword : Restored
@@ -159,7 +172,10 @@ object EncryptedBackups {
         Thread({
             val outcome: Pair<Restored, EncryptedBackup.Opened?> = try {
                 val (opened, names) = (open() ?: error("open")).use { EncryptedBackup.restore(it, password, app.filesDir, Store.logsRoot(app), app.cacheDir) }
-                Restored.Done(names.size) to opened
+                // A10.4h: harita kısmı bekleyen klasöre; çalışan harita bellekteki durumla dosyaları ezmesin diye açılışta uygulanır.
+                val map = runCatching { MapBackup.savePending(app.filesDir, opened.mapPrefs, opened.mapFiles) }
+                    .onFailure { runCatching { Store.failure(app, "encrypted_restore_map", it) } }.getOrDefault(0)
+                Restored.Done(names.size, map > 0 || MapBackup.hasPending(app.filesDir)) to opened
             } catch (e: EncryptedBackup.WrongPassword) { Restored.WrongPassword to null
             } catch (e: Throwable) { runCatching { Store.failure(app, "encrypted_restore", e) }; Restored.Failed(e.message) to null
             } finally { password.fill(' ') }
@@ -175,15 +191,38 @@ object EncryptedBackups {
         }, "weem-restore").start()
     }
 
+    /**
+     * A10.4h: bekleyen harita geri yüklemesi; süreç açılışında, harita çalışma zamanları kurulmadan önce ([WeemApplication]). Yalnız telefonda
+     * olmayan dosyalar ve `map` tercihleri yazılır.
+     */
+    fun applyPendingMap(ctx: Context) {
+        val app = ctx.applicationContext
+        val prefs = mapPrefs(app)
+        val applied = MapBackup.applyPending(app.filesDir, prefs.all.keys) ?: return
+        prefs.edit().apply { for ((k, v) in applied.prefs) putPref(k, v) }.commit()
+        Store.event(app, "encrypted_restore_map", JSONObject().put("files", applied.files).put("prefs", applied.prefs.size))
+    }
+
+    /** Süreci yeniden başlatır (geri yüklemeden sonra; vardiya kapalı). Açılış ekranı yeni süreçte açılır. */
+    fun restart(ctx: Context) {
+        val app = ctx.applicationContext
+        val launch = app.packageManager.getLaunchIntentForPackage(app.packageName) ?: return
+        app.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+        Runtime.getRuntime().exit(0)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun android.content.SharedPreferences.Editor.putPref(k: String, v: Any) {
+        when (v) {
+            is Boolean -> putBoolean(k, v); is Int -> putInt(k, v); is Long -> putLong(k, v); is Float -> putFloat(k, v)
+            is String -> putString(k, v); is Set<*> -> putStringSet(k, v as Set<String>)
+        }
+    }
+
     private fun applyRest(app: Context, opened: EncryptedBackup.Opened) {
         val prefs = Store.prefs(app)
         val missing = EncryptedBackup.missingPrefs(opened.prefs, prefs.all.keys)
-        prefs.edit().apply {
-            for ((k, v) in missing) @Suppress("UNCHECKED_CAST") when (v) {
-                is Boolean -> putBoolean(k, v); is Int -> putInt(k, v); is Long -> putLong(k, v); is Float -> putFloat(k, v)
-                is String -> putString(k, v); is Set<*> -> putStringSet(k, v as Set<String>)
-            }
-        }.apply()
+        prefs.edit().apply { for ((k, v) in missing) putPref(k, v) }.apply()
         val db = CourierDb(app)
         try {
             db.batch {

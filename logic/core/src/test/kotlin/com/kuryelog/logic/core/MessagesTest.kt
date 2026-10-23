@@ -21,6 +21,7 @@ class MessagesTest {
         pickupZone = OfferSummary.Zone.Z1, dropoffZone = OfferSummary.Zone.Z3, dropoffKnown = true,
         shown = OfferSummary.Shown(minLo = 9.0, minHi = 17.0, km = 2.0, stops = 1, readyInMin = 5.0, multiplier = 1.2, boostPct = 20.0),
         score = 7, netAzn = 3.1, dropoffAddress = "Uzeyir Hajibayli str. 17, AZ1000 Baku", dropoffLat = 40.3777, dropoffLon = 49.892,
+        rangeWarnKm = 6.4,
     )
 
     @Test fun offerSummaryRoundTripAndPrivacy() {
@@ -29,7 +30,7 @@ class MessagesTest {
         val keys = offer.toJson().keys().asSequence().toSet()
         assertEquals(setOf("schemaVersion", "offerKey", "platform", "firstSeenAtMs", "lastSeenAtMs", "visibleNow", "expiresAtMs", "displayedFeeAzn",
             "platformDistanceKm", "restaurant", "pickupZone", "dropoffZone", "dropoffKnown", "shown", "score", "netAzn", "dropoffAddress",
-            "dropoffLat", "dropoffLon"), keys)
+            "dropoffLat", "dropoffLon", "rangeWarnKm"), keys)
         // Unmeasured stays null, never 0.
         val bare = OfferSummary("k", CourierPlatform.BOLT, 1L, 2L, false)
         val j = reparse(bare.toJson())
@@ -49,6 +50,7 @@ class MessagesTest {
         assertNull(OfferSummary.parse("{oops"))
         val halfPoint = OfferSummary.parse(reparse(offer.toJson()).put("dropoffLon", 999.0))!!
         assertNull(halfPoint.dropoffLat); assertNull(halfPoint.dropoffLon)
+        assertNull(OfferSummary.parse(reparse(offer.toJson()).put("rangeWarnKm", -1.0))!!.rangeWarnKm)
     }
 
     /** Today's feed v2 offer (OfferFeed.kt:80-116; feed_v2.schema.json): v1 fields at the root, the summary in `v2`. */
@@ -66,7 +68,7 @@ class MessagesTest {
                 .put("pickupZone", "Z1").put("dropoffZone", "Z3").put("dropoffKnown", true).put("optional", false).put("duringTripId", JSONObject.NULL)
                 .put("parse", JSONObject().put("feeSource", "accessibility").put("confidence", "high")))
         val s = OfferSummary.fromFeedV2(reparse(feed))!!
-        assertEquals(offer.copy(score = null, netAzn = null, dropoffLat = null, dropoffLon = null), s)
+        assertEquals(offer.copy(score = null, netAzn = null, dropoffLat = null, dropoffLon = null, rangeWarnKm = null), s)
         assertNull("no v2: not a v2 offer", OfferSummary.fromFeedV2(reparse(feed).apply { remove("v2") }))
     }
 

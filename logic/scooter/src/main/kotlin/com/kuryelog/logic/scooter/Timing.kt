@@ -15,6 +15,9 @@ object Timing {
 
     const val FAST_RETRIES = 24
 
+    /** WEEM S18 (b), A10.4f: a link left idle by `fail` (GATT open, nothing read) is reopened after this, unless the user acts first. */
+    const val IDLE_RETRY_MS = 60_000L
+
     fun hex(value: ByteArray): String {
         val out = CharArray(value.size * 2)
         val digits = "0123456789abcdef"

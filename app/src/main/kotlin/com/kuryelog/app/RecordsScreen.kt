@@ -153,6 +153,7 @@ private fun EncryptedBackupTools(lang: Lang, onChanged: () -> Unit) {
     var askPassword by remember { mutableStateOf(false) }
     var restoreUri by remember { mutableStateOf<android.net.Uri?>(null) }
     var deleteWeek by remember { mutableStateOf<EncryptedBackup.Week?>(null) }
+    var askRestart by remember { mutableStateOf(false) }
     fun toast(s: String) = Toast.makeText(ctx, s, Toast.LENGTH_SHORT).show()
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) restoreUri = uri }
 
@@ -207,11 +208,19 @@ private fun EncryptedBackupTools(lang: Lang, onChanged: () -> Unit) {
                         EncryptedBackups.Restored.WrongPassword -> Str.BACKUP_WRONG_PASSWORD.get(lang)
                         is EncryptedBackups.Restored.Failed -> Str.ERROR.get(lang) + r.message
                     })
+                    if (r is EncryptedBackups.Restored.Done && r.mapPending) askRestart = true
                     onChanged()
                 }
             }
         }
     }
+    // A10.4h: harita verisi yeni süreçte yüklenir.
+    if (askRestart) ConfirmDialog(
+        title = Str.BACKUP_RESTORE.get(lang), text = Str.BACKUP_MAP_RESTART.get(lang),
+        confirm = Str.BACKUP_RESTART_NOW.get(lang), dismiss = Str.LATER.get(lang),
+        onConfirm = { askRestart = false; ctx.safely("encrypted_restore") { EncryptedBackups.restart(ctx) } },
+        onDismiss = { askRestart = false },
+    )
     deleteWeek?.let { week ->
         ConfirmDialog(
             title = Str.BACKUP_DELETE_WEEK.get(lang), text = "${week.monday} – ${week.sunday}\n" + Str.BACKUP_DELETE_CONFIRM.get(lang),

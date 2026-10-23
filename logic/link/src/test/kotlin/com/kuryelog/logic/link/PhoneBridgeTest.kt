@@ -447,6 +447,27 @@ class PhoneBridgeTest {
         assertNull(provider.nav.route.value)
     }
 
+    /** A10.4i (S35 #17): Receiver'ın gün kartı ve gün raporu Provider'a; ters yön atılır. */
+    @Test
+    fun receiverDayReachesTheProvider(): Unit = kotlinx.coroutines.runBlocking {
+        val reports = ArrayList<String>()
+        val job = scope.async { provider.dayReports.collect { reports += it } }
+        kotlinx.coroutines.yield()
+        receiver.receiverDay("{\"schemaVersion\":1,\"x\":1}")
+        assertTrue(receiver.receiverDayReport("{\"report\":1}"))
+        flush()
+        kotlinx.coroutines.delay(50)
+        assertEquals("{\"schemaVersion\":1,\"x\":1}", provider.daySnapshot.value)
+        assertEquals(listOf("{\"report\":1}"), reports)
+        // Provider göndermez; Receiver bu türleri almaz.
+        val before = pOut.sent.size
+        provider.receiverDay("{}"); assertFalse(provider.receiverDayReport("{}"))
+        assertEquals(before, pOut.sent.size)
+        receiver.incoming(LinkTopic.DAY_SNAPSHOT.type, "{}".toByteArray(), now)
+        assertNull(receiver.daySnapshot.value)
+        job.cancel()
+    }
+
     @Test
     fun wrongDirectionAndOffRoleAreIgnored() {
         // Provider kendi türünü (öteki Provider'dan) almaz; Receiver Receiver türünü almaz.

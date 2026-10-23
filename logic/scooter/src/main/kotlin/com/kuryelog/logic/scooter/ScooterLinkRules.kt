@@ -13,6 +13,10 @@ enum class ScooterText(override val tr: String, override val az: String) : Bilin
     RECEIVING_TEXT("Bağlantı yeniden kuruldu, değerler geliyor.", "Bağlantı bərpa olundu, dəyərlər gəlir."),
     NOT_RECEIVING_TITLE("Scooter verileri alınamıyor", "Skuter məlumatları alınmır"),
     NOT_RECEIVING_TEXT("Sürüyorsun ama scooter'dan değer gelmiyor; Sürüş Paneli'ne bak.", "Sürürsən, amma skuterdən dəyər gəlmir; Sürüş Panelinə bax."),
+    // A10.4f (S18 b): bağlantı boşta kaldı (`fail`); 60 sn sonra kendiliğinden yeniden denenir.
+    DROPPED_TITLE("Scooter bağlantısı koptu", "Skuter bağlantısı kəsildi"),
+    DROPPED_TEXT("60 sn sonra yeniden denenecek.", "60 san sonra yenidən cəhd ediləcək."),
+    RETRY_NOW("Şimdi dene", "İndi yoxla"),
 
     // 5102 (vardiya bağlantısı reddedildi; kanal `auto_start`).
     NOT_CONNECTED_TITLE("Scooter bağlanmadı", "Skuter qoşulmadı"),

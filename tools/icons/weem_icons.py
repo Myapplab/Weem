@@ -10,7 +10,8 @@ phone_android play_arrow power_settings_new punch_clock qr_code_scanner receipt_
 splitscreen sports_score stop storefront thumb_down thumb_up timer touch_app trending_up tune two_wheeler visibility_off warning
 partly_cloudy_day content_copy open_in_new remove thermostat water_drop air directions_bike fullscreen fullscreen_exit picture_in_picture_alt
 bluetooth_connected bluetooth_disabled download upload filter_list cancel more_vert traffic volume_up vibration sensors analytics task_alt alarm key
-flag add_location_alt wifi wifi_off screen_share stop_screen_share layers landscape block straighten battery_full""".split()
+flag add_location_alt wifi wifi_off screen_share stop_screen_share layers landscape block straighten battery_full
+screen_rotation stay_current_portrait stay_current_landscape""".split()
 FILLED = """map receipt_long electric_scooter devices location_on check_circle navigation alt_route battery_5_bar battery_alert play_arrow stop
 fiber_manual_record electric_bolt restaurant two_wheeler inventory_2 warning error info home thumb_up thumb_down flag directions_bike layers""".split()
 OK = re.compile(r'^[MmLlHhVvCcSsQqTtAaZz0-9.,\- ]+$')

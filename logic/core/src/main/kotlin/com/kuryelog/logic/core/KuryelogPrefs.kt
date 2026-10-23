@@ -29,6 +29,8 @@ object KuryelogPrefs {
     const val HOME_UPDATED_AT = "home.updatedAt"
     const val HOME_START_BLOCKED = "home.startBlocked"
     const val HOME_END_ARMED = "home.endArmed"
+    /** N5 menzil uyarısı açık mı (A10.4e, yeni; yoksa açık). */
+    const val RANGE_WARN = "range.warn"
 
     /** Long: gizlenen son çökmenin zamanı (CORE.md 4.1). */
     const val CRASH_SEEN_AT = CrashFile.SEEN_KEY

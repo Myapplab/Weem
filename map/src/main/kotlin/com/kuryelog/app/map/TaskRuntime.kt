@@ -61,7 +61,7 @@ class TaskRuntime private constructor(private val app: Context) {
         val day = DayRuntime.get(app)
         day.view.value.state.let { s -> controller.activeDay(if (s.active) s.startedAtMs?.let { "yolgo-$it" } else null); controller.activeOrder(s.current != null) }
         refresh()
-        day.addStepListener { step ->
+        day.addStepListener({ step ->
             val s = step.view.state
             synchronized(lock) {
                 controller.activeDay(if (s.active) s.startedAtMs?.let { "yolgo-$it" } else null)
@@ -69,7 +69,7 @@ class TaskRuntime private constructor(private val app: Context) {
                 if (step.events.any { it.type == "delivered" }) lastFix?.let { controller.deliveryFinished(GeoPoint(it.lat, it.lon), it.accuracyM, it.atMs) }
             }
             refresh()
-        }
+        }, remoteToo = true)
         scope.launch {
             while (isActive) {
                 delay(EXPIRE_MS)

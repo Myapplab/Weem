@@ -30,8 +30,9 @@ import javax.crypto.spec.SecretKeySpec
  *
  * İçerik (şifreli ZIP): haftanın gün kayıtları (`YYYY-MM-DD/<logNames>`, tam yedekle aynı), `restaurants.json`, [PREFS] (`kuryelog`
  * tercihleri; kullanıcının ev konumu `home.*`, vardiyanın o anki durumu ve cihaz kimliği HARİÇ, [excludedPref]), `courier/trips.jsonl`
- * ve `courier/offers.jsonl` (o haftanın `courier.db` satırları, müşteri telefonu dahil), [MANIFEST]. Gün sırları, Sürüş Paneli eşleşmesi ve
- * başka dosya girmez.
+ * ve `courier/offers.jsonl` (o haftanın `courier.db` satırları, müşteri telefonu dahil), [MANIFEST]. A10.4h (S35, MAP.md 17.1 #15 b):
+ * haritanın küçük verisi de girer — [MAP_PREFS] (`map` tercihleri, sırlar çıkarılmış) ve [MAP_PREFIX] altında `files/map/` dosyaları
+ * (seçimi ve süzgeci `logic/map` `MapBackup`; sürüş günlükleri girmez). Gün sırları, Sürüş Paneli eşleşmesi ve başka dosya girmez.
  *
  * Kap biçimi (`.weem`): [MAGIC] (8 bayt) · PBKDF2 tur sayısı (4 bayt, büyük uçlu) · tuz (16) · IV (12) · AES-256-GCM şifreli ZIP (sonunda
  * 16 baytlık etiket). Anahtar = PBKDF2WithHmacSHA256(parola, tuz, tur, 256 bit); ilk 40 bayt ek doğrulanan veri (başlık değişirse açılmaz).
@@ -46,6 +47,10 @@ object EncryptedBackup {
     const val PREFS = "kuryelog.json"
     const val TRIPS = "courier/trips.jsonl"
     const val OFFERS = "courier/offers.jsonl"
+    /** A10.4h: `map` tercih dosyası ([encodePrefs] biçimi, süzgeçsiz; sırları çağıran çıkarır). */
+    const val MAP_PREFS = "map-prefs.json"
+    /** A10.4h: `files/map/` altındaki dosyalar bu önekle (`map/roads/…`, `map/manual-marks.json`, `map/logs/…`). */
+    const val MAP_PREFIX = "map/"
     /** OWASP (2023) PBKDF2-HMAC-SHA256 önerisi; yedek arka planda yazılır. */
     const val ITERATIONS = 600_000
     const val MIN_PASSWORD = 8
@@ -83,10 +88,10 @@ object EncryptedBackup {
     fun excludedPref(key: String): Boolean = key.startsWith("home.") || key in excluded
 
     /** `SharedPreferences.getAll()` → [PREFS] JSON: `{anahtar: {"type": bool|int|long|float|string|set, "value": …}}`; [excludedPref] atlanır. */
-    fun encodePrefs(all: Map<String, Any?>): JSONObject {
+    fun encodePrefs(all: Map<String, Any?>, exclude: (String) -> Boolean = ::excludedPref): JSONObject {
         val out = JSONObject()
         for ((k, v) in all.toSortedMap()) {
-            if (excludedPref(k) || v == null) continue
+            if (exclude(k) || v == null) continue
             val (type, value) = when (v) {
                 is Boolean -> "bool" to v
                 is Int -> "int" to v
@@ -102,10 +107,10 @@ object EncryptedBackup {
     }
 
     /** [encodePrefs] tersi; bilinmeyen tip ya da [excludedPref] anahtarı atlanır (elle değiştirilmiş dosya evi geri yazamaz). */
-    fun decodePrefs(j: JSONObject): Map<String, Any> {
+    fun decodePrefs(j: JSONObject, exclude: (String) -> Boolean = ::excludedPref): Map<String, Any> {
         val out = LinkedHashMap<String, Any>()
         for (k in j.keys()) {
-            if (excludedPref(k)) continue
+            if (exclude(k)) continue
             val e = j.optJSONObject(k) ?: continue
             val v: Any = when (e.optString("type")) {
                 "bool" -> e.optBoolean("value")
@@ -145,7 +150,13 @@ object EncryptedBackup {
 
     // ---- yazma
     /** Kaynaklar: haftanın gün dosyaları ve `restaurants.json` [staging]'e kopyalanır (yazanın kilidi altında); tercihler ve `courier.db` satırları bellekte. */
-    class Content(val files: List<Pair<String, File>>, val prefs: JSONObject, val trips: List<JSONObject>, val offers: List<Pair<JSONObject, String?>>)
+    class Content(val files: List<Pair<String, File>>, val prefs: JSONObject, val trips: List<JSONObject>, val offers: List<Pair<JSONObject, String?>>,
+                  val mapPrefs: JSONObject? = null, val mapFiles: List<Pair<String, File>> = emptyList())
+
+    /** [MAP_PREFIX] altında güvenli yol: 1–2 klasör + dosya adı, her parça `[A-Za-z0-9._-]`, nokta ile başlamaz (`..`, gizli dosya yok). */
+    fun mapEntry(name: String): Boolean = name.startsWith(MAP_PREFIX) &&
+        name.removePrefix(MAP_PREFIX).split('/').let { parts -> parts.size in 1..3 && parts.all { SEGMENT.matches(it) } }
+    private val SEGMENT = Regex("[A-Za-z0-9_-][A-Za-z0-9._-]{0,127}")
 
     /** Haftanın kayıtlarını [staging]'e kopyalar; o haftanın gün dosyası yoksa null (yedek yazılmaz). */
     fun stage(logsRoot: File, filesDir: File, week: Week, staging: File): List<Pair<String, File>>? {
@@ -181,20 +192,27 @@ object EncryptedBackup {
             z.putNextEntry(ZipEntry(name)); f.inputStream().use { it.copyTo(z) }; z.closeEntry(); counts.put(name, f.length())
         }
         text(PREFS, content.prefs.toString())
+        for ((name, f) in content.mapFiles) {
+            require(mapEntry(name)) { "Invalid backup entry" }
+            z.putNextEntry(ZipEntry(name)); f.inputStream().use { it.copyTo(z) }; z.closeEntry(); counts.put(name, f.length())
+        }
+        content.mapPrefs?.let { text(MAP_PREFS, it.toString()) }
         val trips = content.trips.filter { (it.opt("day") as? String)?.let { d -> d in week } == true }
         val offers = content.offers.filter { (it.first.opt("day") as? String)?.let { d -> d in week } == true }
         text(TRIPS, trips.joinToString("") { it.toString() + "\n" })
         text(OFFERS, offers.joinToString("") { (j, r) -> JSONObject().put("payload", j).put("result", r ?: JSONObject.NULL).toString() + "\n" })
         text(MANIFEST, JSONObject().put("schema", SCHEMA).put("app", "com.kuryelog.app").put("versionName", versionName).put("createdAtMs", createdAtMs)
             .put("week", JSONObject().put("from", week.monday.toString()).put("to", week.sunday.toString()))
-            .put("files", counts).put("prefs", content.prefs.length()).put("trips", trips.size).put("offers", offers.size).toString())
+            .put("files", counts).put("prefs", content.prefs.length()).put("trips", trips.size).put("offers", offers.size)
+            .put("mapPrefs", content.mapPrefs?.length() ?: 0).put("mapFiles", content.mapFiles.size).toString())
     }
 
     // ---- okuma
     class WrongPassword : IllegalArgumentException("wrong password or damaged file")
 
     /** Geri yüklenecekler: gün dosyaları için düz ZIP ([LogImporter.restore]'a verilir), tercihler, `courier.db` satırları, işaret. */
-    class Opened(val logsZip: ByteArray, val prefs: Map<String, Any>, val trips: List<JSONObject>, val offers: List<Pair<JSONObject, String?>>, val manifest: JSONObject)
+    class Opened(val logsZip: ByteArray, val prefs: Map<String, Any>, val trips: List<JSONObject>, val offers: List<Pair<JSONObject, String?>>, val manifest: JSONObject,
+                 val mapPrefs: Map<String, Any> = emptyMap(), val mapFiles: List<Pair<String, ByteArray>> = emptyList())
 
     /** Şifreyi çözer ve içeriği denetler; parola yanlış ya da dosya bozuksa [WrongPassword]. Kayıtlara dokunmaz. */
     fun open(input: InputStream, password: CharArray): Opened {
@@ -229,6 +247,7 @@ object EncryptedBackup {
     private fun read(plain: ByteArray): Opened {
         val logs = ByteArrayOutputStream()
         var prefs: Map<String, Any> = emptyMap(); val trips = ArrayList<JSONObject>(); val offers = ArrayList<Pair<JSONObject, String?>>()
+        var mapPrefs: Map<String, Any> = emptyMap(); val mapFiles = ArrayList<Pair<String, ByteArray>>()
         var manifest: JSONObject? = null
         ZipOutputStream(logs).use { out ->
             ZipInputStream(ByteArrayInputStream(plain)).use { z ->
@@ -242,15 +261,18 @@ object EncryptedBackup {
                         OFFERS -> lines(bytes).forEach { val o = JSONObject(it); val p = o.getJSONObject("payload"); p.getString("id"); p.getString("pkg"); p.getString("day")
                             offers += p to (o.opt("result") as? String) }
                         MANIFEST -> manifest = JSONObject(String(bytes, Charsets.UTF_8))
+                        MAP_PREFS -> mapPrefs = decodePrefs(JSONObject(String(bytes, Charsets.UTF_8))) { false }
                         // Gün dosyaları ve restaurants.json: LogImporter kurallarıyla (checkedPath, JSON/CSV denetimi, birleştirme).
-                        else -> { out.putNextEntry(ZipEntry(e.name)); out.write(bytes); out.closeEntry() }
+                        // A10.4h: harita dosyaları gün kaydı değil; geçersiz yol bütün yedeği reddeder (gün dosyalarındaki gibi).
+                        else -> if (e.name.startsWith(MAP_PREFIX)) { require(mapEntry(e.name)) { "Invalid backup entry" }; mapFiles += e.name to bytes }
+                        else { out.putNextEntry(ZipEntry(e.name)); out.write(bytes); out.closeEntry() }
                     }
                 }
             }
         }
         val m = manifest ?: throw IllegalArgumentException("Backup has no manifest")
         require(m.optString("schema") == SCHEMA) { "Unknown backup schema" }
-        return Opened(logs.toByteArray(), prefs, trips, offers, m)
+        return Opened(logs.toByteArray(), prefs, trips, offers, m, mapPrefs, mapFiles)
     }
 
     private fun lines(bytes: ByteArray) = String(bytes, Charsets.UTF_8).lineSequence().filter { it.isNotBlank() }.toList()

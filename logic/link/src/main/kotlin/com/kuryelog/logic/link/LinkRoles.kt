@@ -46,6 +46,10 @@ enum class LinkTopic(val type: String, val reliable: Boolean, val ttlMs: Long, v
     THEFT_STATE("TheftState", false, MINUTE, LinkRole.RECEIVER),
     /** Pixel'den "Park" ya da kapatma (LINK.md 5.2). */
     THEFT_COMMAND("TheftCommand", true, 2 * MINUTE, LinkRole.PROVIDER),
+    /** A10.4i: Receiver'ın gün kartı (kısaltılmış gün durumu, `:map` `DaySnapshot`); 60 sn'de bir ve gün değişince. */
+    DAY_SNAPSHOT("DaySnapshot", false, 10 * MINUTE, LinkRole.RECEIVER),
+    /** A10.4i: Receiver'ın yazdığı gün raporu dosyası (`.gun.json`); Provider'ın İstatistik'i için. */
+    DAY_REPORT("DayReport", true, 24 * HOUR, LinkRole.RECEIVER),
     /** İki yönde: öteki telefonun rolü (iki Provider ya da iki Receiver uyarısı). */
     ROLE("LinkRole", false, 24 * HOUR, null);
 

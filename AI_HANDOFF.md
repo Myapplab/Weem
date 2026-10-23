@@ -2,6 +2,12 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-23 — A10.4e–i bitti: S35'in beş işi (Claude Opus; dal `ccr-6c3acbb6-bsytto`)
+- Yapılan: g ekran yönü (`ScreenOrientation`, `orientation`); h harita verisi haftalık yedekte (`MapBackup`, `EncryptedBackup` `map/…`, açılışta bekleyen geri yükleme); e N5 menzil uyarısı (`OfferRange`, `ShadowEvaluator.Range`, `OverlayText.rangeWarning`, `OfferSummary.rangeWarnKm`, `RangeWarnings`, `range.warn`); f S18 (b) boşta bağlantıda bildirim + 60 sn yeniden deneme (`LinkRetry.idleRetryMs`, `ScooterService.RETRY`), "veri eksik"; i `DaySnapshot`/`DayReport` R→P, `DayRuntime.setRemote`, görev/hatırlatıcı iki telefonda.
+- Doğrulama: `-p logic test` 2.144/0; `:app` 111/111, `:map` 9/9; 5 modülde lint 0 hata; telefonda denenmedi.
+- Açık kalan: N5 yalnız kartta Plus Code/DMS varsa (adres geokodlama kullanıcı kararı); Provider'da İstatistik ışık sorusu yereldir; `logic/map` `RangeInputs` artık kullanılmıyor (A10.6'da silinebilir).
+- Sıradaki: A10.4 (K) geçiş; sonra A10.5 (K), A10.6.
+
 ## 2026-10-22 — A10.4d bitti: tasarım yenileme tamam (Claude Opus; dal `ccr-b2a13552-nsq0si`; PR #18 CI yeşil, `main` `efa3df5`)
 - Yapılan: wip dal (`ccr-6a6f738a-pn3a16`) alındı ve doğrulandı; Sürüş Paneli düzeltmeleri; Uzaktan, hata/çökme kartı, sistem üstü katmanlar (rozet metni/biçimi aynı); ev seçici iğnesi; `Segmented` 48 dp; `AcceptanceTest`; `/code-review high` 10 bulgu (7 düzeltildi, 1 değişmedi, 1 belge).
 - Doğrulama: `-p logic test` 2.126/0; `:app` 106/106, `:map` 9/9; 7 modülde lint 0 hata; release APK +88 KB (`main` ile yerelde karşılaştırıldı); telefonda denenmedi.
@@ -139,10 +145,3 @@ Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 
 - Düzeltilen A6.5 hatası: `MapTab` gün kartı açılınca durumunu kaybediyordu → `movableContentOf`. Test uyarlamaları `TEST_ENVANTERI` "A6.7 kod durumu".
 - Doğrulama: A6.7 testleri hepsi yeşil (`logic/map` 16 çevrilmiş + 35 yeni, `:app` 17); birleşim sonrası: `-p logic test` 1.652 test / 148 kırmızı (hepsi A6.8–A6.11 iskeleti), `:app` 54 test / 9 kırmızı (A6.8/A6.9), `:map` yeşil, `lintDebug` 0 hata (`:map` manifestine konum izinleri eklendi). CI yok (`[skip ci]`), **telefonda denenmedi** (barometre, bildirim + izin, Open-Meteo ağı, konum).
 - Açık kalan: **N5 bağı** (ekonomi v2 `Context` + `EconomicsObserver` + "Batarya yetmeyebilir" rozeti: teklif karesinde eşzamansız rota gerekir; SORU-T1-1 (a) onayı); `metric-avg` rota kaydından (A6.9); `metric-surface` Y13; ayrıntı fotoğrafı yok. Sıradaki: A6.8 (gün motoru), A8.3 başlayabilir.
-
-## 2026-10-20 — A6.6 bitti: Android katmanı + harita ekranı navigasyonu (Claude Opus · high; dal `ccr-56fdfbc1-p00o8e`, son kod `70e4d61`)
-- Yapılan: `NavRuntime` derlendi (konum ↔ denetleyici tür çıkarımı); saf `ui.RouteLayer` (çizgiler, rozetler, `fit`) + `nav.NavPanelText` + `SpeedOptions.arrivalClock`; `:app` `MapScreen` rota çizimi/sığdırma/yaklaşma zoom'u/varış odağı/takibe dönüş, `MapNav.kt` (`RoutePanel`, `NavToastBanner`, `SearchOverlay`, `LongPressSheet`), Eve dön, ekran açık = gün || durak; `MapApiSettingsScreen` (Harita ayarları → API ve bağlantılar); `NavOnlyService` 7402 / kanal `navigation` (`NotificationIds`, CORE.md 3.3). Ayrıntı `MAP.md` 7.18; BAKİ notu (8.13 F-N2) düzeltildi.
-- Doğrulama: `-p logic test` 1.617 test, 163 kırmızı (hepsi A6.7–A6.11 iskeleti); `:app:compileDebugKotlin` + `:app:lintDebug` (0 hata) yeşil; `RoutePanelTest` 4/4; `RouteEngineTest` zaman aşımı testi yük altında 3/3 (süre 150 ms). Telefonda denenmedi.
-- Ertelenen (sahip görevde): BATARYA/ZAMAN mod seçimi ve sol göstergeler (A6.7), ortalama hız satırı (A6.9), "Yol yok" seçicisi ve yol satırları (A6.11), POI/ışık/görev satırları ve aramada vardiya aşamasıyla restoran (A6.8), ilk durak halkası (Ripple) yok.
-- Riskler: `NavOnlyService` arka plandan başlatılırken Android 12+ reddedebilir (sessiz düşer); MapLibre zoom ölçeği 256-dp varsayımıyla sığdırma (A6.5'teki standart zoom gibi) cihazda kontrol edilmeli.
-- Sıradaki: A6.7 (Sonnet · high) bu daldan; A8.3 başlayabilir.

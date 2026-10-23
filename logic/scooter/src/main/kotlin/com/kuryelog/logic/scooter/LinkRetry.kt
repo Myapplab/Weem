@@ -23,4 +23,15 @@ class LinkRetry {
     fun close() {
         closed = true
     }
+
+    companion object {
+        /**
+         * WEEM S18 (b), A10.4f (SCOOTER.md 5.1, 14 R-S3): delay before a link idle after `fail` is reopened, or null when it stays
+         * idle. A failed session ([NinebotSession.Stage.FAILED]: no G3 answer, AUTH failed, bad name/serial) and a GATT without a
+         * notification channel ([noChannel]) are retried; a missing key ([NinebotSession.Stage.NEEDS_KEY]) or an expired pairing
+         * window needs the user (pairing), so a retry could not help.
+         */
+        fun idleRetryMs(stage: NinebotSession.Stage?, noChannel: Boolean = false): Long? =
+            if (noChannel || stage == NinebotSession.Stage.FAILED) Timing.IDLE_RETRY_MS else null
+    }
 }

@@ -43,6 +43,28 @@ class DayReportWriter private constructor(private val app: Context) {
         }
     }
 
+    /** A10.4i: Receiver'da yazılan her rapor (ad, metin) Provider'a gider ([com.kuryelog.logic.map.day.DaySnapshot.report]); bağlı değilse null. */
+    @Volatile var onWritten: ((String, String) -> Unit)? = null
+
+    /**
+     * A10.4i: Provider'da Receiver'dan gelen rapor `logs/`'a yazılır (aynı ad yenilenir: ışık cevabı raporu yeniden yazar); silinmiş gün
+     * yazılmaz. Ad [com.kuryelog.logic.map.day.DaySnapshot.readReport]'ta denetlenmiştir.
+     */
+    fun accept(name: String, text: String) {
+        io.execute {
+            runCatching {
+                val day = DayReportFile.decode(text)
+                val id = day.startedAtMs?.let { "yolgo-$it" }
+                if (id != null && id in deleted()) return@execute
+                dir.mkdirs()
+                val out = File(dir, name)
+                val tmp = File(dir, "$name.tmp")
+                tmp.writeText(text)
+                if (!tmp.renameTo(out)) { out.delete(); tmp.renameTo(out) }
+            }
+        }
+    }
+
     /** Raporu sıralı yazar; gün silinmişse (başta ve dosya hazırlandıktan sonra) yazılmaz. */
     fun write(day: DayState) {
         val snapshot = DayState.fromJson(day.toJson())
@@ -64,6 +86,7 @@ class DayReportWriter private constructor(private val app: Context) {
                     out.delete()
                     tmp.renameTo(out)
                 }
+                onWritten?.let { send -> runCatching { send(out.name, out.readText()) } }
             }
         }
     }

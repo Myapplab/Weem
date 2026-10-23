@@ -1,7 +1,7 @@
 # APK'yı derler, kimliğini denetler ve GitHub Release'e koyar. Yalnız `weem-v*` etiketi ya da elle.
 # `weem-v*` etiketi = WEEM sürümü: release APK (com.kuryelog.app, R8'li, `weem-<sürüm>.apk` + SHA-256) Release'in tek dosyası.
-# Elle çalıştırma = .dev APK (com.kuryelog.app.dev, ön sürüm); `release` işaretliyse release APK de eklenir (etiketsiz deneme).
-# Release APK Rawstats'ın üstüne kurulur (aynı paket ve imza): temiz kurulum için önce Rawstats kaldırılır (docs/GECIS_REHBERI.md).
+# Elle çalıştırma = release APK (com.kuryelog.app, R8'li; ön sürüm `weem-build-N`): telefonlara kurulan asıl WEEM (23 Ekim: Rawstats ve
+# YolGo telefonlardan kaldırıldı, A10.4). `dev` işaretliyse yanına .dev APK (com.kuryelog.app.dev, ayrı uygulama) da eklenir.
 name: APK
 
 on:
@@ -9,8 +9,8 @@ on:
     tags: ['weem-v*']
   workflow_dispatch:
     inputs:
-      release:
-        description: 'Release APK de derlenip Release a eklensin (etiketsiz deneme)'
+      dev:
+        description: '.dev APK (ayrı uygulama, com.kuryelog.app.dev) de eklensin'
         type: boolean
         default: false
 
@@ -34,19 +34,21 @@ jobs:
         run: ./gradlew -p logic test --console=plain
       - name: Gömülü harita (Geofabrik → graf, SRTM, yerler; MAP.md 2.11)
         run: WEEM_VERSION=$(sed -n 's/^weem.versionName=//p' gradle.properties) bash ci/build_map.sh
-      - name: Android birim testleri ve .dev APK
+      - name: Android birim testleri ve APK
         # Google Maps anahtarı (MAP.md 6.10): gizli değişken yoksa Google altlığı kapalı derlenir.
         env:
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
-        run: ./gradlew test assembleDebug assembleRelease --console=plain
+          WANT_DEV_APK: ${{ inputs.dev }}
+        run: ./gradlew test assembleRelease $([ "$WANT_DEV_APK" = true ] && echo assembleDebug) --console=plain
       - name: Kimlik denetimi (.dev)
+        if: ${{ inputs.dev }}
         run: ci/check_identity.sh app/build/outputs/apk/debug/app-debug.apk com.kuryelog.app.dev
       - name: Kimlik denetimi (release)
         run: ci/check_identity.sh app/build/outputs/apk/release/app-release.apk com.kuryelog.app
       - name: Release
         env:
           GH_TOKEN: ${{ github.token }}
-          WANT_RELEASE_APK: ${{ inputs.release }}
+          WANT_DEV_APK: ${{ inputs.dev }}
         run: |
           ver=$(sed -n 's/^weem.versionName=//p' gradle.properties)
           if [ "$GITHUB_REF_TYPE" = tag ]; then
@@ -62,14 +64,15 @@ jobs:
               gh release create "$GITHUB_REF_NAME" "$apk" "$apk.sha256" --title "WEEM $ver" --generate-notes
             fi
           else
-            dev="weem-${ver}-dev.apk"
-            cp app/build/outputs/apk/debug/app-debug.apk "$dev"
-            files=("$dev")
-            if [ "$WANT_RELEASE_APK" = true ]; then
-              apk="weem-${ver}.apk"
-              cp app/build/outputs/apk/release/app-release.apk "$apk"
-              sha256sum "$apk" > "$apk.sha256"
-              files+=("$apk" "$apk.sha256")
+            # Elle: asıl WEEM (release APK); istenirse .dev de.
+            apk="weem-${ver}.apk"
+            cp app/build/outputs/apk/release/app-release.apk "$apk"
+            sha256sum "$apk" > "$apk.sha256"
+            files=("$apk" "$apk.sha256")
+            if [ "$WANT_DEV_APK" = true ]; then
+              dev="weem-${ver}-dev.apk"
+              cp app/build/outputs/apk/debug/app-debug.apk "$dev"
+              files+=("$dev")
             fi
-            gh release create "weem-dev-${GITHUB_RUN_NUMBER}" "${files[@]}" --title "WEEM $ver (.dev) — weem-dev-${GITHUB_RUN_NUMBER}" --generate-notes --prerelease --target "$GITHUB_SHA"
+            gh release create "weem-build-${GITHUB_RUN_NUMBER}" "${files[@]}" --title "WEEM $ver — weem-build-${GITHUB_RUN_NUMBER}" --generate-notes --prerelease --target "$GITHUB_SHA"
           fi

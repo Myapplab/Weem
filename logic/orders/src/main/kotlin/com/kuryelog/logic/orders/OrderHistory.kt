@@ -215,6 +215,9 @@ object OrderHistory {
         val window = (t.completedAt ?: t.deliveredInferredAt)?.let { Math.round((it - t.acceptedAt).coerceAtLeast(0) / 60000.0) }
         parts += tl("ölçülen", "ölçülən") + " " + (if (window != null) "$measured/$window" else "$measured") + " " + tl("dk", "dəq")
         if (t.energyPartialMs > 0) parts += tl("harici batarya okunmayan", "xarici batareya oxunmayan") + " " + Math.round(t.energyPartialMs / 60000.0) + " " + tl("dk", "dəq")
+        // WEEM A10.4f (S18, S35): the minutes the scooter link read nothing are named, not hidden (one phone loses the link between orders).
+        val missing = window?.let { it - Math.round((t.energyCoveredMs + t.energyPartialMs) / 60000.0) } ?: 0
+        if (missing >= 1) parts += tl("veri eksik", "məlumat əskik") + " " + missing + " " + tl("dk", "dəq")
         if (t.energyShared) parts += tl("başka siparişle aynı anda", "başqa sifarişlə eyni vaxtda")
         return parts.joinToString(" · ")
     }

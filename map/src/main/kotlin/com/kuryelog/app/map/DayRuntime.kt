@@ -6,7 +6,9 @@ import com.kuryelog.app.core.ShiftHub
 import com.kuryelog.logic.core.Clock
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.core.OrderEvents
+import com.kuryelog.logic.map.ride.RangeWarnings
 import com.kuryelog.logic.map.day.DayController
+import com.kuryelog.logic.map.day.DayEvent
 import com.kuryelog.logic.map.day.DayFix
 import com.kuryelog.logic.map.day.DayState
 import com.kuryelog.logic.map.day.DayStep
@@ -45,6 +47,10 @@ class DayRuntime private constructor(private val app: Context) {
     private val controller = DayController(MapPrefsStore(app), lang)
     private var lastPoint: GeoPoint? = null
     private var stagesJob: Job? = null
+    private var offersJob: Job? = null
+    private val rangeWarnings = RangeWarnings()
+    /** N5 (A10.4e): uyarılı yeni teklif → "eve dön?" kartı ([NavRuntime] bağlar). */
+    @Volatile var onRangeWarning: (() -> Unit)? = null
     private var recheck: Job? = null
     @Volatile private var events: OrderEvents = OrderEvents.NONE
 
@@ -57,9 +63,44 @@ class DayRuntime private constructor(private val app: Context) {
     val steps: SharedFlow<DayStep> get() = stepFlow.asSharedFlow()
 
     private val listeners = java.util.concurrent.CopyOnWriteArrayList<(DayStep) -> Unit>()
+    private val remoteListeners = java.util.concurrent.CopyOnWriteArrayList<(DayStep) -> Unit>()
 
-    /** A6.9: sürüş günlüğü, gün raporu, görev ve hatırlatıcı sinyalleri bu kancaya bağlanır (olaylar, gün durumu); her adımda sırayla çağrılır. */
+    /**
+     * A6.9: sürüş günlüğü, gün raporu, görev ve hatırlatıcı sinyalleri bu kancaya bağlanır (olaylar, gün durumu); her adımda sırayla çağrılır.
+     * [remoteToo]: 2 telefonda Provider'da Receiver'ın gününden de beslenir (A10.4i: görevler ve hatırlatıcılar iki telefonda).
+     */
     fun addStepListener(l: (DayStep) -> Unit) { listeners += l }
+
+    fun addStepListener(l: (DayStep) -> Unit, remoteToo: Boolean) {
+        listeners += l
+        if (remoteToo) remoteListeners += l
+    }
+
+    /**
+     * A10.4i (MAP.md 11.17, S35 #17): 2 telefonda Provider'da gün motoru girdi almaz (çift km ve çift ışık sayımı olmasın); gün kartı,
+     * İstatistik'in süren günü, görevler ve hatırlatıcılar Receiver'ın gününden ([showRemote]). Yerel işaretler (ışık, kaldırım) kaydedilir.
+     */
+    @Volatile var remote = false
+        private set
+
+    fun setRemote(on: Boolean) {
+        if (remote == on) return
+        remote = on
+        if (on) showRemote(DayView(DayState(), null), force = true)
+        else publish(synchronized(lock) { controller.onTick(clock.wallMs()) })
+    }
+
+    /** Receiver'ın son günü (`DaySnapshot`); teslim sayısı artınca görevlere "delivered" olayı. Yalnız [remote] iken. */
+    fun showRemote(view: DayView, force: Boolean = false) {
+        if (!remote && !force) return
+        val before = viewFlow.value.state
+        viewFlow.value = view
+        val s = view.state
+        val events = if (s.active && s.startedAtMs == before.startedAtMs && s.delivered > before.delivered)
+            listOf(DayEvent("delivered", clock.wallMs())) else emptyList()
+        val step = DayStep(events, false, emptyList(), false, view)
+        for (l in remoteListeners) runCatching { l(step) }
+    }
 
     /** Navigasyonun hedef bağı (`NavController.shift`): hedef restoran/müşteri olarak saklanır; eve dönüş ölçümü başlar. */
     val navShift: NavShift = object : NavShift {
@@ -80,10 +121,11 @@ class DayRuntime private constructor(private val app: Context) {
             sidewalks = controller.sidewalks,
             lightMaxM = { settings.value.lightMaxM },
         )::at
-        scope.launch { ShiftHub.state.collect { s -> publish(synchronized(lock) { controller.onShift(s, clock.wallMs()) }) } }
+        scope.launch { ShiftHub.state.collect { s -> if (!remote) publish(synchronized(lock) { controller.onShift(s, clock.wallMs()) }) } }
         scope.launch {
             while (isActive) {
                 delay(TICK_MS)
+                if (remote) continue
                 publish(
                     synchronized(lock) {
                         controller.home = Home.point(app)?.let { GeoPoint(it.lat, it.lon) }
@@ -98,6 +140,7 @@ class DayRuntime private constructor(private val app: Context) {
 
     /** Konum akışı (`NavRuntime`): motor + ışık ölçer (fix yaşı −5…+30 sn dışındaysa yok sayılır). */
     fun onFix(f: NavFix) {
+        if (remote) return
         val step = synchronized(lock) {
             lastPoint = GeoPoint(f.lat, f.lon)
             controller.onFix(DayFix(f.atMs, f.lat, f.lon, f.speedMps ?: -1.0, f.accuracyM), clock.wallMs())
@@ -110,9 +153,12 @@ class DayRuntime private constructor(private val app: Context) {
         events = source
         stagesJob?.cancel()
         stagesJob = scope.launch { source.stages.collect { readStages() } }
+        offersJob?.cancel()
+        offersJob = scope.launch { source.offers.collect { if (rangeWarnings.fresh(it)) onRangeWarning?.invoke() } }
     }
 
     private fun readStages() {
+        if (remote) return
         val feed = StageFeed.from(events.stages.value.takeIf { events !== OrderEvents.NONE })
         val step = synchronized(lock) { controller.onStages(feed, clock.wallMs(), lastPoint) }
         publish(step)
@@ -145,7 +191,8 @@ class DayRuntime private constructor(private val app: Context) {
     fun lastDay() = synchronized(lock) { controller.lastDay }
 
     /** Süren gün durumunun anlık kopyası (İstatistik, gün raporu); gün kapalıysa null. */
-    fun activeDay(): DayState? = synchronized(lock) { controller.view.state.takeIf { it.active }?.let { DayState.fromJson(it.toJson()) } }
+    fun activeDay(): DayState? = if (remote) viewFlow.value.state.takeIf { it.active }?.let { DayState.fromJson(it.toJson()) }
+        else synchronized(lock) { controller.view.state.takeIf { it.active }?.let { DayState.fromJson(it.toJson()) } }
 
     /** Onaylanmış ışık sayısı (`LightsDb.confirmed`; gün raporunda `lightsLearned`). */
     fun lightsConfirmed() = synchronized(lock) { controller.lights.confirmed }
@@ -154,6 +201,7 @@ class DayRuntime private constructor(private val app: Context) {
     fun forgetLastDay() = synchronized(lock) { controller.forgetLastDay() }
 
     private fun publish(step: DayStep) {
+        if (remote) return
         viewFlow.value = step.view
         if (step.events.isNotEmpty() || step.toasts.isNotEmpty()) stepFlow.tryEmit(step)
         for (l in listeners) runCatching { l(step) }

@@ -20,6 +20,7 @@ import com.kuryelog.logic.core.OfferSummary
 import com.kuryelog.logic.core.OrderEvents
 import com.kuryelog.logic.core.ScooterBridge
 import com.kuryelog.logic.core.TripStages
+import com.kuryelog.logic.core.RangePort
 import com.kuryelog.logic.core.WeatherPort
 import com.kuryelog.logic.core.ShiftMachine
 import com.kuryelog.logic.orders.CourierRecords
@@ -69,6 +70,10 @@ object Orders {
     @Volatile var weather: WeatherPort = WeatherPort.NONE
         private set
     fun bindWeather(port: WeatherPort) { weather = port }
+    /** N5 menzil dikişi (A10.4e, MAP.md 10.6): `:app` bağlayana dek `NONE` (menzil girdisi ve uyarı yok). */
+    @Volatile var range: RangePort = RangePort.NONE
+        private set
+    fun bindRange(port: RangePort) { range = port }
     private var stepJob: Job? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 

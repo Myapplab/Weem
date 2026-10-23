@@ -35,13 +35,19 @@ object DayReportCard {
     fun energyNote(r: DayReport, tl: (String, String) -> String): String = when (r.energyState) {
         EnergyState.NOT_MEASURED -> tl("Enerji ölçülmedi (scooter bağlı değildi ya da okunamadı): enerji maliyeti hesaba katılmadı.",
             "Enerji ölçülmədi (skuter qoşulmamışdı və ya oxunmadı): enerji xərci hesaba alınmadı.")
-        EnergyState.NO_PRICE -> tl("Enerji ${wh(r.energyWh)} ölçüldü ama kWh fiyatı girilmediği için maliyet hesaba katılmadı (Daha fazla → Siparişler ayarları).",
-            "Enerji ${wh(r.energyWh)} ölçüldü, amma kWh qiyməti daxil edilmədiyi üçün xərc hesaba alınmadı (Daha çox → Sifariş ayarları).")
         EnergyState.COSTED -> tl(
             "Enerji ${wh(r.energyWh)} (siparişler ${wh(r.orderWh)}, boşta ${wh(r.idleWh)}) × ${f2(r.prices.kwhPrice ?: 0.0)} ₼/kWh ÷ %${f1(r.prices.chargeEfficiencyPct)} şarj verimi; " +
                 "${r.measuredTrips}/${r.deliveredTrips} siparişte ölçüldü.",
             "Enerji ${wh(r.energyWh)} (sifarişlər ${wh(r.orderWh)}, boşda ${wh(r.idleWh)}) × ${f2(r.prices.kwhPrice ?: 0.0)} ₼/kWh ÷ %${f1(r.prices.chargeEfficiencyPct)} şarj səmərəsi; " +
-                "${r.measuredTrips}/${r.deliveredTrips} sifarişdə ölçüldü.")
+                "${r.measuredTrips}/${r.deliveredTrips} sifarişdə ölçüldü.") + missingNote(r, tl)
+        EnergyState.NO_PRICE -> tl("Enerji ${wh(r.energyWh)} ölçüldü ama kWh fiyatı girilmediği için maliyet hesaba katılmadı (Daha fazla → Siparişler ayarları).",
+            "Enerji ${wh(r.energyWh)} ölçüldü, amma kWh qiyməti daxil edilmədiyi üçün xərc hesaba alınmadı (Daha çox → Sifariş ayarları).") + missingNote(r, tl)
+    }
+
+    /** WEEM A10.4f (S18, S35): scooter verisi olmayan siparişler açıkça "veri eksik" (tek telefonda bağlantı sipariş aralarında kopar). */
+    fun missingNote(r: DayReport, tl: (String, String) -> String): String {
+        val n = r.deliveredTrips - r.measuredTrips
+        return if (n <= 0) "" else tl(" $n siparişte scooter verisi eksik.", " $n sifarişdə skuter məlumatı əskikdir.")
     }
 
     /** Hedef (N8) satırı; hedef girilmemişse null. */

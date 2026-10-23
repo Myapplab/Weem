@@ -86,6 +86,7 @@ Bugünkü mesajlar (alan alan: `bulgular/X_protocol.md` P1–P11; WEEM'deki kar�
 |---|---|---|---|
 | `lang` | String `tr`\|`az`\|yok | dil | `:app` · A1.3 |
 | `theme` | String `system`\|`light`\|`dark` | **yeni** (A1.3) | `:app` |
+| `orientation` | String `free`\|`portrait`\|`landscape` (yoksa `free`) | **yeni** (A10.4g, SORU-N6) | `:app` |
 | `shift`, `manualSession`, `autoStarted`, `autoShift` | Bool (false) | `CORE` 1.1 | `:core` · A2.4 |
 | `manualPolicy` | **Int** (0) | göç işareti | `:core` · A2.4 |
 | `shiftStart`, `shiftEndedAt`, `shiftInterruptedAt` | Long ms (0) | `CORE` 1.1, 1.5 | `:core` · A2.4 |
@@ -94,6 +95,7 @@ Bugünkü mesajlar (alan alan: `bulgular/X_protocol.md` P1–P11; WEEM'deki kar�
 | `home.lat`, `home.lon` | **String** | `CORE` 2.1 | `:core` · A2.4 |
 | `home.updatedAt` | Long (yok = bilinmiyor) | `CORE` 2.1 | `:core` · A2.4 |
 | `home.startBlocked`, `home.endArmed` | Bool (false) | `CORE` 1.6 | `:core` · A2.4 |
+| `range.warn` | Bool (yoksa true) | **yeni** (A10.4e, N5 menzil uyarısı; `MAP.md` 10.6) | `:economics` · `:app` |
 | `crashSeenAt` | Long (0) | `CORE` 4.1 | `:core` · A2.3 |
 | `weem.deviceId` | String: küçük harfli UUID (36 karakter; `DeviceId`) | **yeni** (`CORE` 1.10) | `:core` · A2.4 |
 | `weem.setupDone` | Bool (false): ilk açılış kurulumu bitti/atlandı; şifreli yedeğe girmez | **yeni** (G5, A7.2) | `:app` · A7.2 |
@@ -188,7 +190,7 @@ YolGo göç işaretleri (`settings.v1` alanları `lightMaxMv2`, `lightMaxMv3`, `
 
 ### 5.5 WEEM harita — dosya **`map`** — WEEM: **yeni** (Aşama 6; `MAP.md` 14.1–14.3)
 
-5.4'teki YolGo anahtarlarının WEEM'deki yeri: aynı ad ve biçim, **`flutter.` öneki olmadan** (`settings.v1` alan tablosu `MAP.md` 14.2, öteki anahtarlar 14.3); tip eşlemesi `MAP.md` 14.1 (double → `putString`, `List<String>` → JSON dizi dizgesi, int → `putLong`). Boş başlar (S1). İstisnalar: dil, tema ve ev `kuryelog`'da (5.1: `lang`, `theme`, `home.lat`/`home.lon`); `day.home.v1` ve `rawstats.*` yazılmaz (ev kuralı `:core`'da; `rawstats.*` yerine yeni `day.shift.handled.v1`); Y12 `roads.*` tercihlerde değil, `files/map/roads/`'ta (7.5); göç işaretleri yazılmaz (5.4). Sırlar (`googleKey`, `orsKey`, `cartoKey`, `weather.key.v1`) hiçbir kayda, dışa aktarmaya ve yedeğe yazılmaz (`MAP.md` 14.10). Haftalık şifreli yedeğe (S22) bugün girmez (soru `MAP.md` 17.1 #15).
+5.4'teki YolGo anahtarlarının WEEM'deki yeri: aynı ad ve biçim, **`flutter.` öneki olmadan** (`settings.v1` alan tablosu `MAP.md` 14.2, öteki anahtarlar 14.3); tip eşlemesi `MAP.md` 14.1 (double → `putString`, `List<String>` → JSON dizi dizgesi, int → `putLong`). Boş başlar (S1). İstisnalar: dil, tema ve ev `kuryelog`'da (5.1: `lang`, `theme`, `home.lat`/`home.lon`); `day.home.v1` ve `rawstats.*` yazılmaz (ev kuralı `:core`'da; `rawstats.*` yerine yeni `day.shift.handled.v1`); Y12 `roads.*` tercihlerde değil, `files/map/roads/`'ta (7.5); göç işaretleri yazılmaz (5.4). Sırlar (`googleKey`, `orsKey`, `cartoKey`, `weather.key.v1`) hiçbir kayda, dışa aktarmaya ve yedeğe yazılmaz (`MAP.md` 14.10). Haftalık şifreli yedeğe (S22) A10.4h'den beri girer, sırlar çıkarılmış (`MAP.md` 14.1, 14.10; #15 b); `files/map/roads/`, `manual-marks.json`, haftanın gün raporları ve rota kayıtları da girer, sürüş günlükleri girmez.
 
 ## 6. Veritabanları
 

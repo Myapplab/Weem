@@ -45,7 +45,16 @@ class ShellTest {
         for (m in ThemeMode.entries) assertEquals(m, ThemeMode.fromKey(m.key))
     }
 
+    @Test fun screenOrientationDefaultsToFree() {
+        assertEquals(ScreenOrientation.FREE, ScreenOrientation.fromKey(null))
+        assertEquals(ScreenOrientation.FREE, ScreenOrientation.fromKey("x"))
+        for (o in ScreenOrientation.entries) assertEquals(o, ScreenOrientation.fromKey(o.key))
+        assertEquals(listOf("free", "portrait", "landscape"), ScreenOrientation.entries.map { it.key })
+    }
+
     @Test fun preferenceKeysMatchTheKuryelogFile() {
         assertEquals("lang", Lang.PREF_KEY)
+        assertEquals("theme", ThemeMode.PREF_KEY)
+        assertEquals("orientation", ScreenOrientation.PREF_KEY)
     }
 }

@@ -117,6 +117,14 @@ class PhoneBridge(
     private val openedTargets = LinkedHashSet<String>()
     private val doneTheftCommands = LinkedHashSet<String>()
 
+    // --- Provider: Receiver'ın günü (A10.4i) ---
+    private val _daySnapshot = MutableStateFlow<String?>(null)
+    /** Provider'da Receiver'ın son gün kartı (`:map` `DaySnapshot` metni; çözmek `:map`'in işi); bağlantı kopsa da son değer kalır. */
+    val daySnapshot: StateFlow<String?> = _daySnapshot.asStateFlow()
+    private val _dayReports = MutableSharedFlow<String>(extraBufferCapacity = 16)
+    /** Provider'da Receiver'dan gelen gün raporu iletileri (`DaySnapshot.report` metni). */
+    val dayReports: SharedFlow<String> = _dayReports.asSharedFlow()
+
     // --- Provider: hırsızlık ---
     private val _theft = MutableStateFlow<TheftState?>(null)
     /** Provider'da Receiver'ın son hırsızlık durumu; bağlantı kopsa da kalır (son bilinen konum, LINK.md 5.2). */
@@ -302,6 +310,18 @@ class PhoneBridge(
         return publish(LinkTopic.THEFT_COMMAND) { LinkPayloads.theftCommand(TheftCommand(UUID.randomUUID().toString(), action, now)) } != null
     }
 
+    /** A10.4i: Receiver'ın gün kartı (son durum; çağıran 60 sn'de bir ve değişince yollar). */
+    fun receiverDay(snapshot: String) {
+        if (role != LinkRole.RECEIVER) return
+        publish(LinkTopic.DAY_SNAPSHOT) { snapshot.toByteArray(Charsets.UTF_8) }
+    }
+
+    /** A10.4i: Receiver'ın yazdığı gün raporu (güvenilir); kuyruğa girdiyse true. */
+    fun receiverDayReport(message: String): Boolean {
+        if (role != LinkRole.RECEIVER) return false
+        return publish(LinkTopic.DAY_REPORT) { message.toByteArray(Charsets.UTF_8) } != null
+    }
+
     /** Rota: değişince, en çok saniyede bir. Rota yoksa hedefsiz ve ölçümsüz durum. Ev rotasının hedefi zaten null. */
     fun receiverRoute(r: RouteStatus?, now: Long = wall()) {
         if (role != LinkRole.RECEIVER) return
@@ -341,6 +361,8 @@ class PhoneBridge(
                 LinkTopic.ROUTE -> d.route(payload)?.let { _route.value = it.takeIf { r -> r.target != null || r.route != null } }
                 LinkTopic.THEFT_STATE -> d.theftState(payload)?.let { _theft.value = it }
                 LinkTopic.THEFT_COMMAND -> d.theftCommand(payload)?.let(::gotTheftCommand)
+                LinkTopic.DAY_SNAPSHOT -> _daySnapshot.value = String(payload, Charsets.UTF_8)
+                LinkTopic.DAY_REPORT -> _dayReports.tryEmit(String(payload, Charsets.UTF_8))
             }
         } catch (e: Exception) {
             failures.failure("link_${topic.type}", e)

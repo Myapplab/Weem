@@ -73,6 +73,11 @@ class DayReportTest {
         val r = DayReport.build(day(a, b), emptyList(), priced)
         assertEquals(200.0, r.energyWh, 1e-9); assertEquals(1, r.measuredTrips); assertEquals(2, r.deliveredTrips)
         assertTrue(DayReportCard.energyNote(r, ::tl).contains("1/2 siparişte ölçüldü"))
+        // WEEM A10.4f: the unmeasured order is named.
+        assertTrue(DayReportCard.energyNote(r, ::tl).endsWith(" 1 siparişte scooter verisi eksik."))
+        assertTrue(DayReportCard.energyNote(r, ::azl).endsWith(" 1 sifarişdə skuter məlumatı əskikdir."))
+        val all = DayReport.build(day(b), emptyList(), priced)
+        assertFalse(DayReportCard.energyNote(all, ::tl).contains("eksik"))
     }
 
     @Test fun idleRowsCountOncePerSpellAndNeverNegativeOrNull() {
