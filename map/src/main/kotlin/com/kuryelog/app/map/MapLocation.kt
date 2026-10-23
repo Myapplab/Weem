@@ -16,23 +16,28 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.currentStateAsState
 import com.kuryelog.logic.map.geo.GeoPoint
 import com.kuryelog.logic.map.graph.RoadGraph
+import com.kuryelog.logic.map.ui.PuckAnimator
 import com.kuryelog.logic.map.ui.PuckFix
 import com.kuryelog.logic.map.ui.PuckMotion
-import com.kuryelog.logic.map.ui.PuckStep
-
-/** Harita ekranının konum işareti: kaydırılmış nokta, ok/koni yönü, doğruluk, son ham konum. */
-data class PuckView(val point: GeoPoint, val course: Double?, val beam: Double?, val accuracyM: Double?, val raw: GeoPoint, val turning: Boolean, val cameraHeading: Double?)
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 
 /**
- * Harita görünürken GPS (1 sn; ilk konum için ağ) dinler; uygulama arka plandayken (Activity STARTED değil, ör. Wolt/Bolt önde) dinlemez (A10.1) ve işaret akışını (`ui.PuckMotion`, MAP.md 6.4) uygular: [graph] varsa yola oturtma, ileri tahmin, doğrusal kayma
- * (her karede). İzin yoksa null kalır (izni vardiya kartı ister). Pusula yönü (koni) Bölüm 7.6, A6.6.
+ * Harita ekranının konum işareti: çizim yeri, yön ([heading]: ok, koni ve yön-yukarı kamera; S38 gerçek zamanlı), [moving] (ok gösterilebilir), doğruluk,
+ * son ham konum.
+ */
+data class PuckView(val point: GeoPoint, val heading: Double?, val moving: Boolean, val accuracyM: Double?, val raw: GeoPoint, val turning: Boolean)
+
+/**
+ * Harita görünürken GPS (1 sn; ilk konum için ağ) ve pusula ([CompassSensor], ~30 Hz) dinler; uygulama arka plandayken (Activity STARTED değil, ör. Wolt/Bolt önde)
+ * ikisi de kapalı (A10.1) ve işaret akışını (`ui.PuckMotion`, MAP.md 6.4) uygular: [graph] varsa yola oturtma, ileri tahmin, doğrusal kayma. S38: kayma ve dönüş
+ * tek döngüde, en çok ~30 fps ve yalnız değişiklik varken (`ui.PuckAnimator`); duran işaret kare istemez (pil). İzin yoksa null kalır (izni vardiya kartı ister).
  */
 @Composable
 fun rememberMapPuck(enabled: Boolean, graph: RoadGraph?): State<PuckView?> {
@@ -41,29 +46,35 @@ fun rememberMapPuck(enabled: Boolean, graph: RoadGraph?): State<PuckView?> {
     val motion = remember(graph) {
         PuckMotion(graph?.let { g -> { lat, lon, d, h, tol -> g.nearestEdge(lat, lon, maxDist = d, heading = h, headingTol = tol) } })
     }
-    val step = remember { mutableStateOf<PuckStep?>(null) }
+    val animator = remember { PuckAnimator() }
+    val wake = remember { Channel<Unit>(Channel.CONFLATED) }
     val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
     val listen = enabled && lifecycle.isAtLeast(Lifecycle.State.STARTED)
     DisposableEffect(listen, motion) {
         val lm = context.getSystemService(LocationManager::class.java)
-        val listener = LocationListener { loc -> motion.onFix(loc.toPuckFix(), SystemClock.elapsedRealtime(), view.value?.point)?.let { step.value = it } }
-        val started = listen && start(context, lm, listener)
-        onDispose { if (started) runCatching { lm?.removeUpdates(listener) } }
-    }
-    val s = step.value
-    LaunchedEffect(s) {
-        if (s == null) return@LaunchedEffect
-        val beam = motion.heading.value ?: s.course
-        fun emit(p: GeoPoint) {
-            view.value = PuckView(p, s.course, beam, motion.accuracyM, s.to, s.turning, s.cameraHeading)
+        val listener = LocationListener { loc ->
+            val step = motion.onFix(loc.toPuckFix(), SystemClock.elapsedRealtime(), animator.displayed) ?: return@LocationListener
+            animator.onStep(step, motion.accuracyM, motion.heading.value, GeoPoint(loc.latitude, loc.longitude), SystemClock.uptimeMillis())
+            wake.trySend(Unit)
         }
-        if (s.jump || s.slideMs <= 0) { emit(s.to); return@LaunchedEffect }
-        val start = withFrameNanos { it }
+        val compass = CompassSensor(context.applicationContext) { deg -> animator.onCompass(deg); wake.trySend(Unit) }
+        val started = listen && start(context, lm, listener)
+        val here = view.value?.raw
+        val compassOn = listen && compass.start(here?.lat, here?.lon)
+        onDispose {
+            if (started) runCatching { lm?.removeUpdates(listener) }
+            if (compassOn) { compass.stop(); animator.compassOff(); wake.trySend(Unit) }
+        }
+    }
+    LaunchedEffect(animator) {
         while (true) {
-            val t = withFrameNanos { it }
-            val k = ((t - start) / 1e6 / s.slideMs).coerceIn(0.0, 1.0)
-            emit(GeoPoint(s.from.lat + (s.to.lat - s.from.lat) * k, s.from.lon + (s.to.lon - s.from.lon) * k))
-            if (k >= 1.0) break
+            wake.receive()
+            while (true) {
+                val now = SystemClock.uptimeMillis()
+                animator.frame(now)?.let { f -> view.value = PuckView(f.point, f.heading, f.moving, f.accuracyM, f.raw, f.turning) }
+                if (!animator.busy(now)) break
+                delay(PuckAnimator.FRAME_MS)
+            }
         }
     }
     return view

@@ -124,12 +124,22 @@ class BatteryEstimator(private val prefs: MapPrefs, capacityWh: Double, private 
     )
     val state: StateFlow<BatteryState> get() = _state
 
-    /** Taze canlı değer (yoksa null): iç % varsa çapa olur; bağlantı koparsa tahmin son canlı %'den sürer. */
+    private var lastExternal: Double? = null
+    private var lastExternalAtMs = 0L
+
+    /**
+     * Taze canlı değer (yoksa null): iç % varsa çapa olur; bağlantı koparsa tahmin son canlı %'den sürer. S38: ikinci (harici) batarya sessizleşince yüzdesi
+     * okunmaz (yalnız voltajı 15 sn'de bir; SCOOTER.md 9) ve 15 sn'de bayatlar; bağlantı sürdükçe son okunan yüzde [EXTERNAL_HOLD_MS] gösterilir (kutuda "+%"
+     * kaybolmasın; yavaş değişir).
+     */
     @Synchronized
     fun onLive(live: ScooterLive?) {
         val fresh = live?.takeIf { it.fresh }
         val internal = fresh?.scooter?.internalPct
-        val external = fresh?.scooter?.externalPct
+        val read = fresh?.scooter?.externalPct
+        val now = nowMs()
+        if (read != null) { lastExternal = read; lastExternalAtMs = now }
+        val external = read ?: lastExternal?.takeIf { fresh != null && now - lastExternalAtMs in 0..EXTERNAL_HOLD_MS }
         val s = _state.value
         if (s.livePercent == internal && s.liveExternalPercent == external) return
         if (internal == null) {
@@ -175,5 +185,7 @@ class BatteryEstimator(private val prefs: MapPrefs, capacityWh: Double, private 
         const val K_WH = "battery.consumed"
         const val K_AT = "battery.setAt"
         private const val SAVE_EVERY_MS = 30_000L
+        /** İkinci bataryanın son okunan yüzdesi bağlantı sürdükçe bu kadar gösterilir (S38). */
+        const val EXTERNAL_HOLD_MS = 10 * 60_000L
     }
 }

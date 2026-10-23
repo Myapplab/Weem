@@ -1,6 +1,7 @@
 package com.kuryelog.app.map
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.ui.Modifier
 import com.kuryelog.logic.map.geo.GeoPoint
 import com.kuryelog.logic.map.ui.BaseMap
@@ -19,6 +20,9 @@ enum class MarkerKind {
 
     /** Yer noktaları (MAP.md 5.3): ışık, metro, AVM, restoran, fast food, kafe, market. */
     POI_LIGHT, POI_METRO, POI_MALL, POI_RESTAURANT, POI_FASTFOOD, POI_CAFE, POI_MARKET,
+
+    /** S38: rota açıkken rotanın üstündeki trafik ışığı (büyük). */
+    POI_LIGHT_ROUTE,
 }
 
 /** İşaret: duraklar (mor, numaralı; ilk tam, diğerleri %60), varılan hedef (yeşil) ve yer noktaları. */
@@ -30,11 +34,15 @@ data class MapPuck(val point: GeoPoint, val course: Double?, val beam: Double?, 
 /** Kamera komutu: [seq] her yeni komutta artar (yüzey yalnız yeniyi uygular). [bearing] null ise yön değişmez. */
 data class MapCameraCommand(val seq: Int, val center: GeoPoint, val zoom: Double? = null, val bearing: Double? = null, val animate: Boolean = false)
 
-/** Bir yüzeye çizilecek her şey (MAP.md 6.4–6.6); yüzey yalnız görüntü katmanıdır, kararları vermez. */
+/**
+ * Bir yüzeye çizilecek her şey (MAP.md 6.4–6.6); yüzey yalnız görüntü katmanıdır, kararları vermez. [baseLines] seyrek değişen alt katman (bisiklet yolu, yol yok,
+ * yüzey renkleri), [lines] rota; yüzey ikisini ayrı tutar, yalnız değişeni yeniden çizer (S38).
+ */
 data class MapSurfaceModel(
     val base: BaseMap,
     val dark: Boolean,
     val lines: List<MapLine> = emptyList(),
+    val baseLines: List<MapLine> = emptyList(),
     val markers: List<MapMarker> = emptyList(),
     val puck: MapPuck? = null,
     val camera: MapCameraCommand? = null,
@@ -45,6 +53,12 @@ data class MapSurfaceModel(
     val rotateGestures: Boolean = false,
 )
 
+/**
+ * Kare başına değişenler (S38): konum işareti ve kamera. Yüzey bunları görünüm güncellemesinde okur; değişince yalnız işaret ve kamera çizilir, harita sekmesi
+ * yeniden oluşturulmaz (önceden saniyede ~60 kez bütün çizgiler baştan yükleniyordu: rota ve yollar yarım görünüyordu, pil gidiyordu).
+ */
+class MapLive(val puck: State<MapPuck?>, val camera: State<MapCameraCommand?>)
+
 /** Yüzeyden gelenler: dokunuş, uzun basış, elle hareket (parmak kaydırdı/yakınlaştırdı), kamera durdu. */
 class MapSurfaceEvents(
     val onTap: (GeoPoint) -> Unit = {},
@@ -53,12 +67,15 @@ class MapSurfaceEvents(
     val onCameraIdle: (center: GeoPoint, zoom: Double, bearing: Double) -> Unit = { _, _, _ -> },
 )
 
-/** Harita yüzeyi (MAP.md 6.15 `MapSurface`): altlığa göre Google ya da MapLibre. Altlık değişince eski görünüm kapanır (yeni AndroidView). */
+/**
+ * Harita yüzeyi (MAP.md 6.15 `MapSurface`): altlığa göre Google ya da MapLibre. Altlık değişince eski görünüm kapanır (yeni AndroidView). [live] verilirse işaret
+ * ve kamera ondan (modeldekiler yerine).
+ */
 @Composable
-fun MapSurface(model: MapSurfaceModel, events: MapSurfaceEvents, modifier: Modifier = Modifier, userAgent: String = "") {
+fun MapSurface(model: MapSurfaceModel, events: MapSurfaceEvents, modifier: Modifier = Modifier, userAgent: String = "", live: MapLive? = null) {
     when (model.base) {
-        BaseMap.GOOGLE -> GoogleMapSurface(model, events, modifier)
-        else -> MapLibreSurface(model, events, modifier, userAgent)
+        BaseMap.GOOGLE -> GoogleMapSurface(model, events, modifier, live)
+        else -> MapLibreSurface(model, events, modifier, userAgent, live)
     }
 }
 

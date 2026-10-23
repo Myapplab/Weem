@@ -34,10 +34,37 @@ jobs:
         run: ./gradlew -p logic test --console=plain
       - name: Gömülü harita (Geofabrik → graf, SRTM, yerler; MAP.md 2.11)
         run: WEEM_VERSION=$(sed -n 's/^weem.versionName=//p' gradle.properties) bash ci/build_map.sh
-      - name: Android birim testleri ve APK
-        # Google Maps anahtarı (MAP.md 6.10): gizli değişken yoksa Google altlığı kapalı derlenir.
+      - name: Google Maps anahtarı
+        # MAP.md 6.10; S38: anahtar Repository secrets'ta GOOGLE_MAPS_API_KEY (ya da GOOGLE_API_KEY, MAPS_API_KEY, GOOGLE_MAPS_KEY) ya da Variables'ta
+        # GOOGLE_MAPS_API_KEY olabilir. Değerin içinden AIza… anahtarı çıkarılır (tırnak, boşluk, "AD=" öneki sorun olmaz). Günlüğe yalnız adı ve son 4 karakter.
         env:
-          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          K_GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          K_GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          K_MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+          K_GOOGLE_MAPS_KEY: ${{ secrets.GOOGLE_MAPS_KEY }}
+          K_VAR_GOOGLE_MAPS_API_KEY: ${{ vars.GOOGLE_MAPS_API_KEY }}
+        run: |
+          found=""
+          for name in K_GOOGLE_MAPS_API_KEY K_GOOGLE_API_KEY K_MAPS_API_KEY K_GOOGLE_MAPS_KEY K_VAR_GOOGLE_MAPS_API_KEY; do
+            raw="${!name}"
+            [ -n "$raw" ] || continue
+            key=$(printf '%s' "$raw" | grep -oE 'AIza[0-9A-Za-z_-]{35}' | head -n1 || true)
+            if [ -z "$key" ]; then
+              echo "::warning::${name#K_} dolu ama içinde AIza ile başlayan 39 karakterlik anahtar yok (uzunluk ${#raw})"
+              continue
+            fi
+            echo "::add-mask::$key"
+            echo "GOOGLE_MAPS_API_KEY=$key" >> "$GITHUB_ENV"
+            echo "Google Maps anahtarı bulundu: ${name#K_} (••••${key: -4})"
+            found=1
+            break
+          done
+          if [ -z "$found" ]; then
+            echo "::warning::Google Maps anahtarı yok: Settings → Secrets and variables → Actions → Repository secrets'a GOOGLE_MAPS_API_KEY ekleyin. APK Google altlığı olmadan derlenir."
+          fi
+      - name: Android birim testleri ve APK
+        # Google Maps anahtarı bir önceki adımdan (GITHUB_ENV); yoksa Google altlığı kapalı derlenir.
+        env:
           WANT_DEV_APK: ${{ inputs.dev }}
         run: ./gradlew test assembleRelease $([ "$WANT_DEV_APK" = true ] && echo assembleDebug) --console=plain
       - name: Kimlik denetimi (.dev)

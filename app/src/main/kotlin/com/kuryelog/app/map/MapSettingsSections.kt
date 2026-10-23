@@ -48,7 +48,7 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
 /**
- * Harita ayarları → "Harita görünümü" (MAP.md 6.9, SORU-N5 (a)): Vektör (varsayılan) · OpenStreetMap · Google Maps. S37: anahtarsız derlemede Google Maps
+ * Harita ayarları → "Harita görünümü" (MAP.md 6.9, SORU-N5 (a)): Vektör · OpenStreetMap · Google Maps (S38: varsayılan; anahtarsız APK'da vektör). S37: anahtarsız derlemede Google Maps
  * satırı pasif görünür ve altında nedeni yazar (Maps SDK anahtarı yalnız manifestten okunur; uygulamada girilen anahtar Places içindir).
  */
 @Composable

@@ -13,7 +13,10 @@ import org.junit.Test
 class MapStylesTest {
     @Test
     fun `altlık seçimi, eski değerler vektöre, anahtarsız google vektöre düşer`() {
-        assertEquals("vector", MapSettings().mapStyle)
+        // S38: varsayılan Google; anahtarsız derlemede vektöre düşer.
+        assertEquals("google", MapSettings().mapStyle)
+        assertEquals(BaseMap.VECTOR, MapStyles.resolve(MapSettings().mapStyle, mapsEnabled = false))
+        assertEquals(BaseMap.GOOGLE, MapStyles.resolve(MapSettings().mapStyle, mapsEnabled = true))
         assertEquals(BaseMap.VECTOR, MapStyles.resolve("vector", mapsEnabled = true))
         assertEquals(BaseMap.OSM, MapStyles.resolve("osm", mapsEnabled = false))
         assertEquals(BaseMap.GOOGLE, MapStyles.resolve("google", mapsEnabled = true))
@@ -58,5 +61,14 @@ class MapStylesTest {
         assertEquals(listOf('l', 's', 'm', 'r'), listOf('r', 'm', 'l', 's').sortedBy { PoiZoomRules.priority(it) })
         assertEquals(180, PoiZoomRules.MAX_MARKERS); assertEquals(55, PoiZoomRules.MAX_LABELS)
         assertEquals(17.0, GoogleMapStyle.HIDE_POIS_BELOW_ZOOM, 0.0)
+    }
+
+    @Test
+    fun `anahtarlı APK eski varsayılan vektörü bir kez Google'a çevirir`() {
+        assertEquals("google", MapStyles.googleDefault("vector", mapsEnabled = true, done = false))
+        assertNull(MapStyles.googleDefault("vector", mapsEnabled = false, done = false)) // anahtarsız: bekler
+        assertNull(MapStyles.googleDefault("vector", mapsEnabled = true, done = true)) // sonra seçim korunur
+        assertNull(MapStyles.googleDefault("osm", mapsEnabled = true, done = false))
+        assertNull(MapStyles.googleDefault("google", mapsEnabled = true, done = false))
     }
 }

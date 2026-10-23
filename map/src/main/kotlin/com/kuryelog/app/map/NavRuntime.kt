@@ -186,10 +186,10 @@ class NavRuntime private constructor(private val app: Context) {
         }
     }
 
-    /** Konum: harita önde, gün açık ya da yalnız-nav iken (MAP.md 7.6 kapsam). */
+    /** Konum: harita önde, gün açık ya da yalnız-nav iken (MAP.md 7.6 kapsam); S38: harita arkada ve rota yokken 1 sn (pil). */
     private fun refreshLocation() {
         val on = visible || ShiftHub.state.value.active || navOnly.on
-        location.setActive(on)
+        location.setActive(on, fast = visible || controller.state.value.hasRoute)
         BatteryRuntime.get(app).setActive(on)
     }
 

@@ -450,13 +450,13 @@ class PhoneBridgeTest {
     /** A10.4i (S35 #17): Receiver'ın gün kartı ve gün raporu Provider'a; ters yön atılır. */
     @Test
     fun receiverDayReachesTheProvider(): Unit = kotlinx.coroutines.runBlocking {
-        val reports = ArrayList<String>()
-        val job = scope.async { provider.dayReports.collect { reports += it } }
-        kotlinx.coroutines.yield()
+        val reports = java.util.Collections.synchronizedList(ArrayList<String>())
+        // Abonelik bu iş parçacığında, yayından önce kurulur (paylaşılan akış tekrar oynatmaz; Default'ta geç abone olunca rapor kayboluyordu, CI'da ara sıra kırmızı).
+        val job = scope.async(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) { provider.dayReports.collect { reports += it } }
         receiver.receiverDay("{\"schemaVersion\":1,\"x\":1}")
         assertTrue(receiver.receiverDayReport("{\"report\":1}"))
         flush()
-        kotlinx.coroutines.delay(50)
+        kotlinx.coroutines.withTimeout(5_000) { while (reports.isEmpty()) kotlinx.coroutines.delay(10) }
         assertEquals("{\"schemaVersion\":1,\"x\":1}", provider.daySnapshot.value)
         assertEquals(listOf("{\"report\":1}"), reports)
         // Provider göndermez; Receiver bu türleri almaz.

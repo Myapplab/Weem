@@ -39,15 +39,27 @@ object CrashReport {
     fun unseen(j: JSONObject?, seenAt: Long): Boolean = j != null && j.optLong("at", 0L) > seenAt
 
     /** Android's exit reasons (ApplicationExitInfo, API 30) that no Java handler sees; a Java crash is in our own report. */
+    const val EXIT_LOW_MEMORY = 3
     const val EXIT_NATIVE = 5
     const val EXIT_ANR = 6
     const val EXIT_INIT_FAILURE = 7
+    const val EXIT_EXCESSIVE_RESOURCE_USAGE = 9
     const val EXIT_MAX_AGE_MS = 3 * 86_400_000L
+    /** `RunningAppProcessInfo.IMPORTANCE_VISIBLE`: at or below it the courier saw WEEM (screen or foreground service) when it died. */
+    const val IMPORTANCE_VISIBLE = 200
+    const val IMPORTANCE_CACHED = 400
     fun exitLabel(reason: Int): String? = when (reason) {
-        EXIT_NATIVE -> "NativeCrash"; EXIT_ANR -> "ANR"; EXIT_INIT_FAILURE -> "InitializationFailure"; else -> null
+        EXIT_NATIVE -> "NativeCrash"; EXIT_ANR -> "ANR"; EXIT_INIT_FAILURE -> "InitializationFailure"
+        EXIT_LOW_MEMORY -> "LowMemoryKill"; EXIT_EXCESSIVE_RESOURCE_USAGE -> "ExcessiveResourceUsage"; else -> null
     }
-    /** Shown for those reasons only, and only for the last few days (Android keeps older records too). */
-    fun exitShown(reason: Int, at: Long, now: Long): Boolean = exitLabel(reason) != null && now - at in 0..EXIT_MAX_AGE_MS
+    /**
+     * Shown for those reasons only, and only for the last few days (Android keeps older records too). S38 ("WEEM closes and reopens"): a low-memory or
+     * resource-usage kill is shown only when WEEM was visible or ran its foreground service ([importance] ≤ [IMPORTANCE_VISIBLE]); in the background it is normal.
+     */
+    fun exitShown(reason: Int, at: Long, now: Long, importance: Int = IMPORTANCE_CACHED): Boolean {
+        if (exitLabel(reason) == null || now - at !in 0..EXIT_MAX_AGE_MS) return false
+        return reason != EXIT_LOW_MEMORY && reason != EXIT_EXCESSIVE_RESOURCE_USAGE || importance <= IMPORTANCE_VISIBLE
+    }
     /** The same shape as [json], so the card and the copied text treat both alike. */
     fun exitJson(at: Long, version: String, reason: Int, description: String?, process: String?): JSONObject {
         val message = Phones.safeMessage(description, MESSAGE_CHARS)

@@ -34,10 +34,13 @@ object CrashLog {
     /** Uygulamayı kapatan en yeni rapor. */
     fun last(ctx: Context): JSONObject? = CrashFile(ctx.filesDir).last()
 
-    /** Android 11+: Android'in kendisinin kaydettiği en yeni yerel çökme, ANR ya da başlatma hatası ([CrashReport.exitLabel]). */
+    /**
+     * Android 11+: Android'in kendisinin kaydettiği en yeni yerel çökme, ANR ya da başlatma hatası; S38: WEEM görünürken ya da vardiya servisi çalışırken
+     * bellek/kaynak yüzünden kapatılması da ([CrashReport.exitLabel], [CrashReport.exitShown]).
+     */
     fun lastExit(ctx: Context, now: Long = System.currentTimeMillis()): JSONObject? = if (Build.VERSION.SDK_INT >= 30) runCatching {
         ctx.getSystemService(ActivityManager::class.java)?.getHistoricalProcessExitReasons(ctx.packageName, 0, 5)
-            ?.firstOrNull { CrashReport.exitShown(it.reason, it.timestamp, now) }
+            ?.firstOrNull { CrashReport.exitShown(it.reason, it.timestamp, now, it.importance) }
             // Kayıt sürüm söylemez: güncellemeden önceki sürüme ait olabilir.
             ?.let { CrashReport.exitJson(it.timestamp, "?", it.reason, it.description, it.processName) }
     }.getOrNull() else null

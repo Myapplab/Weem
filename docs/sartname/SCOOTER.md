@@ -343,7 +343,7 @@ Sürüş Paneli bağlanma anını dışarı vermez; durum karelerden okunur. `ti
 
 ### 6.2 Canlı panel ekranı (NB `DashboardView.java`, `DashboardActivity.java`)
 
-- Gösterge: büyük hız, halka (`gauge`), altında enerji/güç/batarya/menzil/voltaj/akım/sıcaklık kutucukları ve "BU SÜRÜŞ" ya da (Rawstats siparişi sayacı sıfırladıysa) "BU SİPARİŞ" satırı (Wh, ort. hız, pil kullanımı; `DashboardView.java:33-34, 58`). Kare **5 sn**'den eskiyse "VERİ BEKLENİYOR" (`STALE_MS`, 11, 37, 70); değerler hiçbir zaman ara değerlenmez ya da GPS ile doldurulmaz.
+- Gösterge: büyük hız, halka (`gauge`), altında enerji/güç/batarya/menzil/voltaj/akım/sıcaklık kutucukları ve "BU SÜRÜŞ" ya da (Rawstats siparişi sayacı sıfırladıysa) "BU SİPARİŞ" satırı (Wh, ort. hız, pil kullanımı; `DashboardView.java:33-34, 58`). Kare **5 sn**'den eskiyse "VERİ BEKLENİYOR" (`STALE_MS`, 11, 37, 70); değerler hiçbir zaman ara değerlenmez ya da GPS ile doldurulmaz. **S38 (WEEM):** batarya kadranının alt satırı ikinci (harici) batarya görünürken "2. batarya %100" (menzil biliniyorsa " · 23.4 km"), yoksa "… km menzil" (`ScooterPanel.batterySub`); önceden ikinci batarya yalnız durum satırındaydı.
 - Dokunma: tam ekran (araç çubuğu kayar; `immersive` örnek durumunda saklanır, tercih değil); geri tuşu tam ekrandan çıkar (`DashboardActivity.java:60-99`). Ekran açık tut: bağlantı varken ve `keep_screen_on` (varsayılan true) (109).
 - Kalp atışı saniyede bir (bayatlık, araç çubuğu, 34). Görünürken `RecordingService.dashboardVisible = true` (BLE yüksek öncelik ve hızlı tempo; 2.1, 2.5) (205-206).
 - Resim içinde resim (PiP): yalnız yüzen panel açık ama "üstte göster" izni **yokken** ve cihaz destekliyorsa (`pipEnabled`, 213); oran 16:10; API ≥31 otomatik giriş, eskide `onUserLeaveHint` (107, 211-216).

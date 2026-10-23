@@ -11,6 +11,7 @@ import com.kuryelog.app.core.WeemFonts
 import com.kuryelog.app.economics.Economics
 import com.kuryelog.app.map.BatteryRuntime
 import com.kuryelog.app.map.DatasetRecording
+import com.kuryelog.app.map.MapSettingsRepo
 import com.kuryelog.app.map.NavRuntime
 import com.kuryelog.app.map.WeatherRuntime
 import com.kuryelog.app.orders.Orders
@@ -37,6 +38,8 @@ class WeemApplication : Application() {
         }
         // A10.4h: geri yüklenen harita verisi, harita çalışma zamanları (NavRuntime, hava…) kurulmadan önce.
         Store.guarded(this, "encrypted_restore_map") { EncryptedBackups.applyPendingMap(this) }
+        // S38: anahtarlı APK'da harita Google Maps (eski varsayılan vektör bir kez Google'a döner; sonra kuryenin seçimi).
+        Store.guarded(this, "map_style") { MapSettingsRepo.preferGoogle(this, BuildConfig.MAPS_ENABLED) }
         // ShiftPort durumu tercihlerden (süreç vardiya sürerken yeniden başlamış olabilir).
         ShiftHub.attach(this)
         // Ekonomi dikişi (ECONOMICS.md 3): akışın ilk girişinden önce (kancalar `restart`/`restored` ilk girişte bir kez); `:orders`

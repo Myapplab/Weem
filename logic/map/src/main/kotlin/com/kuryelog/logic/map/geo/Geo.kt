@@ -40,6 +40,12 @@ object Geo {
         return if (d > 180) 360 - d else d
     }
 
+    /** [from] açısından [to] açısına en kısa dönüş (−180…180°; saat yönü artı). */
+    fun angleDelta(to: Double, from: Double): Double = ((to - from) % 360 + 540) % 360 - 180
+
+    /** Açıyı 0–360° aralığına getirir. */
+    fun norm360(a: Double): Double = ((a % 360) + 360) % 360
+
     fun clampInt(v: Int, lo: Int, hi: Int) = if (v < lo) lo else if (v > hi) hi else v
     fun clampD(v: Double, lo: Double, hi: Double) = if (v < lo) lo else if (v > hi) hi else v
 

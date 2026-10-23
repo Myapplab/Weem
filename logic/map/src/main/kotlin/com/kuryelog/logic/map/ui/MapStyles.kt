@@ -3,6 +3,7 @@ package com.kuryelog.logic.map.ui
 import com.kuryelog.logic.core.Bilingual
 import com.kuryelog.logic.map.day.LightSpot
 import com.kuryelog.logic.map.graph.Poi
+import com.kuryelog.logic.map.graph.PoiSet
 import com.kuryelog.logic.map.geo.BBox
 import com.kuryelog.logic.map.geo.Geo
 import com.kuryelog.logic.map.geo.GeoPoint
@@ -35,10 +36,21 @@ data class Attribution(val text: String, val url: String?)
 
 /**
  * Altlık seçimi ve kaynakları (YolGo `map_view.dart:161-200, 625-690`; MAP.md 6.4, SORU-N5 (a)). YolGo'nun `minimal`, `esri`, `sat` değerleri ve CARTO anahtarı
- * kalktı: eski ya da bilinmeyen değer vektör altlığa düşer; anahtarsız derlemede `google` da vektöre.
+ * kalktı: eski ya da bilinmeyen değer vektör altlığa düşer; anahtarsız derlemede `google` da vektöre. S38 (kullanıcı: "harita Google Maps olsun"): varsayılan
+ * Google; anahtarlı APK ilk açılışta kayıtlı eski varsayılanı (vektör) bir kez Google'a çevirir ([googleDefault]).
  */
 object MapStyles {
-    const val DEFAULT = "vector"
+    const val DEFAULT = "google"
+
+    /** S38 tek seferlik geçişin işareti (`map` tercihleri). */
+    const val GOOGLE_DEFAULT_KEY = "mapStyle.googleDefault.v1"
+
+    /**
+     * S38: anahtarlı derlemede ([mapsEnabled]) geçiş yapılmamışsa ([done] false) kayıtlı `vector` (eski varsayılan) → `google`; döndürülen null ise değişiklik
+     * yok. Anahtarsız derlemede geçiş beklenir (anahtarlı APK gelince yapılır); sonra kuryenin seçimi korunur.
+     */
+    fun googleDefault(mapStyle: String, mapsEnabled: Boolean, done: Boolean): String? =
+        if (mapsEnabled && !done && mapStyle == BaseMap.VECTOR.key) BaseMap.GOOGLE.key else null
 
     const val OSM_TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
     const val OSM_TILE_SIZE = 256
@@ -123,34 +135,67 @@ object PoiZoomRules {
  * öncelik ışık → metro → AVM → öteki; restoran/fast food/kafe/market ekranın 34 dp ızgarasında hücre başına bir; en çok 180 simge.
  */
 object PoiLayerRules {
-    /** "Yok" işaretinin 25 m içindeki OSM ışığı gizlenir; "var" işareti 25 m içinde OSM ışığı yoksa eklenir. */
+    /**
+     * "Yok" işaretinin 25 m içindeki OSM ışığı gizlenir; "var" işareti 25 m içinde OSM ışığı yoksa eklenir. S38: yakın arama enleme sıralı dizinle ([PoiSet]);
+     * önceden her ışık her işaretle karşılaştırılıyordu (öğrenilen ışıklar çoğaldıkça ana iş parçacığında yüz ms'leri bulabiliyordu).
+     */
     fun withLights(base: List<Poi>, spots: List<LightSpot>): List<Poi> {
-        val hidden = spots.filter { !it.exists }
         val osmLights = base.filter { it.kind == 'l' }
-        val kept = osmLights.filter { l -> hidden.none { Geo.haversine(l.lat, l.lon, it.lat, it.lon) <= LIGHT_NEAR_M } }
-        val added = spots.filter { s -> s.exists && osmLights.none { Geo.haversine(it.lat, it.lon, s.lat, s.lon) <= LIGHT_NEAR_M } }.map { Poi(it.lat, it.lon, 'l', "") }
-        return base.filter { it.kind != 'l' } + kept + added
+        val rest = base.filter { it.kind != 'l' }
+        if (spots.isEmpty()) return rest + osmLights
+        val hidden = PoiSet(spots.filter { !it.exists }.map { Poi(it.lat, it.lon, 'l', "") })
+        val osm = PoiSet(osmLights)
+        val kept = if (hidden.length == 0) osmLights else osmLights.filter { l -> hidden.nearest('l', l.lat, l.lon, LIGHT_NEAR_M) == null }
+        val added = spots.filter { s -> s.exists && osm.nearest('l', s.lat, s.lon, LIGHT_NEAR_M) == null }.map { Poi(it.lat, it.lon, 'l', "") }
+        return rest + kept + added
     }
 
     /** 256 dp'lik dünya (MapLibre/Google standart ölçeği): bir dp'nin boylam derecesi. */
     fun degPerDp(zoom: Double): Double = 360.0 / (256.0 * Math.pow(2.0, zoom))
 
-    /** Görünür kutu: merkez ± yarım ekran (dp), enlemde `cos` düzeltmeli. Sıra (güney, batı, kuzey, doğu). */
-    fun bounds(centerLat: Double, centerLon: Double, widthDp: Double, heightDp: Double, zoom: Double): BBox {
+    /**
+     * Görünür kutu: merkez ± yarım ekran (dp), enlemde `cos` düzeltmeli. Sıra (güney, batı, kuzey, doğu). [margin] > 1 kutuyu büyütür (S38: kamera takipte kayarken
+     * kenardaki simgeler hazır olsun; seçim her karede değil, [refreshNeeded] olunca yenilenir).
+     */
+    fun bounds(centerLat: Double, centerLon: Double, widthDp: Double, heightDp: Double, zoom: Double, margin: Double = 1.0): BBox {
         val d = degPerDp(zoom)
-        val dLat = heightDp / 2 * d * Math.cos(Math.toRadians(centerLat))
-        val dLon = widthDp / 2 * d
+        val dLat = heightDp / 2 * margin * d * Math.cos(Math.toRadians(centerLat))
+        val dLon = widthDp / 2 * margin * d
         return BBox(centerLat - dLat, centerLon - dLon, centerLat + dLat, centerLon + dLon)
     }
 
-    /** Yakınlığa göre görünür simgeler (en çok [PoiZoomRules.MAX_MARKERS]); girdi sırası eşit önceliklerde korunur. */
-    fun select(pois: List<Poi>, box: BBox, zoom: Double, lat: Double = (box.south + box.north) / 2): List<Poi> {
-        if (zoom < PoiZoomRules.HIDE_BELOW) return emptyList()
+    /** Seçim kutusu payı (S38): görünür alanın 1,6 katı. */
+    const val SELECT_MARGIN = 1.6
+
+    /**
+     * Simge seçimi yenilensin mi (S38): kamera her karede kayarken (takip) seçim her karede yapılmaz; yakınlık [REFRESH_ZOOM] kadar değişince ya da merkez
+     * kısa kenarın [REFRESH_FRACTION]'ı kadar kayınca yenilenir (kutunun [SELECT_MARGIN] payı aradaki boşluğu örter).
+     */
+    fun refreshNeeded(lastLat: Double, lastLon: Double, lastZoom: Double, lat: Double, lon: Double, zoom: Double, widthDp: Double, heightDp: Double): Boolean {
+        if (Math.abs(zoom - lastZoom) >= REFRESH_ZOOM) return true
+        val d = degPerDp(zoom)
+        val dxDp = Math.abs(lon - lastLon) / d
+        val dyDp = Math.abs(lat - lastLat) / (d * Math.cos(Math.toRadians(lat)))
+        return maxOf(dxDp, dyDp) >= minOf(widthDp, heightDp) * REFRESH_FRACTION
+    }
+
+    const val REFRESH_ZOOM = 0.25
+    const val REFRESH_FRACTION = 0.25
+
+    /**
+     * Yakınlığa göre görünür simgeler (en çok [PoiZoomRules.MAX_MARKERS]); girdi sırası eşit önceliklerde korunur. [route] verilirse rotanın yakınındaki ışıklar
+     * (S38) [ROUTE_LIGHT_MIN_ZOOM]'dan itibaren, sınıra sayılmadan (en çok [MAX_ROUTE_LIGHTS]) listenin sonunda gelir (üstte çizilir).
+     */
+    fun select(pois: List<Poi>, box: BBox, zoom: Double, lat: Double = (box.south + box.north) / 2, route: RouteLights? = null): List<Poi> {
+        val onRoute = if (route == null || zoom < ROUTE_LIGHT_MIN_ZOOM) emptyList()
+        else pois.filter { it.kind == 'l' && box.contains(it.lat, it.lon) && route.near(it.lat, it.lon) }.take(MAX_ROUTE_LIGHTS)
+        if (zoom < PoiZoomRules.HIDE_BELOW) return onRoute
+        val skip = if (onRoute.isEmpty()) emptySet() else onRoute.toHashSet()
         val cell = PoiZoomRules.FOOD_GRID_DP * degPerDp(zoom)
         val cellLat = cell * Math.cos(Math.toRadians(lat))
         val taken = HashSet<Long>()
         val out = ArrayList<Poi>()
-        val visible = pois.filter { it.lat in box.south..box.north && it.lon in box.west..box.east && PoiZoomRules.markerVisible(it.kind, zoom) }
+        val visible = pois.filter { it.lat in box.south..box.north && it.lon in box.west..box.east && PoiZoomRules.markerVisible(it.kind, zoom) && it !in skip }
         for (p in visible.sortedBy { PoiZoomRules.priority(it.kind) }) {
             if (out.size >= PoiZoomRules.MAX_MARKERS) break
             if (p.kind in GRID_KINDS) {
@@ -159,9 +204,58 @@ object PoiLayerRules {
             }
             out += p
         }
-        return out
+        return out + onRoute
     }
+
+    /** Rota ışığı: rotaya en çok bu kadar yakın (m). */
+    const val ROUTE_LIGHT_M = 20.0
+    const val ROUTE_LIGHT_MIN_ZOOM = 13.0
+    const val MAX_ROUTE_LIGHTS = 60
 
     private const val LIGHT_NEAR_M = 25.0
     private val GRID_KINDS = setOf('r', 'f', 'c', 't')
+}
+
+/**
+ * Rotanın yakınındaki noktalar (S38: "rota oluşturulunca trafik ışıkları büyüsün"): rota parçaları ~100 m'lik ızgara hücrelerine dağıtılır, [near] yalnız noktanın
+ * hücresindeki parçalara bakar. Mesafe yerel düzlemde (eşdikdörtgen), rota ölçeğinde haversine ile aynı.
+ */
+class RouteLights(lines: List<List<GeoPoint>>, private val maxM: Double = PoiLayerRules.ROUTE_LIGHT_M) {
+    private val cells = HashMap<Long, MutableList<DoubleArray>>()
+
+    init {
+        val padLat = maxM / M_PER_DEG
+        for (line in lines) for (i in 1 until line.size) {
+            val a = line[i - 1]
+            val b = line[i]
+            val padLon = padLat / Math.cos(Math.toRadians((a.lat + b.lat) / 2))
+            val seg = doubleArrayOf(a.lat, a.lon, b.lat, b.lon)
+            for (y in cellOf(minOf(a.lat, b.lat) - padLat)..cellOf(maxOf(a.lat, b.lat) + padLat)) {
+                for (x in cellOf(minOf(a.lon, b.lon) - padLon)..cellOf(maxOf(a.lon, b.lon) + padLon)) {
+                    cells.getOrPut(y * KEY + x) { ArrayList() } += seg
+                }
+            }
+        }
+    }
+
+    val isEmpty: Boolean get() = cells.isEmpty()
+
+    fun near(lat: Double, lon: Double): Boolean {
+        val segs = cells[cellOf(lat) * KEY + cellOf(lon)] ?: return false
+        val k = Math.cos(Math.toRadians(lat))
+        for (s in segs) {
+            // Metre cinsinden yerel düzlem (x doğu, y kuzey), nokta başlangıçta.
+            val hit = Geo.pointToSegment(0.0, 0.0, (s[1] - lon) * k * M_PER_DEG, (s[0] - lat) * M_PER_DEG, (s[3] - lon) * k * M_PER_DEG, (s[2] - lat) * M_PER_DEG)
+            if (hit.dist <= maxM) return true
+        }
+        return false
+    }
+
+    private fun cellOf(deg: Double): Long = Math.floor(deg / CELL_DEG).toLong()
+
+    private companion object {
+        const val CELL_DEG = 0.001
+        const val KEY = 1_000_003L
+        const val M_PER_DEG = 111_320.0
+    }
 }

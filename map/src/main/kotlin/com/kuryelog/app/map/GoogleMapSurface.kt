@@ -41,7 +41,7 @@ import com.kuryelog.logic.map.ui.PuckStyle
  * iç boşluk 16/120/16/240 dp (HUD payı). Yalnız anahtarlı derlemede seçilir (`MapStyles.resolve`).
  */
 @Composable
-fun GoogleMapSurface(model: MapSurfaceModel, events: MapSurfaceEvents, modifier: Modifier = Modifier) {
+fun GoogleMapSurface(model: MapSurfaceModel, events: MapSurfaceEvents, modifier: Modifier = Modifier, live: MapLive? = null) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val holder = remember { GoogleHolder(context.applicationContext) }
@@ -62,16 +62,25 @@ fun GoogleMapSurface(model: MapSurfaceModel, events: MapSurfaceEvents, modifier:
             holder.destroy()
         }
     }
-    AndroidView(modifier = modifier, factory = { ctx -> holder.create(ctx) { currentEvents.value } }, update = { holder.apply(model) })
+    // [live] durumları burada okunur: değişince yalnız bu blok yeniden çalışır (S38).
+    AndroidView(
+        modifier = modifier, factory = { ctx -> holder.create(ctx) { currentEvents.value } },
+        update = { holder.apply(model, live?.puck?.value ?: model.puck, live?.camera?.value ?: model.camera) },
+    )
 }
 
+/** S38: çizgi grupları (alt çizgiler, rota) ayrı tutulur; yalnız değişen grup yeniden eklenir. İşaret ve kamera [MapLive]'tan. */
 internal class GoogleHolder(private val app: Context) {
     var view: MapView? = null
         private set
     private var map: GoogleMap? = null
     private var pending: MapSurfaceModel? = null
+    private var pendingPuck: MapPuck? = null
+    private var pendingCamera: MapCameraCommand? = null
     private var styleKey: String? = null
     private var appliedCameraSeq = -1
+    private var baseLines: List<MapLine>? = null
+    private val basePolylines = ArrayList<Polyline>()
     private var lines: List<MapLine>? = null
     private val polylines = ArrayList<Polyline>()
     private var markers: List<MapMarker>? = null
@@ -104,7 +113,7 @@ internal class GoogleHolder(private val app: Context) {
                 events().onCameraIdle(GeoPoint(c.target.latitude, c.target.longitude), c.zoom.toDouble(), c.bearing.toDouble())
                 pending?.let { applyStyle(m, it) }
             }
-            pending?.let { apply(it) }
+            pending?.let { apply(it, pendingPuck, pendingCamera) }
         }
         view = v
         return v
@@ -113,6 +122,8 @@ internal class GoogleHolder(private val app: Context) {
     fun destroy() {
         view?.let { it.onPause(); it.onStop(); it.onDestroy() }
         view = null; map = null
+        baseLines = null; basePolylines.clear(); lines = null; polylines.clear(); markers = null; markerHandles.clear()
+        puckMarker = null; beamMarker = null; accuracy = null; circle = null; styleKey = null; drawnPuck = null; puckArrow = null
     }
 
     private fun applyStyle(m: GoogleMap, model: MapSurfaceModel) {
@@ -123,23 +134,20 @@ internal class GoogleHolder(private val app: Context) {
         m.setMapStyle(GoogleMapStyle.style(dark = model.dark, hidePois = hide)?.let { MapStyleOptions(it) })
     }
 
-    fun apply(model: MapSurfaceModel) {
+    fun apply(model: MapSurfaceModel, puck: MapPuck? = model.puck, camera: MapCameraCommand? = model.camera) {
         pending = model
+        pendingPuck = puck
+        pendingCamera = camera
         val m = map ?: return
-        m.uiSettings.isRotateGesturesEnabled = model.rotateGestures
+        if (m.uiSettings.isRotateGesturesEnabled != model.rotateGestures) m.uiSettings.isRotateGesturesEnabled = model.rotateGestures
         applyStyle(m, model)
+        if (model.baseLines != baseLines) {
+            baseLines = model.baseLines
+            replaceLines(m, basePolylines, model.baseLines)
+        }
         if (model.lines != lines) {
             lines = model.lines
-            polylines.forEach { it.remove() }; polylines.clear()
-            for (l in model.lines) {
-                val o = PolylineOptions().addAll(l.points.map { LatLng(it.lat, it.lon) }).color(l.color).width(l.widthDp * density).zIndex(l.z.toFloat())
-                when (l.pattern) {
-                    LinePattern.DASH -> o.pattern(listOf(Dash(8 * density), Gap(6 * density)))
-                    LinePattern.DOT -> o.pattern(listOf(Dot(), Gap(4 * density)))
-                    LinePattern.SOLID -> Unit
-                }
-                polylines += m.addPolyline(o)
-            }
+            replaceLines(m, polylines, model.lines)
         }
         if (model.markers != markers) {
             markers = model.markers
@@ -149,7 +157,7 @@ internal class GoogleHolder(private val app: Context) {
                 m.addMarker(MarkerOptions().position(LatLng(mk.point.lat, mk.point.lon)).icon(icon).anchor(.5f, .5f).title(mk.label))?.let { markerHandles += it }
             }
         }
-        drawPuck(m, model.puck)
+        drawPuck(m, puck)
         val c = model.circle
         if (c == null) { circle?.remove(); circle = null } else {
             val ll = LatLng(c.first.lat, c.first.lon)
@@ -157,7 +165,7 @@ internal class GoogleHolder(private val app: Context) {
                 circle = m.addCircle(CircleOptions().center(ll).radius(c.second).fillColor((model.circleColor and 0xFFFFFF) or 0x26000000).strokeColor(model.circleColor).strokeWidth(2 * density))
             }
         }
-        model.camera?.let { cam ->
+        camera?.let { cam ->
             if (cam.seq == appliedCameraSeq) return@let
             appliedCameraSeq = cam.seq
             val cur = m.cameraPosition
@@ -166,17 +174,35 @@ internal class GoogleHolder(private val app: Context) {
         }
     }
 
+    private fun replaceLines(m: GoogleMap, handles: ArrayList<Polyline>, list: List<MapLine>) {
+        handles.forEach { it.remove() }; handles.clear()
+        for (l in list) {
+            val o = PolylineOptions().addAll(l.points.map { LatLng(it.lat, it.lon) }).color(l.color).width(l.widthDp * density).zIndex(l.z.toFloat())
+            when (l.pattern) {
+                LinePattern.DASH -> o.pattern(listOf(Dash(8 * density), Gap(6 * density)))
+                LinePattern.DOT -> o.pattern(listOf(Dot(), Gap(4 * density)))
+                LinePattern.SOLID -> Unit
+            }
+            handles += m.addPolyline(o)
+        }
+    }
+
+    private var drawnPuck: MapPuck? = null
+    private var puckArrow: Boolean? = null
+
     private fun drawPuck(m: GoogleMap, p: MapPuck?) {
+        if (p == drawnPuck && (p == null || puckMarker != null)) return
+        drawnPuck = p
         if (p == null) {
-            puckMarker?.remove(); puckMarker = null; beamMarker?.remove(); beamMarker = null; accuracy?.remove(); accuracy = null
+            puckMarker?.remove(); puckMarker = null; puckArrow = null; beamMarker?.remove(); beamMarker = null; accuracy?.remove(); accuracy = null
             return
         }
         val ll = LatLng(p.point.lat, p.point.lon)
         val arrow = PuckStyle.showsArrow(p.arrow, p.course)
         val icon = icons.getOrPut(if (arrow) "puck-arrow" else "puck-dot") { BitmapDescriptorFactory.fromBitmap(PuckBitmaps.render(density, arrow = arrow, beam = false)) }
-        val pm = puckMarker ?: m.addMarker(MarkerOptions().position(ll).icon(icon).anchor(.5f, .5f).flat(true).zIndex(100f))?.also { puckMarker = it }
+        val pm = puckMarker ?: m.addMarker(MarkerOptions().position(ll).icon(icon).anchor(.5f, .5f).flat(true).zIndex(100f))?.also { puckMarker = it; puckArrow = arrow }
         pm?.position = ll
-        pm?.setIcon(icon)
+        if (puckArrow != arrow) { pm?.setIcon(icon); puckArrow = arrow }
         pm?.rotation = if (arrow) p.course!!.toFloat() else 0f
         val beam = if (!arrow) p.beam else null
         if (beam == null) { beamMarker?.remove(); beamMarker = null } else {

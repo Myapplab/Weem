@@ -4,6 +4,7 @@ import com.kuryelog.logic.core.ScooterLive
 import com.kuryelog.logic.map.MemoryMapPrefs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -31,5 +32,23 @@ class BatteryEstimatorTest {
         assertFalse(estimator.state.value.live)
         assertEquals("son canlı değer tahminin çapası", 78.0, estimator.state.value.percent!!, 0.0)
         assertEquals(78.0, prefs.getDouble("battery.setPct")!!, 0.0)
+    }
+
+    @Test
+    fun `ikinci batarya sessizleşince son yüzdesi bağlantı sürdükçe 10 dk gösterilir`() {
+        var now = 1_790_000_000_000L
+        val estimator = BatteryEstimator(MemoryMapPrefs(emptyMap()), capacityWh = 598.0) { now }
+        estimator.onLive(live(80.0, 96.0))
+        assertEquals(96.0, estimator.state.value.liveExternalPercent!!, 0.0)
+        now += 5 * 60_000L
+        estimator.onLive(live(79.0, null)) // harici paket sessiz: yüzdesi bayat
+        assertEquals(96.0, estimator.state.value.liveExternalPercent!!, 0.0)
+        now += 6 * 60_000L
+        estimator.onLive(live(79.0, null))
+        assertNull(estimator.state.value.liveExternalPercent)
+        // Bağlantı kopunca tutulmaz.
+        estimator.onLive(live(79.0, 95.0))
+        estimator.onLive(null)
+        assertNull(estimator.state.value.liveExternalPercent)
     }
 }

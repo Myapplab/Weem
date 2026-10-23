@@ -184,7 +184,7 @@ Anahtarların anlamı WEEM `:map` ayarları için başvurudur; değerler WEEM'de
 
 YG native: `duzyol_weather` (enabled, az, key, report, fetched, lat, lon, locationAt), `offer_dataset_v1` (region, active), `yolgo_runtime_v2` (`TelemetryService` durumu: day, leg, eligible, paused, rawDebug, calibrationLabel, profile, boot), `road_calibration_overlay_v1`. WEEM: `duzyol_weather`'ın karşılığı `map` dosyası + `files/map/weather.json` (`MAP.md` 10.11); `offer_dataset_v1` ve `yolgo_runtime_v2` yazılmaz (servisleri yok, `MAP.md` 12.11, 13.11); `road_calibration_overlay_v1` Y14 ile sonra; ayrı yerel tercih dosyası açılmaz.
 
-YolGo göç işaretleri (`settings.v1` alanları `lightMaxMv2`, `lightMaxMv3`, `mapDesignV1`; anahtarlar `streets.blocked.legacy.v1`, `streets.blocked.migrated.v2`) WEEM'de yazılmaz (S1: göç edilecek eski veri yok; `MAP.md` 14.2–14.3).
+YolGo göç işaretleri (`settings.v1` alanları `lightMaxMv2`, `lightMaxMv3`, `mapDesignV1`; anahtarlar `streets.blocked.legacy.v1`, `streets.blocked.migrated.v2`) WEEM'de yazılmaz (S1: göç edilecek eski veri yok; `MAP.md` 14.2–14.3). WEEM'in kendi işareti: `mapStyle.googleDefault.v1` (bool, S38: anahtarlı APK eski varsayılan `vector`'ü bir kez `google`'a çevirdi; `MAP.md` 6.18).
 
 **Önemli:** YolGo'da bu tercihleri ve `lights.v1`, POI düzeltmeleri, görevler, Y12 verisi için **dışa aktarma yolu yok** (`RideLogStore.export` yalnız `logs/` dosyalarını `duzyol-journal-v1` biçiminde paylaşır). Karar (S1, 17 Ekim): eski YolGo'ya ek yapılmaz; bunlar WEEM'de yeniden girilir ya da yeniden öğrenilir.
 

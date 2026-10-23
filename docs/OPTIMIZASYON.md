@@ -31,6 +31,21 @@ Ayrıntı (sıkıştırılmış, MiB): önce `.dev` = dex 41,2 · x86_64 23,9 ·
 
 Ağ: hava 10 dk'da bir yalnız gün açık + harita önde; OSM karoları MapLibre disk önbelleğinden; ekran okuma ağsız (`CAPTURE.md` 7.3).
 
+### 2.1 S38 (23 Ekim, A10.4k): telefonda görülen pil tüketimi ve yarım çizilen harita
+
+Kullanıcı: "çok fazla batarya tüketiyor", "uygulama bir süre sonra kapanıp açılıyor", haritada çizgilerin bir kısmı yok. Koddan bulunan nedenler ve düzeltmeler (telefonda ölçülmedi):
+
+| Neden | Etki | Düzeltme |
+|---|---|---|
+| Konum işareti her karede (60–120 Hz) kayarken harita sekmesi baştan oluşuyor, MapLibre'ye bütün çizgiler (bisiklet yolları dahil binlerce nokta) `String.format` ile yazılıp `setGeoJson` ile yeniden yükleniyordu | ana iş parçacığı ve GPU sürekli dolu, çok çöp (bellek), karolar bitmediği için çizgiler yarım | kaynak yalnız değişince; işaret ve kamera `MapLive` ile yalnız yüzeye; `StringBuilder` (`MAP.md` 6.18) |
+| Kamera her durduğunda (takipte saniyede ~12) bütün yerler ve ışıklar yeniden seçiliyordu; ışık birleştirme karesel | ana iş parçacığında periyodik yük, öğrenilen ışıklar çoğaldıkça büyüyen | yalnız belirgin kayma/yakınlıkta; dizinli birleştirme |
+| Haritadaki hava hapında sonsuz animasyon | harita açıkken (vardiyada ekran açık) ekran saniyede 60–120 kez yeniden çiziliyor, değişken yenileme hızı düşemiyor | hapta simge durağan |
+| İşaret dururken de GPS titremesiyle her saniye ~0,85 sn kayıyordu | dururken bile kare kare çizim | dururken <2 m oynama yok; ~30 fps sınırı; değişiklik yokken kare yok |
+| Navigasyon GPS'i harita arkadayken de 500 ms | ekran kapalıyken saniyede 2 uyanma | harita arkada ve rota yokken 1 sn |
+| Harita sekmesi scooter karesi başına ve yüzey ölçümü her kesimde yeniden oluşuyordu | gereksiz yeniden oluşturma | scooter değerleri yalnız pencere açıkken, yüzey özetleri yalnız katman açıkken |
+
+Kapanıp açılma için ek tanı: çökme kartı artık WEEM görünürken ya da vardiya servisi çalışırken bellek/kaynak yüzünden kapatılmayı da gösterir (`LowMemoryKill`, `ExcessiveResourceUsage`; `CrashReport.exitShown`). Kart çıkarsa metni kopyalanıp gönderilmeli.
+
 ## 3. Bellek (koddan)
 
 - Ekran görüntüleri: donanım tamponu kopyalanır kopyalanmaz kapatılır, kırpma/ölçek ara görüntüleri ve OCR girdisi her yolda `recycle` edilir (`WatchService`).
