@@ -64,18 +64,45 @@ object ScooterPanel {
         else -> Dot.IDLE
     }
 
-    data class Dock(val start: Boolean, val pair: Boolean, val stop: Boolean, val scan: Boolean, val export: Boolean)
+    data class Dock(val pair: Boolean, val stop: Boolean, val scan: Boolean, val export: Boolean)
 
-    /** Başlat, kayıtsız canlı panelde "kayda geç" olarak da açık; dışa aktarma kayıt ve temizlik sürerken kapalı. */
-    fun dock(s: State, exporting: Boolean, scanning: Boolean): Dock {
+    /**
+     * S37: "Kaydı başlat" yok (kayıt vardiyayla başlar); durdur yalnız vardiya dışındaki bağlantıyı (eşleştirme sonrası canlı panel) keser,
+     * vardiyada kayıt vardiyayla biter. Dışa aktarma kayıt ve temizlik sürerken kapalı.
+     */
+    fun dock(s: State, exporting: Boolean, scanning: Boolean, shiftOn: Boolean = false): Dock {
         val idle = !s.active && !exporting && !s.maintenance
         return Dock(
-            start = idle || s.active && !s.recording && !s.maintenance,
             pair = idle,
-            stop = s.active,
+            stop = s.active && !shiftOn,
             scan = idle && !scanning,
             export = !s.recording && !exporting && !s.maintenance,
         )
+    }
+
+    /** S37: eylem çubuğundaki kayıt durumu (eski "Kaydı başlat" düğmesinin yeri). [tone] renk: hazır yeşil, kayıt kırmızı, eksik turuncu; null nötr. */
+    enum class Badge(val text: T, val tone: Tone?) {
+        PROVIDER(T.BADGE_PROVIDER, null),
+        NO_SCOOTER(T.BADGE_NO_SCOOTER, null),
+        NOT_PAIRED(T.BADGE_NOT_PAIRED, Tone.WARN),
+        PAIRING(T.BADGE_PAIRING, Tone.ACCENT),
+        READY(T.BADGE_READY, Tone.POSITIVE),
+        RECORDING(T.BADGE_RECORDING, Tone.DANGER),
+        WAITING(T.BADGE_WAITING, Tone.DANGER),
+        NOT_CONNECTED(T.BADGE_NOT_CONNECTED, Tone.WARN),
+    }
+
+    /**
+     * Kayıt durumu: Provider'da scooter Receiver'da; kayıt açıksa veri gelip gelmediği; seçilmemiş, eşleşmemiş (bağlantı açıkken
+     * "eşleştiriliyor"); vardiya açık ama kayıt yoksa uyarı; yoksa "Eşleşildi · kayda hazır".
+     */
+    fun badge(s: State, selected: Boolean, paired: Boolean, shiftOn: Boolean, providerRole: Boolean): Badge = when {
+        providerRole -> Badge.PROVIDER
+        s.recording -> if (s.linked) Badge.RECORDING else Badge.WAITING
+        !selected -> Badge.NO_SCOOTER
+        !paired -> if (s.active) Badge.PAIRING else Badge.NOT_PAIRED
+        shiftOn -> Badge.NOT_CONNECTED
+        else -> Badge.READY
     }
 
     /** Ekran açık: bağlantı varken ve `keep_screen_on` (varsayılan true). */

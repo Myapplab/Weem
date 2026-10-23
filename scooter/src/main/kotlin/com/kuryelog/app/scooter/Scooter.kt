@@ -184,10 +184,17 @@ object Scooter {
 
     fun device(ctx: Context): String = LoggerPreferences.get(ctx).getString("device", "") ?: ""
 
-    /** Kayıt ya da eşleştirme ile başlat (NB `startRecording`); canlı panel için [startLive]. Çağıran izinlere sahip. */
-    fun startRecording(ctx: Context, pair: Boolean): Boolean {
+    /** Kayıt (GPS + oturum; NB `startRecording`): S37'den beri yalnız vardiya açar ([ScooterShiftLink]); canlı panel için [startLive]. */
+    fun startRecording(ctx: Context): Boolean {
         if (active || exporting || maintenance || ScooterShiftLink.providerRole() || !ScooterService.permissions(ctx, false)) return false
-        ctx.startForegroundService(ScooterService.startIntent(ctx, pair, live = false))
+        ctx.startForegroundService(ScooterService.startIntent(ctx, pair = false, live = false))
+        return true
+    }
+
+    /** S37: G3 eşleştirmesi kayıtsız canlı bağlantıyla; eşleşince bağlantı canlı panel olarak sürer, kayıt vardiyayla başlar. Çağıran izinlere sahip. */
+    fun pair(ctx: Context): Boolean {
+        if (active || exporting || maintenance || ScooterShiftLink.providerRole() || !ScooterService.permissions(ctx, true)) return false
+        ctx.startForegroundService(ScooterService.startIntent(ctx, pair = true, live = true))
         return true
     }
 

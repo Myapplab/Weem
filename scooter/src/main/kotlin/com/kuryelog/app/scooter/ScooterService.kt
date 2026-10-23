@@ -506,7 +506,6 @@ class ScooterService : Service() {
     /** Built once per service instance (main thread): PendingIntent lookups are system calls, the notification is rebuilt every 2 s. */
     private var openIntent: PendingIntent? = null
     private var stopIntent: PendingIntent? = null
-    private var recordIntent: PendingIntent? = null
 
     private fun notification(raw: String, live: Boolean): Notification {
         if (stopIntent == null) {
@@ -514,7 +513,6 @@ class ScooterService : Service() {
                 PendingIntent.getActivity(this, 0, it.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
             }
             stopIntent = PendingIntent.getService(this, 1, Intent(this, ScooterService::class.java).setAction(STOP), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-            recordIntent = PendingIntent.getService(this, 3, Intent(this, ScooterService::class.java).setAction(RECORD), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         }
         val lang = Store.lang(this)
         // Durum metni kayıtta Türkçe kalır; bildirimde dil ayarına göre (G3, `ScooterStatusText`).
@@ -523,7 +521,7 @@ class ScooterService : Service() {
         val b = Notification.Builder(this, CHANNEL).setSmallIcon(android.R.drawable.stat_sys_data_bluetooth).setContentTitle(title).setContentText(text)
             .setStyle(Notification.BigTextStyle().bigText(text)).setContentIntent(openIntent).setOngoing(true).setOnlyAlertOnce(true).setShowWhen(false)
             .setCategory(Notification.CATEGORY_NAVIGATION)
-        if (live) b.addAction(Notification.Action.Builder(null, ScooterUiText.N_RECORD.get(lang), recordIntent).build())
+        // S37: bildirimde "Kayda geç" yok; kayıt yalnız vardiyayla başlar.
         return b.addAction(Notification.Action.Builder(null, ScooterUiText.N_STOP.get(lang), stopIntent).build()).build()
     }
 
@@ -571,12 +569,12 @@ class ScooterService : Service() {
         private const val WAKE_MS = 24 * 60 * 60 * 1000L
         private val extPresence = PackPresence()
 
-        /** Start intent for the selected scooter: pair=explicit pairing (always records), live=panel only, nothing stored. */
+        /** Start intent for the selected scooter: pair=explicit G3 pairing, live=panel only, nothing stored (S37: pairing no longer records). */
         fun startIntent(c: Context, pair: Boolean, live: Boolean): Intent {
             val p = LoggerPreferences.get(c)
             val name = p.getString("ble_name", (p.getString("device_name", "") ?: "").split(" • ")[0])
             return Intent(c, ScooterService::class.java).putExtra("device", p.getString("device", "")).putExtra("device_name", name).putExtra("pair", pair)
-                .putExtra("live_only", live && !pair).putExtra("crypto_mode", NinebotMode.GEN2_FW.setting).putExtra("sweep", p.getBoolean("sweep", false))
+                .putExtra("live_only", live).putExtra("crypto_mode", NinebotMode.GEN2_FW.setting).putExtra("sweep", p.getBoolean("sweep", false))
                 .putExtra("sweep_board", 0x16).putExtra("sweep_from", 0x00).putExtra("sweep_to", 0xc0)
         }
 
