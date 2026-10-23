@@ -2,11 +2,12 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
-## 2026-10-23 — A10.4k: S38 telefon geri bildirimi 2 (Claude Opus; dal `ccr-5395b034-i2z288`)
+## 2026-10-23 — A10.4k bitti: S38 telefon geri bildirimi 2 (Claude Opus; dal `ccr-5395b034-i2z288`; PR #21 CI yeşil, `main` `be6db4f`; APK `weem-build-10`)
 - Yapılan: yüzey kaynak farkı (`MapLibreHolder`/`GoogleHolder`, `baseLines`, `MapLive`, `GeoJson.Builder`); `CompassSensor` + `logic/map` `CompassSmoother`, `PuckAnimator`/`PuckHeading`, `CameraEase`; `MapScreen` takip `snapshotFlow`, `CameraSpot`, `PoiLayerRules.refreshNeeded`/`SELECT_MARGIN`, `RouteLights` + `POI_LIGHT_ROUTE`; `BatteryEstimator.EXTERNAL_HOLD_MS`, `ScooterPanel.batterySub`; `MapStyles.DEFAULT=google` + `googleDefault`/`MapSettingsRepo.preferGoogle`; `apk.yml` anahtar adımı; `NavLocation` 500/1000 ms; hava hapı durağan; `CrashReport` LowMemory/ExcessiveResourceUsage.
 - Doğrulama: `-p logic test` 2.164/0; `:app` 114/114, `:map` 10/10; 4 modülde lint 0 hata; telefonda denenmedi.
 - Açık kalan: pusula ekseni ve gidonda yön telefonda doğrulanmadı; kapanıp açılmanın nedeni cihazda görülmedi (kart çıkarsa metni istenecek); Google anahtarı GitHub'da yoksa APK yine vektörle derlenir (günlük satırı söyler).
-- Sıradaki: PR + CI + `main` + APK; sonra A10.5 (K) / A10.6.
+- CI notu: `PhoneBridgeTest.receiverDayReachesTheProvider` yarışı (Default'ta geç abonelik) CI'da iki kez kırmızıydı → `UNDISPATCHED` abonelik + zaman aşımlı bekleme.
+- Sıradaki: kullanıcı `weem-build-10`'u telefonda dener (pusula, harita dönüşü, çizgiler, pil, Google Maps); sonra A10.5 (K) / A10.6.
 
 ## 2026-10-23 — A10.4j bitti: S37 telefon geri bildirimi (Claude Opus; dal `ccr-6f346ba4-mrxlzj`)
 - Yapılan: harita araması görünür (`MapScreenLayers`), yalnız-harita kipi kalktı, tek satır `ShiftCard(floating)`, hava listesi `WSheet`; ayarlar `MoreScreens.kt` (`RoadInfoScreen`, `DailyToolsScreen`), `MapSettingsScreen(onHome)`, dataset Sipariş ayarlarında, Daha fazla `Segmented`; scooter `Scooter.pair` (canlı), `ScooterLinkRules.openAction`/`shiftEnd(owned, active)`, `ScooterPanel.badge`, konum FGS reddinde bağlantı türüne düşer; `AllExport` + `RecordExport.exportEverything`, Kayıtlar → Scooter kayıtları; `MapBaseSection` anahtarsızda Google pasif.
