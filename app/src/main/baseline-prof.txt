@@ -1,0 +1,8 @@
+# S39 (dokununca anında tepki): WEEM kodunun tamamı ve MapLibre'nin Java katmanı kurulumdan sonra önceden derlenir (AOT; ART "speed-profile").
+# Profilsiz APK'da uygulama kodu ilk kullanımlarda yorumlanıp JIT ile derlenir: her ekranın ilk açılışında ve ilk dokunuşlarda takılma.
+# Compose, AndroidX ve coroutines kendi profillerini getirir; profileinstaller (Compose bağımlılığı) Play dışı kurulumda profili ilk açılışta yazar,
+# ART cihaz boştayken derler. AGP joker kuralları açar ve R8 adlarına çevirir.
+HSPLcom/kuryelog/**;->**(**)**
+Lcom/kuryelog/**;
+HSPLorg/maplibre/android/**;->**(**)**
+Lorg/maplibre/android/**;
