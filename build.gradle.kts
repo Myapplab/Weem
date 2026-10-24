@@ -11,6 +11,13 @@ plugins {
 apply(from = "gradle/module-graph.gradle.kts")
 
 subprojects {
+    // S40: CI günlüğünde başarısız testin tam yığını (rapor yüklenmiyor; kısa özet nedeni göstermiyordu).
+    tasks.withType<Test>().configureEach {
+        testLogging {
+            events(org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED)
+            exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        }
+    }
     // Ortak Android ayarları (Rawstats ile aynı: compile/target 36, min 29, Java/JVM 17).
     pluginManager.withPlugin("com.android.library") {
         extensions.configure<com.android.build.api.dsl.LibraryExtension> {

@@ -69,7 +69,7 @@ fun MapLibreSurface(model: MapSurfaceModel, events: MapSurfaceEvents, modifier: 
     }
     AndroidView(
         modifier = modifier,
-        factory = { ctx -> holder.create(ctx) { currentEvents.value } },
+        factory = { ctx -> mapViewOrBlank(ctx) { holder.create(ctx) { currentEvents.value } } },
         // [live] durumları burada okunur: değişince yalnız bu blok yeniden çalışır (sekme yeniden oluşturulmaz).
         update = { holder.apply(model, live?.puck?.value ?: model.puck, live?.camera?.value ?: model.camera, basemap.value) },
     )

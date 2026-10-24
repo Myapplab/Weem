@@ -64,7 +64,7 @@ fun GoogleMapSurface(model: MapSurfaceModel, events: MapSurfaceEvents, modifier:
     }
     // [live] durumları burada okunur: değişince yalnız bu blok yeniden çalışır (S38).
     AndroidView(
-        modifier = modifier, factory = { ctx -> holder.create(ctx) { currentEvents.value } },
+        modifier = modifier, factory = { ctx -> mapViewOrBlank(ctx) { holder.create(ctx) { currentEvents.value } } },
         update = { holder.apply(model, live?.puck?.value ?: model.puck, live?.camera?.value ?: model.camera) },
     )
 }

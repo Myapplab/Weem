@@ -1,5 +1,8 @@
 package com.kuryelog.app.map
 
+import android.content.Context
+import android.view.View
+import android.widget.FrameLayout
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.ui.Modifier
@@ -77,6 +80,16 @@ fun MapSurface(model: MapSurfaceModel, events: MapSurfaceEvents, modifier: Modif
         BaseMap.GOOGLE -> GoogleMapSurface(model, events, modifier, live)
         else -> MapLibreSurface(model, events, modifier, userAgent, live)
     }
+}
+
+/**
+ * S40: harita motorunun yerel kütüphanesi yüklenemezse (`UnsatisfiedLinkError`: uyumsuz ABI, Robolectric testi) uygulama düşmez, boş alan çizilir.
+ * Görünüm tutucusunda `view` null kalır; yaşam döngüsü ve çizim çağrıları boşa gider.
+ */
+internal fun mapViewOrBlank(ctx: Context, create: () -> View): View = try {
+    create()
+} catch (_: LinkageError) {
+    FrameLayout(ctx)
 }
 
 /** Metre yarıçaplı daire çokgeni (doğruluk ve ev seçici dairesi). */
