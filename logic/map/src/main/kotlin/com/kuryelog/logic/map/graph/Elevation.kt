@@ -5,23 +5,31 @@ import com.kuryelog.logic.map.geo.Geo
 import com.kuryelog.logic.map.net.HttpPort
 import com.kuryelog.logic.map.net.HttpRequest
 import java.io.File
+import java.io.RandomAccessFile
+import java.nio.ByteBuffer
+import java.nio.channels.FileChannel
 import java.util.zip.GZIPInputStream
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.abs
 import kotlin.math.floor
 
-/** SRTM (HGT) 1°×1° karosu (MAP.md 2.7). Veri **big-endian** int16, satır 0 = kuzey kenarı; −32768 = boşluk. */
-class HgtTile(val lat0: Int, val lon0: Int, private val data: ByteArray) {
+/**
+ * SRTM (HGT) 1°×1° karosu (MAP.md 2.7). Veri **big-endian** int16, satır 0 = kuzey kenarı; −32768 = boşluk. S39: [data] bellek eşlemeli dosya
+ * olabilir ([ElevationModel.loadLocal]): 1" karo 26 MB; ikisi uygulama açık kaldıkça Java yığınında duruyordu.
+ */
+class HgtTile(val lat0: Int, val lon0: Int, private val data: ByteBuffer) {
+    constructor(lat0: Int, lon0: Int, bytes: ByteArray) : this(lat0, lon0, ByteBuffer.wrap(bytes))
+
     /** 3601 (1") ya da 1201 (3"). */
-    val size: Int = when (data.size) {
+    val size: Int = when (data.capacity()) {
         3601 * 3601 * 2 -> 3601
         1201 * 1201 * 2 -> 1201
-        else -> throw FormatException("Beklenmeyen HGT boyutu: ${data.size}")
+        else -> throw FormatException("Beklenmeyen HGT boyutu: ${data.capacity()}")
     }
 
     private fun at(row: Int, col: Int): Int? {
-        val i = (row * size + col) * 2
-        val v = ((data[i].toInt() shl 8) or (data[i + 1].toInt() and 0xFF)).toShort().toInt()
+        // Mutlak okuma (konum değişmez): iş parçacıkları arasında güvenli; ByteBuffer varsayılanı big-endian.
+        val v = data.getShort((row * size + col) * 2).toInt()
         return if (v == -32768) null else v
     }
 
@@ -134,10 +142,13 @@ class ElevationModel(val tiles: List<HgtTile>) {
             val tiles = ArrayList<HgtTile>()
             for ((lat, lon) in tilesFor(box)) {
                 val file = File(dir, "${HgtTile.nameFor(lat, lon)}.hgt")
-                if (file.exists()) runCatching { tiles += HgtTile(lat, lon, file.readBytes()) }
+                if (file.exists()) runCatching { tiles += HgtTile(lat, lon, map(file)) }
             }
             return ElevationModel(tiles)
         }
+
+        private fun map(file: File): ByteBuffer =
+            RandomAccessFile(file, "r").use { f -> f.channel.map(FileChannel.MapMode.READ_ONLY, 0, f.length()) }
     }
 }
 
