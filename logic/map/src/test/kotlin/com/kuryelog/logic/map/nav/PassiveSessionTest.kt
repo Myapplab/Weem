@@ -19,4 +19,19 @@ class PassiveSessionTest {
         assertFalse(PassiveSession.shouldClearRoute(true, t, t + 900_000))
         assertFalse(PassiveSession.shouldClearRoute(false, null, t + 900_000))
     }
+
+    @Test
+    fun `tercihlerle arka plan ve öne dönüş, anahtar her dönüşte silinir`() {
+        val prefs = com.kuryelog.logic.map.MemoryMapPrefs()
+        val t = 1_792_000_000_000L
+        PassiveSession.onBackground(prefs, dayActive = true, nowMs = t)
+        assertNull(prefs.getLong(PassiveSession.KEY)) // gün açıkken yazılmaz
+        PassiveSession.onBackground(prefs, dayActive = false, nowMs = t)
+        assertEquals(t, prefs.getLong(PassiveSession.KEY))
+        assertFalse(PassiveSession.onForeground(prefs, dayActive = false, nowMs = t + 60_000)) // 1 dk: rota kalır
+        assertNull(prefs.getLong(PassiveSession.KEY))
+        PassiveSession.onBackground(prefs, dayActive = false, nowMs = t)
+        assertTrue(PassiveSession.onForeground(prefs, dayActive = false, nowMs = t + 300_000))
+        assertFalse(PassiveSession.onForeground(prefs, dayActive = false, nowMs = t + 900_000)) // anahtar silindi
+    }
 }

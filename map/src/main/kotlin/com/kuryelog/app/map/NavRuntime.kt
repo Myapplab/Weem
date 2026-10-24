@@ -4,6 +4,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import com.kuryelog.app.core.Home
 import com.kuryelog.app.core.ShiftHub
+import com.kuryelog.logic.map.nav.PassiveSession
 import com.kuryelog.logic.core.Clock
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.core.NavKind
@@ -198,6 +199,16 @@ class NavRuntime private constructor(private val app: Context) {
         roads.mapInFront = on
         WeatherRuntime.get(app).setVisible(on)
         refreshLocation()
+    }
+
+    /**
+     * Pasif oturum (MAP.md 6.2; S39: saf kural A6.6'dan beri vardı, bağlı değildi): gün kapalıyken uygulama ≥5 dk arka planda kaldıysa dönüşte eski rota
+     * silinir. `MainActivity` onStop/onStart'ta çağırır.
+     */
+    fun appBackground() = PassiveSession.onBackground(mapPrefs, ShiftHub.state.value.active, System.currentTimeMillis())
+
+    fun appForeground() {
+        if (PassiveSession.onForeground(mapPrefs, ShiftHub.state.value.active, System.currentTimeMillis())) controller.clearRoute()
     }
 
     /** Eve dön (MAP.md 7.3, 7.8): ev `:core`'da; yoksa denetleyici uyarır. */
