@@ -105,7 +105,6 @@ enum class Text(override val tr: String, override val az: String) : Bilingual {
     MORE_ACTIONS("Seçenekler", "Seçimlər"),
 
     // G1 vardiya kartı (CORE.md 1.2; RS `I18n` shift_start/shift_stop).
-    SHIFT_START("▶  Vardiyayı BAŞLAT", "▶  Növbəni BAŞLAT"),
     SHIFT_STOP("■  Vardiyayı BİTİR", "■  Növbəni BİTİR"),
     /** Haritadaki tek satırlık vardiya kartının düğmesi (S37). */
     SHIFT_START_SHORT("BAŞLAT", "BAŞLAT"),
