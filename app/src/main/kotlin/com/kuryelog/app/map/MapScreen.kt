@@ -246,6 +246,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
     }
     LaunchedEffect(navCtl) { navCtl.haptics.collect { vibrate(ctx, it) } }
     val base = MapStyles.resolve(settings.mapStyle, BuildConfig.MAPS_ENABLED)
+    val basemap by Basemap.state.collectAsState()
     val google = base == com.kuryelog.logic.map.ui.BaseMap.GOOGLE
     // S38: işaret ve kamera kare başına değişir; bu sekme onları okumaz (yalnız yüzey okur), yoksa her karede bütün harita ekranı yeniden oluşuyordu.
     val puckState = rememberMapPuck(enabled = true, graph = data.graph)
@@ -475,7 +476,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
         mapSurface = {
             Box(Modifier.fillMaxSize().onSizeChanged { viewport = it }) {
                 MapSurface(model, events, Modifier.fillMaxSize(), userAgent = MapStyles.userAgent(BuildConfigInfo.versionName(ctx)), live = live)
-                MapStyles.attribution(base)?.let { a ->
+                MapStyles.attribution(base, embedded = basemap is Basemap.State.Ready)?.let { a ->
                     Text(
                         a.text, style = WeemType.labelS, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.align(Alignment.BottomStart).padding(4.dp)

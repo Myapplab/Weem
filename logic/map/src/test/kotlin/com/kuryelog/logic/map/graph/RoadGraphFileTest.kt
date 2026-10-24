@@ -30,6 +30,25 @@ class RoadGraphFileTest {
     }
 
     @Test
+    fun `bellek eşlemeli dosyadan toplu okunan graf baytı baytına aynı`() {
+        // S39: MapDataController grafı dosyadan bellek eşlemeli okur (yığına kopya yok); toplu okuma tek tek okumayla aynı sonucu vermeli.
+        val g = TestGraphs.parallel(east = mapOf("highway" to "residential", "cycleway" to "lane"))
+        val bytes = g.serialize()
+        val file = java.io.File.createTempFile("graph", ".bin").apply { deleteOnExit(); writeBytes(bytes) }
+        val mapped = java.io.RandomAccessFile(file, "r").use { f ->
+            RoadGraph.deserialize(f.channel.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, 0, f.length()))
+        }
+        assertArrayEquals(bytes, mapped.serialize())
+        assertEquals(g.names, mapped.names)
+        // Kısa dosya yine "bozuk" der (toplu okuma sınırı aşmaz).
+        try {
+            RoadGraph.deserialize(bytes.copyOf(bytes.size / 2))
+            fail("FormatException bekleniyordu")
+        } catch (_: FormatException) {
+        }
+    }
+
+    @Test
     fun `yeni graf bisiklet bilgisini taşır, kaydedip okuyunca aynı`() {
         val g = TestGraphs.parallel(east = mapOf("highway" to "residential", "cycleway" to "lane"))
         assertTrue(g.hasBikewayData)

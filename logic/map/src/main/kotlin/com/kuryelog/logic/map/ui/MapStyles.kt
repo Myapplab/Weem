@@ -59,7 +59,8 @@ object MapStyles {
     const val OPENMAPTILES_URL = "https://www.openmaptiles.org/"
 
     /**
-     * Vektör altlık (SORU-N5 (ii)): kendi Bakü PMTiles dosyası yokken OpenFreeMap'in anahtarsız stilleri (MAP.md 6.4; PMTiles dosyası A6.5'te üretilemedi, bkz. 6.16).
+     * Vektör altlık (SORU-N5 (ii)): APK'da gömülü Bakü karoları yoksa (PR CI'ı, yerel derleme) OpenFreeMap'in anahtarsız stilleri; gömülü altlık S39'da
+     * ([BasemapInstaller], MAP.md 6.19).
      */
     const val VECTOR_LIGHT_STYLE = "https://tiles.openfreemap.org/styles/positron"
     const val VECTOR_DARK_STYLE = "https://tiles.openfreemap.org/styles/dark"
@@ -83,10 +84,11 @@ object MapStyles {
         BaseMap.GOOGLE -> Txt("Google Maps", "Google Maps")
     }
 
-    /** Atıf (sol alt, 9 pt): gerçek kaynağı söyler (MAP.md 6.16 (1)); Google kendi logosunu çizer. */
-    fun attribution(base: BaseMap): Attribution? = when (base) {
+    /** Atıf (sol alt, 9 pt): gerçek kaynağı söyler (MAP.md 6.16 (1)); Google kendi logosunu çizer. [embedded]: S39 gömülü Protomaps karoları. */
+    fun attribution(base: BaseMap, embedded: Boolean = false): Attribution? = when (base) {
         BaseMap.OSM -> Attribution("© OpenStreetMap contributors", OSM_COPYRIGHT)
-        BaseMap.VECTOR -> Attribution("© OpenFreeMap · © OpenMapTiles · © OpenStreetMap contributors", OSM_COPYRIGHT)
+        BaseMap.VECTOR -> if (embedded) Attribution("© Protomaps · © OpenStreetMap contributors", OSM_COPYRIGHT)
+        else Attribution("© OpenFreeMap · © OpenMapTiles · © OpenStreetMap contributors", OSM_COPYRIGHT)
         BaseMap.GOOGLE -> null
     }
 

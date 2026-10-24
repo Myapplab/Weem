@@ -218,6 +218,29 @@ class MapDownloadTest {
         MapDataController(dir, assets, prefs, MapDownload(http, ua, noDelay), { lang }, Dispatchers.Unconfined)
 
     @Test
+    fun `gömülü graf akışla açılır, bütün dosya belleğe okunmaz`() = runBlocking {
+        // S39: telefonda gzip + açılmış graf birlikte bellekte bellek hatası veriyordu; büyük dosyalar yalnız open() ile.
+        val files = mutableMapOf(
+            "manifest.json" to """{"version":"2026-10-01T00:00","format":2,"regions":["wide"]}""".toByteArray(),
+            "graph_wide.bin.gz" to graphGz(),
+        )
+        val opened = ArrayList<String>()
+        val assets = object : MapAssets {
+            override fun read(name: String): ByteArray? {
+                if (name.startsWith("graph_")) error("graf belleğe okunmamalı")
+                return files[name]
+            }
+
+            override fun open(name: String) = files[name]?.inputStream().also { if (it != null) opened += name }
+        }
+        val c = controller(assets, MemoryMapPrefs(), FakeHttp { HttpResponse(500) })
+        c.load("wide")
+        assertTrue(c.state.value.ready)
+        assertTrue("graph_wide.bin.gz" in opened)
+        assertEquals(TestGraphs.parallel().edgeCount, c.state.value.graph!!.edgeCount)
+    }
+
+    @Test
     fun `gömülü harita bir kez açılır, sürüm değişince yeniden, ağ açılmaz`() = runBlocking {
         val assets = Assets(
             mutableMapOf(

@@ -38,6 +38,9 @@ android {
         ndk { abiFilters += "arm64-v8a" }
     }
 
+    // S39: gömülü karolar zaten sıkıştırılmış (gzip MVT); APK'da yeniden sıkıştırılmaz, ilk açılışta kopyası hızlı.
+    androidResources { noCompress += "pmtiles" }
+
     buildFeatures {
         buildConfig = true
         resValues = true

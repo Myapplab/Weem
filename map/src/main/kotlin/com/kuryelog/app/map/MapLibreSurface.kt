@@ -3,6 +3,7 @@ package com.kuryelog.app.map
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
@@ -35,7 +36,8 @@ import org.maplibre.android.style.sources.GeoJsonSource
 import java.util.Locale
 
 /**
- * İkinci harita görünümü (Y2, S4; MAP.md 6.4): MapLibre Native, iki stil — OSM raster (`tile.openstreetmap.org`, koyuda ters çevrilmiş) ve vektör. Yakınlık 11–19,
+ * İkinci harita görünümü (Y2, S4; MAP.md 6.4): MapLibre Native, iki stil — OSM raster (`tile.openstreetmap.org`, koyuda ters çevrilmiş) ve vektör (S39: APK'da
+ * gömülü Bakü karoları varsa yerelden, ağsız; MAP.md 6.19). Yakınlık 11–19,
  * döndürme ve eğme jesti kapalı; atıf HUD'da (sol alt, MAP.md 6.4), MapLibre'nin kendi logosu ve atıf düğmesi kapalı. Disk önbelleği açık, çevrimdışı paket yok.
  * Çizgiler, işaretler ve konum işareti kendi kaynak ve katmanlarında (`weem-*`); stil değişince yeniden kurulur.
  */
@@ -45,6 +47,8 @@ fun MapLibreSurface(model: MapSurfaceModel, events: MapSurfaceEvents, modifier: 
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val holder = remember { MapLibreHolder(context.applicationContext, userAgent) }
     val currentEvents = rememberUpdatedState(events)
+    // S39: gömülü altlık hazır olunca stil yerel dosyalara geçer (görünüm güncellemesinde okunur).
+    val basemap = Basemap.state.collectAsState()
     DisposableEffect(lifecycle, holder) {
         val observer = LifecycleEventObserver { _, e ->
             when (e) {
@@ -65,7 +69,7 @@ fun MapLibreSurface(model: MapSurfaceModel, events: MapSurfaceEvents, modifier: 
         modifier = modifier,
         factory = { ctx -> holder.create(ctx) { currentEvents.value } },
         // [live] durumları burada okunur: değişince yalnız bu blok yeniden çalışır (sekme yeniden oluşturulmaz).
-        update = { holder.apply(model, live?.puck?.value ?: model.puck, live?.camera?.value ?: model.camera) },
+        update = { holder.apply(model, live?.puck?.value ?: model.puck, live?.camera?.value ?: model.camera, basemap.value) },
     )
 }
 
@@ -83,6 +87,7 @@ internal class MapLibreHolder(private val app: Context, private val userAgent: S
     private var pending: MapSurfaceModel? = null
     private var pendingPuck: MapPuck? = null
     private var pendingCamera: MapCameraCommand? = null
+    private var pendingBasemap: Basemap.State = Basemap.State.Online
     private var appliedCameraSeq = -1
     private val density = app.resources.displayMetrics.density
     // Son çizilenler (stil yeniden kurulunca sıfırlanır): aynıysa kaynak yeniden yüklenmez.
@@ -121,7 +126,7 @@ internal class MapLibreHolder(private val app: Context, private val userAgent: S
                 val c = m.cameraPosition
                 c.target?.let { t -> events().onCameraIdle(GeoPoint(t.latitude, t.longitude), c.zoom, c.bearing) }
             }
-            pending?.let { apply(it, pendingPuck, pendingCamera) }
+            pending?.let { apply(it, pendingPuck, pendingCamera, pendingBasemap) }
         }
         view = v
         return v
@@ -139,26 +144,34 @@ internal class MapLibreHolder(private val app: Context, private val userAgent: S
         drawnPuck = null; puckDrawn = false; drawnCircle = null; circleDrawn = false
     }
 
-    fun apply(model: MapSurfaceModel, puck: MapPuck? = model.puck, camera: MapCameraCommand? = model.camera) {
+    fun apply(model: MapSurfaceModel, puck: MapPuck? = model.puck, camera: MapCameraCommand? = model.camera, basemap: Basemap.State = Basemap.State.Online) {
         pending = model
         pendingPuck = puck
         pendingCamera = camera
+        pendingBasemap = basemap
         val m = map ?: return
         if (m.uiSettings.isRotateGesturesEnabled != model.rotateGestures) m.uiSettings.setRotateGesturesEnabled(model.rotateGestures)
-        val key = "${model.base}|${model.dark}"
-        if (key != styleKey) {
+        val ready = basemap as? Basemap.State.Ready
+        val key = "${model.base}|${model.dark}|${ready?.local?.version}"
+        // S39: vektör altlık gömülü karoların kopyası bitince yerelden (ağdan inip sonra değişmesin); OSM raster her zaman ağdan.
+        val waiting = model.base != BaseMap.OSM && basemap == Basemap.State.Pending
+        if (key != styleKey && !waiting) {
             styleKey = key
             style = null
             forget()
-            val builder = if (model.base == BaseMap.OSM) Style.Builder().fromJson(MapStyles.osmRasterStyle(model.dark))
-            else Style.Builder().fromUri(MapStyles.vectorStyleUrl(model.dark))
+            val local = ready?.let { Basemap.style(it, model.dark) }
+            val builder = when {
+                model.base == BaseMap.OSM -> Style.Builder().fromJson(MapStyles.osmRasterStyle(model.dark))
+                local != null -> Style.Builder().fromJson(local)
+                else -> Style.Builder().fromUri(MapStyles.vectorStyleUrl(model.dark))
+            }
             m.setStyle(builder) { s ->
                 if (styleKey != key) return@setStyle
                 installLayers(s)
                 style = s
                 pending?.let { draw(s, it, pendingPuck) }
             }
-        } else {
+        } else if (key == styleKey) {
             style?.let { draw(it, model, puck) }
         }
         camera?.let { cam ->

@@ -24,3 +24,7 @@ captures/
 # Gömülü harita (ci/build_map.sh üretir; repoda yalnız boş sürümlü yer tutucu manifest)
 map/src/main/assets/map/*
 !map/src/main/assets/map/manifest.json
+
+# Gömülü vektör altlık karoları (ci/build_tiles.sh üretir; stil ve glifler repoda)
+map/src/main/assets/basemap/baku.pmtiles
+map/src/main/assets/basemap/tiles.json

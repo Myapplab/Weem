@@ -4,6 +4,10 @@ import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.map.geo.Baku
 import com.kuryelog.logic.map.settings.MapPrefs
 import java.io.File
+import java.io.InputStream
+import java.io.RandomAccessFile
+import java.nio.channels.FileChannel
+import java.util.zip.GZIPInputStream
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -16,6 +20,9 @@ import org.json.JSONObject
 /** Uygulamayla gelen `assets/map/` dosyaları (Android `AssetManager`; testte bellek içi). Yoksa null. */
 fun interface MapAssets {
     fun read(name: String): ByteArray?
+
+    /** Akış olarak (S39: büyük dosya belleğe bütün alınmaz); Android `AssetManager.open`. Yoksa null. */
+    fun open(name: String): InputStream? = read(name)?.inputStream()
 }
 
 /**
@@ -57,13 +64,12 @@ class MapDataController(
         }
         try {
             val loaded = withContext(work) {
-                val bytes = file.readBytes()
                 Loaded(
-                    RoadGraph.deserialize(bytes),
+                    readGraph(file),
                     ElevationModel.loadLocal(Baku.wideBox, File(dir, "dem")),
                     readPois(region),
                     file.lastModified(),
-                    bytes.size.toLong(),
+                    file.length(),
                 )
             }
             current = MapDataState(
@@ -78,8 +84,18 @@ class MapDataController(
             throw e
         } catch (e: Exception) {
             current = MapDataState(MapDataPhase.MISSING, error = t(MapMsg.readFailed(MapMsg.of(e))))
+        } catch (e: OutOfMemoryError) {
+            // S39: bellek yetmezse uygulama düşmez; kurulum kartı nedeni söyler.
+            current = MapDataState(MapDataPhase.MISSING, error = t(MapMsg.readFailed(MapMsg.of(e))))
         }
     }
+
+    /**
+     * Grafı dosyadan okur (S39): dosya bellek eşlemeli (Java yığınına ~60 MB kopya yok), diziler toplu okunur; önceden `readBytes` + tek tek
+     * okuma telefonda hem yığını iki kez dolduruyor hem açılışı saniyelerce uzatıyordu.
+     */
+    private fun readGraph(file: File): RoadGraph =
+        RandomAccessFile(file, "r").use { f -> RoadGraph.deserialize(f.channel.map(FileChannel.MapMode.READ_ONLY, 0, f.length())) }
 
     private class Loaded(val graph: RoadGraph, val elevation: ElevationModel, val pois: PoiSet?, val builtAtMs: Long, val size: Long)
 
@@ -153,9 +169,10 @@ class MapDataController(
         current = MapDataState(MapDataPhase.UNPACKING, 0.3, t(MapMsg.UNPACKING))
         withContext(work) {
             File(dir, "dem").mkdirs()
+            // S39: akışla açılır (önceden gzip ve açılmış graf birlikte bellekteydi: telefonda ~200 MB tepe → bellek hatası, kurulum kartı "İndir" istiyordu).
             fun unpack(asset: String, to: File) {
-                val bytes = assets.read(asset) ?: throw java.io.FileNotFoundException(asset)
-                AtomicFile.write(to, gunzip(bytes))
+                val input = assets.open(asset) ?: throw java.io.FileNotFoundException(asset)
+                GZIPInputStream(input, 64 * 1024).use { AtomicFile.write(to, it) }
             }
             try {
                 // Gömülü graf yalnız "geniş" olabilir (merkezi de kapsar; APK küçük kalsın).
@@ -168,6 +185,8 @@ class MapDataController(
                 prefs.setString(KEY_BUNDLED_AT, version)
             } catch (_: Exception) {
                 // gömülü dosya yoksa indirme ekranı açılır
+            } catch (_: OutOfMemoryError) {
+                // akışla açıldığı için beklenmez; yine de uygulama düşmez
             }
         }
     }

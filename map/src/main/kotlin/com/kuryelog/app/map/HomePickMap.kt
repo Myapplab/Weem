@@ -7,7 +7,7 @@ import androidx.compose.ui.Modifier
 import com.kuryelog.logic.map.ui.BaseMap
 
 /**
- * Ev seçicinin harita yüzeyi (MAP.md 6.11): MapLibre OSM raster (koyuda ters çevrilmiş), yakınlık 17, döndürme kapalı; seçili nokta = kamera merkezi (kamera durunca
+ * Ev seçicinin harita yüzeyi (MAP.md 6.11): MapLibre vektör altlık (S39: gömülü karolarla ağsız; önceden OSM raster), yakınlık 17, döndürme kapalı; seçili nokta = kamera merkezi (kamera durunca
  * bildirilir), uzun basış kamerayı noktaya taşır; 50 m daire.
  */
 @Composable
@@ -15,7 +15,7 @@ fun HomePickMap(state: HomePickSurfaceState, userAgent: String, modifier: Modifi
     // Açılışta bir kez merkeze, sonra yalnız uzun basışta (moveSeq) kamera taşınır; sürükleme kamerayı kendisi taşır.
     val camera = remember(state.moveSeq) { MapCameraCommand(seq = state.moveSeq, center = state.center, zoom = if (state.moveSeq == 0) state.zoom else null) }
     MapLibreSurface(
-        MapSurfaceModel(base = BaseMap.OSM, dark = state.dark, camera = camera, circle = state.center to state.radiusM),
+        MapSurfaceModel(base = BaseMap.VECTOR, dark = state.dark, camera = camera, circle = state.center to state.radiusM),
         MapSurfaceEvents(onLongPress = state.onLongPress, onCameraIdle = { c, _, _ -> if (c != state.center) state.onCenterChange(c) }),
         modifier.fillMaxSize(),
         userAgent,

@@ -34,6 +34,13 @@ jobs:
         run: ./gradlew -p logic test --console=plain
       - name: Gömülü harita (Geofabrik → graf, SRTM, yerler; MAP.md 2.11)
         run: WEEM_VERSION=$(sed -n 's/^weem.versionName=//p' gradle.properties) bash ci/build_map.sh
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: false
+      - name: Gömülü altlık (Protomaps → Bakü karoları; MAP.md 6.19)
+        # S39: görsel harita APK'da (ağsız); stil ve glifler repoda, yalnız karolar burada üretilir.
+        run: bash ci/build_tiles.sh
       - name: Google Maps anahtarı
         # MAP.md 6.10; S38: anahtar Repository secrets'ta GOOGLE_MAPS_API_KEY (ya da GOOGLE_API_KEY, MAPS_API_KEY, GOOGLE_MAPS_KEY) ya da Variables'ta
         # GOOGLE_MAPS_API_KEY olabilir. Değerin içinden AIza… anahtarı çıkarılır (tırnak, boşluk, "AD=" öneki sorun olmaz). Günlüğe yalnız adı ve son 4 karakter.
