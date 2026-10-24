@@ -844,8 +844,6 @@ class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
         return OrderHistory.deliveredOrders(core.trips.values.filter { day(it.acceptedAt) == day })
     }
     fun phaseText(p: TripPhase): String = OverlayText.phase(p, ::tl)
-    /** Order card status; a K34 inferred delivery is shown as an unverified delivery. */
-    fun statusText(t: TripRecord): String = OrderHistory.status(t, ::tl)
     @Synchronized fun today(): List<TripRecord> { init(); val day = day(); return core.trips.values.filter { day(it.acceptedAt) == day }.reversed() }
     /** Every saved order of every day (Siparişler gün listesi); damaged rows are skipped. */
     @Synchronized fun stored(): List<TripRecord> { init(); return env.db.trips().mapNotNull { runCatching { RecordJson.trip(it) }.getOrNull() } }

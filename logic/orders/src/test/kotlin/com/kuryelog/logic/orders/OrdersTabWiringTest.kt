@@ -19,7 +19,8 @@ class OrdersTabWiringTest {
         assertTrue(access.contains("Orders.records(ctx)"))
         assertTrue(access.contains("LogOrdersSource("))
         // A8.3: Receiver'da üstte Provider kartı, altında aynı sekme.
-        assertTrue(shell.contains("Tab.ORDERS -> Column {") && shell.contains("RemoteOrdersCard(lang)\n                            OrdersTab(lang)"))
+        // S39: kabuk haritayı arkada tutar, sekmeler bir kat daha içeride: girintiden bağımsız.
+        assertTrue(shell.contains("Tab.ORDERS -> Column {") && Regex("""RemoteOrdersCard\(lang\)\s*\n\s*OrdersTab\(lang\)""").containsMatchIn(shell))
         assertTrue(shell.contains("RecordsScreen(lang, onBack = { records = false })"))
     }
 

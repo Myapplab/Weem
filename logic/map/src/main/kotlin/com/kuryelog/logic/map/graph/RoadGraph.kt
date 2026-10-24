@@ -103,7 +103,6 @@ class RoadGraph(
     val edgeCount get() = edgeFrom.size
     val zoneCount get() = zoneStart.size - 1
 
-    fun wayOf(e: Int): Int = edgeWay[e]
     fun classOf(e: Int): RoadClass = CLASSES[wayClass[edgeWay[e]].toInt() and 0xFF]
     fun flagsOf(e: Int): Int = wayFlags[edgeWay[e]].toInt() and 0xFFFF
 
@@ -144,11 +143,6 @@ class RoadGraph(
         for (w in wayOsmId.indices) if (wayOsmId[w] == osmId) wayEdges[w].forEach { out += it }
         if (out.size > 1) out.sort()
         return out
-    }
-
-    fun nameOfOsmWay(osmId: Long): String {
-        for (w in wayOsmId.indices) if (wayOsmId[w] == osmId) return nameOfWay(w)
-        return ""
     }
 
     fun classOfOsmWay(osmId: Long): RoadClass? {

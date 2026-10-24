@@ -24,9 +24,6 @@ class DayDeletionRuntime private constructor(private val app: Context) {
 
     private var running = false
 
-    /** Açık gün [date] tarihindeyse silme onayında "aktif gün durdurulacak" uyarısı gerekir mi. */
-    fun activeOn(date: String): Boolean = DayRuntime.get(app).activeDay()?.startedAtMs?.let { com.kuryelog.logic.core.LogTime.day(it, clock.zone()) == date } == true
-
     @Synchronized
     fun delete(date: String) {
         if (running) return

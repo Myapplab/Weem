@@ -108,16 +108,6 @@ fun StatusPill(
     }
 }
 
-/** Sayı rozeti (24 dp, vurgu): sıradaki durak sayısı, "+1". */
-@Composable
-fun CountBadge(text: String, modifier: Modifier = Modifier, tone: WTone = WTone.ACCENT) {
-    val p = palette()
-    val (bg, fg) = if (tone == WTone.ACCENT) p.accent to p.accentInk else p.container(tone) to p.ink(tone)
-    Box(modifier.heightIn(min = 24.dp).background(bg.color(), CircleShape).padding(horizontal = 8.dp, vertical = 4.dp), contentAlignment = Alignment.Center) {
-        Text(text, style = WeemType.labelS.copy(fontSize = 12.sp), color = fg.color(), maxLines = 1)
-    }
-}
-
 /**
  * Satır içi banner (`docs/TASARIM.md` 10): ton zemini + ton simgesi + metin; dokunulursa sağda ›. Kırmızı düz satır ve "  !" yerine.
  */

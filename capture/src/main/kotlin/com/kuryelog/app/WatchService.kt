@@ -138,8 +138,9 @@ class WatchService : AccessibilityService() {
     private val contentRead = Runnable { contentQueued = false; if (Store.canRecordScreen(this)) readScreen() }
     /** Every screen read goes through here: the 180 ms retry and the K37 re-read used to call [snapshot] unguarded, so one
      *  failing frame crashed the app on the main thread. */
-    private fun readScreen() { lastReadAt = SystemClock.uptimeMillis(); Store.guarded(this, "screen") { snapshot() } }
+    private fun readScreen() { Store.guarded(this, "screen") { snapshot() } }
     private fun snapshot() {
+        lastReadAt = SystemClock.uptimeMillis()
         if (!connected || !Store.canRecordScreen(this) || CaptureState.receiverRole()) return
         val allowed = Store.targets(this)
         val reads = ArrayList<WindowRead>()
