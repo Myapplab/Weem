@@ -46,7 +46,7 @@ Her olay korumalıdır (kaynak `event`). Sıra:
 4. `TYPE_VIEW_CLICKED`: kaynak düğümden başlayarak derinlik ≤ 3 gezilir, her düğümün boş olmayan `text` ve `contentDescription`'ı etiket olur (etiket sayısı 25'i aşınca gezinti durur; sınır kesin değil, son düğüm iki etiket ekleyebilir); sonra olayın `text` öğeleri ve `contentDescription`'ı eklenir. Tekilleştirilmiş etiketler boşlukla birleşip boş değilse: `events.jsonl` `type=click {pkg, text}` ve **her** tekil etiket için `OrderTracker.onClick(pkg, etiket, now)`. Olay burada bitmez: 7. adıma düşer.
 5. `TYPE_NOTIFICATION_STATE_CHANGED`: `OrderTracker.notification(pkg, olay metinleri "\n" ile, at)`, `OcrPace.trigger(pkg, at)`, okuma zamanlanmamışsa hemen bir okuma (ikinci okuma yok); dön.
 6. `TYPE_WINDOW_STATE_CHANGED`: `OcrPace.trigger(pkg, now)`.
-7. Okuma zamanlanmamışsa: hemen bir okuma + 180 ms sonra ikinci okuma (izin hâlâ varsa).
+7. Okuma zamanlanmamışsa: hemen bir okuma + 180 ms sonra ikinci okuma (izin hâlâ varsa). **WEEM S39 (pil):** `typeWindowContentChanged` ve `typeWindowsChanged` için bunun yerine en çok `CaptureTiming.CONTENT_READ_MS` (250 ms) aralıkla tek okuma, sondaki değişiklik gecikmeli okunur (sayaçlı ekranlarda her olay iki ağaç gezintisi başlatıyordu); pencere durumu, bildirim, tıklama ve çevirici yolu aynı.
 
 "Zamanlanmış" bayrağı ilk okuma çalışınca iner; 180 ms okuması ve K37 yeniden okuması bayrağa dokunmaz. WEEM: 180 ms `CaptureTiming.SECOND_READ_MS` sabiti (`logic/capture`); Android katmanında düz sayı yok.
 
