@@ -2,6 +2,12 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-24 — A10.4l kod bitti: S39 telefon geri bildirimi 3 + sadeleştirme (Claude Opus; dal `ccr-bd4f7a85-wefii4`; PR + APK sırada)
+- Yapılan: gömülü altlık (`ci/build_tiles.sh`, `tools/basemap/make_style.cjs`, `map/src/main/assets/basemap/`, `logic/map` `BasemapInstaller`, `:map` `Basemap`, `MapLibreHolder` yerel stil + 60 fps); akışlı graf açma (`MapAssets.open`, `AtomicFile.write(InputStream)`), bellek eşlemeli graf/SRTM; Harita sekmesi arkada (`WeemApp`, `MapScreen(visible)`, `collectWhile`); `baseline-prof.txt`; `WatchService` içerik okuma sınırı (`CaptureTiming.CONTENT_READ_MS`); Google işaret farkı + `PoiLayerRules.selectGoogle`; `PassiveSession`/`OrderSwitch` bağlandı; ölü kod ve 2 kopya kaldırıldı.
+- Doğrulama: `-p logic test` 2.177/0; `:app` 114/114, `:map` 10/10; `lintDebug` 0 hata; release yerelde 32.570.447 bayt (karosuz); telefonda denenmedi.
+- Açık kalan: CI'da `build_tiles.sh` ilk kez çalışacak (build.protomaps.com erişimi, karo boyutu; >70 MB → z14); MapLibre `pmtiles://file://` ve `file://` glifleri cihazda doğrulanmadı; sipariş değişiminin 2 telefonda Provider'da da rota açması (zararsız) gözlenecek.
+- Kullanıcı kararları bekliyor: SORU-S39-1 (özellik sadeleştirme), SORU-S39-2 (pil seçenekleri) — `docs/SADELESTIRME.md` 4–5.
+
 ## 2026-10-23 — A10.4k bitti: S38 telefon geri bildirimi 2 (Claude Opus; dal `ccr-5395b034-i2z288`; PR #21 CI yeşil, `main` `be6db4f`; APK `weem-build-10`)
 - Yapılan: yüzey kaynak farkı (`MapLibreHolder`/`GoogleHolder`, `baseLines`, `MapLive`, `GeoJson.Builder`); `CompassSensor` + `logic/map` `CompassSmoother`, `PuckAnimator`/`PuckHeading`, `CameraEase`; `MapScreen` takip `snapshotFlow`, `CameraSpot`, `PoiLayerRules.refreshNeeded`/`SELECT_MARGIN`, `RouteLights` + `POI_LIGHT_ROUTE`; `BatteryEstimator.EXTERNAL_HOLD_MS`, `ScooterPanel.batterySub`; `MapStyles.DEFAULT=google` + `googleDefault`/`MapSettingsRepo.preferGoogle`; `apk.yml` anahtar adımı; `NavLocation` 500/1000 ms; hava hapı durağan; `CrashReport` LowMemory/ExcessiveResourceUsage.
 - Doğrulama: `-p logic test` 2.164/0; `:app` 114/114, `:map` 10/10; 4 modülde lint 0 hata; telefonda denenmedi.
@@ -136,14 +142,3 @@ Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 
 - Doğrulama: `-p logic test` 1.755 test, 0 kırmızı; `./gradlew :app:testDebugUnitTest :map:testDebugUnitTest :app:lintDebug :map:lintDebug` → `:app` 76 test, `:map` 8 test yeşil, lint 0 hata. Telefonda denenmedi; CI koşmadı.
 - Açık kalan: rota sırasında "Yol yok" seçicisi, Y8 saat düzenleyicisi + onay/kara liste katmanı, `OrderEvents` (aşama ile `excludeStops`), AZ metin onayları (9.14), 2 telefon rolü (A8.3).
 - Sıradaki: Aşama sonu `/code-review high` önerilir; A6.10 (K) için APK derlet; A8.3.
-
-## 2026-10-20 — A6.9 bitti: sürüş günlüğü, İstatistik, Sürüş kayıtları, veri seti, görevler, hatırlatıcılar (Claude Sonnet · high; dal `ccr-1736f30d-of4a0s`)
-- Yapılan: `logic/map` `logs` (`RideLogWriter/Store`, `RouteRecorder`, `RouteRecording`, `DayLogBridge`), `stats` (`DayStats`, `DayReportFile`, `DayHistory`, `StatsTabs`, `LightStats`, `DayDeletionPlan`…), `tasks`, `reminders` (+`ReminderController`); `logic/orders` `dataset` (`DatasetContract/Pack/DayLogSnapshot/OfferRowGate/Recorder/Shifts/Manual`); `:map` `RideLogRuntime`, `DayReportWriter`, `DayDeletionRuntime`, `TaskRuntime`, `ReminderRuntime`; `:app` `StatsScreen`, `RideLogsScreen`, `TasksScreen`+düzenleyici+`TaskAlertCard`, `ReminderSettingsSection`, `ReminderCard` (kabukta), `DatasetScreen`/`AppDatasetRuntime`/`DatasetManualSheet`; `tools/veri_seti`. Ayrıntı `MAP.md` 12.16, 13.21.
-- Doğrulama: `-p logic test` 1.723 test, 24 kırmızı (yalnız A6.11 `roads` iskeleti); `:app` 72 + `:map` 8 test yeşil; `lintDebug` 0 hata; `kontrol.py` WEEM ZIP'ini geçirir. Telefonda denenmedi; CI koşmadı.
-- Açık kalan: veri setinde rota/yükseklik ölçümü (`RouteMeasurePort`) yok (alanlar `unavailable`); elle ekleme AZ metinleri onay bekler; `DayDeletionRuntime.deleteContributions` ve Yollarım girişi A6.11'de; `OrderEvents` Android uygulayıcısı yok (A6.8'den); İstatistik mini haritası MapLibre OSM (cihazda denenmedi).
-- Sıradaki: A6.11 (Opus · high) bu daldan; bitince dal `main`'e birleşir.
-
-## 2026-10-20 — A3.11 gölge mod anahtarı (Claude Sonnet · high; dal `claude/a3-10-u-yap-keet02` → `main`)
-- Yapılan: tercih `shadowMode` (yalnız `.dev`): açıkken nakit bahşiş/cep nakdi soruları, bildirim 12, rozet ve balon/kart pencereleri kapanır, kayıt sürer (`OrderFlow.shadowMode`, `OrdersHost`, `Orders.AndroidEnv`); Ayarlar'da anahtar; rapor tek taraflı bahşiş cevabını `order.tip_answer`/`day.tip_answer` beklenen sayar. `ORDERS.md` 16.6. Belge onarımı: CHANGELOG ve AI_HANDOFF'taki birleşme işaretleri silindi.
-- Doğrulama: `-p logic :orders:test :app:test` yeşil; `:orders:compileDebugKotlin`, `:app` `OrdersSettingsScreenTest` (7) yeşil. Telefonda denenmedi; lint koşmadı.
-- Açık kalan: **A3.10 (K)** kullanıcıda — `.dev` APK derlet, Pixel'de gölge mod açık 1–2 vardiya, iki ZIP + `shadowReport`. Ekran okuma uyarısı 5104 gölge modda da çıkar (beklenen fark).

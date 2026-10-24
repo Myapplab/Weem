@@ -4,6 +4,11 @@ package com.kuryelog.logic.capture
 object CaptureTiming {
     /** Bir olaydan sonra ikinci ekran okuması (RS `WatchService.kt:103`). */
     const val SECOND_READ_MS = 180L
+    /**
+     * S39 (pil): içerik ya da pencere listesi değişikliğinde ağaç en çok bu aralıkla okunur (sondaki değişiklik de okunur). Rawstats'ta her olay iki
+     * okuma başlatıyordu (hemen + [SECOND_READ_MS]); sayaçlı ekranlarda saniyede onlarca ağaç gezintisi ana iş parçacığında. Vardiya tiki ayrıca 500 ms'de bir okur.
+     */
+    const val CONTENT_READ_MS = 250L
     /** Bu kadar eski ekran görüntüsünün OCR satırları atılır (RS `WatchService.kt:265`). */
     const val OCR_STALE_MS = 1_800L
     /** Tik aralığı: vardiyada / vardiya dışında (0.22.2 pil; RS `WatchService.kt:329`). */

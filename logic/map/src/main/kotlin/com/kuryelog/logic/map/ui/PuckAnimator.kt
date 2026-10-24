@@ -72,9 +72,6 @@ class PuckAnimator {
     /** İşaretin şu anki çizim yeri (kayma ortasında olabilir): `PuckMotion.onFix`'in `displayed` girdisi. */
     val displayed: GeoPoint? get() = shownPoint
 
-    /** Pusulanın yumuşatılmış değeri (yoksa null). */
-    val compassDeg: Double? get() = compass.value
-
     /** GPS adımı. [gpsHeadingDeg] `PuckMotion.heading` (filtreli GPS yönü), [rawPoint] ham konum. */
     fun onStep(step: PuckStep, accuracy: Double?, gpsHeadingDeg: Double?, rawPoint: GeoPoint, nowMs: Long) {
         val shown = shownPoint

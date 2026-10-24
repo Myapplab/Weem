@@ -10,6 +10,7 @@ import com.kuryelog.logic.map.net.UrlHttp
 import com.kuryelog.logic.map.net.UserAgent
 import java.io.File
 import java.io.FileNotFoundException
+import java.io.InputStream
 import java.util.Locale
 
 /** Android `HttpPort` (MAP.md 8.12): `HttpURLConnection` (`UrlHttp`); izin `INTERNET` `:app` manifestinde. */
@@ -29,9 +30,12 @@ object MapData {
 
     private fun create(app: Context): MapDataController {
         val version = runCatching { app.packageManager.getPackageInfo(app.packageName, 0).versionName }.getOrNull() ?: "?"
-        val assets = MapAssets { name ->
-            try {
-                app.assets.open("map/$name").use { it.readBytes() }
+        val assets = object : MapAssets {
+            override fun read(name: String): ByteArray? = open(name)?.use { it.readBytes() }
+
+            // S39: büyük dosyalar (graf) akışla açılır, belleğe bütün alınmaz.
+            override fun open(name: String): InputStream? = try {
+                app.assets.open("map/$name")
             } catch (_: FileNotFoundException) {
                 null
             }

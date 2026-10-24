@@ -23,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -117,22 +118,15 @@ import kotlinx.coroutines.launch
  * İstatistik A6.9'da bağlanır.
  */
 @Composable
-fun MapScreen(lang: Lang, dark: Boolean) {
+fun MapScreen(lang: Lang, dark: Boolean, visible: Boolean = true) {
     val ctx = LocalContext.current
-    val controller = remember { MapData.controller(ctx) }
-    val data by controller.state.collectAsState()
+    val data by rememberMapData()
     val settings by MapSettingsRepo.settings(ctx).collectAsState()
-    val scope = rememberCoroutineScope()
-    LaunchedEffect(settings.region) {
-        if (MapScreenLoad.loadedRegion != settings.region && data.phase != MapDataPhase.BUILDING) {
-            MapScreenLoad.loadedRegion = settings.region
-            runCatching { controller.load(settings.region) }
-        }
-    }
     val shift by ShiftHub.state.collectAsState()
     // Ekran açık: gün açık ya da durak var (YolGo `gün açık || durak var`).
     val navState by remember { NavRuntime.get(ctx) }.controller.state.collectAsState()
-    val keepOn = shift.active || navState.stops.isNotEmpty()
+    // S39: kabuk haritayı başka sekmedeyken arkada tutar; ekran yalnız harita görünürken açık tutulur (önceki davranış).
+    val keepOn = visible && (shift.active || navState.stops.isNotEmpty())
     val view = LocalView.current
     DisposableEffect(keepOn) {
         view.keepScreenOn = keepOn
@@ -141,13 +135,11 @@ fun MapScreen(lang: Lang, dark: Boolean) {
     if (data.graph == null) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
             ShiftCard(lang, Modifier.padding(horizontal = WeemSpace.l, vertical = WeemSpace.s))
-            MapSetupCard(data, settings.region, lang,
-                onRegion = { r -> ctx.safely { MapSettingsRepo.update(ctx) { it.copy(region = r) } } },
-                onDownload = { scope.launch { runCatching { controller.download(settings.region) } } })
+            MapSetup(data, lang)
         }
         return
     }
-    MapScreenLayers { LiveMap(lang, dark, data, settings, shift.active, shift.startedAtMs, shift.interrupted) }
+    MapScreenLayers { LiveMap(lang, dark, data, settings, shift.active, shift.startedAtMs, shift.interrupted, visible) }
 }
 
 /**
@@ -169,28 +161,47 @@ private object MapScreenLoad {
  */
 @Composable
 fun MapDataStep(lang: Lang, ready: String) {
-    val ctx = LocalContext.current
-    val controller = remember { MapData.controller(ctx) }
-    val data by controller.state.collectAsState()
-    val settings by MapSettingsRepo.settings(ctx).collectAsState()
-    val scope = rememberCoroutineScope()
-    LaunchedEffect(settings.region) {
-        if (MapScreenLoad.loadedRegion != settings.region && data.phase != MapDataPhase.BUILDING) {
-            MapScreenLoad.loadedRegion = settings.region
-            runCatching { controller.load(settings.region) }
-        }
-    }
+    val data by rememberMapData()
     if (data.graph != null && data.phase != MapDataPhase.BUILDING) {
         Banner(ready, tone = WTone.POSITIVE)
         return
     }
+    MapSetup(data, lang)
+}
+
+/** Harita verisinin durumu; bölge değişince (süreçte bir kez) diskten yükler (gömülü graf varsa kurar). Sekme ve ilk açılış kurulumu ortak. */
+@Composable
+private fun rememberMapData(): State<MapDataState> {
+    val ctx = LocalContext.current
+    val controller = remember { MapData.controller(ctx) }
+    val data = controller.state.collectAsState()
+    val settings by MapSettingsRepo.settings(ctx).collectAsState()
+    LaunchedEffect(settings.region) {
+        if (MapScreenLoad.loadedRegion != settings.region && data.value.phase != MapDataPhase.BUILDING) {
+            MapScreenLoad.loadedRegion = settings.region
+            runCatching { controller.load(settings.region) }
+        }
+    }
+    return data
+}
+
+/** Kurulum kartı (bölge seçimi, "İndir ve başla") gerçek denetleyiciyle. */
+@Composable
+private fun MapSetup(data: MapDataState, lang: Lang) {
+    val ctx = LocalContext.current
+    val controller = remember { MapData.controller(ctx) }
+    val settings by MapSettingsRepo.settings(ctx).collectAsState()
+    val scope = rememberCoroutineScope()
     MapSetupCard(data, settings.region, lang,
         onRegion = { r -> ctx.safely { MapSettingsRepo.update(ctx) { it.copy(region = r) } } },
         onDownload = { scope.launch { runCatching { controller.download(settings.region) } } })
 }
 
 @Composable
-private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com.kuryelog.logic.map.settings.MapSettings, active: Boolean, startedAtMs: Long?, interrupted: Boolean) {
+private fun LiveMap(
+    lang: Lang, dark: Boolean, data: MapDataState, settings: com.kuryelog.logic.map.settings.MapSettings, active: Boolean, startedAtMs: Long?, interrupted: Boolean,
+    visible: Boolean,
+) {
     val ctx = LocalContext.current
     val uri = LocalUriHandler.current
     val density = LocalDensity.current
@@ -198,8 +209,9 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
     val runtime = remember { NavRuntime.get(ctx) }
     val navCtl = runtime.controller
     val settings by MapSettingsRepo.settings(ctx).collectAsState()
-    val nav by navCtl.state.collectAsState()
-    val progress by navCtl.progress.collectAsState()
+    // S39: gizliyken sık değişen akışlar izlenmez (son değer kalır; görünür olunca güncel değerle sürer): arkadaki harita her GPS adımında yeniden oluşmaz.
+    val nav by navCtl.state.collectWhile(visible)
+    val progress by navCtl.progress.collectWhile(visible)
     val toast by navCtl.toast.collectAsState()
     val searchView by runtime.search.view.collectAsState()
     // Hava (Y10) ve batarya (Y9): çalışma zamanları uygulama açılışında kurulur; harita görünürlüğü `NavRuntime.setVisible` ile hava yenilemesine de iletilir.
@@ -207,7 +219,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
     val batteryRt = remember { BatteryRuntime.get(ctx) }
     val weatherState by weather.state.collectAsState()
     val weatherStrip by weather.strip.collectAsState()
-    val battery by batteryRt.state.collectAsState()
+    val battery by batteryRt.state.collectWhile(visible)
     var nowMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -227,8 +239,8 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
     // Bildirim izni (Android 13+): gün açık ve hava bildirimi açıkken bir kez sorulur.
     val needsPermission by weather.needsPermission.collectAsState()
     val askPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { weather.permissionAsked() }
-    LaunchedEffect(needsPermission) {
-        if (needsPermission) {
+    LaunchedEffect(needsPermission, visible) {
+        if (needsPermission && visible) {
             weather.permissionAsked()
             askPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
         }
@@ -236,19 +248,21 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
     val speeds = remember(nav.plan, settings, battery.percent) { speedOptionsFor(nav.plan, settings.paramsFor(battery.percent), settings.speedChoices) }
     // Konum: harita sekmesi önde (MAP.md 7.6); arka planda gün açık ya da yalnız-nav iken NavRuntime sürer.
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    DisposableEffect(lifecycle, runtime) {
+    DisposableEffect(lifecycle, runtime, visible) {
         val obs = LifecycleEventObserver { _, e ->
-            if (e == Lifecycle.Event.ON_START) runtime.setVisible(true)
+            if (e == Lifecycle.Event.ON_START) runtime.setVisible(visible)
             if (e == Lifecycle.Event.ON_STOP) runtime.setVisible(false)
         }
         lifecycle.addObserver(obs)
         onDispose { lifecycle.removeObserver(obs); runtime.setVisible(false) }
     }
-    LaunchedEffect(navCtl) { navCtl.haptics.collect { vibrate(ctx, it) } }
+    val shown by rememberUpdatedState(visible)
+    LaunchedEffect(navCtl) { navCtl.haptics.collect { if (shown) vibrate(ctx, it) } }
     val base = MapStyles.resolve(settings.mapStyle, BuildConfig.MAPS_ENABLED)
+    val basemap by Basemap.state.collectAsState()
     val google = base == com.kuryelog.logic.map.ui.BaseMap.GOOGLE
     // S38: işaret ve kamera kare başına değişir; bu sekme onları okumaz (yalnız yüzey okur), yoksa her karede bütün harita ekranı yeniden oluşuyordu.
-    val puckState = rememberMapPuck(enabled = true, graph = data.graph)
+    val puckState = rememberMapPuck(enabled = visible, graph = data.graph)
     var follow by remember { mutableStateOf(true) }
     var headingUp by remember { mutableStateOf(true) }
     var autoZoom by remember { mutableStateOf(true) }
@@ -267,12 +281,12 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
     var statsOpen by remember { mutableStateOf(false) }
     var statsFocus by remember { mutableStateOf<Long?>(null) }
     var taskAt by remember { mutableStateOf<GeoPoint?>(null) }
-    val routeSpeed by RideLogRuntime.get(ctx).routeSpeed.collectAsState()
+    val routeSpeed by RideLogRuntime.get(ctx).routeSpeed.collectWhile(visible)
     var panelOpen by remember { mutableStateOf(false) }
     var searching by remember { mutableStateOf(false) }
     var pressed by remember { mutableStateOf<GeoPoint?>(null) }
     val dayRt = runtime.day
-    val dayView by dayRt.view.collectAsState()
+    val dayView by dayRt.view.collectWhile(visible)
     var banner by remember { mutableStateOf<DayBanner?>(null) }
     var bannerSeq by remember { mutableLongStateOf(0L) }
     var bikeRev by remember { mutableIntStateOf(0) }
@@ -285,18 +299,19 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
     // Gün motoru: toast ve titreşim yalnız harita görünürken (kaçan toast sonradan gösterilmez; MAP.md 11.14).
     LaunchedEffect(dayRt) {
         dayRt.steps.collect { step ->
+            if (!shown) return@collect
             step.toasts.lastOrNull()?.let { t -> banner = DayBanner(++bannerSeq, t.text, t.tone.toTone(), 5) }
             if (step.haptic) vibrate(ctx, NavHaptic.HEAVY)
         }
     }
     // Y12 (A6.11): yol öğrenme şeridi ("Onaylandı", "Kötü nokta", "Yol yok" …), ters yön sorusu ve kalite kartı.
     val roads = runtime.roads
-    val roadState by roads.book.states.collectAsState()
+    val roadState by roads.book.states.collectWhile(visible)
     val qualityAsk by roads.prompt.state.collectAsState()
     var roadsOpen by remember { mutableStateOf(false) }
     LaunchedEffect(roads) {
         // Açılışta son şerit yeniden gösterilmez (kaçan şerit sonradan gösterilmez; MAP.md 11.14 ile aynı).
-        roads.toast.drop(1).collect { t -> banner = t?.let { DayBanner(++bannerSeq, it.text, it.tone, it.seconds, it.actionLabel, it.onAction) } }
+        roads.toast.drop(1).collect { t -> if (shown) banner = t?.let { DayBanner(++bannerSeq, it.text, it.tone, it.seconds, it.actionLabel, it.onAction) } }
     }
     val wwView = run {
         val q = roadState.question
@@ -424,14 +439,15 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
         }
     }
     // Yer ve ışık işaretleri (MAP.md 5.3): düzeltilmiş yerler + ışık işaretleri, yakınlığa ve görünür kutuya (S38: 1,6 kat payla) göre süzülür.
-    val poiMarkers = remember(poiCenter, poiZoom, viewport, poiRev, lightsRev, data.pois, routeLights) {
+    val poiMarkers = remember(poiCenter, poiZoom, viewport, poiRev, lightsRev, data.pois, routeLights, google) {
         val c = poiCenter ?: return@remember emptyList<MapMarker>()
         if (viewport == IntSize.Zero) return@remember emptyList<MapMarker>()
         val wDp = with(density) { viewport.width.toDp().value.toDouble() }
         val hDp = with(density) { viewport.height.toDp().value.toDouble() }
         val box = PoiLayerRules.bounds(c.lat, c.lon, wDp, hDp, poiZoom, PoiLayerRules.SELECT_MARGIN)
         val all = PoiLayerRules.withLights(MapPois.all(ctx), dayRt.lightSpots())
-        PoiLayerRules.select(all, box, poiZoom, route = routeLights).mapIndexed { i, p ->
+        val chosen = if (google) PoiLayerRules.selectGoogle(all, c.lat, c.lon, poiZoom, routeLights) else PoiLayerRules.select(all, box, poiZoom, route = routeLights)
+        chosen.mapIndexed { i, p ->
             p.toMarker(i, onRoute = p.kind == 'l' && routeLights?.near(p.lat, p.lon) == true)
         }
     }
@@ -475,7 +491,7 @@ private fun LiveMap(lang: Lang, dark: Boolean, data: MapDataState, settings: com
         mapSurface = {
             Box(Modifier.fillMaxSize().onSizeChanged { viewport = it }) {
                 MapSurface(model, events, Modifier.fillMaxSize(), userAgent = MapStyles.userAgent(BuildConfigInfo.versionName(ctx)), live = live)
-                MapStyles.attribution(base)?.let { a ->
+                MapStyles.attribution(base, embedded = basemap is Basemap.State.Ready)?.let { a ->
                     Text(
                         a.text, style = WeemType.labelS, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.align(Alignment.BottomStart).padding(4.dp)
@@ -734,4 +750,15 @@ fun MapSetupCard(state: MapDataState, region: String, lang: Lang, onRegion: (Str
         state.error?.let { Banner(it, tone = WTone.DANGER) }
         Text(MapText.SETUP_ATTRIBUTION.get(lang), style = WeemType.bodyS, color = p.muted.color())
     }
+}
+
+/**
+ * S39: [active] değilken akış izlenmez (son değer kalır), etkin olunca güncel değerle sürer. Gizli harita sekmesi (kabuk arkada tutar) her GPS adımında yeniden
+ * oluşmasın diye.
+ */
+@Composable
+internal fun <T> kotlinx.coroutines.flow.StateFlow<T>.collectWhile(active: Boolean): State<T> {
+    val state = remember(this) { mutableStateOf(value) }
+    LaunchedEffect(this, active) { if (active) collect { state.value = it } }
+    return state
 }

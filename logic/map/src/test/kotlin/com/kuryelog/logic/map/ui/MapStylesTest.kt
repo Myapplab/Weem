@@ -32,6 +32,8 @@ class MapStylesTest {
         assertEquals("© OpenStreetMap contributors", MapStyles.attribution(BaseMap.OSM)!!.text)
         assertEquals("https://www.openstreetmap.org/copyright", MapStyles.attribution(BaseMap.OSM)!!.url)
         assertTrue(MapStyles.attribution(BaseMap.VECTOR)!!.text.contains("OpenStreetMap"))
+        // S39: gömülü karolar Protomaps'ten (OpenFreeMap değil).
+        assertEquals("© Protomaps · © OpenStreetMap contributors", MapStyles.attribution(BaseMap.VECTOR, embedded = true)!!.text)
         assertNull(MapStyles.attribution(BaseMap.GOOGLE))
         val light = JSONObject(MapStyles.osmRasterStyle(dark = false))
         assertEquals("https://tile.openstreetmap.org/{z}/{x}/{y}.png", light.getJSONObject("sources").getJSONObject("osm").getJSONArray("tiles").getString(0))

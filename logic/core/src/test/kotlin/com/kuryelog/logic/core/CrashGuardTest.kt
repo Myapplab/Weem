@@ -30,7 +30,9 @@ class CrashGuardTest {
     @Test fun pagesAndTapsDoNotCloseTheApp() {
         val shell = RepoSource.text(app + "WeemApp.kt")
         // Her sekme kendi hata sınırında; son çökmenin kartı korumalı okunur.
-        assertTrue(shell.contains("holder.SaveableStateProvider(selected.key) {\n                GuardedPage(selected.key, lang, build = {}) {"))
+        // S39: Harita sekmesi arkada ayrı sağlayıcıda kalır; o da öteki sekmeler de kendi sınırında (girintiden bağımsız).
+        assertTrue(Regex("""holder\.SaveableStateProvider\(selected\.key\) \{\s*GuardedPage\(selected\.key, lang, build = \{\}\) \{""").containsMatchIn(shell))
+        assertTrue(Regex("""holder\.SaveableStateProvider\(Tab\.MAP\.key\) \{\s*(//[^\n]*\s*)?GuardedPage\(Tab\.MAP\.key, lang, build = \{\}\) \{ MapScreen\(""").containsMatchIn(shell))
         assertTrue(shell.contains("Store.guarded(ctx, \"crash_card\") { CrashLog.unseen(ctx) }"))
         val guard = RepoSource.text(app + "Guarded.kt")
         assertTrue(guard.contains("remember(page, key) { attempt(\"page_\$page\", Store.sink(ctx), build) }"))

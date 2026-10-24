@@ -9,6 +9,7 @@ import android.graphics.Rect
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.telecom.TelecomManager
 import android.view.Display
 import android.view.accessibility.AccessibilityEvent
@@ -117,14 +118,29 @@ class WatchService : AccessibilityService() {
         }
         // D6: a new window state (a dialog, another page) is read at once too.
         if (e.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) pace.trigger(pkg, now())
+        // S39 (battery, main thread): a storm of content/window-list changes (timers, scrolling lists) read the tree twice per event (now and
+        // 180 ms later). Now at most once per CONTENT_READ_MS, trailing, so the last state is still read; window state, notification and click
+        // events keep the immediate read and the retry below.
+        if (e.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED || e.eventType == AccessibilityEvent.TYPE_WINDOWS_CHANGED) {
+            if (!contentQueued) {
+                contentQueued = true
+                h.postDelayed(contentRead, maxOf(0L, lastReadAt + CaptureTiming.CONTENT_READ_MS - SystemClock.uptimeMillis()))
+            }
+            return
+        }
         // First read is queued immediately; a short retry captures content populated after the window event.
         if (!scheduled) { scheduled = true; h.post(capture); h.postDelayed({ if (Store.canRecordScreen(this)) readScreen() }, CaptureTiming.SECOND_READ_MS) }
     }
     private val capture = Runnable { scheduled = false; readScreen() }
+    /** S39: uptime of the last tree read and the pending trailing read for content changes. */
+    private var lastReadAt = 0L
+    private var contentQueued = false
+    private val contentRead = Runnable { contentQueued = false; if (Store.canRecordScreen(this)) readScreen() }
     /** Every screen read goes through here: the 180 ms retry and the K37 re-read used to call [snapshot] unguarded, so one
      *  failing frame crashed the app on the main thread. */
     private fun readScreen() { Store.guarded(this, "screen") { snapshot() } }
     private fun snapshot() {
+        lastReadAt = SystemClock.uptimeMillis()
         if (!connected || !Store.canRecordScreen(this) || CaptureState.receiverRole()) return
         val allowed = Store.targets(this)
         val reads = ArrayList<WindowRead>()

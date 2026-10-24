@@ -84,7 +84,9 @@ internal class GoogleHolder(private val app: Context) {
     private var lines: List<MapLine>? = null
     private val polylines = ArrayList<Polyline>()
     private var markers: List<MapMarker>? = null
-    private val markerHandles = ArrayList<Marker>()
+    // S39: işaretler içerikleriyle eşlenir; yalnız eklenen/kalkan Google nesnesi değişir (önceden her değişimde hepsi silinip yeniden ekleniyordu).
+    private val markerHandles = HashMap<MapMarker, Marker>()
+    private var markersDark: Boolean? = null
     private var puckMarker: Marker? = null
     private var beamMarker: Marker? = null
     private var accuracy: Circle? = null
@@ -122,7 +124,7 @@ internal class GoogleHolder(private val app: Context) {
     fun destroy() {
         view?.let { it.onPause(); it.onStop(); it.onDestroy() }
         view = null; map = null
-        baseLines = null; basePolylines.clear(); lines = null; polylines.clear(); markers = null; markerHandles.clear()
+        baseLines = null; basePolylines.clear(); lines = null; polylines.clear(); markers = null; markerHandles.clear(); markersDark = null
         puckMarker = null; beamMarker = null; accuracy = null; circle = null; styleKey = null; drawnPuck = null; puckArrow = null
     }
 
@@ -149,12 +151,16 @@ internal class GoogleHolder(private val app: Context) {
             lines = model.lines
             replaceLines(m, polylines, model.lines)
         }
-        if (model.markers != markers) {
+        if (model.markers != markers || model.dark != markersDark) {
             markers = model.markers
-            markerHandles.forEach { it.remove() }; markerHandles.clear()
+            if (model.dark != markersDark) { markerHandles.values.forEach { it.remove() }; markerHandles.clear(); markersDark = model.dark }
+            val want = model.markers.toHashSet()
+            val gone = markerHandles.keys.filter { it !in want }
+            for (k in gone) markerHandles.remove(k)?.remove()
             for (mk in model.markers) {
+                if (mk in markerHandles) continue
                 val icon = icons.getOrPut(MarkerBitmaps.key(mk, model.dark)) { BitmapDescriptorFactory.fromBitmap(MarkerBitmaps.of(mk, density, model.dark)) }
-                m.addMarker(MarkerOptions().position(LatLng(mk.point.lat, mk.point.lon)).icon(icon).anchor(.5f, .5f).title(mk.label))?.let { markerHandles += it }
+                m.addMarker(MarkerOptions().position(LatLng(mk.point.lat, mk.point.lon)).icon(icon).anchor(.5f, .5f).title(mk.label))?.let { markerHandles[mk] = it }
             }
         }
         drawPuck(m, puck)

@@ -94,11 +94,6 @@ internal class StreamNet(private val name: String, private val listener: Listene
         pipes.remove(conn)?.close()
     }
 
-    fun closeAll() {
-        listen(false, 0)
-        pipes.keys.toList().forEach(::close)
-    }
-
     private fun thread(what: String, block: () -> Unit) {
         Thread(block, "weem-remote-$name-$what").apply { isDaemon = true }.start()
     }

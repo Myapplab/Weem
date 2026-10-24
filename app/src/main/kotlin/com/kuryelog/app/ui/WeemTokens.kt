@@ -77,9 +77,3 @@ fun Modifier.floating(shape: Shape): Modifier {
     return if (dark) shadowed.border(1.dp, Color(p.outline), shape) else shadowed
 }
 
-/** `e0` kart: gündüz düz (zeminden renkle ayrılır), gece 1 dp çizgi. */
-@Composable
-fun Modifier.cardEdge(shape: Shape): Modifier {
-    val p = LocalWeemPalette.current
-    return if (p === Palette.dark) border(1.dp, Color(p.outline), shape) else this
-}

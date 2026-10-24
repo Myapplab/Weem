@@ -57,8 +57,6 @@ data class MapSettings(
 ) {
     val vehicle: VehicleProfile get() = VehicleProfile.byId(vehicleId)
 
-    val regionBox: BBox get() = if (region == "wide") Baku.wideBox else Baku.centralBox
-
     /** Batarya yüzdesine göre etkin eğim limiti (şartname: %50 altı → %10). */
     fun gradeLimitFor(batteryPct: Double?): Double =
         (if (batteryPct != null && batteryPct < lowBatteryPct) lowBatteryGradePct else maxGradePct) / 100

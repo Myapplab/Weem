@@ -5,7 +5,8 @@ package com.kuryelog.logic.capture
 /** Same customer seen again without an order ID: OCR misreads a letter or drops the surname. */
 object NameMatch {
     private fun tokens(s: String) = CourierParser.norm(s).split(" ").filter { it.isNotEmpty() }
-    internal fun distance(a: String, b: String): Int {
+    /** Levenshtein uzaklığı (`:orders` `CustomerMatch`, `OfferMatch`, `PlatformHistory` de kullanır). */
+    fun distance(a: String, b: String): Int {
         val d = IntArray(b.length + 1) { it }
         for (i in 1..a.length) {
             var prev = d[0]; d[0] = i

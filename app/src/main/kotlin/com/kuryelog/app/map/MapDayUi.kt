@@ -66,7 +66,6 @@ internal fun DayTone.toTone(): ToastTone = when (this) {
     DayTone.ORANGE -> ToastTone.ORANGE
 }
 
-internal fun MapToast.toBanner(id: Long) = DayBanner(id, text, tone, seconds, actionLabel, onAction)
 
 @Composable
 fun DayToastBanner(banner: DayBanner?, dark: Boolean) {

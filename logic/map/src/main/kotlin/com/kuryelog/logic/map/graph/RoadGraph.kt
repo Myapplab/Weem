@@ -103,7 +103,6 @@ class RoadGraph(
     val edgeCount get() = edgeFrom.size
     val zoneCount get() = zoneStart.size - 1
 
-    fun wayOf(e: Int): Int = edgeWay[e]
     fun classOf(e: Int): RoadClass = CLASSES[wayClass[edgeWay[e]].toInt() and 0xFF]
     fun flagsOf(e: Int): Int = wayFlags[edgeWay[e]].toInt() and 0xFFFF
 
@@ -144,11 +143,6 @@ class RoadGraph(
         for (w in wayOsmId.indices) if (wayOsmId[w] == osmId) wayEdges[w].forEach { out += it }
         if (out.size > 1) out.sort()
         return out
-    }
-
-    fun nameOfOsmWay(osmId: Long): String {
-        for (w in wayOsmId.indices) if (wayOsmId[w] == osmId) return nameOfWay(w)
-        return ""
     }
 
     fun classOfOsmWay(osmId: Long): RoadClass? {
@@ -469,8 +463,14 @@ class RoadGraph(
         private val CLASSES = RoadClass.entries.toTypedArray()
 
         /** Sihir ya da sürüm farklıysa [FormatException]; kısa ya da bozuk dosya da [FormatException]. */
-        fun deserialize(bytes: ByteArray): RoadGraph {
-            val b = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
+        fun deserialize(bytes: ByteArray): RoadGraph = deserialize(ByteBuffer.wrap(bytes))
+
+        /**
+         * [source] bellek eşlemeli dosya olabilir (S39, `MapDataController`); diziler toplu okunur (`asDoubleBuffer().get` …): milyonlarca öğede tek tek
+         * `getDouble` telefonda açılışı saniyelerce uzatıyordu.
+         */
+        fun deserialize(source: ByteBuffer): RoadGraph {
+            val b = source.duplicate().order(ByteOrder.LITTLE_ENDIAN)
             try {
                 if (b.getInt(0) != MAGIC || b.getInt(4) != FORMAT_VERSION) throw FormatException("Harita dosyası eski sürüm")
                 val h = IntArray(10) { b.getInt(it * 4) }
@@ -478,17 +478,19 @@ class RoadGraph(
                 if (h.slice(2..8).any { it < 0 }) throw FormatException("Harita dosyası bozuk")
                 b.position(HEADER_BYTES)
                 fun align() = b.position((b.position() + 7) and 7.inv())
-                fun f64(n: Int) = DoubleArray(n) { b.getDouble() }.also { align() }
-                fun f32(n: Int) = FloatArray(n) { b.getFloat() }.also { align() }
-                fun i32(n: Int) = IntArray(n) { b.getInt() }.also { align() }
+                fun need(bytes: Long) { if (bytes > b.remaining()) throw java.nio.BufferUnderflowException() }
+                fun skip(bytes: Int) = b.position(b.position() + bytes)
+                fun f64(n: Int) = DoubleArray(n).also { need(n * 8L); b.asDoubleBuffer().get(it); skip(n * 8); align() }
+                fun f32(n: Int) = FloatArray(n).also { need(n * 4L); b.asFloatBuffer().get(it); skip(n * 4); align() }
+                fun i32(n: Int) = IntArray(n).also { need(n * 4L); b.asIntBuffer().get(it); skip(n * 4); align() }
                 val nodeLat = f64(nN); val nodeLon = f64(nN)
                 val edgeFrom = i32(nE); val edgeTo = i32(nE); val edgeWay = i32(nE); val gStart = i32(nE); val gCount = i32(nE)
                 val eLen = f32(nE); val upF = f32(nE); val clF = f32(nE); val upB = f32(nE); val clB = f32(nE)
                 val mgF = f32(nE); val mgB = f32(nE)
                 val gLat = f64(nG); val gLon = f64(nG); val gEle = f32(nG)
-                val wayId = LongArray(nW) { b.getLong() }.also { align() }
+                val wayId = LongArray(nW).also { need(nW * 8L); b.asLongBuffer().get(it); skip(nW * 8); align() }
                 val wayCls = ByteArray(nW).also { b.get(it); align() }
-                val wayFl = ShortArray(nW) { b.getShort() }.also { align() }
+                val wayFl = ShortArray(nW).also { need(nW * 2L); b.asShortBuffer().get(it); skip(nW * 2); align() }
                 val wayNm = i32(nW)
                 val zStart = i32(nZs); val zLat = f64(nZ); val zLon = f64(nZ)
                 val nameArr = ByteArray(nNames).also { b.get(it) }

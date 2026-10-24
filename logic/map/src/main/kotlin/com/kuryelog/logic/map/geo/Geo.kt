@@ -67,7 +67,6 @@ class SegmentHit(val dist: Double, val t: Double)
 
 data class GeoPoint(val lat: Double, val lon: Double) {
     fun distanceTo(o: GeoPoint) = Geo.haversine(lat, lon, o.lat, o.lon)
-    fun bearingTo(o: GeoPoint) = Geo.bearing(lat, lon, o.lat, o.lon)
 
     /** Azerbaycan kaba sınırı (Y5/Y6). Enlem ve boylam aralıkları çakışmadığından ters yazılmış (lon,lat) çiftler de ayırt edilir. */
     val isInAzerbaijan: Boolean get() = lat >= 38.3 && lat <= 42.0 && lon >= 44.7 && lon <= 51.0

@@ -106,4 +106,20 @@ class PoiLayerRulesTest {
         val got = PoiLayerRules.withLights(base, spots).map { if (it.name.isEmpty()) "${it.lat},${it.lon}" else it.name }
         assertEquals(expected, got)
     }
+
+    @Test
+    fun `Google seçimi merkezin 900 m içi, en yakından en çok 100`() {
+        // S39 (MAP.md 6.4): MapLibre seçimi Google'a da veriliyordu (ekran kutusu, 180 işaret).
+        val lat = 40.40; val lon = 49.85
+        val many = (0 until 150).map { i -> Poi(lat + i * 0.00004, lon, 'r', "r$i") } // ~4,5 m arayla, en uzağı ~670 m
+        val far = Poi(lat + 0.02, lon, 'r', "uzak") // ~2,2 km
+        val got = PoiLayerRules.selectGoogle(many + far, lat, lon, zoom = 17.0)
+        assertEquals(PoiZoomRules.GOOGLE_MAX, got.size)
+        assertEquals("r0", got.first().name)
+        assertFalse(got.any { it.name == "uzak" })
+        assertEquals((0 until 100).map { "r$it" }, got.map { it.name })
+        // Yakınlık eşiğinin altında restoran yok (16,5), metro var (13).
+        val metro = Poi(lat, lon + 0.001, 's', "metro")
+        assertEquals(listOf("metro"), PoiLayerRules.selectGoogle(many + metro, lat, lon, zoom = 14.0).map { it.name })
+    }
 }

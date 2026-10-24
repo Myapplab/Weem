@@ -117,12 +117,15 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         AppForeground.on = true
+        // Pasif oturum (MAP.md 6.2): gün kapalıyken ≥5 dk arka planda kaldıysa eski rota silinir.
+        safely("passive") { NavRuntime.get(this).appForeground() }
         safely("floating") { FloatingPanel.screenStarted() }
     }
 
     override fun onStop() {
         super.onStop()
         AppForeground.on = false
+        if (!isChangingConfigurations) safely("passive") { NavRuntime.get(this).appBackground() }
         safely("roads") { NavRuntime.get(this).roads.onPause() }
         safely("floating") { FloatingPanel.screenStopped(this, !isInPictureInPictureMode) }
     }

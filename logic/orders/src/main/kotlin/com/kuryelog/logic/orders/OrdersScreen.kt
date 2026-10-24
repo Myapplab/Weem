@@ -78,7 +78,6 @@ data class DayDetail(val date: String, val platform: String?, val header: Card, 
 /** Sekmenin sabit metinleri (G3). */
 class OrdersLabels(private val tl: (String, String) -> String) {
     val ordersTab = tl("Siparişler", "Sifarişlər")
-    val offerScoreTab = tl("Teklif puanı", "Təklif balı")
     val allOrders = tl("Tüm siparişler", "Bütün sifarişlər")
     val older = tl("Önceki gün", "Əvvəlki gün")
     val newer = tl("Sonraki gün", "Sonrakı gün")
@@ -101,7 +100,6 @@ class OrdersLabels(private val tl: (String, String) -> String) {
     val delete = tl("Sil", "Sil")
     val deleteConfirm = tl("Bu kayıt kalıcı olarak silinecek. Önce paylaşarak yedekleyebilirsin.", "Bu qeyd həmişəlik silinəcək. Əvvəl paylaşaraq ehtiyat nüsxə saxlaya bilərsən.")
     val recordStop = tl("Bugünün kaydını silmek veya arşivlemek için vardiyayı durdur.", "Bu günün qeydini silmək/arxivləmək üçün növbəni dayandır.")
-    val recordFilesCount = tl("kayıt dosyası", "qeyd faylı")
     fun platformLabel(platform: String?) = platform ?: allOrders
 }
 

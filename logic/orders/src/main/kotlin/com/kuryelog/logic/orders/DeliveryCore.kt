@@ -895,33 +895,17 @@ class DeliveryCore {
     }
 }
 
-/** Same customer seen again without an order ID: OCR misreads a letter or drops the surname. */
+/** Same customer seen again without an order ID: OCR misreads a letter or drops the surname. S39: the name rules are [NameMatch]'s (one copy). */
 object CustomerMatch {
     private fun tokens(s: String) = CourierParser.norm(s).split(" ").filter { it.isNotEmpty() }
-    internal fun distance(a: String, b: String): Int {
-        val d = IntArray(b.length + 1) { it }
-        for (i in 1..a.length) {
-            var prev = d[0]; d[0] = i
-            for (j in 1..b.length) { val cur = d[j]; d[j] = minOf(d[j] + 1, d[j - 1] + 1, prev + if (a[i - 1] == b[j - 1]) 0 else 1); prev = cur }
-        }
-        return d[b.length]
-    }
-    private fun tokenEq(a: String, b: String) = a == b || (minOf(a.length, b.length) >= 5 && distance(a, b) <= 1)
-    fun sameName(a: String?, b: String?): Boolean {
-        if (a == null || b == null) return false
-        val x = tokens(a); val y = tokens(b)
-        if (x.isEmpty() || y.isEmpty()) return false
-        val (short, long) = if (x.size <= y.size) x to y else y to x
-        // Every word of the shorter name appears in the longer one, the first word included.
-        return tokenEq(short[0], long[0]) && short.all { s -> long.any { tokenEq(s, it) } }
-    }
+    internal fun distance(a: String, b: String): Int = NameMatch.distance(a, b)
+    fun sameName(a: String?, b: String?): Boolean = NameMatch.sameName(a, b)
     /** An undelivered customer of the trip with the same name. A different address keeps them apart. */
     fun find(customers: Collection<CustomerRecord>, name: String, address: String?): CustomerRecord? =
         customers.firstOrNull { c -> c.deliveredAt == null && sameName(c.details.name, name) &&
             (address == null || c.details.address == null || !looksLikeAddress(c.details.address!!) || !looksLikeAddress(address) ||
                 CourierParser.norm(c.details.address!!) == CourierParser.norm(address)) }
-    /** A street line has a digit; a surname moved to the address line by OCR has none. */
-    fun looksLikeAddress(s: String) = s.any(Char::isDigit)
+    fun looksLikeAddress(s: String) = NameMatch.looksLikeAddress(s)
     /** For records saved before the fix: OCR variants of one customer shown once (fullest name, real address). */
     fun distinct(customers: Collection<CustomerRecord>): List<CustomerRecord> {
         val out = ArrayList<CustomerRecord>()

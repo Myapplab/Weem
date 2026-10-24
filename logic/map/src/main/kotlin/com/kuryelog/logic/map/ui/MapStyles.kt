@@ -22,13 +22,13 @@ object MapCamera {
     const val GOOGLE_MAX_ZOOM = 20.0
     /** Google iç boşluğu (sol, üst, sağ, alt; dp): HUD payı. */
     val GOOGLE_PADDING_DP = listOf(16, 120, 16, 240)
-    /** Kamera hareketinin en sık aralığı: MapLibre 80 ms; Google 160 ms ve önceki hareket bitmeden yenisi yok. */
+    /** Kamera animasyonunun birimi (MapLibre 80 ms). */
     const val MAPLIBRE_MOVE_MS = 80L
-    const val GOOGLE_MOVE_MS = 160L
-    /** Konum işaretinin en sık çizimi (Google). */
-    const val PUCK_DRAW_MS = 120L
-    /** Parmak bu kadar kayarsa (dp) "elle hareket" (MAP.md 7.10). */
-    const val GESTURE_SLOP_DP = 8.0
+    /**
+     * S39 (pil): MapLibre en çok bu kadar kare/sn çizer. 120 Hz ekranlarda (Pixel) kamera animasyonu ve parmakla kaydırma saniyede 120 kare çiziliyordu;
+     * işaret zaten ~30 fps kayar, 60 akıcı kalır, GPU işi yarıya iner.
+     */
+    const val MAPLIBRE_MAX_FPS = 60
 }
 
 /** Atıf metni ve dokununca açılan sayfa. */
@@ -56,10 +56,10 @@ object MapStyles {
     const val OSM_TILE_SIZE = 256
     const val OSM_MAX_NATIVE_ZOOM = 19
     const val OSM_COPYRIGHT = "https://www.openstreetmap.org/copyright"
-    const val OPENMAPTILES_URL = "https://www.openmaptiles.org/"
 
     /**
-     * Vektör altlık (SORU-N5 (ii)): kendi Bakü PMTiles dosyası yokken OpenFreeMap'in anahtarsız stilleri (MAP.md 6.4; PMTiles dosyası A6.5'te üretilemedi, bkz. 6.16).
+     * Vektör altlık (SORU-N5 (ii)): APK'da gömülü Bakü karoları yoksa (PR CI'ı, yerel derleme) OpenFreeMap'in anahtarsız stilleri; gömülü altlık S39'da
+     * ([BasemapInstaller], MAP.md 6.19).
      */
     const val VECTOR_LIGHT_STYLE = "https://tiles.openfreemap.org/styles/positron"
     const val VECTOR_DARK_STYLE = "https://tiles.openfreemap.org/styles/dark"
@@ -83,10 +83,11 @@ object MapStyles {
         BaseMap.GOOGLE -> Txt("Google Maps", "Google Maps")
     }
 
-    /** Atıf (sol alt, 9 pt): gerçek kaynağı söyler (MAP.md 6.16 (1)); Google kendi logosunu çizer. */
-    fun attribution(base: BaseMap): Attribution? = when (base) {
+    /** Atıf (sol alt, 9 pt): gerçek kaynağı söyler (MAP.md 6.16 (1)); Google kendi logosunu çizer. [embedded]: S39 gömülü Protomaps karoları. */
+    fun attribution(base: BaseMap, embedded: Boolean = false): Attribution? = when (base) {
         BaseMap.OSM -> Attribution("© OpenStreetMap contributors", OSM_COPYRIGHT)
-        BaseMap.VECTOR -> Attribution("© OpenFreeMap · © OpenMapTiles · © OpenStreetMap contributors", OSM_COPYRIGHT)
+        BaseMap.VECTOR -> if (embedded) Attribution("© Protomaps · © OpenStreetMap contributors", OSM_COPYRIGHT)
+        else Attribution("© OpenFreeMap · © OpenMapTiles · © OpenStreetMap contributors", OSM_COPYRIGHT)
         BaseMap.GOOGLE -> null
     }
 
@@ -112,10 +113,9 @@ object PoiZoomRules {
     const val MAX_LABELS = 55
     /** Yemek ve dükkân işaretleri ekranın 34 dp ızgarasında hücre başına bir. */
     const val FOOD_GRID_DP = 34.0
-    /** Google yüzeyi: kamera merkezinin 900 m içi, en yakından en çok 100; ışık dışındakilere ≥17,6'da ilk 35'e ad. */
+    /** Google yüzeyi: kamera merkezinin 900 m içi, en yakından en çok 100 ([PoiLayerRules.selectGoogle]). */
     const val GOOGLE_RADIUS_M = 900.0
     const val GOOGLE_MAX = 100
-    const val GOOGLE_LABELS = 35
 
     /** Öncelik: ışık < metro < AVM < diğerleri (küçük önce çizilir, büyük üstte). */
     fun priority(kind: Char): Int = when (kind) { 'l' -> 0; 's' -> 1; 'm' -> 2; else -> 3 }
@@ -205,6 +205,22 @@ object PoiLayerRules {
             out += p
         }
         return out + onRoute
+    }
+
+    /**
+     * Google yüzeyinin seçimi (YolGo `google_map_surface.dart`, MAP.md 6.4 "İşaretler"): kamera merkezinin [PoiZoomRules.GOOGLE_RADIUS_M] içi, yakınlık
+     * eşiğini geçenler, en yakından en çok [PoiZoomRules.GOOGLE_MAX]; rota ışıkları ayrıca (S38). S39: önceden MapLibre seçimi (ekran kutusu, 180) Google'a da
+     * veriliyordu; her Google işareti ayrı nesne, kaydırmadan sonra ana iş parçacığı takılıyordu.
+     */
+    fun selectGoogle(pois: List<Poi>, lat: Double, lon: Double, zoom: Double, route: RouteLights? = null): List<Poi> {
+        val r = PoiZoomRules.GOOGLE_RADIUS_M
+        val near = pois.filter { Math.abs(it.lat - lat) * 111_320 <= r && Geo.haversine(lat, lon, it.lat, it.lon) <= r }
+        val onRoute = if (route == null || zoom < ROUTE_LIGHT_MIN_ZOOM) emptyList()
+        else near.filter { it.kind == 'l' && route.near(it.lat, it.lon) }.take(MAX_ROUTE_LIGHTS)
+        if (zoom < PoiZoomRules.HIDE_BELOW) return onRoute
+        val skip = onRoute.toHashSet()
+        return near.filter { PoiZoomRules.markerVisible(it.kind, zoom) && it !in skip }
+            .sortedBy { Geo.haversine(lat, lon, it.lat, it.lon) }.take(PoiZoomRules.GOOGLE_MAX) + onRoute
     }
 
     /** Rota ışığı: rotaya en çok bu kadar yakın (m). */

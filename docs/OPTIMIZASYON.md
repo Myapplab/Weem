@@ -46,6 +46,10 @@ Kullanıcı: "çok fazla batarya tüketiyor", "uygulama bir süre sonra kapanıp
 
 Kapanıp açılma için ek tanı: çökme kartı artık WEEM görünürken ya da vardiya servisi çalışırken bellek/kaynak yüzünden kapatılmayı da gösterir (`LowMemoryKill`, `ExcessiveResourceUsage`; `CrashReport.exitShown`). Kart çıkarsa metni kopyalanıp gönderilmeli.
 
+### 2.2 S39 (24 Ekim, A10.4l): dokunma tepkisi ve pil
+
+Ayrıntı ve kullanıcı kararı isteyen seçenekler: `docs/SADELESTIRME.md` 5. Uygulananlar: Harita sekmesi arkada uyur (yeniden kurulmaz; gizliyken konum, pusula, işaret animasyonu, ekran açık tutma ve sık akışlar durur); baseline profile (`app/src/main/baseline-prof.txt`: WEEM kodu + MapLibre Java katmanı, joker kurallar ~24.500 metoda açılır; profileinstaller Play dışı kurulumda yazar, ART boştayken derler); ekran okumada içerik değişikliği en çok 250 ms'de bir (`CaptureTiming.CONTENT_READ_MS`); gömülü altlık (karo ağı yok); MapLibre ≤60 kare/sn; Google'da işaret farkı ve 100 sınırı; graf ve SRTM bellek eşlemeli. Release APK (bulut, anahtarsız, gömülü harita ve karosuz) 32.570.447 bayt (+0,3 MB: glifler, stiller, profil); karolar CI'da ölçülür (`tiles.json`).
+
 ## 3. Bellek (koddan)
 
 - Ekran görüntüleri: donanım tamponu kopyalanır kopyalanmaz kapatılır, kırpma/ölçek ara görüntüleri ve OCR girdisi her yolda `recycle` edilir (`WatchService`).

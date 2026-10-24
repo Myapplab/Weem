@@ -258,7 +258,7 @@ fun LightsMiniMap(lights: List<StopRec>, lang: Lang, modifier: Modifier = Modifi
     // 260 dp yükseklik, ~360 dp genişlik: karo 256 px → zoom = log2(360° · 360 / (span · 256)); kenar boşluğu için bir basamak düşülür; en çok 17.
     val zoom = min(17.0, max(11.0, Math.log(360.0 * 360.0 / (max(spanLat * 1.4, spanLon) * 256.0)) / Math.log(2.0) - 1.0))
     val model = MapSurfaceModel(
-        base = BaseMap.OSM, dark = false,
+        base = BaseMap.VECTOR, dark = false,
         markers = lights.mapIndexed { i, s -> MapMarker("light-$i", pts[i], MarkerKind.POI_LIGHT, label = DurationText.fmt(s.durS.toLong(), lang)) },
         camera = MapCameraCommand(1, GeoPoint((minLat + maxLat) / 2, (minLon + maxLon) / 2), zoom),
     )
