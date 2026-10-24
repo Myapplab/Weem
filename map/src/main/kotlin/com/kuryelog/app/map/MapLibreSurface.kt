@@ -3,6 +3,7 @@ package com.kuryelog.app.map
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -49,7 +50,7 @@ fun MapLibreSurface(model: MapSurfaceModel, events: MapSurfaceEvents, modifier: 
     val currentEvents = rememberUpdatedState(events)
     // S39: gömülü altlık hazır olunca stil yerel dosyalara geçer (görünüm güncellemesinde okunur).
     val basemap = Basemap.state.collectAsState()
-    remember { Basemap.start(context) }
+    LaunchedEffect(Unit) { Basemap.start(context) }
     DisposableEffect(lifecycle, holder) {
         val observer = LifecycleEventObserver { _, e ->
             when (e) {
