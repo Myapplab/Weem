@@ -5,6 +5,7 @@ import com.kuryelog.logic.map.geo.Baku
 import com.kuryelog.logic.map.settings.MapPrefs
 import java.io.File
 import java.io.InputStream
+import java.io.PushbackInputStream
 import java.io.RandomAccessFile
 import java.nio.channels.FileChannel
 import java.util.zip.GZIPInputStream
@@ -169,18 +170,20 @@ class MapDataController(
         current = MapDataState(MapDataPhase.UNPACKING, 0.3, t(MapMsg.UNPACKING))
         withContext(work) {
             File(dir, "dem").mkdirs()
-            // S39: akışla açılır (önceden gzip ve açılmış graf birlikte bellekteydi: telefonda ~200 MB tepe → bellek hatası, kurulum kartı "İndir" istiyordu).
-            fun unpack(asset: String, to: File) {
-                val input = assets.open(asset) ?: throw java.io.FileNotFoundException(asset)
-                GZIPInputStream(input, 64 * 1024).use { AtomicFile.write(to, it) }
+            // S39: akışla açılır (gzip ve açılmış graf birlikte bellekte olmasın).
+            // S40: Android derlemesi (AGP) `.gz` asset'leri açıp uzantıyı siler: APK'da `graph_wide.bin` var, `.gz` yok. Önceden yalnız `.gz` adı
+            // aranıyor, bulunamayınca sessizce geçiliyordu → kurulum kartı her APK'da "İndir" istiyordu. Önce `.gz`, yoksa düz ad; gzip imzasına göre açılır.
+            fun unpack(name: String, to: File) {
+                val input = assets.open("$name.gz") ?: assets.open(name) ?: throw java.io.FileNotFoundException(name)
+                ungzipIfNeeded(input).use { AtomicFile.write(to, it) }
             }
             try {
                 // Gömülü graf yalnız "geniş" olabilir (merkezi de kapsar; APK küçük kalsın).
                 val regions = man.opt("regions")
                 val src = if (regions is JSONArray && (0 until regions.length()).any { regions.opt(it) == region }) region else "wide"
-                unpack("graph_$src.bin.gz", graphFile)
-                for (tile in BUNDLED_DEM) runCatching { unpack("$tile.hgt.gz", File(dir, "dem/$tile.hgt")) }
-                runCatching { unpack("pois_wide.json.gz", File(dir, poiName(region))) }
+                unpack("graph_$src.bin", graphFile)
+                for (tile in BUNDLED_DEM) runCatching { unpack("$tile.hgt", File(dir, "dem/$tile.hgt")) }
+                runCatching { unpack("pois_wide.json", File(dir, poiName(region))) }
                 prefs.setString(key, version)
                 prefs.setString(KEY_BUNDLED_AT, version)
             } catch (_: Exception) {
@@ -189,6 +192,16 @@ class MapDataController(
                 // akışla açıldığı için beklenmez; yine de uygulama düşmez
             }
         }
+    }
+
+    /** Akış gzip imzasıyla başlıyorsa açılmış hâli, değilse kendisi. */
+    private fun ungzipIfNeeded(input: InputStream): InputStream {
+        val p = PushbackInputStream(input, 2)
+        val b0 = p.read()
+        val b1 = if (b0 < 0) -1 else p.read()
+        if (b1 >= 0) p.unread(b1)
+        if (b0 >= 0) p.unread(b0)
+        return if (b0 == 0x1f && b1 == 0x8b) GZIPInputStream(p, 64 * 1024) else p
     }
 
     /** POI dosyası (bozuksa ya da çözücü yoksa null; harita yine çalışır). */

@@ -271,6 +271,26 @@ class MapDownloadTest {
     }
 
     @Test
+    fun `gömülü harita APK'daki gibi gz uzantısı silinmiş ve açılmış adlarla da kurulur`() = runBlocking {
+        // S40: AGP `.gz` asset'leri açıp uzantıyı siler (weem-build-12: assets/map/graph_wide.bin, N40E049.hgt, pois_wide.json).
+        val dem = ByteArray(1201 * 1201 * 2)
+        val assets = Assets(
+            mutableMapOf(
+                "manifest.json" to """{"version":"2026-10-24T07:08","format":2,"regions":["wide"]}""".toByteArray(),
+                "graph_wide.bin" to TestGraphs.parallel().serialize(),
+                "N40E049.hgt" to dem,
+            ),
+        )
+        val prefs = MemoryMapPrefs()
+        val c = controller(assets, prefs, FakeHttp { HttpResponse(500) })
+        c.load("central")
+        assertTrue(c.state.value.ready)
+        assertEquals(TestGraphs.parallel().edgeCount, c.state.value.graph!!.edgeCount)
+        assertEquals(dem.size.toLong(), File(dir, "dem/N40E049.hgt").length())
+        assertEquals("2026-10-24T07:08", prefs.getString("map.bundled.central"))
+    }
+
+    @Test
     fun `gömülü harita yoksa missing, bozuk dosya okunamadı hatası`() = runBlocking {
         val prefs = MemoryMapPrefs()
         val placeholder = Assets(mutableMapOf("manifest.json" to """{"version":"","regions":[]}""".toByteArray()))

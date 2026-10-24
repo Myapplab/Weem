@@ -2,6 +2,11 @@
 
 Kısa ve güncel; en yeni en üstte. Bölüm başına en fazla 10 satır; dosya 150 satırı geçerse en alttaki bölümler silinir (git'te kalır).
 
+## 2026-10-24 — S40: gömülü yol grafı kurulmuyordu (Claude Opus; dal `ccr-e1fa4a64-vy2iqs`)
+- Yapılan: AGP `.gz` asset'leri açıp uzantıyı siliyor; `MapDataController.installBundled` artık `.gz` yoksa düz adı açar (gzip imzasına göre). Build 1–12'de gömülü graf hiç kurulmamış olabilir.
+- Doğrulama: weem-build-12 APK'sından çıkarılan dosyalarla eski kod MISSING, yeni kod READY; `logic` testleri yeşil; telefonda denenmedi.
+- Açık: yeni APK (`weem-build-13`) derlenip telefonda kurulum kartının çıkmadığı denenmeli. `rememberMapData` yüklemesi kompozisyon iptal olursa yeniden denenmiyor (`MapScreenLoad.loadedRegion` önceden yazılıyor) — küçük risk, dokunulmadı.
+
 ## 2026-10-24 — A10.4l bitti: S39 telefon geri bildirimi 3 + sadeleştirme (Claude Opus; dal `ccr-bd4f7a85-wefii4`; PR #22 CI yeşil, `main` `272d1f6`; APK `weem-build-12`)
 - Yapılan: gömülü altlık (`ci/build_tiles.sh`, `tools/basemap/make_style.cjs`, `map/src/main/assets/basemap/`, `logic/map` `BasemapInstaller`, `:map` `Basemap`, `MapLibreHolder` yerel stil + 60 fps); akışlı graf açma (`MapAssets.open`, `AtomicFile.write(InputStream)`), bellek eşlemeli graf/SRTM; Harita sekmesi arkada (`WeemApp`, `MapScreen(visible)`, `collectWhile`); `baseline-prof.txt`; `WatchService` içerik okuma sınırı (`CaptureTiming.CONTENT_READ_MS`); Google işaret farkı + `PoiLayerRules.selectGoogle`; `PassiveSession`/`OrderSwitch` bağlandı; ölü kod ve 2 kopya kaldırıldı.
 - Doğrulama: `-p logic test` 2.177/0; `:app` 114/114, `:map` 10/10; `lintDebug` 0 hata; release yerelde 32.570.447 bayt (karosuz); telefonda denenmedi.
