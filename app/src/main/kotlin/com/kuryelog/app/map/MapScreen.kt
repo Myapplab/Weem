@@ -120,16 +120,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun MapScreen(lang: Lang, dark: Boolean, visible: Boolean = true) {
     val ctx = LocalContext.current
-    val controller = remember { MapData.controller(ctx) }
-    val data by controller.state.collectAsState()
+    val data by rememberMapData()
     val settings by MapSettingsRepo.settings(ctx).collectAsState()
-    val scope = rememberCoroutineScope()
-    LaunchedEffect(settings.region) {
-        if (MapScreenLoad.loadedRegion != settings.region && data.phase != MapDataPhase.BUILDING) {
-            MapScreenLoad.loadedRegion = settings.region
-            runCatching { controller.load(settings.region) }
-        }
-    }
     val shift by ShiftHub.state.collectAsState()
     // Ekran açık: gün açık ya da durak var (YolGo `gün açık || durak var`).
     val navState by remember { NavRuntime.get(ctx) }.controller.state.collectAsState()
@@ -143,9 +135,7 @@ fun MapScreen(lang: Lang, dark: Boolean, visible: Boolean = true) {
     if (data.graph == null) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
             ShiftCard(lang, Modifier.padding(horizontal = WeemSpace.l, vertical = WeemSpace.s))
-            MapSetupCard(data, settings.region, lang,
-                onRegion = { r -> ctx.safely { MapSettingsRepo.update(ctx) { it.copy(region = r) } } },
-                onDownload = { scope.launch { runCatching { controller.download(settings.region) } } })
+            MapSetup(data, lang)
         }
         return
     }
@@ -171,21 +161,37 @@ private object MapScreenLoad {
  */
 @Composable
 fun MapDataStep(lang: Lang, ready: String) {
-    val ctx = LocalContext.current
-    val controller = remember { MapData.controller(ctx) }
-    val data by controller.state.collectAsState()
-    val settings by MapSettingsRepo.settings(ctx).collectAsState()
-    val scope = rememberCoroutineScope()
-    LaunchedEffect(settings.region) {
-        if (MapScreenLoad.loadedRegion != settings.region && data.phase != MapDataPhase.BUILDING) {
-            MapScreenLoad.loadedRegion = settings.region
-            runCatching { controller.load(settings.region) }
-        }
-    }
+    val data by rememberMapData()
     if (data.graph != null && data.phase != MapDataPhase.BUILDING) {
         Banner(ready, tone = WTone.POSITIVE)
         return
     }
+    MapSetup(data, lang)
+}
+
+/** Harita verisinin durumu; bölge değişince (süreçte bir kez) diskten yükler (gömülü graf varsa kurar). Sekme ve ilk açılış kurulumu ortak. */
+@Composable
+private fun rememberMapData(): State<MapDataState> {
+    val ctx = LocalContext.current
+    val controller = remember { MapData.controller(ctx) }
+    val data = controller.state.collectAsState()
+    val settings by MapSettingsRepo.settings(ctx).collectAsState()
+    LaunchedEffect(settings.region) {
+        if (MapScreenLoad.loadedRegion != settings.region && data.value.phase != MapDataPhase.BUILDING) {
+            MapScreenLoad.loadedRegion = settings.region
+            runCatching { controller.load(settings.region) }
+        }
+    }
+    return data
+}
+
+/** Kurulum kartı (bölge seçimi, "İndir ve başla") gerçek denetleyiciyle. */
+@Composable
+private fun MapSetup(data: MapDataState, lang: Lang) {
+    val ctx = LocalContext.current
+    val controller = remember { MapData.controller(ctx) }
+    val settings by MapSettingsRepo.settings(ctx).collectAsState()
+    val scope = rememberCoroutineScope()
     MapSetupCard(data, settings.region, lang,
         onRegion = { r -> ctx.safely { MapSettingsRepo.update(ctx) { it.copy(region = r) } } },
         onDownload = { scope.launch { runCatching { controller.download(settings.region) } } })
