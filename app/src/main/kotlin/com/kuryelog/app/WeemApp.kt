@@ -1,5 +1,6 @@
 package com.kuryelog.app
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,8 +23,10 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.kuryelog.app.core.CrashLog
@@ -126,26 +129,45 @@ fun WeemApp(
         Column(Modifier.fillMaxSize()) {
             crash?.let { j -> CrashCard(j, lang) { CrashLog.hide(ctx, j); crash = null } }
             ReminderCard(reminder, lang, onDone = reminders::done)
-            holder.SaveableStateProvider(selected.key) {
-                GuardedPage(selected.key, lang, build = {}) {
-                    when (selected) {
-                        // A3.8: Siparişler sekmesi.
-                        Tab.ORDERS -> Column {
-                            // A8.3: Receiver'da Provider'ın verisi (LINK.md 4.10).
-                            RemoteOrdersCard(lang)
-                            OrdersTab(lang)
+            // S39: Harita sekmesi bir kez açılınca arkada kalır: her dönüşte MapLibre görünümü, stil, karolar ve sensörler yeniden kurulmuyordu
+            // (sekmeye dokununca harita gecikmeli geliyordu). Gizliyken konum, pusula, ekran açık tutma, titreşim ve şeritler durur (`visible`).
+            var mapKept by rememberSaveable { mutableStateOf(false) }
+            if (selected == Tab.MAP && !mapKept) mapKept = true
+            Box(Modifier.fillMaxSize()) {
+                if (mapKept) {
+                    // Gizliyken ekran okuyucu ve testler arkadaki haritayı görmez.
+                    Box(if (selected == Tab.MAP) Modifier.fillMaxSize() else Modifier.fillMaxSize().clearAndSetSemantics {}) {
+                        holder.SaveableStateProvider(Tab.MAP.key) {
+                            // A6.5: Harita sekmesi (graf yokken vardiya kartı + kurulum kartı; G1 vardiya düğmesi açılış sekmesinde).
+                            GuardedPage(Tab.MAP.key, lang, build = {}) { MapScreen(lang, dark, visible = selected == Tab.MAP) }
                         }
-                        Tab.MORE -> MoreScreen(lang, langSetting, theme, versionName, onLangSetting, onTheme, onSetupAgain, orientation, onOrientation)
-                        // A6.5: Harita sekmesi (graf yokken vardiya kartı + kurulum kartı; G1 vardiya düğmesi açılış sekmesinde).
-                        Tab.MAP -> MapScreen(lang, dark)
-                        // A5.4: Scooter sekmesi (canlı panel, tarama, eşleştirme, ayarlar, tanı, ZIP).
-                        Tab.SCOOTER -> Column {
-                            // A8.3: Provider'da scooter Receiver'da (S11); batarya özeti.
-                            if (!scooterImmersive) RemoteScooterCard(lang)
-                            ScooterTab(lang, dark, scooterImmersive) { scooterImmersive = it }
+                    }
+                }
+                if (selected != Tab.MAP) {
+                    // Opak örtü: alttaki gizli harita görünmez ve dokunuş almaz (Compose kardeşlerde dokunuşu yalnız en üsttekine verir).
+                    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent() } }) {
+                        holder.SaveableStateProvider(selected.key) {
+                            GuardedPage(selected.key, lang, build = {}) {
+                                when (selected) {
+                                    // A3.8: Siparişler sekmesi.
+                                    Tab.ORDERS -> Column {
+                                        // A8.3: Receiver'da Provider'ın verisi (LINK.md 4.10).
+                                        RemoteOrdersCard(lang)
+                                        OrdersTab(lang)
+                                    }
+                                    Tab.MORE -> MoreScreen(lang, langSetting, theme, versionName, onLangSetting, onTheme, onSetupAgain, orientation, onOrientation)
+                                    Tab.MAP -> Unit
+                                    // A5.4: Scooter sekmesi (canlı panel, tarama, eşleştirme, ayarlar, tanı, ZIP).
+                                    Tab.SCOOTER -> Column {
+                                        // A8.3: Provider'da scooter Receiver'da (S11); batarya özeti.
+                                        if (!scooterImmersive) RemoteScooterCard(lang)
+                                        ScooterTab(lang, dark, scooterImmersive) { scooterImmersive = it }
+                                    }
+                                    // A9.1: Uzaktan sekmesi (öteki telefonun ekranı, bu telefonun paylaşımı).
+                                    Tab.REMOTE -> RemoteScreen(lang)
+                                }
+                            }
                         }
-                        // A9.1: Uzaktan sekmesi (öteki telefonun ekranı, bu telefonun paylaşımı).
-                        Tab.REMOTE -> RemoteScreen(lang)
                     }
                 }
             }
