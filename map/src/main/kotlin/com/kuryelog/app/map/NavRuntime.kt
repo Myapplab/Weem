@@ -4,6 +4,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import com.kuryelog.app.core.Home
 import com.kuryelog.app.core.ShiftHub
+import com.kuryelog.logic.map.nav.OrderSwitch
 import com.kuryelog.logic.map.nav.PassiveSession
 import com.kuryelog.logic.core.Clock
 import com.kuryelog.logic.core.Lang
@@ -40,6 +41,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -167,9 +169,19 @@ class NavRuntime private constructor(private val app: Context) {
         scope.launch { settings.collect { controller.setSettings(it) } }
         scope.launch {
             ShiftHub.state.collect {
-                controller.setOrder(it.active, null)
+                controller.setOrder(it.active, day.view.value.state.current?.n)
                 navOnly.update(it.active, controller.state.value.hasRoute)
                 refreshLocation()
+            }
+        }
+        // S39: günün açık siparişi denetleyiciye (durak siparişe bağlanır) ve sipariş değişince rota (MAP.md 7.3, [OrderSwitch]); önceden hep boş geçiyordu.
+        scope.launch {
+            var prev: Int? = null
+            day.view.map { it.state.current }.distinctUntilChangedBy { it?.n }.collect { o ->
+                controller.setOrder(ShiftHub.state.value.active, o?.n)
+                val action = OrderSwitch.on(prev, o)
+                prev = o?.n
+                action?.let { controller.onOrderSwitch(it.order, it.target, it.toRestaurant, it.restaurantName) }
             }
         }
         scope.launch {
