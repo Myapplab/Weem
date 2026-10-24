@@ -214,6 +214,22 @@ object PoiLayerRules {
         return out + onRoute
     }
 
+    /**
+     * Google yüzeyinin seçimi (YolGo `google_map_surface.dart`, MAP.md 6.4 "İşaretler"): kamera merkezinin [PoiZoomRules.GOOGLE_RADIUS_M] içi, yakınlık
+     * eşiğini geçenler, en yakından en çok [PoiZoomRules.GOOGLE_MAX]; rota ışıkları ayrıca (S38). S39: önceden MapLibre seçimi (ekran kutusu, 180) Google'a da
+     * veriliyordu; her Google işareti ayrı nesne, kaydırmadan sonra ana iş parçacığı takılıyordu.
+     */
+    fun selectGoogle(pois: List<Poi>, lat: Double, lon: Double, zoom: Double, route: RouteLights? = null): List<Poi> {
+        val r = PoiZoomRules.GOOGLE_RADIUS_M
+        val near = pois.filter { Math.abs(it.lat - lat) * 111_320 <= r && Geo.haversine(lat, lon, it.lat, it.lon) <= r }
+        val onRoute = if (route == null || zoom < ROUTE_LIGHT_MIN_ZOOM) emptyList()
+        else near.filter { it.kind == 'l' && route.near(it.lat, it.lon) }.take(MAX_ROUTE_LIGHTS)
+        if (zoom < PoiZoomRules.HIDE_BELOW) return onRoute
+        val skip = onRoute.toHashSet()
+        return near.filter { PoiZoomRules.markerVisible(it.kind, zoom) && it !in skip }
+            .sortedBy { Geo.haversine(lat, lon, it.lat, it.lon) }.take(PoiZoomRules.GOOGLE_MAX) + onRoute
+    }
+
     /** Rota ışığı: rotaya en çok bu kadar yakın (m). */
     const val ROUTE_LIGHT_M = 20.0
     const val ROUTE_LIGHT_MIN_ZOOM = 13.0

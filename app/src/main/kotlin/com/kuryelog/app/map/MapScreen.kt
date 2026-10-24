@@ -433,14 +433,15 @@ private fun LiveMap(
         }
     }
     // Yer ve ışık işaretleri (MAP.md 5.3): düzeltilmiş yerler + ışık işaretleri, yakınlığa ve görünür kutuya (S38: 1,6 kat payla) göre süzülür.
-    val poiMarkers = remember(poiCenter, poiZoom, viewport, poiRev, lightsRev, data.pois, routeLights) {
+    val poiMarkers = remember(poiCenter, poiZoom, viewport, poiRev, lightsRev, data.pois, routeLights, google) {
         val c = poiCenter ?: return@remember emptyList<MapMarker>()
         if (viewport == IntSize.Zero) return@remember emptyList<MapMarker>()
         val wDp = with(density) { viewport.width.toDp().value.toDouble() }
         val hDp = with(density) { viewport.height.toDp().value.toDouble() }
         val box = PoiLayerRules.bounds(c.lat, c.lon, wDp, hDp, poiZoom, PoiLayerRules.SELECT_MARGIN)
         val all = PoiLayerRules.withLights(MapPois.all(ctx), dayRt.lightSpots())
-        PoiLayerRules.select(all, box, poiZoom, route = routeLights).mapIndexed { i, p ->
+        val chosen = if (google) PoiLayerRules.selectGoogle(all, c.lat, c.lon, poiZoom, routeLights) else PoiLayerRules.select(all, box, poiZoom, route = routeLights)
+        chosen.mapIndexed { i, p ->
             p.toMarker(i, onRoute = p.kind == 'l' && routeLights?.near(p.lat, p.lon) == true)
         }
     }
