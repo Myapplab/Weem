@@ -34,7 +34,7 @@ object Basemap {
     @Volatile private var installer: BasemapInstaller? = null
     private val styles = HashMap<String, String>()
 
-    /** Süreç başında bir kez (`WeemApplication`); sonraki çağrılar bir şey yapmaz. */
+    /** Süreç başında bir kez (`WeemApplication`; harita yüzeyi de çağırır); sonraki çağrılar bir şey yapmaz. */
     fun start(context: Context) {
         if (installer != null) return
         val app = context.applicationContext
@@ -43,7 +43,8 @@ object Basemap {
             BasemapInstaller(File(app.filesDir, "basemap"), assets(app)).also { installer = it }
         }
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-            _state.value = inst.install()?.let { State.Ready(it) } ?: State.Online
+            // Ne olursa olsun bekleme biter (bellek, disk dolu …): kopya yoksa altlık ağdan.
+            _state.value = runCatching { inst.install() }.getOrNull()?.let { State.Ready(it) } ?: State.Online
         }
     }
 

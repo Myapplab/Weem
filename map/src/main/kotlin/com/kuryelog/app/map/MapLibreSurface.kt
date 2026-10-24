@@ -49,6 +49,7 @@ fun MapLibreSurface(model: MapSurfaceModel, events: MapSurfaceEvents, modifier: 
     val currentEvents = rememberUpdatedState(events)
     // S39: gömülü altlık hazır olunca stil yerel dosyalara geçer (görünüm güncellemesinde okunur).
     val basemap = Basemap.state.collectAsState()
+    remember { Basemap.start(context) }
     DisposableEffect(lifecycle, holder) {
         val observer = LifecycleEventObserver { _, e ->
             when (e) {
