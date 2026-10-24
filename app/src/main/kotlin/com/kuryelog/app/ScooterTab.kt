@@ -72,7 +72,6 @@ import com.kuryelog.app.ui.Dot
 import com.kuryelog.app.ui.ListRow
 import com.kuryelog.app.ui.NoticeDialog
 import com.kuryelog.app.ui.ScreenTitle
-import com.kuryelog.app.ui.SettingsGroup
 import com.kuryelog.app.ui.WButton
 import com.kuryelog.app.ui.WIconButton
 import com.kuryelog.app.ui.WSheet
@@ -125,13 +124,11 @@ object ScooterNav {
 private sealed interface Ask {
     data class Message(val text: String) : Ask
     data object Pair : Ask
-    data object ExportChoices : Ask
-    data class ExportWarn(val choice: ScooterPanel.ExportChoice) : Ask
     data object Scan : Ask
 }
 
 /**
- * Scooter sekmesi (S2, A5.4; NB `DashboardActivity`): başlık ve durum satırı, eylem çubuğu (ayarlar, eşleştir, ara, ZIP; S37: "Kaydı başlat"
+ * Scooter sekmesi (S2, A5.4; NB `DashboardActivity`): başlık ve durum satırı, eylem çubuğu (eşleştir, ara; S40: ayarlar Daha fazla'da ve yüzen panelde çift dokunmada, ZIP Kayıtlar'da; S37: "Kaydı başlat"
  * yerine kayıt durumu — kayıt vardiyayla başlar ve biter — ve yalnız vardiya dışı bağlantıyı kesen durdur),
  * eşleştirme uyarısı ve canlı gösterge. Göstergeye dokunma tam ekran (başlık, çubuk ve alt menü kayar; geri tuşu çıkar). Görünürken
  * `Scooter.Viewers.dashboard` (hızlı okuma temposu). Ayarlar ve tanı [ScooterSettingsScreen]'de.
@@ -279,14 +276,13 @@ fun ScooterTab(lang: Lang, dark: Boolean, immersive: Boolean, onImmersive: (Bool
             },
             modifier = Modifier.fillMaxWidth().weight(1f),
         )
-        // K4 #7: eylem çubuğu başparmak bölgesinde — dört simge düğmesi, altında kayıt durumu (S37) ve yuvarlak durdur.
+        // K4 #7: eylem çubuğu başparmak bölgesinde — iki simge düğmesi (S40), altında kayıt durumu (S37) ve yuvarlak durdur.
         AnimatedVisibility(visible = !immersive, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
             Column(
                 Modifier.padding(start = WeemSpace.l, end = WeemSpace.l, top = WeemSpace.xs, bottom = WeemSpace.m),
                 verticalArrangement = Arrangement.spacedBy(WeemSpace.s),
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
-                    ToolButton(WeemIcons.Settings, T.DOCK_SETTINGS.get(lang), true) { settings = true }
                     ToolButton(WeemIcons.Link, T.DOCK_PAIR.get(lang), dock.pair) {
                         ctx.safely("scooter_pair") {
                             if (Scooter.active || Scooter.exporting || Scooter.maintenance) return@safely
@@ -305,9 +301,6 @@ fun ScooterTab(lang: Lang, dark: Boolean, immersive: Boolean, onImmersive: (Bool
                             }
                             scanVersion++
                         }
-                    }
-                    ToolButton(WeemIcons.FolderZip, T.DOCK_EXPORT.get(lang), dock.export) {
-                        ask = if (Scooter.recording || Scooter.maintenance) Ask.Message(T.EXPORT_BUSY.get(lang)) else Ask.ExportChoices
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(WeemSpace.s), verticalAlignment = Alignment.CenterVertically) {
@@ -336,21 +329,6 @@ fun ScooterTab(lang: Lang, dark: Boolean, immersive: Boolean, onImmersive: (Bool
             // S37: eşleştirme kayıt başlatmaz (kayıtsız canlı bağlantı); eşleşince "Eşleşildi · kayda hazır".
             onConfirm = { ask = null; ctx.safely("scooter_pair") { scan.stop(); Scooter.pair(ctx); bump() } }, onDismiss = { ask = null },
         )
-        Ask.ExportChoices -> WSheet(onDismiss = { ask = null }, title = T.EXPORT_TITLE.get(lang)) {
-            SettingsGroup(null, dividerInset = 70.dp) {
-                for (c in ScooterPanel.ExportChoice.entries) ListRow(c.text.get(lang), icon = WeemIcons.FolderZip, chevron = true, onClick = {
-                    if (c.warning() != null) ask = Ask.ExportWarn(c) else export(ctx, c, lang) { ask = it }
-                })
-            }
-            WButton(T.CANCEL.get(lang), { ask = null }, kind = BtnKind.TEXT, fill = true)
-        }
-        is Ask.ExportWarn -> {
-            val (title, text, go) = a.choice.warning()!!
-            ConfirmDialog(
-                title = (title ?: a.choice.text).get(lang), text = text.get(lang), confirm = go.get(lang), dismiss = T.CANCEL.get(lang),
-                onConfirm = { ask = null; export(ctx, a.choice, lang) { ask = it } }, onDismiss = { ask = null },
-            )
-        }
         Ask.Scan -> ScanDialog(scan, scanVersion, lang, onDismiss = { scan.stop(); ask = null; scanVersion++ }) { found ->
             scan.stop()
             ctx.safely("scooter_pick") { Scooter.select(ctx, found) }
@@ -416,11 +394,6 @@ private fun RowScope.ToolButton(icon: ImageVector, description: String, enabled:
             Icon(icon, contentDescription = null, modifier = Modifier.size(WeemSize.icon).alpha(if (enabled) 1f else .45f))
         }
     }
-}
-
-private fun export(ctx: android.content.Context, choice: ScooterPanel.ExportChoice, lang: Lang, show: (Ask?) -> Unit) {
-    show(Ask.Message(T.EXPORT_PREPARING.get(lang)))
-    ctx.safely("scooter_export") { Scooter.export(ctx, choice, lang) { msg -> show(Ask.Message(msg)) } }
 }
 
 /** Scooter tarama listesi (alttan açılan sayfa): ipucu, ilerleme, bulunan cihazlar (kayıtlı scooter yeşil simgeyle); dokununca seçilir. */
