@@ -109,6 +109,7 @@ internal class MapLibreHolder(private val app: Context, private val userAgent: S
             )
         }
         val v = MapView(ctx)
+        v.setMaximumFps(MapCamera.MAPLIBRE_MAX_FPS)
         // onStart/onResume yaşam döngüsü gözlemcisinden gelir (eklenince o anki duruma kadar olaylar yeniden gönderilir).
         v.onCreate(null)
         v.getMapAsync { m ->

@@ -25,6 +25,11 @@ object MapCamera {
     /** Kamera hareketinin en sık aralığı: MapLibre 80 ms; Google 160 ms ve önceki hareket bitmeden yenisi yok. */
     const val MAPLIBRE_MOVE_MS = 80L
     const val GOOGLE_MOVE_MS = 160L
+    /**
+     * S39 (pil): MapLibre en çok bu kadar kare/sn çizer. 120 Hz ekranlarda (Pixel) kamera animasyonu ve parmakla kaydırma saniyede 120 kare çiziliyordu;
+     * işaret zaten ~30 fps kayar, 60 akıcı kalır, GPU işi yarıya iner.
+     */
+    const val MAPLIBRE_MAX_FPS = 60
     /** Konum işaretinin en sık çizimi (Google). */
     const val PUCK_DRAW_MS = 120L
     /** Parmak bu kadar kayarsa (dp) "elle hareket" (MAP.md 7.10). */
