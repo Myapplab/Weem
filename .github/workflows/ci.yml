@@ -1,5 +1,5 @@
 # PR denetimi: saf Kotlin testleri (logic/), Android birim testleri, lint, .dev + release derleme ve kimlik denetimi.
-# Actions dakikası kısıtlı (ayda 2.000, kurye_nav ile ortak): yalnız PR ve elle; .md ve docs/ hariç.
+# Actions dakikası kısıtlı (ayda 2.000, kurye_nav ile ortak): yalnız PR ve elle; .md, docs/, .claude/ ve tools/test.sh hariç.
 name: CI
 
 on:
@@ -7,6 +7,8 @@ on:
     paths-ignore:
       - '**.md'
       - 'docs/**'
+      - '.claude/**'
+      - 'tools/test.sh'
   workflow_dispatch:
 
 concurrency:
