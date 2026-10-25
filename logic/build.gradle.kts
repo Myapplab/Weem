@@ -9,6 +9,16 @@ apply(from = "../gradle/module-graph.gradle.kts")
 
 val junit = libs.junit
 
+// Kaynak taraması testleri (RepoSource; ör. PrivacyAuditTest, TextCoverageTest, BasemapAssetsTest) Android modüllerini,
+// araçları ve öteki logic/ modüllerinin kaynağını okur. Girdi bildirilmezse yalnız bunlar değişince Gradle testi "güncel"
+// sayar ve koşmaz (S39'da yerelde yeşil, CI'da kırmızı).
+val repo = rootDir.parentFile
+val modules = listOf("app", "core", "capture", "orders", "economics", "scooter", "map", "link", "remote") // Android <m>/ = logic/<m>/
+val scannedSources = files(
+    modules.flatMap { listOf(repo.resolve("$it/src"), repo.resolve("$it/build.gradle.kts"), file("$it/src/main")) } +
+        listOf(repo.resolve("tools"), repo.resolve("gradle")),
+).asFileTree.matching { exclude("**/build/**", "**/.gradle/**", "**/__pycache__/**", "**/node_modules/**") }
+
 subprojects {
     // Kök Android build bu modülleri koordinatla ister: com.kuryelog.logic:<modül> (includeBuild ile yerine konur).
     group = "com.kuryelog.logic"
@@ -31,6 +41,7 @@ subprojects {
     }
 
     tasks.withType<Test>().configureEach {
+        inputs.files(scannedSources).withPropertyName("repoSources").withPathSensitivity(PathSensitivity.RELATIVE)
         testLogging {
             events("failed")
             exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL

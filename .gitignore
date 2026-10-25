@@ -28,3 +28,7 @@ map/src/main/assets/map/*
 # Gömülü vektör altlık karoları (ci/build_tiles.sh üretir; stil ve glifler repoda)
 map/src/main/assets/basemap/baku.pmtiles
 map/src/main/assets/basemap/tiles.json
+
+# Python önbelleği (tools/ betikleri)
+__pycache__/
+*.pyc
