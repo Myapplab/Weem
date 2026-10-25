@@ -2,6 +2,12 @@
 
 En yeni en üstte; **en çok 5 bölüm**, bölüm başına en çok 6 satır (başlık + Yapılan · Doğrulama · Açık). Yeni bölüm eklenince en alttaki silinir (eski bölümler git'te). Okurken yalnız en üst bölüm.
 
+## 2026-10-25 — S41: repo düzeni ve usage tasarrufu (Claude Opus; PR #24 CI yeşil, `main` `5476f9a`)
+- Yapılan: kanca `LC_ALL=C.UTF-8` (logic/ ısıtması her oturum `InvalidPathException`'la kırılıyordu) ve ~1,8 KB çıktı; `.claude/settings.json` env; `tools/test.sh` (özet + başarısız testler, güncel sayılıp koşmayanlar, daemon/429 yeniden deneme); `docs/KOD_HARITASI.md`; logic testleri kaynak taramasının okuduğu Android/tools dosyalarını girdi sayar.
+- Belgeler: "Şu an" 4 satır, Aşama 0–9 özet (ayrıntı `bc790c5`), AI_HANDOFF en çok 5 bölüm, AGENTS.md tek yerde kısa belge kuralı; `tools/test-translate/` ve `.pyc` silindi.
+- Doğrulama: `tools/test.sh logic` yeşil (1.931 + core 249), `map` Robolectric 10/10, `compile:core`/`lint:core`; CI #24 yeşil. Uygulama kodu değişmedi.
+- Açık: `docs/sartname/bulgular/` bırakıldı (60+ başvuru); özellik düzeyi sadeleştirme SORU-S39-1'de.
+
 ## 2026-10-24 — S40: gömülü yol grafı kurulmuyordu (Claude Opus; dal `ccr-e1fa4a64-vy2iqs`)
 - Yapılan: AGP `.gz` asset'leri açıp uzantıyı siliyor; `MapDataController.installBundled` artık `.gz` yoksa düz adı açar (gzip imzasına göre). Build 1–12'de gömülü graf hiç kurulmamış olabilir.
 - Doğrulama: weem-build-12 APK'sından çıkarılan dosyalarla eski kod MISSING, yeni kod READY; `logic` testleri yeşil; telefonda denenmedi.

@@ -6,10 +6,10 @@ Kurallar: `AGENTS.md`. Durumlar: `bekliyor` · `sürüyor (<tarih saat>)` · `bi
 
 ## Şu an
 
-- **Son yapılan:** 25 Ekim — S41 repo düzeni ve usage tasarrufu (kod davranışı aynı): kısa oturum kancası + `LC_ALL` (logic/ ısıtması her oturum kırılıyordu), `tools/test.sh`, `docs/KOD_HARITASI.md`, kısa belgeler. Önceki: 24 Ekim S40 gömülü yol grafı kurulmuyordu → düzeldi (PR #23), APK `weem-build-15`.
-- **Devam eden (yarım) iş:** S41 — sürüyor (25 Ekim 21:30; dal `ccr-8435ff3d-tjdg8d`).
+- **Son yapılan:** 25 Ekim — S41 repo düzeni ve usage tasarrufu (PR #24 CI yeşil → `main` `5476f9a`; uygulama davranışı aynı): kanca 15 → 1,8 KB ve `LC_ALL` (logic/ ısıtması her oturum kırılıyordu), `tools/test.sh`, `docs/KOD_HARITASI.md`, kaynak tarayan testler Android dosyasını girdi sayar, kısa belgeler. Önceki: S40 gömülü yol grafı düzeltmesi (PR #23), APK `weem-build-15`.
+- **Devam eden (yarım) iş:** yok.
 - **Sıradaki:** kullanıcı `weem-build-15`'i telefonda dener (A10.4: harita internetsiz görünüyor mu, kurulum kartı "İndir" istemiyor mu, sekme dönüşü anında mı) ve SORU-S39-1/2'yi yanıtlar; sonra A10.5 → A10.6 özellik düzeyi → A10.7.
-- **Kullanıcıdan ayrıca:** Google Maps anahtarı (Weem → Actions gizli değişkeni `GOOGLE_MAPS_API_KEY`; `weem-build-10`'da boştu); `weem-v1.0.0` etiketi (A10.3); metin onayları (`MAP.md` 17.3, `SORU-T1-1`); ev konumu + "Her zaman" konum izniyle otomatik vardiya denemesi; Pixel–Poco Bluetooth eşleştirmesi (S23); uygulama simgesi; kalıcı Receiver telefonu.
+- **Kullanıcıdan ayrıca:** Google Maps anahtarı (Weem → Actions gizli değişkeni `GOOGLE_MAPS_API_KEY`; `weem-build-10`'da boştu, sonrası doğrulanmadı); `weem-v1.0.0` etiketi (A10.3); metin onayları (`MAP.md` 17.3, `SORU-T1-1`); ev konumu + "Her zaman" konum izniyle otomatik vardiya denemesi; Pixel–Poco Bluetooth eşleştirmesi (S23); uygulama simgesi; kalıcı Receiver telefonu.
 
 ## Aşama 0–9 (bitti)
 
