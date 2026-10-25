@@ -296,7 +296,7 @@ Eksik: Sürüş Paneli ve YolGo için saha kaydı tabanlı altın test yok (YolG
 
 ## A3.2 çeviri durumu (17 Ekim 2026)
 
-Rawstats testleri `tools/test-translate/` betikleriyle bölündü ve çevrildi (kaynak `rawstats` @ `6388c04`); `./gradlew -p logic compileTestKotlin` yeşil, kök Android `:capture`/`:orders` derlemesi bozulmadı. Üretim sınıfları iskelet imza (`TODO("A3.4")`/`TODO("A3.5")`): `:capture` ve `:orders` testleri **kırmızı** (333 testten 4'ü yeşil: modül kimliği ×2, `karelerYuklenirVeKisiselVeriYok`, `noRegexConstructAndroidRejects`), `:core`'a giden 4 test yeşil (kod A2'de vardı).
+Rawstats testleri `tools/test-translate/` betikleriyle (S41'de silindi; `git show bc790c5:tools/test-translate/README.md`) bölündü ve çevrildi (kaynak `rawstats` @ `6388c04`); `./gradlew -p logic compileTestKotlin` yeşil, kök Android `:capture`/`:orders` derlemesi bozulmadı. Üretim sınıfları iskelet imza (`TODO("A3.4")`/`TODO("A3.5")`): `:capture` ve `:orders` testleri **kırmızı** (333 testten 4'ü yeşil: modül kimliği ×2, `karelerYuklenirVeKisiselVeriYok`, `noRegexConstructAndroidRejects`), `:core`'a giden 4 test yeşil (kod A2'de vardı).
 
 | Hedef | Hedef (belge) | Çevrilen | Dosya |
 |---|---:|---:|---|
