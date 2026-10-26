@@ -14,7 +14,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.kuryelog.logic.map.geo.GeoPoint
-import com.kuryelog.logic.map.ui.BaseMap
 import com.kuryelog.logic.map.ui.MapCamera
 import com.kuryelog.logic.map.ui.MapStyles
 import com.kuryelog.logic.map.ui.PuckStyle
@@ -37,8 +36,8 @@ import org.maplibre.android.style.sources.GeoJsonSource
 import java.util.Locale
 
 /**
- * İkinci harita görünümü (Y2, S4; MAP.md 6.4): MapLibre Native, iki stil — OSM raster (`tile.openstreetmap.org`, koyuda ters çevrilmiş) ve vektör (S39: APK'da
- * gömülü Bakü karoları varsa yerelden, ağsız; MAP.md 6.19). Yakınlık 11–19,
+ * İkinci harita görünümü (Y2, S4; MAP.md 6.4): MapLibre Native, vektör stil (S39: APK'da gömülü Bakü karoları varsa yerelden, ağsız; MAP.md 6.19;
+ * S42: OSM raster seçeneği kalktı). Yakınlık 11–19,
  * eğme jesti kapalı, döndürme modelden ([MapSurfaceModel.rotateGestures]; S42: ana haritada açık); atıf HUD'da (sol alt, MAP.md 6.4), MapLibre'nin kendi logosu ve atıf düğmesi kapalı. Disk önbelleği açık, çevrimdışı paket yok.
  * Çizgiler, işaretler ve konum işareti kendi kaynak ve katmanlarında (`weem-*`); stil değişince yeniden kurulur.
  */
@@ -156,18 +155,14 @@ internal class MapLibreHolder(private val app: Context, private val userAgent: S
         if (m.uiSettings.isRotateGesturesEnabled != model.rotateGestures) m.uiSettings.setRotateGesturesEnabled(model.rotateGestures)
         val ready = basemap as? Basemap.State.Ready
         val key = "${model.base}|${model.dark}|${ready?.local?.version}"
-        // S39: vektör altlık gömülü karoların kopyası bitince yerelden (ağdan inip sonra değişmesin); OSM raster her zaman ağdan.
-        val waiting = model.base != BaseMap.OSM && basemap == Basemap.State.Pending
+        // S39: vektör altlık gömülü karoların kopyası bitince yerelden (ağdan inip sonra değişmesin).
+        val waiting = basemap == Basemap.State.Pending
         if (key != styleKey && !waiting) {
             styleKey = key
             style = null
             forget()
             val local = ready?.let { Basemap.style(it, model.dark) }
-            val builder = when {
-                model.base == BaseMap.OSM -> Style.Builder().fromJson(MapStyles.osmRasterStyle(model.dark))
-                local != null -> Style.Builder().fromJson(local)
-                else -> Style.Builder().fromUri(MapStyles.vectorStyleUrl(model.dark))
-            }
+            val builder = if (local != null) Style.Builder().fromJson(local) else Style.Builder().fromUri(MapStyles.vectorStyleUrl(model.dark))
             m.setStyle(builder) { s ->
                 if (styleKey != key) return@setStyle
                 installLayers(s)

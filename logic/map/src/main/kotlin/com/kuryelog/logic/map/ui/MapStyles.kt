@@ -8,8 +8,8 @@ import com.kuryelog.logic.map.geo.BBox
 import com.kuryelog.logic.map.geo.Geo
 import com.kuryelog.logic.map.geo.GeoPoint
 
-/** Harita altlığı (S4, SORU-N5 (a)): Google (anahtarlı derlemede), MapLibre OSM raster, MapLibre vektör (varsayılan). */
-enum class BaseMap(val key: String) { GOOGLE("google"), OSM("osm"), VECTOR("vector") }
+/** Harita altlığı (S4, SORU-N5 (a)): Google (anahtarlı derlemede), MapLibre vektör. S42: OSM raster kalktı; kayıtlı `osm` vektöre düşer. */
+enum class BaseMap(val key: String) { GOOGLE("google"), VECTOR("vector") }
 
 /** Harita yüzeyinin ortak ölçüleri ve iki yüzeyin (Google / MapLibre) sınırları (MAP.md 6.4). */
 object MapCamera {
@@ -52,9 +52,6 @@ object MapStyles {
     fun googleDefault(mapStyle: String, mapsEnabled: Boolean, done: Boolean): String? =
         if (mapsEnabled && !done && mapStyle == BaseMap.VECTOR.key) BaseMap.GOOGLE.key else null
 
-    const val OSM_TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-    const val OSM_TILE_SIZE = 256
-    const val OSM_MAX_NATIVE_ZOOM = 19
     const val OSM_COPYRIGHT = "https://www.openstreetmap.org/copyright"
 
     /**
@@ -64,28 +61,25 @@ object MapStyles {
     const val VECTOR_LIGHT_STYLE = "https://tiles.openfreemap.org/styles/positron"
     const val VECTOR_DARK_STYLE = "https://tiles.openfreemap.org/styles/dark"
 
-    /** OSM karo sunucusunun istediği tanıtıcı User-Agent (karo kullanım politikası). */
+    /** Karo sunucularına tanıtıcı User-Agent (OpenFreeMap; OSM karo kullanım politikasındaki gibi). */
     fun userAgent(versionName: String) = "WEEM/$versionName (personal courier navigation)"
 
     /** Kayıtlı `mapStyle` değeri → altlık. */
     fun resolve(mapStyle: String, mapsEnabled: Boolean): BaseMap = when (mapStyle) {
         BaseMap.GOOGLE.key -> if (mapsEnabled) BaseMap.GOOGLE else BaseMap.VECTOR
-        BaseMap.OSM.key -> BaseMap.OSM
         else -> BaseMap.VECTOR
     }
 
     /** Ayarda gösterilen seçenekler (anahtarsız derlemede Google seçilemez). */
-    fun choices(mapsEnabled: Boolean): List<BaseMap> = if (mapsEnabled) listOf(BaseMap.VECTOR, BaseMap.OSM, BaseMap.GOOGLE) else listOf(BaseMap.VECTOR, BaseMap.OSM)
+    fun choices(mapsEnabled: Boolean): List<BaseMap> = if (mapsEnabled) listOf(BaseMap.VECTOR, BaseMap.GOOGLE) else listOf(BaseMap.VECTOR)
 
     fun label(base: BaseMap): Bilingual = when (base) {
         BaseMap.VECTOR -> Txt("Vektör · WEEM", "Vektor · WEEM")
-        BaseMap.OSM -> Txt("OpenStreetMap", "OpenStreetMap")
         BaseMap.GOOGLE -> Txt("Google Maps", "Google Maps")
     }
 
     /** Atıf (sol alt, 9 pt): gerçek kaynağı söyler (MAP.md 6.16 (1)); Google kendi logosunu çizer. [embedded]: S39 gömülü Protomaps karoları. */
     fun attribution(base: BaseMap, embedded: Boolean = false): Attribution? = when (base) {
-        BaseMap.OSM -> Attribution("© OpenStreetMap contributors", OSM_COPYRIGHT)
         BaseMap.VECTOR -> if (embedded) Attribution("© Protomaps · © OpenStreetMap contributors", OSM_COPYRIGHT)
         else Attribution("© OpenFreeMap · © OpenMapTiles · © OpenStreetMap contributors", OSM_COPYRIGHT)
         BaseMap.GOOGLE -> null
@@ -93,15 +87,6 @@ object MapStyles {
 
     /** MapLibre vektör stil adresi. */
     fun vectorStyleUrl(dark: Boolean): String = if (dark) VECTOR_DARK_STYLE else VECTOR_LIGHT_STYLE
-
-    /**
-     * MapLibre OSM raster stili (JSON): koyu temada karolar ters çevrilir (`raster-brightness-min = 1`, `raster-brightness-max = 0`; ev seçiciyle aynı, MAP.md 6.11).
-     */
-    fun osmRasterStyle(dark: Boolean): String {
-        val paint = if (dark) ""","paint":{"raster-brightness-min":1,"raster-brightness-max":0,"raster-saturation":-0.6}""" else ""
-        return """{"version":8,"sources":{"osm":{"type":"raster","tiles":["$OSM_TILES"],"tileSize":$OSM_TILE_SIZE,"maxzoom":$OSM_MAX_NATIVE_ZOOM,""" +
-            """"attribution":"© OpenStreetMap contributors"}},"layers":[{"id":"osm","type":"raster","source":"osm"$paint}]}"""
-    }
 
     private class Txt(override val tr: String, override val az: String) : Bilingual
 }
