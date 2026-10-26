@@ -25,7 +25,7 @@ import java.util.zip.ZipInputStream
 /**
  * A4.1 uçtan uca (ORDERS.md 16 risk 5: `:economics`'in kanca sırası Rawstats'la birebir): 11–12 Ekim'in 6.481 saha karesi iki yoldan geçer.
  * - **Rawstats:** `shadow/saha_rawstats_ekonomi_2026-10-11_12.zip` — Rawstats @ 6388c04'ün kendi `EconomicsRecorder`, `WaitObservation`,
- *   `ShadowMode`, `OfferScore`, `EnergySegments` sınıfları `OrderTracker` sırasıyla (`tools/shadow-fixture`, `--economics`).
+ *   `ShadowMode`, `OfferScore`, `EnergySegments` sınıfları `OrderTracker` sırasıyla (`tools/shadow-fixture`, `--economics`; S42'de silindi, git'te `888423c`).
  * - **WEEM:** aynı kareler `OrderFlow` + [EconomicsObserver]'dan (gün başına yeni süreç; `ShadowSahaTest` ile aynı düzen).
  * Ekonomi dosyalarının her satırı (JSON, anahtar sırası hariç) aynı olmalı. Konum, scooter, hava, komisyon ayarı yok (fikstürde de yok).
  */

@@ -161,11 +161,6 @@ enum class Text(override val tr: String, override val az: String) : Bilingual {
         "Təklifdən sonra batareya evə çatmaya bilərsə paneldə bir sətir və xəritədə \"evə qayıdaq?\" kartı. Çatdırılma nöqtəsi kartda Plus Code və ya koordinatla görünürsə və ev qeyd olunubsa işləyir. Qəbul yenə səndədir."),
     OSET_OCR("Görünür ekran OCR yedeği", "Görünən ekran üçün OCR ehtiyatı"),
     OSET_CARD("Müşteri kartı (ekranın üstünde)", "Müştəri kartı (ekranın yuxarısında)"),
-    OSET_SHADOW("Gölge mod (Rawstats ile yan yana)", "Kölgə rejimi (Rawstats ilə yanaşı)"),
-    OSET_SHADOW_NOTE(
-        "Açıkken WEEM nakit bahşiş ve cepteki nakit sorularını sormaz; rozet, balon, kart ve bildirim 12 çıkmaz. Ekran okuma ve kayıtlar sürer. Soruları yalnız Rawstats sorar; rapordaki bahşiş farkı \"beklenen\" sayılır. Yalnız .dev sürümünde görünür.",
-        "Açıq olanda WEEM nağd çaypulu və cibdəki nağd suallarını vermir; nişan, balon, kart və bildiriş 12 çıxmır. Ekran oxuma və qeydlər davam edir. Sualları yalnız Rawstats verir; hesabatdakı çaypulu fərqi \"gözlənilən\" sayılır. Yalnız .dev versiyasında görünür.",
-    ),
     OSET_BUBBLE("Restoran balonu genişliği", "Restoran balonunun eni"),
     OSET_BUBBLE_ASK("Restoran balonu (ekran genişliğinin yüzdesi)", "Restoran balonu (ekran eninin faizi)"),
     OSET_CARD_SIZE("Müşteri kartı boyutu", "Müştəri kartının ölçüsü"),

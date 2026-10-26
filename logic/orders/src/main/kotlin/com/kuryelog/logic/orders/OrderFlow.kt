@@ -89,8 +89,6 @@ class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
         /** `Store.importing` (ZIP içe aktarma sürüyor). */
         fun importing(): Boolean = false
         fun phoneBattery(): Int? = null
-        /** A3.11: gölge mod açık mı (`.dev` + [OrderSettings.SHADOW]); Android yapı türünü de bilir, sürüm yapısı hep false. */
-        fun shadowMode(): Boolean = OrderSettings.shadowMode(prefs)
         /** `I18n.tl`. */
         fun tl(tr: String, az: String): String = tr
         /** Android `Geocoder.getFromLocationName(adres, 3)` ilk koordinatlı sonuç, arka planda; [done] kilit altında çağrılmaz. */
@@ -253,7 +251,7 @@ class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
     /** Rawstats `GpsService`: yeni vardiyada cep nakdi sorusu (M15, bildirim 4901) ve CASH PENDING başı (M17); bitişte CASH PENDING sonu. */
     val cashPendingHooks: ShiftMachine.Hooks = object : ShiftMachine.Hooks {
         override fun onNewShift(nowMs: Long, reason: String) {
-            try { if (!shadowMode()) env.askPocketCash(nowMs) } catch (e: Exception) { failure("shift_start", e) }
+            try { env.askPocketCash(nowMs) } catch (e: Exception) { failure("shift_start", e) }
             runCatching { cashPendingShift(CashPending.SHIFT_START, nowMs, nowMs) }
         }
         override fun onEnd(startMs: Long, nowMs: Long, reason: String) { runCatching { cashPendingShift(CashPending.SHIFT_END, startMs, nowMs) } }
@@ -488,7 +486,7 @@ class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
             env.log.append(ORDERS_FILE, j.toString())
             // K32: a delivered cash order (real or K34-inferred) asks how much cash was received, once per trip (no answer yet): an
             // unverified delivery's later real signal or Finances cash row (D3) does not ask again.
-            if ((e.type == "delivered" || e.type == "delivered_inferred") && trip != null && !shadowMode() && CashTips.shouldAsk(trip) && cashTipFor(trip) == null &&
+            if ((e.type == "delivered" || e.type == "delivered_inferred") && trip != null && CashTips.shouldAsk(trip) && cashTipFor(trip) == null &&
                 cashAsked.add(trip.id)) runCatching { env.askCashTip(trip) }
         }
     }
@@ -526,9 +524,7 @@ class OrderFlow(private val env: Env) : CaptureSink, ShiftMachine.Hooks {
         } } catch (e: Exception) { forgetSaved(); failure("database", e) }
     }
 
-    /** A3.11: gölge modda pencereler ve bildirim 12 çizilmez; [reminder] durumu ve kayıtları (`reminderAt`) Rawstats'taki gibi sürer. */
-    fun shadowMode(): Boolean = env.shadowMode()
-    private fun notifyReminder(r: Reminder, update: Boolean = false) { if (!shadowMode()) env.notifyReminder(r, update) }
+    private fun notifyReminder(r: Reminder, update: Boolean = false) = env.notifyReminder(r, update)
 
     /** WEEM (ORDERS.md 4.6): YolGo akışlarının duyurusu yok; [offers]/[stages] okuyanlar her an tazesini alır. */
     @Synchronized fun tick(now: Long) {

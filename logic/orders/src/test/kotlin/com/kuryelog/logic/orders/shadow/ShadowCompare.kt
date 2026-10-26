@@ -15,7 +15,8 @@ import java.time.ZoneId
 import kotlin.math.abs
 
 /**
- * Gölge mod karşılaştırıcısı (A3.9): aynı vardiyanın Rawstats ve WEEM `.dev` gün klasörlerini gün gün, dosya dosya karşılaştırır.
+ * Rawstats eşitlik karşılaştırıcısı (A3.9; S42'den beri yalnız test: uygulamadaki gölge mod anahtarı ve `shadowReport` aracı kalktı,
+ * [ShadowSahaTest] saha karelerinde kullanır): aynı vardiyanın Rawstats ve WEEM gün klasörlerini gün gün, dosya dosya karşılaştırır.
  * Kurallar ORDERS.md 14.3 (eşleme; sert/yumuşak/beklenen), CAPTURE.md 6.5 (ayrıştırıcı eşitliği), ORDERS.md 16 ve CAPTURE.md 9
  * (bilerek farklar, [ShadowRules]). JSON ayrıştırılmış değerle karşılaştırılır, bayt bayt değil (alan sırası, kaçış, `null` ile
  * yazılmamış alan aynı sayılır; CORE.md 5.2). [zone] yalnız rapordaki saatleri yazmak için.

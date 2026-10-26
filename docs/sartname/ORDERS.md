@@ -791,6 +791,8 @@ Rawstats `MainActivity.kt` @ `6388c04` ekran kodu (`renderHome` Bugün kartları
 
 ### 16.5 A3.9 kaydı — gölge mod raporu (17 Ekim 2026; dal `claude/a3-9-shadow-mode-report-7vy1z6`)
 
+**S42 (26 Ekim, kullanıcı: "gölge modu sil"):** `shadowReport` komut satırı aracı, ayrı `shadow` kaynak seti ve `tools/shadow-fixture` üreticisi silindi (git'te `888423c`); karşılaştırıcı (`ShadowExport`, `ShadowCompare`, `ShadowRules`, `ShadowReport`) yalnız test kaynağında kaldı: `ShadowSahaTest` saha karelerinde Rawstats eşitliğini korur (fikstür değişmedi).
+
 Yer: `logic/orders/src/shadow` (ayrı kaynak seti; APK'ya girmez, modül grafiği değişmedi): `ShadowExport` (ZIP/klasör; `YYYY-MM-DD/<logNames>` + `restaurants.json`, bir üst klasöre izin, bozuk satır sayılır), `ShadowCompare` (kurallar), `ShadowRules` (bilerek farklar), `ShadowReport` (metin + JSON `weem-shadow-report-v1`), `ShadowMain` (`./gradlew -p logic :orders:shadowReport --args="rawstats.zip weem.zip"`; kullanım `WEEM_ISLER` A3.10).
 
 - **Eşleme (14.3):** sipariş = platform + `sameRestaurant` (iki yönde; ikisi de adsızsa eş) + kabul anı ± 60 sn, en yakın; teklif = platform + ilk görülüş ± 60 sn + ücret (±0,005). Sipariş kaydı `kl_export.trips` gibi seçilir (faz > bitiş > satır anı), `RecordJson.trip` ile okunur; gün = kaydın ilk göründüğü gün klasörü; gün toplamları `OrderHistory.Day` (sipariş sayısı `expectedOrders` toplamı, brüt = ücret + ek bekleme).
@@ -805,6 +807,8 @@ Yer: `logic/orders/src/shadow` (ayrı kaynak seti; APK'ya girmez, modül grafiğ
 §16.4'te "yapılmadı" denenlerden: Ayarlar (komisyon, `overlay`, `ocr`, `customerCard`, boyutlar, izlenen uygulamalar) A4.2'de yapıldı (`OrderSettings`, `:app` `OrdersSettingsScreen`; `ECONOMICS.md` 6.1); "Çevrimiçi oturumlar" listesi ve Araçlar WEEM 1.0 sonrasına bırakıldı (`BEKLEYEN_OZELLIKLER.md`); kayıt günü "Paylaş" A4.3'te yapıldı.
 
 ### 16.6 A3.11 — gölge mod anahtarı (S16 (a); 20 Ekim 2026)
+
+**S42 (26 Ekim): kaldırıldı** — eski uygulamalar telefonlardan silindi; anahtar, ayar satırı ve akıştaki koşullar yok, sorular ve pencereler her zaman açık (`shadowMode` tercihi artık okunmaz).
 
 - **Anahtar:** tercih `shadowMode` (Bool, varsayılan false; `OrderSettings.SHADOW`). Ayarlar → Siparişler ayarları → "Ekran ve kartlar"da "Gölge mod (Rawstats ile yan yana)"; yalnız `.dev` (hata ayıklanabilir) yapıda görünür ve yalnız orada geçerlidir (`Orders.AndroidEnv.shadowMode()`: `FLAG_DEBUGGABLE` ve tercih); sürüm yapısı ZIP geri yüklemesiyle anahtarı alsa da soru sorar.
 - **Açıkken kapanan:** nakit bahşiş sorusu K32 (`askCashTip`), vardiya başı cep nakdi sorusu M15 (`askPocketCash`), bildirim 12 (restoran balonu/müşteri kartı bildirimi, sessiz güncellemeleri dahil; `notifyReminder`), ekran üstü rozet ve hatırlatıcı pencereleri (`OrdersHost.onTick`).

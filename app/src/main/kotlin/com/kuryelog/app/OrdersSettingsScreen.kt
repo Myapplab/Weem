@@ -113,10 +113,6 @@ fun OrdersSettingsScreen(lang: Lang, onBack: () -> Unit) {
             // A10.4e (N5, T1-1 a): menzil uyarısı; varsayılan açık.
             SwitchRow(Str.OSET_RANGE.get(lang), values.getBoolean(KuryelogPrefs.RANGE_WARN, true), { write(mapOf(KuryelogPrefs.RANGE_WARN to it)) },
                 subtitle = Str.OSET_RANGE_NOTE.get(lang), tag = "range_warn")
-            // A3.11 (S16 (a)): yalnız `.dev` yapıda; sürüm yapısında anahtar da görünmez, akış da okumaz.
-            if (BuildInfo.isDebuggable(ctx)) {
-                SwitchRow(Str.OSET_SHADOW.get(lang), OrderSettings.shadowMode(values), { write(mapOf(OrderSettings.SHADOW to it)) }, subtitle = Str.OSET_SHADOW_NOTE.get(lang))
-            }
             ValueRow(Str.OSET_BUBBLE.get(lang), "%$bubble", {
                 dialog = Dialog.Choice(Str.OSET_BUBBLE_ASK.get(lang), RestaurantBubble.WIDTH_CHOICES, bubble) { write(mapOf(RestaurantBubble.WIDTH_KEY to it)) }
             })
