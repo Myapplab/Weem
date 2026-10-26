@@ -66,7 +66,6 @@ class RideLogActions(
     val onShare: (RideLogEntry?, day: String?, all: Boolean) -> Unit = { _, _, _ -> },
     val onDeleteOne: (RideLogEntry) -> Unit = {},
     val onDeleteDay: (String) -> Unit = {},
-    val onImport: () -> Unit = {},
 )
 
 /**
@@ -101,10 +100,6 @@ fun RideLogsScreen(
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                     DropdownMenuItem(text = { Text(RideLogText.SAVE_ALL.get(lang)) }, leadingIcon = { Icon(WeemIcons.Download, null) }, onClick = { menu = false; actions.onSave(null, null, true) })
                     DropdownMenuItem(text = { Text(RideLogText.SHARE_ALL.get(lang)) }, leadingIcon = { Icon(WeemIcons.Share, null) }, onClick = { menu = false; actions.onShare(null, null, true) })
-                    DropdownMenuItem(
-                        text = { Text(RideLogText.IMPORT.get(lang)) }, leadingIcon = { Icon(WeemIcons.Upload, null) }, onClick = { menu = false; actions.onImport() },
-                        modifier = Modifier.testTag("ridelogs-import"),
-                    )
                 }
             }
         }

@@ -16,8 +16,8 @@ class OrdersWiringTest {
         assertTrue(app.contains("Orders.bind(this)"))
         assertTrue(orders.contains("Capture.sink = flow(ctx)"))
         assertTrue(orders.contains("CaptureState.host = OrdersHost"))
-        // ZIP içe aktarmadan sonra istatistik yeniden kurulur (RS `reloadImportedStats`).
-        assertTrue(app.contains("LogImport.afterImport = Orders::reloadImportedStats"))
+        // Yedekten geri yüklemeden sonra istatistik yeniden kurulur (RS `reloadImportedStats`; S42'den beri yalnız şifreli yedek).
+        assertTrue(app.contains("RestoreHook.afterRestore = Orders::reloadImportedStats"))
     }
 
     @Test fun shiftListenersKeepRawstatsOrder() {

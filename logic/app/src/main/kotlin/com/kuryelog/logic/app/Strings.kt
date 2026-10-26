@@ -42,10 +42,8 @@ enum class Text(override val tr: String, override val az: String) : Bilingual {
     // Daha fazla → Kayıtlar (CORE.md 5.3; A2.6 eski Rawstats ZIP'i burada içe aktarılır).
     RECORDS_TITLE("Kayıtlar", "Qeydlər"),
     RECORDS_OPEN("Kayıtlar ve içe aktarma", "Qeydlər və yükləmə"),
-    RECORDS_IMPORT("Eski kayıtları içe aktar (.zip)", "Köhnə qeydləri yüklə (.zip)"),
     RECORDS_IMPORT_STOP("İçe aktarmadan önce vardiyayı durdur.", "Yükləməzdən əvvəl növbəni dayandır."),
     RECORDS_PREPARING("Hazırlanıyor…", "Hazırlanır…"),
-    RECORDS_IMPORT_DONE("Kayıtlar aktarıldı; aynı kayıtlar tekrar sayılmadı.", "Qeydlər yükləndi; eyni qeydlər təkrar sayılmadı."),
     RECORDS_DAILY("Günlük kayıtlar", "Günlük qeydlər"),
     RECORDS_EMPTY("Henüz kayıt yok.", "Hələ qeyd yoxdur."),
     RECORDS_DAY("%d dosya · %s", "%d fayl · %s"),

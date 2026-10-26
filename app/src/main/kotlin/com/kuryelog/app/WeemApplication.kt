@@ -4,7 +4,7 @@ import android.app.Application
 import android.content.Context
 import com.kuryelog.app.capture.ScreenReadingWarning
 import com.kuryelog.app.core.CrashLog
-import com.kuryelog.app.core.LogImport
+import com.kuryelog.app.core.RestoreHook
 import com.kuryelog.app.core.ShiftHub
 import com.kuryelog.app.core.Store
 import com.kuryelog.app.core.WeemFonts
@@ -60,7 +60,7 @@ class WeemApplication : Application() {
         // Scooter dikişi (teklif anı pili, sipariş enerjisi R14, batarya tahmininin çapası), sipariş olayları → harita aşama izleyicisi ve
         // A8.3 2 telefon modu: role göre yerel ya da uzak portlar (TwoPhone; Provider'da scooter BLE açılmaz, S11).
         Store.guarded(this, "start") { TwoPhone.start(this) }
-        LogImport.afterImport = Orders::reloadImportedStats
+        RestoreHook.afterRestore = Orders::reloadImportedStats
         // Vardiya dinleyicileri, Rawstats `GpsService` sırasıyla (ORDERS.md 4.2): cep nakdi + CASH PENDING → günlük paket (R17) → şifreli
         // yedek (N3) → siparişler → scooter (A5.3). `onEnd`'de CASH PENDING sonu günlük paketten, o da siparişlerin kapanmasından önce yazılır.
         Store.guarded(this, "start") {

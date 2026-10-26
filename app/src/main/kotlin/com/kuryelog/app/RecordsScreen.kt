@@ -31,7 +31,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.kuryelog.app.core.LogImport
 import com.kuryelog.app.core.Store
 import com.kuryelog.app.ui.Banner
 import com.kuryelog.app.ui.BtnKind
@@ -62,47 +61,19 @@ import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.orders.OrdersScreen
 import com.kuryelog.logic.orders.OrdersSource
 /**
- * Daha fazla → Kayıtlar (CORE.md 5.3, ORDERS.md 10.3): eski Rawstats ZIP yedeğini içe aktarma (A2.6), yedek ve dışa aktarma (A4.3: günlük paket,
+ * Daha fazla → Kayıtlar (CORE.md 5.3, ORDERS.md 10.3): yedek ve dışa aktarma (A4.3: günlük paket,
  * tüm kayıtları paylaş, anonim analiz) ve gün sayfaları (A3.8): her gün için o günün siparişleri, kayıt dosyaları, paylaş, arşivle/arşivden çıkar,
- * sil. Üstteki düğme arşivle etkin günler arasında geçer.
+ * sil. Üstteki düğme arşivle etkin günler arasında geçer. S42: eski Rawstats ZIP'ini içe aktarma (A2.6) kalktı; geri yükleme şifreli yedekten.
  */
 @Composable
 fun RecordsScreen(lang: Lang, onBack: () -> Unit, source: (android.content.Context) -> OrdersSource = OrdersAccess::source) {
     val ctx = LocalContext.current
     var version by remember { mutableIntStateOf(0) }
-    var status by remember { mutableStateOf<String?>(null) }
     var archive by rememberSaveable { mutableStateOf(false) }
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     var platform by rememberSaveable { mutableStateOf("") }
     var trip by remember { mutableStateOf<String?>(null) }
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) ctx.safely("import") {
-            status = Str.RECORDS_PREPARING.get(lang)
-            LogImport.start(ctx, { ctx.contentResolver.openInputStream(uri) }) { outcome ->
-                status = when (outcome) {
-                    // Siparişler `LogImport.afterImport` ile (WeemApplication) yeniden kurulur.
-                    is LogImport.Outcome.Done -> Str.RECORDS_IMPORT_DONE.get(lang)
-                    LogImport.Outcome.ShiftOn -> Str.RECORDS_IMPORT_STOP.get(lang)
-                    LogImport.Outcome.Busy -> Str.RECORDS_PREPARING.get(lang)
-                    is LogImport.Outcome.Failed -> Str.ERROR.get(lang) + outcome.message
-                }
-                status?.let { Toast.makeText(ctx, it, Toast.LENGTH_SHORT).show() }
-                version++
-            }
-        }
-    }
     SubScreen(Str.RECORDS_TITLE.get(lang), Str.BACK.get(lang), onBack, spacing = 0.dp) {
-        WButton(
-            Str.RECORDS_IMPORT.get(lang),
-            {
-                ctx.safely {
-                    if (Store.shiftOn(ctx)) status = Str.RECORDS_IMPORT_STOP.get(lang)
-                    else picker.launch(arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream"))
-                }
-            },
-            Modifier.padding(top = WeemSpace.s), icon = WeemIcons.FolderZip, fill = true,
-        )
-        status?.let { Banner(it, Modifier.padding(top = WeemSpace.m), tone = WTone.NEUTRAL) }
         BackupTools(lang)
         ScooterRecords(lang)
         EncryptedBackupTools(lang) { version++ }

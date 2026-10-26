@@ -10,7 +10,7 @@ import android.security.keystore.KeyProperties
 import android.util.Base64
 import com.kuryelog.app.core.CourierDb
 import com.kuryelog.app.core.Downloads
-import com.kuryelog.app.core.LogImport
+import com.kuryelog.app.core.RestoreHook
 import com.kuryelog.app.core.Store
 import com.kuryelog.logic.core.DailyRecords
 import com.kuryelog.logic.core.EncryptedBackup
@@ -161,7 +161,7 @@ object EncryptedBackups {
 
     /**
      * Geri yükleme (S22): vardiya kapalıyken, `importing` bayrağıyla (içe aktarmayla aynı). Gün dosyaları içe aktarma kurallarıyla birleşir,
-     * siparişler yeniden kurulur ([LogImport.afterImport]); sonra yalnız telefonda olmayan ayarlar yazılır (ev konumu yedekte yok) ve
+     * siparişler yeniden kurulur ([RestoreHook.afterRestore]); sonra yalnız telefonda olmayan ayarlar yazılır (ev konumu yedekte yok) ve
      * `courier.db`'ye eksik yolculuk/teklif satırları ile eksik müşteri telefonları eklenir.
      */
     fun restore(ctx: Context, open: () -> java.io.InputStream?, password: CharArray, then: (Restored) -> Unit) {
@@ -183,7 +183,7 @@ object EncryptedBackups {
                 Store.importing = false
                 val opened = outcome.second
                 if (opened != null) {
-                    LogImport.afterImport?.let { hook -> Store.guarded(app, "encrypted_restore") { hook(app) } }
+                    RestoreHook.afterRestore?.let { hook -> Store.guarded(app, "encrypted_restore") { hook(app) } }
                     Store.guarded(app, "encrypted_restore") { applyRest(app, opened) }
                 }
                 then(outcome.first)
