@@ -66,3 +66,34 @@ USB hata ayıklama ile, bir vardiya önce ve sonra:
 4. Bilgisayarsız: Ayarlar → Pil → WEEM yüzdesi ve "arka planda" süresi, aynı vardiyada Rawstats + YolGo toplamıyla karşılaştırılır.
 
 Sonuçlar bu bölüme tarihle yazılır; sorun A10.5'te düzeltilir.
+
+## 5. A10.7 öncesi optimizasyon ve iyileştirme listesi (S42, 26 Ekim; koddan ve CI kayıtlarından, telefonda ölçülmedi)
+
+Öncelik: **Y** yüksek · **O** orta · **D** düşük. "Karar" = davranış değişir, kullanıcı seçer; diğerleri davranışı değiştirmez (A10.7'de ya da öncesinde yapılabilir).
+
+| # | Öncelik | Bulgu (yer) | Etki | Öneri | Karar |
+|---|---|---|---|---|---|
+| 1 | Y | Dururken harita pusulayla döner (`PuckHeading.current` → `compass ?: fallback`); `CompassSensor.onAccuracyChanged` boş, kalibrasyon durumu yok sayılır. Scooter gidonunda motor/mıknatıs pusulayı saptırır | "Harita ters yöne bakıyor" geri bildiriminin olası kökü (S42'de elle döndürme eklendi ama kök durur) | Doğruluk `LOW`/`UNRELIABLE` iken pusulayı kullanma (son GPS yönü), ya da ayar: "Dururken yön: pusula / son gidiş yönü" | evet (S38'de pusula istenmişti) |
+| 2 | Y | Kamera, takip, yalnız harita, takibe dönüş kuralları `MapScreen.kt`'de (783 satır Compose); S42 değişiklikleri yalnız `MapTabTest` (Robolectric) ile sınanıyor | Hata riski, test edilemeyen karar kodu ("karar logic'te" kuralı) | `logic/map/ui` `CameraFollow` durum makinesi + birim testleri; `MapScreen` yalnız bağlar | hayır |
+| 3 | O | Haritada rota ilerlemesi, `nav`, `roadState` ekranın en üstünde okunuyor: her GPS fix'inde (1–2 Hz) bütün harita ekranı yeniden oluşur (S38 yalnız işaret ve kamerayı ayırdı) | Ana iş parçacığı ve pil; dokunma gecikmesi | Göstergeleri kendi durumunu okuyan alt bileşenlere böl; Layout Inspector'da yeniden oluşturma sayısıyla ölç | hayır |
+| 4 | O | 7 adet 1 sn'lik zamanlayıcı (`NavRuntime`, `RoadsRuntime`, `ReminderRuntime`, `RideLogRuntime`, `LinkHub`, `TheftRuntime`, `AppDatasetRuntime`) süreç boyunca; vardiyada scooter uyandırma kilidi (P4) açıkken ekran kapalıyken de her saniye çalışır (Bölüm 2'deki "Doze'da uyandırmaz" yalnız kilit yokken) | Vardiya boyunca gereksiz CPU uyanması | Tek ortak saat; iş yokken (öğrenme kapalı, hatırlatıcı yok, eşleşme yok) dur. `dumpsys batterystats` ile önce/sonra | hayır |
+| 5 | O | Yer/ışık seçimi (`poiMarkers`) kompozisyon içinde, ana iş parçacığında (binlerce yer; kamera belirgin kayınca) | Kaydırma sonrası takılma olasılığı | `produceState` + `Dispatchers.Default`; ölç | hayır |
+| 6 | O | Pil seçenekleri P1–P5 (`SADELESTIRME.md` 5) karar bekliyor; en büyük kazanç P1 (rota yokken ekran kapanabilsin) ve P2 (Y13 sensörleri, saniyede ~200 olay) | Pil | SORU-S39-2 | evet |
+| 7 | O | `WeemApplication.onCreate` her süreç başlangıcında (yalnız erişilebilirlik servisi için açılsa da) harita, hava, batarya, 2 telefon çalışma zamanlarını kurar | Soğuk açılış ve bellek | Önce ölç (`adb shell am start -W com.kuryelog.app/.MainActivity`, Perfetto); gerekmeyenleri ilk kullanıma ertele | hayır |
+| 8 | O | 9 ayrı dosya işi `Thread {}` (`EncryptedBackups` 3, `RecordExport` 2, `Scooter` 2, `DayReportHook`, `AppDatasetRuntime`); ortak sıra ve hata yakalayıcı yok, çakışma `Store.importing` gibi bayraklara dağınık | Nadir yarış ve sessiz hata | Tek sıralı IO yürütücüsü (`Store.failure` ile) | hayır |
+| 9 | D | `EconomicsObserver.scooterEnergy` içinde `runBlocking` (ekran okuma/sipariş iş parçacığı; 2 telefonda uzaktan enerji) | Kare kaçırma riski (PhoneBridge bekleme 0 dediği için düşük) | Doğrula; zaman aşımı ya da son değerin önbelleği | hayır |
+| 10 | O | Ters yön önerisi "onay için Ses+" der; ses tuşu ayarı kapalıyken ya da tuş başka uygulamaya giderken dokunarak onay yolu yok | Kaçan onaylar | Öneri şeridine "Onayla" düğmesi (şeritte "Geri al" altyapısı var) | evet (küçük) |
+| 11 | Y | PR CI ~24 dk (#29: logic testleri 8 dk, Android test + lint + `assembleDebug` + `assembleRelease` 15 dk; #30 10 dk); `gradle.properties`'te paralel ve derleme önbelleği kapalı | Actions dakikası (ayda 2.000, `kurye_nav` ile ortak) | (a) `org.gradle.parallel=true` + `org.gradle.caching=true` (logic'in 9 modülü paralel, değişmeyen modülün testi önbellekten); (b) PR'da `assembleRelease` yok (R8 derlemesini ve kimlik denetimini `apk.yml` zaten yapar); (c) test görevlerinde `maxParallelForks`. Tahmin: PR başına 8–12 dk az | evet (CI kuralı) |
+| 12 | O | Yerelde `tools/test.sh logic` ~6 dk | Ajan beklemesi ve usage | 11 (a)/(c) yerelde de kısaltır | hayır |
+| 13 | O | SORU-S39-1 madde 4–11 (uygulama içi harita indirme, Y13/Y14, uzaktan kullanım, hırsızlık koruması, teklif veri seti, ekonomi v2, modül birleştirme, şartname özeti) | Kod ve pil | Kullanıcı yanıtı | evet |
+| 14 | O | `:app` Android katmanı 13.106 satır, `logic/app` 563: ekranlarda karar kodu kalmış olabilir (ör. `MapScreen` kamera, `RecordsScreen` akışları) | Test edilemeyen davranış | A10.7'de "Android ince" taraması (Compose dosyalarında `if`/`when` yoğunluğu) | hayır |
+| 15 | D | `docs/sartname/` ~10 bin satır; işi biten bölümler | Ajan usage'ı | Modül başına kısa özet (madde 13'teki 11) | evet |
+| 16 | — | Hızlı güvenlik taraması: dışa açık bileşenler yalnız sistem izinli servisler (erişilebilirlik, bildirim dinleyici) ve başlatıcı Activity; `allowBackup=false` | — | A10.7 odakları: bağlantı/intent girişi (`LinkIntake`), 2 telefon şifrelemesi (Noise), uzaktan kullanım, SMS (hırsızlık), FileProvider yolları, dışa aktarmada gizleme (`Redactor`) | — |
+
+S42'de yapılanlar (bu listeden ayrı): gölge mod, eski kayıt içe aktarma ve OSM raster silindi (~1.250 satır); simge üreticisi yalnız kullanılan simgeleri yazar.
+
+## 6. Google Maps anahtarı (S42)
+
+- Google Maps Platform'da yeni anahtar her durumda projede **faturalandırma hesabı** (kart) ister; bunun meşru bir yolu yok. Android'de harita yüklemeleri (Maps SDK for Android, "Mobile Native Dynamic Maps") ücretsiz ve sınırsızdır: kart girilse de harita için ücret çıkmaz; ücret Places araması gibi başka SKU'larda (ücretsiz eşik var). Kaynak: [Maps SDK for Android Usage and Billing](https://developers.google.com/maps/documentation/android-sdk/usage-and-billing).
+- **WEEM Google'sız tam çalışır:** harita gömülü vektör altlık (ağsız), adres araması OSM Nominatim (isteğe bağlı OpenRouteService anahtarı ücretsiz kayıtla), rota telefonda.
+- **Eski anahtar:** aynı Google hesabıyla `console.cloud.google.com` → eski proje → APIs & Services → Credentials → anahtarı kopyala; Billing'de proje hâlâ bir faturalandırma hesabına bağlıysa çalışır. GitHub → Weem → Settings → Secrets and variables → Actions → `GOOGLE_MAPS_API_KEY` → APK'yı yeniden derlet (`apk.yml`). Kısıtlama: Android uygulamaları, paket `com.kuryelog.app` + SHA-1 (Harita ayarları → Google Maps'te kopyalanır).
