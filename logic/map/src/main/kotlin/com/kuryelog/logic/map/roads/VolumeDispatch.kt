@@ -70,6 +70,17 @@ class VolumeDispatch(
         }
     }
 
+    /**
+     * S42: yol öğrenme kapalıyken ([captures]) Ses+ yalnız ters yön önerisini onaylar: hemen (çift basış ve kalite kartı yok). Öneri yoksa ya da ana
+     * caddedeyse false.
+     */
+    fun approveSuggestion(): Boolean {
+        val sugg = env.suggestion()?.takeUnless { it.mainRoad } ?: return false
+        env.clearSuggestion()
+        setStreet(sugg.osmId, display(sugg.name), StreetMark.APPROVE)
+        return true
+    }
+
     /** Bekleyen tek basışın süresi dolduysa eylemi yapar. */
     fun due() {
         val now = clock.monoMs()
@@ -208,5 +219,12 @@ class VolumeDispatch(
     companion object {
         const val DOUBLE_MS = 450L
         const val HOLD_MS = 1000L
+
+        /**
+         * Ses tuşu yakalanır mı (MAP.md 9.5.3; S26, S42): ses tuşu ayarı açık ve Harita önde; yol öğrenme açıksa her ses tuşu, kapalıysa yalnız ters yön
+         * önerisi (ana cadde dışı, 15 sn) beklerken Ses+. S42 öncesi öğrenme kapalıyken hiç yakalanmıyordu, öneri ise "onay için Ses+" diyordu.
+         */
+        fun captures(volumeKeys: Boolean, mapInFront: Boolean, learning: Boolean, up: Boolean, suggestion: WrongWayEvent?): Boolean =
+            volumeKeys && mapInFront && (learning || (up && suggestion != null && !suggestion.mainRoad))
     }
 }

@@ -39,7 +39,7 @@ import java.util.Locale
 /**
  * İkinci harita görünümü (Y2, S4; MAP.md 6.4): MapLibre Native, iki stil — OSM raster (`tile.openstreetmap.org`, koyuda ters çevrilmiş) ve vektör (S39: APK'da
  * gömülü Bakü karoları varsa yerelden, ağsız; MAP.md 6.19). Yakınlık 11–19,
- * döndürme ve eğme jesti kapalı; atıf HUD'da (sol alt, MAP.md 6.4), MapLibre'nin kendi logosu ve atıf düğmesi kapalı. Disk önbelleği açık, çevrimdışı paket yok.
+ * eğme jesti kapalı, döndürme modelden ([MapSurfaceModel.rotateGestures]; S42: ana haritada açık); atıf HUD'da (sol alt, MAP.md 6.4), MapLibre'nin kendi logosu ve atıf düğmesi kapalı. Disk önbelleği açık, çevrimdışı paket yok.
  * Çizgiler, işaretler ve konum işareti kendi kaynak ve katmanlarında (`weem-*`); stil değişince yeniden kurulur.
  */
 @Composable

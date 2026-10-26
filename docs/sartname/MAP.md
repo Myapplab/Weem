@@ -1569,7 +1569,7 @@ Eşleştirici özeti (ayrıntı Bölüm 7): doğruluk > 35 m fix'te güncellenme
 #### 9.5.3 WEEM
 
 - Tek Activity: `:app` `MainActivity.dispatchKeyEvent` → `:map` `VolumeKeys` (ince: tüketme kararı, 1000 ms uzun basış `Handler`'ı) → saf `roads.VolumeDispatch` (450 ms çift basış, öncelik sırası, eylem seçimi; saat enjekte, `Clock.monoMs`). Tüketme kuralı YolGo'daki gibi: yakalama açıkken ses tuşu olayları (basış, bırakış, tekrar) tüketilir.
-- Yakalama koşulu: `MapSettings.volumeKeys` (varsayılan açık) **ve** Harita sekmesi ya da onun alt ekranı (Yollarım, Harita ayarları) önde; diğer sekmelerde tuşlar normal (SORU-Q4). Ekran kapalı/kilitli ya da PiP'te yakalama yok; MediaSession ve erişilebilirlik tuş süzgeci **kullanılmaz** (`WatchService` ek yetki almaz).
+- Yakalama koşulu: `MapSettings.volumeKeys` (varsayılan açık) **ve** Harita sekmesi ya da onun alt ekranı (Yollarım, Harita ayarları) önde; diğer sekmelerde tuşlar normal (SORU-Q4). **S42 (kullanıcı: "ters yönü işaretlemek için Ses+ çalışmıyor"):** S26'dan beri yol öğrenme kapalıyken (varsayılan) hiçbir ses tuşu yakalanmıyordu, ters yön önerisi ise öğrenmeden bağımsız "onay için Ses+" diyordu. Artık öğrenme kapalıyken öneri beklerken (ana cadde dışı, 15 sn) Ses+ yakalanır ve öneriyi hemen onaylar (çift basış/kalite kartı yok); diğer tuşlar sistemde kalır. Ses tuşu anahtarı öğrenme kapalıyken de değiştirilebilir. Kural `VolumeDispatch.captures`. Ekran kapalı/kilitli ya da PiP'te yakalama yok; MediaSession ve erişilebilirlik tuş süzgeci **kullanılmaz** (`WatchService` ek yetki almaz).
 - 2 telefon: yakalama ve bütün Y12 eylemleri Receiver'da (9.12).
 
 ### 9.6 Ters yön (ww) soruları ve kararlar (`road_controller.dart:160-295`; `road_knowledge.dart:186-196, 288-331`)

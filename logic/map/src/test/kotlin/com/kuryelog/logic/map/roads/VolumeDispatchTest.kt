@@ -166,4 +166,29 @@ class VolumeDispatchTest {
         assertTrue(r.book.state.marks.isEmpty())
         assertEquals("Konum yok — biraz daha sür", r.toasts.current?.text)
     }
+
+    @Test
+    fun `S42 yol öğrenme kapalıyken yalnız ters yön önerisi beklerken Ses+ yakalanır`() {
+        val sugg = WrongWayEvent(200, "Tək yön küçəsi", false)
+        assertTrue(VolumeDispatch.captures(volumeKeys = true, mapInFront = true, learning = false, up = true, suggestion = sugg))
+        assertFalse("öneri yok: sistem sesi", VolumeDispatch.captures(true, true, false, true, null))
+        assertFalse("Ses− öğrenme kapalıyken yakalanmaz", VolumeDispatch.captures(true, true, false, false, sugg))
+        assertFalse("ana caddede onay yok", VolumeDispatch.captures(true, true, false, true, sugg.copy(mainRoad = true)))
+        assertFalse("ses tuşu ayarı kapalı", VolumeDispatch.captures(false, true, false, true, sugg))
+        assertFalse("Harita arkada", VolumeDispatch.captures(true, false, false, true, sugg))
+        assertTrue("öğrenme açık: her ses tuşu", VolumeDispatch.captures(true, true, true, false, null))
+    }
+
+    @Test
+    fun `S42 öneriyi onaylama hemen olur, kalite kartı açılmaz, öneri temizlenir`() {
+        val r = Rig()
+        r.suggestion = WrongWayEvent(200, "Tək yön küçəsi", false)
+        assertTrue(r.volume.approveSuggestion())
+        assertEquals(setOf(200L), r.streets.current.approved)
+        assertEquals("Onaylandı: Tək yön küçəsi (iki yön)", r.toasts.current?.text)
+        assertNull(r.suggestion)
+        assertNull(r.prompt.state.value)
+        assertFalse("öneri yokken onay yok", r.volume.approveSuggestion())
+        assertEquals(setOf(200L), r.streets.current.approved)
+    }
 }
