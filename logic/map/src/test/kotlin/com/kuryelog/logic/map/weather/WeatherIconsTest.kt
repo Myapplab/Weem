@@ -52,4 +52,22 @@ class WeatherIconsTest {
         assertEquals(CompactExtra(false, "12"), WeatherIcons.compactExtra(hour(rainChance = 9.0, wind = 12.4)))
         assertNull(WeatherIcons.compactExtra(hour()))
     }
+
+    @Test
+    fun s42_simge_açıklamayla_aynı_sırada_parçalı_ve_çisenti_ayrı() {
+        assertEquals(WeatherGlyph.WIND, WeatherIcons.glyph(hour(code = 2, wind = 31.0)))
+        assertEquals(WeatherGlyph.PARTLY_DAY, WeatherIcons.glyph(hour(code = 2)))
+        assertEquals(WeatherGlyph.PARTLY_DAY, WeatherIcons.glyph(hour(code = 2, isDay = null)))
+        assertEquals(WeatherGlyph.PARTLY_NIGHT, WeatherIcons.glyph(hour(code = 2, isDay = false)))
+        assertEquals(WeatherGlyph.CLOUD, WeatherIcons.glyph(hour(code = 3)))
+        assertEquals(WeatherGlyph.CLOUD, WeatherIcons.glyph(hour(rainMm = 0.0)))
+        for (c in 51..57) assertEquals("kod $c", WeatherGlyph.DRIZZLE, WeatherIcons.glyph(hour(code = c)))
+        for (c in listOf(61, 65, 67, 80, 82)) assertEquals("kod $c", WeatherGlyph.RAIN, WeatherIcons.glyph(hour(code = c)))
+        assertEquals(WeatherGlyph.RAIN, WeatherIcons.glyph(hour(rainMm = 0.4)))
+        assertEquals(WeatherGlyph.SNOW, WeatherIcons.glyph(hour(code = 73)))
+        assertEquals(WeatherGlyph.THUNDER, WeatherIcons.glyph(hour(code = 95)))
+        assertEquals(WeatherGlyph.FOG, WeatherIcons.glyph(hour(code = 45)))
+        assertEquals(WeatherGlyph.MOON, WeatherIcons.glyph(hour(code = 1, isDay = false)))
+        assertEquals(WeatherGlyph.SUN, WeatherIcons.glyph(hour(code = 0)))
+    }
 }
