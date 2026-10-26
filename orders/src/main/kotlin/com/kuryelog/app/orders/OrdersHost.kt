@@ -46,11 +46,9 @@ object OrdersHost : CaptureHost {
         val flow = Orders.flow(service)
         if (shiftOn) {
             flow.tick(now)
-            // A3.11 (S16 (a)): gölge modda rozet ve balon/kart pencereleri çizilmez; akış ve kayıtlar sürer.
-            if (flow.shadowMode()) { removeBadge(service); reminders?.update(null) }
-            else if (Store.prefs(service).getBoolean(OVERLAY_PREF, true)) { if (badge == null) addBadge(service); updateBadge(service) }
+            if (Store.prefs(service).getBoolean(OVERLAY_PREF, true)) { if (badge == null) addBadge(service); updateBadge(service) }
             else removeBadge(service)
-            if (!flow.shadowMode()) reminders?.update(flow.reminder)
+            reminders?.update(flow.reminder)
         } else { removeBadge(service); reminders?.update(null) }
     }
 

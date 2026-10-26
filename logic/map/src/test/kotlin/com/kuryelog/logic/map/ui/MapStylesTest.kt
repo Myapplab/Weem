@@ -2,7 +2,6 @@ package com.kuryelog.logic.map.ui
 
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.map.settings.MapSettings
-import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -18,29 +17,25 @@ class MapStylesTest {
         assertEquals(BaseMap.VECTOR, MapStyles.resolve(MapSettings().mapStyle, mapsEnabled = false))
         assertEquals(BaseMap.GOOGLE, MapStyles.resolve(MapSettings().mapStyle, mapsEnabled = true))
         assertEquals(BaseMap.VECTOR, MapStyles.resolve("vector", mapsEnabled = true))
-        assertEquals(BaseMap.OSM, MapStyles.resolve("osm", mapsEnabled = false))
+        // S42: OSM raster kalktı; kayıtlı eski değer vektöre düşer.
+        assertEquals(BaseMap.VECTOR, MapStyles.resolve("osm", mapsEnabled = false))
+        assertEquals(BaseMap.VECTOR, MapStyles.resolve("osm", mapsEnabled = true))
         assertEquals(BaseMap.GOOGLE, MapStyles.resolve("google", mapsEnabled = true))
         assertEquals(BaseMap.VECTOR, MapStyles.resolve("google", mapsEnabled = false))
         for (old in listOf("minimal", "esri", "sat", "", "x")) assertEquals(old, BaseMap.VECTOR, MapStyles.resolve(old, mapsEnabled = true))
-        assertEquals(listOf(BaseMap.VECTOR, BaseMap.OSM), MapStyles.choices(mapsEnabled = false))
+        assertEquals(listOf(BaseMap.VECTOR), MapStyles.choices(mapsEnabled = false))
+        assertEquals(listOf(BaseMap.VECTOR, BaseMap.GOOGLE), MapStyles.choices(mapsEnabled = true))
         assertTrue(BaseMap.GOOGLE in MapStyles.choices(mapsEnabled = true))
         assertEquals("Vektor · WEEM", MapStyles.label(BaseMap.VECTOR).get(Lang.AZ))
     }
 
     @Test
-    fun `atıf gerçek kaynağı söyler, OSM raster koyuda ters çevrilir`() {
-        assertEquals("© OpenStreetMap contributors", MapStyles.attribution(BaseMap.OSM)!!.text)
-        assertEquals("https://www.openstreetmap.org/copyright", MapStyles.attribution(BaseMap.OSM)!!.url)
+    fun `atıf gerçek kaynağı söyler`() {
+        assertEquals("https://www.openstreetmap.org/copyright", MapStyles.attribution(BaseMap.VECTOR)!!.url)
         assertTrue(MapStyles.attribution(BaseMap.VECTOR)!!.text.contains("OpenStreetMap"))
         // S39: gömülü karolar Protomaps'ten (OpenFreeMap değil).
         assertEquals("© Protomaps · © OpenStreetMap contributors", MapStyles.attribution(BaseMap.VECTOR, embedded = true)!!.text)
         assertNull(MapStyles.attribution(BaseMap.GOOGLE))
-        val light = JSONObject(MapStyles.osmRasterStyle(dark = false))
-        assertEquals("https://tile.openstreetmap.org/{z}/{x}/{y}.png", light.getJSONObject("sources").getJSONObject("osm").getJSONArray("tiles").getString(0))
-        assertFalse(light.getJSONArray("layers").getJSONObject(0).has("paint"))
-        val paint = JSONObject(MapStyles.osmRasterStyle(dark = true)).getJSONArray("layers").getJSONObject(0).getJSONObject("paint")
-        assertEquals(1.0, paint.getDouble("raster-brightness-min"), 0.0)
-        assertEquals(0.0, paint.getDouble("raster-brightness-max"), 0.0)
         assertTrue(MapStyles.vectorStyleUrl(true) != MapStyles.vectorStyleUrl(false))
         assertEquals("WEEM/0.6.0 (personal courier navigation)", MapStyles.userAgent("0.6.0"))
     }

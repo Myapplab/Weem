@@ -52,7 +52,7 @@ data class MapSurfaceModel(
     /** Yalnız ev seçici: merkez çevresinde metre yarıçaplı daire (birincil renk %15 dolgu, 2 px kenar). */
     val circle: Pair<GeoPoint, Double>? = null,
     val circleColor: Int = 0xFF1765D1.toInt(),
-    /** Döndürme jesti (MapLibre'de kapalı: harita yalnız kamera yönüyle döner). */
+    /** Döndürme jesti (S42: ana haritada açık, elle hareket sayılır; ev seçicide kapalı). */
     val rotateGestures: Boolean = false,
 )
 

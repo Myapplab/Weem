@@ -195,8 +195,8 @@ object RoadsText {
     fun learningSwitch(lang: Lang) = tl(lang, "Yol kalitesi öğrenme", "Yol keyfiyyətini öyrənmə")
     fun learningSwitchSub(lang: Lang) = tl(
         lang,
-        "Kapalıyken sürüşten öğrenme, ters yön soruları ve ses tuşları çalışmaz; girilen yol bilgileri rotada kullanılmaya devam eder",
-        "Söndürüləndə sürüşdən öyrənmə, əks istiqamət sualları və səs düymələri işləmir; daxil edilən yol məlumatları marşrutda istifadə olunmağa davam edir",
+        "Kapalıyken sürüşten öğrenme, ters yön soruları ve Ses− tuşu çalışmaz, Ses+ yalnız ters yön önerisini onaylar; girilen yol bilgileri rotada kullanılmaya devam eder",
+        "Söndürüləndə sürüşdən öyrənmə, əks istiqamət sualları və Səs− düyməsi işləmir, Səs+ yalnız əks istiqamət təklifini təsdiqləyir; daxil edilən yol məlumatları marşrutda istifadə olunmağa davam edir",
     )
     fun volumeKeys(lang: Lang) = tl(
         lang,

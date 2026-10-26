@@ -42,6 +42,6 @@ object OrdersAccess {
         override fun lastSeen(pkg: String): Long = seen(pkg)
     }
 
-    /** Kayıt silindi: `courier.db` günlüklerden yeniden kurulur (içe aktarmadan sonrası `LogImport.afterImport` ile). */
+    /** Kayıt silindi: `courier.db` günlüklerden yeniden kurulur (geri yüklemeden sonrası `RestoreHook.afterRestore` ile). */
     fun reload(ctx: Context) = Orders.reloadImportedStats(ctx)
 }

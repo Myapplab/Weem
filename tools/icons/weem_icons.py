@@ -1,5 +1,6 @@
 # WeemIcons.kt üreticisi (A10.4d): python3 tools/icons/weem_icons.py <indirme klasörü> app/src/main/kotlin/com/kuryelog/app/ui/WeemIcons.kt
 # Material Symbols Rounded SVG (fonts.gstatic.com, Apache-2.0) indirir; yeni simge için OUTLINED/FILLED listesine ekle.
+# S42: dosyaya yalnız kodda kullanılan (`WeemIcons.<Ad>`) simgeler yazılır; liste fazlasını içerebilir (S39'da kullanılmayanlar elle silinmişti).
 import re, sys, urllib.request, os, json
 DL = sys.argv[1]
 OUT = sys.argv[2]
@@ -36,6 +37,19 @@ for n in OUTLINED:
     entries.append((pascal(n), n, fetch(n, 'default')))
 for n in FILLED:
     entries.append((pascal(n) + 'Filled', n + ' (dolu)', fetch(n, 'fill1')))
+ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+used = set()
+for d, _, fs in os.walk(ROOT):
+    if '/build' in d or '/.git' in d or '/src/main' not in d + '/':
+        continue
+    for f in fs:
+        if f.endswith('.kt') and f != 'WeemIcons.kt':
+            used.update(re.findall(r'WeemIcons\.(\w+)', open(os.path.join(d, f), encoding='utf-8').read()))
+dropped = sorted(e[0] for e in entries if e[0] not in used)
+entries = [e for e in entries if e[0] in used]
+missing = sorted(used - {e[0] for e in entries})
+if missing:
+    raise SystemExit(f'listede yok: {missing}')
 entries.sort(key=lambda e: e[0])
 lines = []
 lines.append('package com.kuryelog.app.ui\n')
@@ -63,4 +77,4 @@ lines.append('            .clearGroup()')
 lines.append('            .build()')
 lines.append('}')
 open(OUT, 'w', encoding='utf-8').write('\n'.join(lines) + '\n')
-print(len(entries), 'icons')
+print(len(entries), 'icons; kullanılmadığı için yazılmayan:', len(dropped))

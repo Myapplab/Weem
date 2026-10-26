@@ -32,7 +32,8 @@ class RecordExportWiringTest {
         val daily = tools.indexOf("Str.RECORDS_DAILY_PACK.get(lang)"); val full = tools.indexOf("RecordExport.exportLogs(ctx, lang)")
         val anon = tools.indexOf("RecordExport.exportAnalysis(ctx, lang)")
         assertTrue(daily >= 0 && full > daily && anon > full)
-        assertTrue(records.indexOf("Str.RECORDS_IMPORT.get(lang)") < records.indexOf("BackupTools(lang)"))
+        // S42: eski ZIP içe aktarma düğmesi kalktı (geri yükleme şifreli yedekten).
+        assertFalse(records.contains("LogImport"))
         assertTrue(export.contains("AnalysisExport().zip(entries, it, versionName(app), now)"))
         // The full export still zips every staged file unchanged.
         assertTrue(RepoSource.text("logic/core/src/main/kotlin/com/kuryelog/logic/core/BackupExport.kt").contains("f.inputStream().use { it.copyTo(z) }"))

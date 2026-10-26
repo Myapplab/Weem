@@ -303,6 +303,7 @@ YolGo evi Rawstats'tan okur (`SHARE_HOME`, istek 703, 20 sn zaman aşımı, 6 sa
 - Dışa aktarma ZIP'i, günlük paket, anonim dışa aktarma: A4.3 (R17, R18) — **bitti (18 Ekim):** `logic/core` `BackupExport`, `DailyPack`, `Redactor`, `EncryptedBackup` (N3); `logic/orders` `AnalysisExport` (`OwnLines` gerektirir: `:core` → `:capture` yönü yok); Android `:core` `Downloads`, `Store.locked`; `:app` `RecordExport`, `DailyPackHook`, `EncryptedBackups`. Vardiya dinleyici sırası `cash_pending` → `daily_pack` → `encrypted_backup` → `orders` → `scooter`.
 - **A2.6 için ekran (öneri):** "Daha fazla → Kayıtlar": ZIP içe aktar + gün listesi (tarih, dosya sayısı, boyut, arşiv). Rawstats'taki içe aktarma ve gün sayfasının (R12) ilk parçası; A3 R12 genişletir.
 - **WEEM yerleşimi (A2.3):** saf `LogImporter.restore(input, filesDir, logsRoot, cacheDir)`; Android `LogImport` (arka plan iş parçacığı, `Throwable` yakalar, `importing` bayrağı) ve `RecordsScreen` (Daha fazla → Kayıtlar). Arşivleme/silme düğmeleri A3 (R12).
+- **S42 (26 Ekim, kullanıcı: "içe aktarmayı sil"; SORU-S39-1 madde 2):** Kayıtlar'daki "Eski kayıtları içe aktar (.zip)" düğmesi ve Android `LogImport.start` kalktı (geçiş sıfırdan, S31). `LogImporter.restore` kuralları şifreli yedeğin geri yüklemesinde sürer (S22); sonrası kanca `RestoreHook.afterRestore` (`:orders` istatistiği), `importing` bayrağı geri yüklemede aynen.
 
 ### 5.4 Göç işaretleri
 

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,6 +18,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -39,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kuryelog.app.ui.Fab
 import com.kuryelog.app.ui.IconBox
 import com.kuryelog.app.ui.WTone
 import com.kuryelog.app.ui.WeemIcons
@@ -69,6 +72,8 @@ data class MapTabState(
     val keyboard: Boolean = false,
     /** Rota paneli açık (`route-fab` ✕ gösterir). */
     val routeOpen: Boolean = false,
+    /** S42: yalnız harita (haritaya dokunuş ya da elle hareket; MAP.md 6.3 (2)). */
+    val mapOnly: Boolean = false,
 )
 
 /** Harita sekmesinin eylemleri; ekranı kuran (`MapScreen`) bağlar. Dolmayan yuvalar (A6.6–A6.9) boş kalır. */
@@ -77,12 +82,15 @@ class MapTabActions(
     val onRouteFab: () -> Unit = {},
     val onSearch: () -> Unit = {},
     val onWeatherRefresh: () -> Unit = {},
+    val onShowPanels: () -> Unit = {},
+    /** Açık gün kartı dışarı basışla katlandı (o basışın harita dokunuşu yalnız haritayı açmaz). */
+    val onCardCollapse: () -> Unit = {},
 )
 
 /**
  * Harita sekmesi (YolGo `nav_screen.dart:57-153`; MAP.md 6.3): harita yüzeyi + HUD (arama çubuğu `map-search`, hava şeridi, sol göstergeler, gün eylemleri, konum düğmesi,
  * alt yer düğmesi); sekmede menü, ayar düğmesi ve kayıt noktası yok. Varış odağında yalnız harita, bildirim şeridi (`toast-banner`), hatırlatıcı yuvası (`reminder-slot`), görev
- * uyarıları (`task-alerts`), ters yön kartı ve alttaki `arrival-address` kartı. Haritaya dokunmak panelleri gizlemez (S37; eski "yalnız harita" kipi kaldırıldı).
+ * uyarıları (`task-alerts`), ters yön kartı ve alttaki `arrival-address` kartı. [MapTabState.mapOnly] (S42) yalnız harita: sağ üstte `show-panels`, altta konum düğmesi.
  * Dışarı dokunuş açık gün kartını katlar. Yuvalar ([toast], [reminder], [taskAlerts], [wrongWay], [routePanel]) sahip görevlerde dolar; [metrics] sol göstergeler (A6.7),
  * [topCard] arama çubuğunun üstünde (vardiya kapalıyken `ShiftCard`).
  */
@@ -148,6 +156,29 @@ fun MapTab(
         }
     }
     val locate = @Composable { SmartLocateButton(state.cameraMode, actions.onLocate, lang = lang) }
+    val onCollapse by rememberUpdatedState(actions.onCardCollapse)
+    // S42 (kullanıcı: "haritaya dokununca diğer her şey gitmiyor"): yalnız harita kipi geri geldi (YolGo `_toggleMapOnly`); bildirim şeridi, ters yön
+    // sorusu ve görev uyarıları kalır. Kip yukarıdaki durumlardan sonra seçilir: hava hapının açık/kapalı durumu dönüşte korunur; gün kartı katlı döner.
+    if (state.mapOnly && !keyboard) {
+        LaunchedEffect(Unit) { shiftCollapsed = true }
+        MapHudLayout(
+            keyboard = false, map = map, modifier = modifier, alerts = alerts,
+            header = {
+                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
+                    ShowPanelsButton(actions.onShowPanels, lang)
+                    Spacer(Modifier.height(WeemSpace.s))
+                    toastSlot()
+                }
+            },
+            footer = {
+                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    locate()
+                    wrongWay()
+                }
+            },
+        )
+        return
+    }
     Box(
         modifier.fillMaxSize().onGloballyPositioned { rootCoords = it }.pointerInput(Unit) {
             // Kartın dışına dokunuş (harita, başka düğme) açık gün kartını katlar; olay tüketilmez.
@@ -157,7 +188,7 @@ fun MapTab(
                     if (e.type != PointerEventType.Press) continue
                     val origin = rootCoords?.positionInRoot() ?: continue
                     val p = e.changes.first().position + origin
-                    if (!shiftCollapsed && !cardBounds.contains(p)) collapseSignal++
+                    if (!shiftCollapsed && !cardBounds.contains(p)) { collapseSignal++; onCollapse() }
                 }
             }
         },
@@ -211,6 +242,12 @@ fun MapTab(
             },
         )
     }
+}
+
+/** "Panelleri göster" (`show-panels`, yalnız harita kipinde sağ üstte; MAP.md 6.3 (2)): konum düğmesiyle aynı boyda. */
+@Composable
+private fun ShowPanelsButton(onClick: () -> Unit, lang: Lang) {
+    Fab(WeemIcons.FullscreenExit, MapText.SHOW_PANELS.get(lang), onClick, Modifier.size(HudLayout.LOCATE_BUTTON_DP.dp).testTag("show-panels"))
 }
 
 /** Arama hapı (`map-search`; MAP.md 8.8): 56 dp, solda arama simgesi, ipucu "Adres veya mekân ara"; arama akışı A6.6. */

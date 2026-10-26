@@ -1,12 +1,5 @@
 package com.kuryelog.app.map
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -41,11 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -68,23 +57,17 @@ import com.kuryelog.app.ui.WeemRadius
 import com.kuryelog.app.ui.WeemSpace
 import com.kuryelog.app.ui.WeemType
 import com.kuryelog.app.ui.floating
-import com.kuryelog.app.ui.isDark
 import com.kuryelog.app.ui.palette
-import com.kuryelog.logic.map.ui.MapPalette
 import com.kuryelog.logic.core.Lang
 import com.kuryelog.logic.map.ui.HudLayout
 import com.kuryelog.logic.map.ui.WeatherUiText
 import com.kuryelog.logic.map.weather.WeatherHour
 import com.kuryelog.logic.map.weather.WeatherIcons
-import com.kuryelog.logic.map.weather.WeatherKind
 import com.kuryelog.logic.map.weather.WeatherReport
 import java.time.Instant
 import java.time.ZoneOffset
 import java.util.Locale
-import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.max
-import kotlin.math.sin
 
 /** Hava görünümü: [report] yoksa "Hava yükleniyor…"/"Hava verisi yok"; [failed] "Hava güncellenemedi" (önceki rapor kalır); [busy] istek sürüyor. */
 data class WeatherView(val report: WeatherReport? = null, val failed: Boolean = false, val busy: Boolean = false)
@@ -135,10 +118,9 @@ fun WeatherChip(
                 modifier = Modifier.fillMaxSize().floating(CircleShape).testTag("weather-compact"),
             ) {
                 Row(Modifier.padding(start = WeemSpace.m, end = WeemSpace.s), verticalAlignment = Alignment.CenterVertically) {
-                    val kind = first?.let { WeatherIcons.kind(it) }
-                    if (kind == null) Icon(WeemIcons.PartlyCloudyDay, contentDescription = null, tint = p.muted.color(), modifier = Modifier.size(26.dp))
+                    if (first == null) Icon(WeemIcons.PartlyCloudyDay, contentDescription = null, tint = p.muted.color(), modifier = Modifier.size(26.dp))
                     // S38 (pil): haritada sürekli duran hapta simge durağan; sonsuz animasyon harita açıkken ekranı saniyede 60–120 kez yeniden çizdiriyordu.
-                    else WeatherMotion(kind, 28.dp, animate = false)
+                    else WeatherGlyphIcon(WeatherIcons.glyph(first), 28.dp, animate = false)
                     Spacer(Modifier.width(6.dp))
                     Column {
                         Text(if (first == null) (if (view.busy) "…" else "—") else value(first.temperature, "°"), style = WeemType.titleS.copy(fontWeight = FontWeight.ExtraBold), maxLines = 1)
@@ -242,7 +224,7 @@ private fun HourTile(hour: WeatherHour, size: Dp, tag: String?, modifier: Modifi
         modifier = modifier.size(size).let { if (tag != null) it.testTag(tag) else it },
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            WeatherMotion(WeatherIcons.kind(hour), size * .42f)
+            WeatherGlyphIcon(WeatherIcons.glyph(hour), size * .46f)
             Text(value(hour.temperature, "°"), maxLines = 1, style = WeemType.labelM.copy(fontWeight = FontWeight.ExtraBold))
         }
     }
@@ -283,7 +265,7 @@ fun WeatherDetailSheet(report: WeatherReport, index: Int, availableHeightDp: Dou
         Column(Modifier.fillMaxSize().testTag("weather-detail-scroll").verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 24.dp)) {
             Column(Modifier.semantics(mergeDescendants = true) {}) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    WeatherMotion(kind, 50.dp)
+                    WeatherGlyphIcon(WeatherIcons.glyph(hour), 52.dp)
                     Spacer(Modifier.width(12.dp))
                     Text(
                         "${if (index == 0) WeatherUiText.NOW.get(lang) else clock(hour.at)} · ${kind.get(lang)}", Modifier.weight(1f),
@@ -302,54 +284,6 @@ fun WeatherDetailSheet(report: WeatherReport, index: Int, availableHeightDp: Dou
                 }
                 Spacer(Modifier.height(16.dp))
                 Text("Open-Meteo · ${WeatherUiText.FORECAST.get(lang)} · ${bakuClock(report.fetchedAtMs)}", color = inkLo, style = WeemType.bodyS)
-            }
-        }
-    }
-}
-
-/**
- * Hareketli hava simgesi (`WeatherMotion`): güneş/ay ışınları döner, rüzgâr çizgileri sallanır, bulut kayar, yağmur/kar damlaları düşer. Testlerde animasyon durur.
- * [animate] false: ilk karede durur (S38: haritadaki hap; animasyon yalnız açılan listede ve ayrıntıda).
- */
-@Composable
-private fun WeatherMotion(kind: WeatherKind, size: Dp, animate: Boolean = true) {
-    val phase = if (!animate) 0f
-    else rememberInfiniteTransition(label = "weather").animateFloat(0f, 1f, infiniteRepeatable(tween(3200, easing = LinearEasing), RepeatMode.Restart), label = "phase").value
-    val ink = MapPalette.of(palette().isDark)
-    Canvas(Modifier.size(size)) {
-        val s = this.size.width
-        val t = phase
-        val stroke = max(1.5f, s / 18)
-        fun line(c: Color, x1: Float, y1: Float, x2: Float, y2: Float) = drawLine(c, Offset(x1, y1), Offset(x2, y2), stroke, StrokeCap.Round)
-        when (kind) {
-            WeatherKind.SUN, WeatherKind.NIGHT -> {
-                val c = Color(if (kind == WeatherKind.SUN) ink.weatherSun else ink.weatherMoon)
-                drawCircle(c, s * .2f, Offset(s / 2, s / 2), style = Stroke(stroke))
-                for (i in 0 until 8) {
-                    val a = i * PI / 4 + t * PI / 4
-                    line(c, s / 2 + (cos(a) * s * .31).toFloat(), s / 2 + (sin(a) * s * .31).toFloat(), s / 2 + (cos(a) * s * .41).toFloat(), s / 2 + (sin(a) * s * .41).toFloat())
-                }
-            }
-            WeatherKind.WIND -> {
-                val c = Color(ink.weatherCloud)
-                for (i in 0 until 3) {
-                    val dx = (sin(t * PI * 2 + i) * s * .08).toFloat()
-                    line(c, s * .13f + dx, s * (.3f + i * .2f), s * .83f + dx, s * (.3f + i * .2f))
-                }
-            }
-            else -> {
-                val c = Color(ink.weatherCloud)
-                val dx = (sin(t * PI * 2) * s * .04).toFloat()
-                drawCircle(c, s * .16f, Offset(s * .35f + dx, s * .4f), style = Stroke(stroke))
-                drawCircle(c, s * .2f, Offset(s * .55f + dx, s * .34f), style = Stroke(stroke))
-                drawRoundRect(c, Offset(s * .17f + dx, s * .4f), Size(s * .67f, s * .2f), androidx.compose.ui.geometry.CornerRadius(s * .1f), Stroke(stroke))
-                if (kind == WeatherKind.RAIN || kind == WeatherKind.THUNDER || kind == WeatherKind.SNOW) {
-                    val d = Color(ink.weatherRain)
-                    for (i in 0 until 3) {
-                        val y = s * (.67f + ((t + i * .2f) % 1f) * .2f)
-                        line(d, s * (.3f + i * .2f), y, s * (.26f + i * .2f), y + s * .1f)
-                    }
-                }
             }
         }
     }

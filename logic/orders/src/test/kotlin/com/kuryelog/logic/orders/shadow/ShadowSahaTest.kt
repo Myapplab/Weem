@@ -28,7 +28,7 @@ import java.util.zip.ZipOutputStream
  * saha karesi iki yoldan geçer:
  * - **Rawstats:** `shadow/saha_rawstats_2026-10-11_12.zip` — Rawstats @ 6388c04'ün kendi saf sınıflarıyla (`CourierParser`,
  *   `DeliveryCore`, `PlatformHistory`, `PlatformTotals`, `CashPending`, `BoostLog`, `OnlineSessions`, `RecordJson`) `OrderTracker.onScreen`
- *   sırasıyla üretildi (`tools/shadow-fixture`); `screens.jsonl` kareler + Rawstats'ın yazdığı aşama (`saha_rawstats_asamalar`).
+ *   sırasıyla üretildi (`tools/shadow-fixture`; S42'de silindi, git'te `888423c`); `screens.jsonl` kareler + Rawstats'ın yazdığı aşama (`saha_rawstats_asamalar`).
  * - **WEEM:** aynı kareler `OrderFlow`'dan (gün başına yeni süreç, vardiya ilk karede başlar, son kareden 1 ms sonra biter) ve
  *   `CaptureRows.screen`'den geçer, gün klasörleri ZIP'lenir.
  * Karşılaştırıcı iki ZIP'te sert fark 0 bulmalı; beklenen farklar yalnız ekonomi dosyası (A4.1'e kadar yalnız Rawstats).
@@ -162,19 +162,9 @@ class ShadowSahaTest {
         assertTrue(expected.getString("D3"), expected.getString("D3").isNotEmpty())
     }
 
-    /** Komut satırı aynı ZIP'lerle çalışır: metin ekrana, JSON dosyaya; `--strict` sert fark yokken 0. */
-    @Test fun komutSatiriJsonYazar() {
-        val dir = tmp.newFolder("cli")
-        val rsZip = File(dir, "rawstats.zip").also { f ->
-            ZipOutputStream(f.outputStream()).use { z -> for ((d, files) in rawstats.days) for ((n, t) in files) { z.putNextEntry(ZipEntry("$d/$n")); z.write(t.toByteArray()); z.closeEntry() } }
-        }
-        val weemDir = File(dir, "weem").also { r -> for ((d, files) in weem.days) for ((n, t) in files) File(r, d).also { it.mkdirs() }.resolve(n).writeText(t) }
-        val json = File(dir, "out.json")
-        val out = System.out; val captured = ByteArrayOutputStream()
-        System.setOut(java.io.PrintStream(captured, true, "UTF-8"))
-        try { main(arrayOf(rsZip.path, weemDir.path, "--json", json.path, "--strict")) } finally { System.setOut(out) }
-        assertTrue(captured.toString("UTF-8"), captured.toString("UTF-8").contains("sert 0"))
-        val j = JSONObject(json.readText())
+    /** Makine okunur rapor (S42: komut satırı aracı kalktı, rapor yalnız testte): sert fark 0, beklenen farklar metin raporuyla aynı. */
+    @Test fun raporJsonuSertFarkSifir() {
+        val j = report.json()
         assertEquals(ShadowReport.SCHEMA, j.getString("schema"))
         assertEquals(0, j.getJSONObject("summary").getInt("hard"))
         assertEquals(report.expected, j.getJSONObject("summary").getInt("expected"))

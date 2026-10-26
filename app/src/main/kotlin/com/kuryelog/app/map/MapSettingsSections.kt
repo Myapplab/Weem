@@ -136,8 +136,8 @@ fun MapsKeySection(lang: Lang) {
 }
 
 /**
- * Harita ayarları → "Yollarım" (MAP.md 9.8.1, 9.5; S26): "Yol kalitesi öğrenme" ana anahtarı (varsayılan kapalı), ses tuşu anahtarı (öğrenme kapalıyken
- * pasif) ve "Yolları görüntüle" (Kalite · ters yön · yol yok · bisiklet).
+ * Harita ayarları → "Yollarım" (MAP.md 9.8.1, 9.5; S26): "Yol kalitesi öğrenme" ana anahtarı (varsayılan kapalı), ses tuşu anahtarı (S42: her zaman
+ * etkin; öğrenme kapalıyken yalnız ters yön önerisini Ses+ onaylar) ve "Yolları görüntüle" (Kalite · ters yön · yol yok · bisiklet).
  */
 @Composable
 fun RoadsSettingsSection(lang: Lang, onOpen: () -> Unit) {
@@ -149,8 +149,9 @@ fun RoadsSettingsSection(lang: Lang, onOpen: () -> Unit) {
             subtitle = RoadsText.learningSwitchSub(lang), icon = WeemIcons.Route, tag = "road-learning",
         )
         SwitchRow(
-            RoadsText.volumeKeys(lang), settings.roadLearning && settings.volumeKeys, { ctx.safely { MapSettingsRepo.update(ctx) { it.copy(volumeKeys = !it.volumeKeys) } } },
-            subtitle = RoadsText.volumeKeysSub(lang), icon = WeemIcons.VolumeUp, enabled = settings.roadLearning,
+            // S42: yol öğrenme kapalıyken de geçerli (ters yön önerisini Ses+ onaylar).
+            RoadsText.volumeKeys(lang), settings.volumeKeys, { ctx.safely { MapSettingsRepo.update(ctx) { it.copy(volumeKeys = !it.volumeKeys) } } },
+            subtitle = RoadsText.volumeKeysSub(lang), icon = WeemIcons.VolumeUp,
         )
         ListRow(RoadsText.viewRoads(lang), Modifier.testTag("open-roads"), subtitle = RoadsText.viewRoadsSub(lang), icon = WeemIcons.Map, chevron = true, onClick = onOpen)
     }

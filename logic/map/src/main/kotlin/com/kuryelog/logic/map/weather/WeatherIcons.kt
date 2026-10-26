@@ -47,6 +47,22 @@ object WeatherIcons {
         }
     }
 
+    /** S42 simge: [kind] ile aynı karar sırası; bulutlu WMO 2 parçalı (gündüz/gece), yağmurda 51–57 çisenti. */
+    fun glyph(h: WeatherHour): WeatherGlyph = when (kind(h)) {
+        WeatherKind.WIND -> WeatherGlyph.WIND
+        WeatherKind.THUNDER -> WeatherGlyph.THUNDER
+        WeatherKind.SNOW -> WeatherGlyph.SNOW
+        WeatherKind.RAIN -> if (h.code in 51..57) WeatherGlyph.DRIZZLE else WeatherGlyph.RAIN
+        WeatherKind.FOG -> WeatherGlyph.FOG
+        WeatherKind.CLOUD -> when {
+            h.code != 2 -> WeatherGlyph.CLOUD
+            h.isDay == false -> WeatherGlyph.PARTLY_NIGHT
+            else -> WeatherGlyph.PARTLY_DAY
+        }
+        WeatherKind.NIGHT -> WeatherGlyph.MOON
+        WeatherKind.SUN -> WeatherGlyph.SUN
+    }
+
     /** Yuvarlağın 3. satırı: yağış ihtimali ≥ %10 ise damla + `%`, değilse rüzgâr; ikisi de yoksa null. */
     fun compactExtra(h: WeatherHour): CompactExtra? {
         val rain = h.rainChance

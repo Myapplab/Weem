@@ -147,6 +147,28 @@ class ScreenshotTour {
         shot("03_siparisler_gece_az")
     }
 
+    // ---------- Hava simgeleri (S42) ----------
+
+    /** Bütün simgeler: hap (28 dp, durağan), saat karosu (~32 dp) ve ayrıntı (52 dp) boyunda, iki temada; zemin hap ve karo rengi. */
+    @Test @Config(qualifiers = "w392dp-h900dp-port-xhdpi")
+    fun weatherGlyphs() {
+        compose.setContent {
+            androidx.compose.foundation.layout.Row {
+                for (dark in listOf(false, true)) WeemTheme(dark) {
+                    val p = com.kuryelog.app.ui.palette()
+                    androidx.compose.foundation.layout.Column(Modifier.background(Color(p.surface)).padding(6.dp)) {
+                        for (g in com.kuryelog.logic.map.weather.WeatherGlyph.entries) androidx.compose.foundation.layout.Row(Modifier.padding(2.dp)) {
+                            WeatherGlyphIcon(g, 28.dp, animate = false)
+                            Box(Modifier.padding(start = 6.dp).background(Color(p.raised)).padding(4.dp)) { WeatherGlyphIcon(g, 32.dp, animate = false) }
+                            Box(Modifier.padding(start = 6.dp)) { WeatherGlyphIcon(g, 52.dp, animate = false) }
+                        }
+                    }
+                }
+            }
+        }
+        shot("30_hava_simgeleri")
+    }
+
     // ---------- Harita ----------
 
     private fun day(phase: OrderPhase): DayView {

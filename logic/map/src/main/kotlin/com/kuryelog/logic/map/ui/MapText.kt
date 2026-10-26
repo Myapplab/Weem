@@ -68,6 +68,7 @@ enum class MapText(override val tr: String, override val az: String) : Bilingual
     SETUP_PREPARING("Bakü haritası hazırlanıyor…", "Bakı xəritəsi hazırlanır…"),
     SETUP_TEXT("Rota, yokuş ve batarya tahmini için Bakü yolları bir kez indirilir.", "Marşrut, yoxuş və batareya hesabı üçün Bakı yolları bir dəfə yüklənir."),
     SETUP_TITLE("Bakü yol haritası", "Bakı yol xəritəsi"),
+    SHOW_PANELS("Panelleri göster", "Panelləri göstər"),
     STATS("İstatistik", "Statistika"),
     YES("var", "var");
 }

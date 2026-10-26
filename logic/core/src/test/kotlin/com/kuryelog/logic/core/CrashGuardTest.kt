@@ -40,13 +40,12 @@ class CrashGuardTest {
         // Kart düğmeleri de korumalı.
         assertEquals(3, Regex("""\{ ctx\.safely \{""").findAll(guard).count())
         assertTrue(RepoSource.text(app + "MainActivity.kt").contains("safely(\"start\") { Store.ensureManualMode(this)"))
-        // İçe aktarma iş parçacığı: bellek hatası da yakalanır (RS 16 Eki), bayrak her durumda ana iş parçacığında iner.
-        val import = RepoSource.text(core + "LogImport.kt")
-        assertTrue(import.contains("} catch (e: Throwable) {"))
-        assertTrue(import.contains("main.post { Store.importing = false; done(outcome) }"))
-        // RS `safely("import") { OrderTracker.reloadImportedStats(this) }`: the orders' reload after an import is guarded too.
-        assertTrue(import.contains("afterImport?.let { hook -> Store.guarded(app, \"import\") { hook(app) } }"))
-        assertTrue(RepoSource.text(app + "RecordsScreen.kt").contains("if (uri != null) ctx.safely(\"import\") {"))
+        // Geri yükleme iş parçacığı (S42'den beri tek içe aktarma yolu: şifreli yedek): bellek hatası da yakalanır (RS 16 Eki), bayrak her durumda
+        // ana iş parçacığında iner; siparişlerin yeniden kurulması da korumalı (RS `safely("import") { OrderTracker.reloadImportedStats(this) }`).
+        val restore = RepoSource.text(app + "EncryptedBackups.kt")
+        assertTrue(restore.contains("} catch (e: Throwable) { runCatching { Store.failure(app, \"encrypted_restore\", e) }"))
+        assertTrue(restore.contains("main.post {\n                Store.importing = false"))
+        assertTrue(restore.contains("RestoreHook.afterRestore?.let { hook -> Store.guarded(app, \"encrypted_restore\") { hook(app) } }"))
     }
 
     @Test fun gpsServiceStartFixAndStopAreGuarded() {

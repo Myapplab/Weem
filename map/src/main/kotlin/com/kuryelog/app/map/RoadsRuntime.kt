@@ -60,7 +60,8 @@ data class PressedRoadInfo(val rateSubtitle: String, val badRatioTitle: String, 
 
 /**
  * Yol kalitesi öğrenmenin (Y12) Android bağı (MAP.md 9.12 `RoadsRuntime`): [book] (`RoadBook`), kalite kartı [prompt], ses tuşları [onKeyEvent].
- * **S26:** `MapSettings.roadLearning` kapalıyken (varsayılan) öğrenme kapsamı açılmaz, ters yön sorusu çıkmaz, ses tuşları yakalanmaz; elle girilmiş ve
+ * **S26:** `MapSettings.roadLearning` kapalıyken (varsayılan) öğrenme kapsamı açılmaz, ters yön sorusu çıkmaz, ses tuşları yakalanmaz (S42: ters yön
+ * önerisini Ses+ yine onaylar, [VolumeDispatch.captures]); elle girilmiş ve
  * önceden öğrenilmiş yol bilgisi rotaya girmeye devam eder ([book] her zaman açık). Kapsam: vardiya açık + anahtar açık → `startDay("yolgo-<başlangıç ms>")`.
  * Bildirim kullanılmaz: geri bildirim uygulama içi şerit ([toast]) ve titreşim.
  */
@@ -96,8 +97,10 @@ class RoadsRuntime internal constructor(
     private val due = Runnable { volume.due() }
     private var downHeld = false
     private var downLongFired = false
+    // Yakalanan Ses+ basışının tekrarları ve bırakışı da tüketilir (sisteme yarım basış gitmez).
+    private var upHeld = false
     private val hold = Runnable {
-        if (downHeld && capture()) {
+        if (downHeld && capture(up = false)) {
             downLongFired = true
             volume.onDownHold()
         }
@@ -149,26 +152,35 @@ class RoadsRuntime internal constructor(
         }
     }
 
-    /** Ses tuşu yakalama koşulu (MAP.md 9.5.3, S26): anahtar + ses tuşu ayarı + Harita önde. */
-    fun capture(): Boolean = settings.value.let { it.roadLearning && it.volumeKeys } && mapInFront
+    /** Ses tuşu yakalama koşulu (MAP.md 9.5.3; S26, S42): [VolumeDispatch.captures]. */
+    private fun capture(up: Boolean): Boolean = settings.value.let { VolumeDispatch.captures(it.volumeKeys, mapInFront, it.roadLearning, up, env.suggestion()) }
 
     /**
-     * `MainActivity.onKeyDown/onKeyUp` (MAP.md 9.5.1): yakalama açıkken ses tuşu olayları (basış, bırakış, tekrar) tüketilir. Ses+ basışta; Ses− kısa
-     * bırakışta, 1 sn basılı tutulursa uzun basış.
+     * `MainActivity.onKeyDown/onKeyUp` (MAP.md 9.5.1): yakalama açıkken ses tuşu olayları (basış, bırakış, tekrar) tüketilir. Ses+ basışta (S42: yol
+     * öğrenme kapalıyken yalnız ters yön önerisini hemen onaylar); Ses− kısa bırakışta, 1 sn basılı tutulursa uzun basış.
      */
     fun onKeyEvent(e: KeyEvent): Boolean {
         if (e.keyCode != KeyEvent.KEYCODE_VOLUME_UP && e.keyCode != KeyEvent.KEYCODE_VOLUME_DOWN) return false
-        if (!capture()) {
+        if (e.keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
+            if (e.action == KeyEvent.ACTION_DOWN && e.repeatCount == 0) {
+                upHeld = capture(up = true)
+                if (!upHeld) return false
+                if (settings.value.roadLearning) {
+                    volume.onKey(up = true)
+                    armDue()
+                } else {
+                    volume.approveSuggestion()
+                }
+                return true
+            }
+            val held = upHeld
+            if (e.action == KeyEvent.ACTION_UP) upHeld = false
+            return held
+        }
+        if (!capture(up = false)) {
             downHeld = false
             main.removeCallbacks(hold)
             return false
-        }
-        if (e.keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
-            if (e.action == KeyEvent.ACTION_DOWN && e.repeatCount == 0) {
-                volume.onKey(up = true)
-                armDue()
-            }
-            return true
         }
         when (e.action) {
             KeyEvent.ACTION_DOWN -> if (e.repeatCount == 0) {

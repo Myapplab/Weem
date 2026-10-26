@@ -2,6 +2,12 @@
 
 En yeni en üstte; **en çok 5 bölüm**, bölüm başına en çok 6 satır (başlık + Yapılan · Doğrulama · Açık). Yeni bölüm eklenince en alttaki silinir (eski bölümler git'te). Okurken yalnız en üst bölüm.
 
+## 2026-10-26 — S42: telefon geri bildirimi 4 + SORU-S39-1 madde 1–3 (Claude Opus; dal `ccr-cefc95af-uz12sl`)
+- Yapılan: harita iki parmakla döner; dokunuş/elle hareket "yalnız harita" (S37 tersine; `MapTab` `mapOnly`, `show-panels`), takibe dönüş hareket bitince; Ses+ ters yön önerisini öğrenme kapalıyken onaylar (`VolumeDispatch.captures`/`approveSuggestion`); yeni hava simgeleri (`WeatherGlyph`, `WeatherGlyphs.kt`); gölge mod (eşitlik testi test kaynağında), ZIP/YolGo içe aktarma (`RestoreHook`), OSM raster silindi; simge üreticisi yalnız kullanılanı yazar.
+- Belgeler: `OPTIMIZASYON.md` 5 (A10.7 öncesi 16 madde, "Karar" sütunu kullanıcıda) ve 6 (Google anahtarı); plan Bölüm 8 S42.
+- Doğrulama: `tools/test.sh logic app map lint:app lint:map lint:orders lint:core` yeşil (1.599 + logic:map 690); hava simgeleri Robolectric çizimiyle bakıldı. Telefonda denenmedi.
+- Açık: SORU-S39-1 madde 4–11, SORU-S39-2, `OPTIMIZASYON.md` 5 madde 1/10/11 kararları; Çarşamba A10.7.
+
 ## 2026-10-25 — S41: repo düzeni ve usage tasarrufu (Claude Opus; PR #24 CI yeşil, `main` `5476f9a`)
 - Yapılan: kanca `LC_ALL=C.UTF-8` (logic/ ısıtması her oturum `InvalidPathException`'la kırılıyordu) ve ~1,8 KB çıktı; `.claude/settings.json` env; `tools/test.sh` (özet + başarısız testler, güncel sayılıp koşmayanlar, daemon/429 yeniden deneme); `docs/KOD_HARITASI.md`; logic testleri kaynak taramasının okuduğu Android/tools dosyalarını girdi sayar.
 - Belgeler: "Şu an" 4 satır, Aşama 0–9 özet (ayrıntı `bc790c5`), AI_HANDOFF en çok 5 bölüm, AGENTS.md tek yerde kısa belge kuralı; `tools/test-translate/` ve `.pyc` silindi.
@@ -29,9 +35,3 @@ En yeni en üstte; **en çok 5 bölüm**, bölüm başına en çok 6 satır (ba�
 - CI notu: `PhoneBridgeTest.receiverDayReachesTheProvider` yarışı (Default'ta geç abonelik) CI'da iki kez kırmızıydı → `UNDISPATCHED` abonelik + zaman aşımlı bekleme.
 - APK `weem-build-10` (57.805.586 bayt) hazır; Maps anahtarı Weem'in beş adında da boş (günlük `Google Maps anahtarı yok`): kullanıcı Weem → Settings → Secrets and variables → Actions'a `GOOGLE_MAPS_API_KEY` eklemeli (ya da kuruluş gizli değişkenini Weem'e açmalı), sonra APK yeniden.
 - Sıradaki: kullanıcı `weem-build-10`'u telefonda dener (pusula, harita dönüşü, çizgiler, pil, Google Maps); sonra A10.5 (K) / A10.6.
-
-## 2026-10-23 — A10.4j bitti: S37 telefon geri bildirimi (Claude Opus; dal `ccr-6f346ba4-mrxlzj`)
-- Yapılan: harita araması görünür (`MapScreenLayers`), yalnız-harita kipi kalktı, tek satır `ShiftCard(floating)`, hava listesi `WSheet`; ayarlar `MoreScreens.kt` (`RoadInfoScreen`, `DailyToolsScreen`), `MapSettingsScreen(onHome)`, dataset Sipariş ayarlarında, Daha fazla `Segmented`; scooter `Scooter.pair` (canlı), `ScooterLinkRules.openAction`/`shiftEnd(owned, active)`, `ScooterPanel.badge`, konum FGS reddinde bağlantı türüne düşer; `AllExport` + `RecordExport.exportEverything`, Kayıtlar → Scooter kayıtları; `MapBaseSection` anahtarsızda Google pasif.
-- Doğrulama: `-p logic test` 2.149/0; `:app` 114/114, `:map` 9/9; 3 modülde lint 0 hata; telefonda denenmedi.
-- Açık kalan: Google Maps için kullanıcı GitHub'a `GOOGLE_MAPS_API_KEY` ekleyip APK'yı yeniden derletmeli; vardiya açıkken eşleştirilen scooter kendiliğinden kayda geçmez (rozete dokununca geçer).
-- Sıradaki: APK (kullanıcı istedi) → A10.5 (K) liste → A10.6 sadeleştirme (kullanıcı bugün/yarın istiyor; aday liste ve tahmin sohbette).
