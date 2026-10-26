@@ -2,7 +2,7 @@
 
 En yeni en üstte; **en çok 5 bölüm**, bölüm başına en çok 6 satır (başlık + Yapılan · Doğrulama · Açık). Yeni bölüm eklenince en alttaki silinir (eski bölümler git'te). Okurken yalnız en üst bölüm.
 
-## 2026-10-26 — S42: telefon geri bildirimi 4 + SORU-S39-1 madde 1–3 (Claude Opus; dal `ccr-cefc95af-uz12sl`)
+## 2026-10-26 — S42: telefon geri bildirimi 4 + SORU-S39-1 madde 1–3 (Claude Opus; PR #25 CI #31 yeşil, `main` `543dcdf`, APK `weem-build-16`)
 - Yapılan: harita iki parmakla döner; dokunuş/elle hareket "yalnız harita" (S37 tersine; `MapTab` `mapOnly`, `show-panels`), takibe dönüş hareket bitince; Ses+ ters yön önerisini öğrenme kapalıyken onaylar (`VolumeDispatch.captures`/`approveSuggestion`); yeni hava simgeleri (`WeatherGlyph`, `WeatherGlyphs.kt`); gölge mod (eşitlik testi test kaynağında), ZIP/YolGo içe aktarma (`RestoreHook`), OSM raster silindi; simge üreticisi yalnız kullanılanı yazar.
 - Belgeler: `OPTIMIZASYON.md` 5 (A10.7 öncesi 16 madde, "Karar" sütunu kullanıcıda) ve 6 (Google anahtarı); plan Bölüm 8 S42.
 - Doğrulama: `tools/test.sh logic app map lint:app lint:map lint:orders lint:core` yeşil (1.599 + logic:map 690); hava simgeleri Robolectric çizimiyle bakıldı. Telefonda denenmedi.
