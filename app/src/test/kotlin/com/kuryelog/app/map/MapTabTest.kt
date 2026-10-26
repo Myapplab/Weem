@@ -8,6 +8,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import com.kuryelog.app.WeemTheme
 import com.kuryelog.logic.core.Lang
@@ -18,6 +19,7 @@ import com.kuryelog.logic.map.nav.NavState
 import com.kuryelog.logic.map.nav.Stop
 import com.kuryelog.logic.map.route.Plan
 import com.kuryelog.logic.map.route.RideMode
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -61,5 +63,19 @@ class MapTabTest {
         compose.onAllNodes(hasTestTag("open-settings")).assertCountEquals(0)
         compose.onNodeWithTag("map-search").assertExists()
         compose.onAllNodes(hasText("Kayıt sürüyor")).assertCountEquals(0) // durum Yollarım → Sürüş kayıtları'nda
+    }
+
+    /** S42 (MAP.md 6.3 (2)): yalnız harita kipinde arama, göstergeler, gün kartı ve rota düğmesi yok; konum düğmesi ve bildirim şeridi kalır. */
+    @Test
+    fun yalnizHaritaKipindePanellerGizliPanelleriGosterGeriGetirir() {
+        var shown = 0
+        compose.setContent {
+            WeemTheme(false) { MapTab(MapTabState(DayView(DayState(), null), nowMs = now, mapOnly = true), Lang.TR, actions = MapTabActions(onShowPanels = { shown++ })) }
+        }
+        for (tag in listOf("map-search", "route-fab", "vertical-metrics", "shift-home", "shift-end")) compose.onAllNodes(hasTestTag(tag)).assertCountEquals(0)
+        compose.onNodeWithTag("smart-locate").assertExists()
+        compose.onNodeWithTag("toast-banner").assertExists()
+        compose.onNodeWithTag("show-panels").performClick()
+        assertEquals(1, shown)
     }
 }

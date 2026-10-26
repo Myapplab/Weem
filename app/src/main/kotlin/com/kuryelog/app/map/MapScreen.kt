@@ -273,6 +273,10 @@ private fun LiveMap(
     // Takip elle dokunmayla mı bırakıldı (yeni rotada sığdırma da bırakır; o 5 sn sonra kendisi döner).
     var freeByGesture by remember { mutableStateOf(false) }
     var lastGestureMs by remember { mutableLongStateOf(0L) }
+    // S42: yalnız harita (haritaya dokunuş açar/kapatır, elle hareket açar; konuma dönüşte paneller geri gelir).
+    var mapOnly by remember { mutableStateOf(false) }
+    // Açık gün kartının dışına basış kartı katlar; o basışın harita dokunuşu yalnız haritayı açmaz.
+    var cardCollapsedAt by remember { mutableLongStateOf(0L) }
     var viewport by remember { mutableStateOf(IntSize.Zero) }
     val focusTracker = remember { ArrivalFocusTracker() }
     var focusOn by remember { mutableStateOf(false) }
@@ -337,12 +341,13 @@ private fun LiveMap(
     fun recenter(resetZoom: Boolean = true, bearingNow: Double? = null) {
         follow = true
         freeByGesture = false
+        mapOnly = false
         if (resetZoom) { autoZoom = true; navZoom = spot.zoom }
         val p = puckState.value ?: return
         command(p.point, if (resetZoom && !navNow.hasRoute) MapCamera.STANDARD_ZOOM else null, bearingNow ?: if (headingUp) p.heading else 0.0, force = true)
     }
     // Hata ya da bekleyen adres gelince rota paneli kendiliğinden açılır (YolGo `RouteFab`).
-    LaunchedEffect(nav.error, nav.pending) { if (nav.error != null || nav.pending != null) panelOpen = true }
+    LaunchedEffect(nav.error, nav.pending) { if (nav.error != null || nav.pending != null) { panelOpen = true; mapOnly = false } }
     // Kalan yol: rota üstündeyse ölçüm, değilse park noktasına kuş uçuşu (yaklaşma zoom'u); varış odağı yalnız ölçümle (MAP.md 7.10).
     val measured = progress?.takeIf { it.onRoute }?.remainingM
     LaunchedEffect(measured, nav.hasRoute) { focusOn = focusTracker.update(nav.hasRoute, false, measured) }
@@ -360,12 +365,14 @@ private fun LiveMap(
         } ?: return@LaunchedEffect
         follow = false
         freeByGesture = false
+        mapOnly = false
         command(GeoPoint(cam.lat, cam.lon), cam.zoom, 0.0, force = true)
         val fittedAt = System.currentTimeMillis()
         delay(RouteLayer.REFOLLOW_AFTER_FIT_MS)
         if (!follow && lastGestureMs < fittedAt) recenter()
     }
-    // Elle dokunmadan sonra: rota açıkken 10 sn → takip + otomatik zoom; rota yokken hareketteyken 8 sn → takip (ölçek korunur).
+    // Elle dokunmadan sonra: rota açıkken 10 sn → takip + otomatik zoom; rota yokken hareketteyken 8 sn → takip (ölçek korunur). S42: süre son elle
+    // hareketin bittiği andan (kamera durunca) sayılır; önceden dokunuşun başladığı andan sayılıyordu (MAP.md 7.10 "son dokunuştan").
     LaunchedEffect(follow, freeByGesture) {
         if (follow || !freeByGesture) return@LaunchedEffect
         while (true) {
@@ -453,7 +460,8 @@ private fun LiveMap(
     }
     val markers = remember(routeMarkers, poiMarkers) { routeMarkers + poiMarkers }
     val baseLines = remember(surfaceLines, bikeLines, roadLines) { surfaceLines + bikeLines + roadLines }
-    val model = MapSurfaceModel(base = base, dark = dark, lines = lines, baseLines = baseLines, markers = markers)
+    // S42 (kullanıcı): harita iki parmakla döndürülür (elle hareket: takip durur; konum düğmesi yönü geri getirir).
+    val model = MapSurfaceModel(base = base, dark = dark, lines = lines, baseLines = baseLines, markers = markers, rotateGestures = true)
     // Ok yalnız rota açık ve hareketteyken (YolGo); dönüşü gerçek zamanlı yön. Dururken nokta + yön konisi (pusula).
     val hasRoute = rememberUpdatedState(nav.hasRoute)
     val surfacePuck = remember(puckState) {
@@ -463,12 +471,16 @@ private fun LiveMap(
     }
     val live = remember(surfacePuck) { MapLive(surfacePuck, cameraState) }
     val events = MapSurfaceEvents(
-        // S37: dokunuş panelleri gizlemez (kullanıcı: "tıklayınca ekran gidiyor").
-        onTap = {},
+        // S42 (kullanıcı): dokunuş yalnız haritayı açar/kapatır (S37'de kaldırılmıştı); elle kaydırma, yakınlaştırma ve döndürme de paneller gizler.
+        onTap = { if (!focusOn && SystemClock.uptimeMillis() - cardCollapsedAt > TAP_AFTER_COLLAPSE_MS) mapOnly = !mapOnly },
         onLongPress = { pressed = it },
-        onGesture = { follow = false; autoZoom = false; freeByGesture = true; lastGestureMs = System.currentTimeMillis() },
+        onGesture = {
+            follow = false; autoZoom = false; freeByGesture = true; lastGestureMs = System.currentTimeMillis()
+            if (!focusOn) mapOnly = true
+        },
         onCameraIdle = { c, z, _ ->
             spot.center = c; spot.zoom = z
+            if (freeByGesture && !follow) lastGestureMs = System.currentTimeMillis()
             // Takipte kamera her karede durur: simge seçimi her karede değil, belirgin değişimde (S38).
             val pc = poiCenter
             val wDp = with(density) { viewport.width.toDp().value.toDouble() }
@@ -485,7 +497,7 @@ private fun LiveMap(
         state = MapTabState(
             day = day, nav = nav, cameraMode = mode, weatherStrip = weatherStrip, nowMs = nowMs, arrivalFocus = focusOn,
             weather = WeatherView(weatherState.report, weatherState.failed, weatherState.busy),
-            routeOpen = panelOpen && nav.hasPanelInfo(),
+            routeOpen = panelOpen && nav.hasPanelInfo(), mapOnly = mapOnly,
         ),
         lang = lang,
         mapSurface = {
@@ -517,14 +529,18 @@ private fun LiveMap(
             onRouteFab = { panelOpen = !panelOpen },
             onSearch = { searching = true },
             onWeatherRefresh = { weather.refresh(force = true) },
+            onShowPanels = { mapOnly = false },
+            onCardCollapse = { cardCollapsedAt = SystemClock.uptimeMillis() },
         ),
         toast = { NavToastBanner(toast, dark); DayToastBanner(banner, dark) },
         routePanel = { if (panelOpen && nav.hasPanelInfo()) RoutePanel(nav, lang, dark, panelActions) },
         // Y12 kartları (MAP.md 9.4.4): varış odağında yalnız ters yön kartı; yalnız-harita kipinde hiçbiri (MapTab çizmez).
         wrongWay = {
             Column(Modifier.fillMaxWidth()) {
-                if (!focusOn) qualityAsk?.let { RoadPromptCard(it, lang) }
-                WrongWayCard(wwView, lang, onAnswer = { roads.book.answer(it) }, onReport = { roads.book.reportProblem() }, modifier = Modifier.padding(horizontal = 8.dp))
+                if (!focusOn && !mapOnly) qualityAsk?.let { RoadPromptCard(it, lang) }
+                // Yalnız harita kipinde yalnız ters yön sorusu (20 sn), canlı şerit yok.
+                val ww = if (mapOnly) wwView.copy(liveName = null) else wwView
+                WrongWayCard(ww, lang, onAnswer = { roads.book.answer(it) }, onReport = { roads.book.reportProblem() }, modifier = Modifier.padding(horizontal = 8.dp))
             }
         },
         // Sol göstergeler (A6.7); vardiya kapalıyken ya da yarıda kalmışken başlat/bitir kartı üstte.
@@ -679,6 +695,9 @@ private const val MOVING_KMH = 3.0
 private const val ZOOM_EASE = 0.15
 private const val FOCUS_EASE = 0.25
 private const val EASE_STEP_MS = 80L
+
+/** S42: gün kartını katlayan basıştan sonra bu süre içindeki harita dokunuşu yalnız haritayı açıp kapatmaz (MapLibre tek dokunuşu bırakışta onaylar). */
+private const val TAP_AFTER_COLLAPSE_MS = 1_000L
 
 /** Kameranın son durduğu yer (her karede değişir; durum değil, okuyan yeniden oluşmaz). */
 private class CameraSpot {
