@@ -50,9 +50,9 @@ Satırlar ana kod + test. "Pil" sütunu vardiya boyunca sürekli çalışan iş 
 
 | # | Özellik | Kod | Pil / APK | Öneri | Not |
 |---|---|---|---|---|---|
-| 1 | **Gölge mod araçları** (eski uygulamalarla karşılaştırma: `logic/orders/src/shadow`, `tools/shadow-fixture`, `.dev`'deki anahtar) | ~840 + test | yok | **kaldır** | Eski uygulamalar telefonlardan silindi (A10.4); S28 anahtarı `.dev`'de tutmuştu |
-| 2 | **Eski kayıtları içe aktarma** (YolGo günlüğü `JournalImport`, Rawstats `LogImport`) | ~320 + test | yok | **kaldır** | S31: geçiş sıfırdan, eski kayıt taşınmaz |
-| 3 | **OSM raster altlık seçeneği** | ~60 | ağ (karo) | **kaldır** | Gömülü vektör altlık ağsız; OSM karo sunucusu politikası da kısıtlı |
+| 1 | **Gölge mod araçları** (eski uygulamalarla karşılaştırma: `logic/orders/src/shadow`, `tools/shadow-fixture`, `.dev`'deki anahtar) | ~840 + test | yok | **kaldır** → S42 silindi | Eski uygulamalar telefonlardan silindi (A10.4); S28 anahtarı `.dev`'de tutmuştu |
+| 2 | **Eski kayıtları içe aktarma** (YolGo günlüğü `JournalImport`, Rawstats `LogImport`) | ~320 + test | yok | **kaldır** → S42 silindi | S31: geçiş sıfırdan, eski kayıt taşınmaz |
+| 3 | **OSM raster altlık seçeneği** | ~60 | ağ (karo) | **kaldır** → S42 silindi | Gömülü vektör altlık ağsız; OSM karo sunucusu politikası da kısıtlı |
 | 4 | **Uygulama içinden harita indirme** ("İndir / güncelle": hazır veri, Overpass) | ~260 (+ indirme ekranı) | ağ | seçmeli | Graf her APK'yla gelir; indirme yalnız APK'sız güncelleme için. Kalkarsa harita = APK sürümü |
 | 5 | **Y13 yüzey ölçümü + Y14 yol kalibrasyonu** | ~4.120 + 1.540 test | **yüksek**: vardiya boyunca ivmeölçer 100 Hz + jiroskop/yönelim 50 Hz + GPS 2 Hz (saniyede ~200 sensör olayı) | kapat ya da varsayılan kapalı | S32/S33'te istendi; en büyük sürekli CPU işi. Toplu teslim (batching) bugünkü algoritmayı bozar (örnek zamanı son GPS'le eşleniyor), yeniden yazım ister |
 | 6 | **Uzaktan kullanım** (N2: ekran paylaşımı + uzaktan dokunuş) | ~2.660 + 1.225 test | yalnız kullanırken | kullanmıyorsan kaldır | İkinci erişilebilirlik servisi ve ekran kaydı izni de kalkar |
