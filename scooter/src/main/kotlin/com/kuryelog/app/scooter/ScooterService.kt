@@ -125,10 +125,12 @@ class ScooterService : Service() {
         } catch (e: RuntimeException) {
             // S37: vardiya kaydı arka planda başlayabilir (otomatik vardiya); "her zaman" konum izni yoksa konum türü reddedilir. Uygulama çökmesin:
             // bağlantı türüyle sürer, GPS uygulama açıkken kaydedilir (yükseltmedeki gibi).
-            if (live) throw e
-            Store.failure(this, "scooter_location_fgs", e)
+            // Canlı panel zaten yalnız bağlantı türünde; o da reddedilirse (ör. Android 14 ön koşulu) servis çökmeden durur (refuseStart gibi).
+            Store.failure(this, if (live) "scooter_live_fgs" else "scooter_location_fgs", e)
             fgsType = ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
-            startForeground(NotificationIds.SCOOTER_FGS, notification(ScooterUiText.N_STARTING.get(lang), false), fgsType)
+            val fallback = !live && runCatching { startForeground(NotificationIds.SCOOTER_FGS, notification(ScooterUiText.N_STARTING.get(lang), false), fgsType) }
+                .onFailure { Store.failure(this, "scooter_fgs", it) }.isSuccess
+            if (!fallback) { stopSelf(); return START_NOT_STICKY }
             noBackgroundLocation = true
         }
         // Both flags before the worker runs, so the toolbar never shows a new recording as a live panel.
