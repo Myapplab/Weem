@@ -98,13 +98,13 @@ jobs:
               gh release create "$GITHUB_REF_NAME" "$apk" "$apk.sha256" --title "WEEM $ver" --generate-notes
             fi
           else
-            # Elle: asıl WEEM (release APK); istenirse .dev de.
-            apk="weem-${ver}.apk"
+            # Elle: asıl WEEM (release APK); istenirse .dev de. Dosya adında yapı numarası: telefonda eski indirmeyle karışmaz (S43).
+            apk="weem-${ver}-build-${GITHUB_RUN_NUMBER}.apk"
             cp app/build/outputs/apk/release/app-release.apk "$apk"
             sha256sum "$apk" > "$apk.sha256"
             files=("$apk" "$apk.sha256")
             if [ "$WANT_DEV_APK" = true ]; then
-              dev="weem-${ver}-dev.apk"
+              dev="weem-${ver}-build-${GITHUB_RUN_NUMBER}-dev.apk"
               cp app/build/outputs/apk/debug/app-debug.apk "$dev"
               files+=("$dev")
             fi
