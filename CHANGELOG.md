@@ -1,6 +1,7 @@
 # Değişiklik günlüğü
 
 ## Unreleased
+- Kararlılık (S43; cihazda denenmedi): 2 telefon bildirimi artık kapanabiliyor (uygulama arka planda yeniden başlatılınca kalıyordu); uzaktan kullanımda ve scooter canlı panelinde nadir çökme giderildi; Wi-Fi'de telefonlar birbirini kaybedince yeniden bulur; hırsızlık PIN'i her durumda sorulur; harita kaydırıldıktan sonra yer simgeleri seçilirken takılma azalır. APK dosyasının adında yapı numarası var (`weem-1.0.0-build-N.apk`).
 - Telefon geri bildirimi 4 (S42; cihazda denenmedi): harita iki parmakla döndürülür; haritaya dokununca ya da elle kaydırınca/yakınlaştırınca paneller gizlenir ("Panelleri göster" ya da konum düğmesiyle geri gelir), elle hareketten sonra konuma dönüş süresi hareket bitince sayılır; ters yön önerisini Ses+ "yol kalitesi öğrenme" kapalıyken de onaylar; yeni hava simgeleri (parçalı bulutlu, çisenti, yağmur, kar, şimşek, sis, rüzgâr, hilal ayrı ayrı). Kaldırılanlar: gölge mod, eski kayıtları (.zip) ve YolGo kayıtlarını içe aktarma (geri yükleme şifreli yedekten sürer), OpenStreetMap harita seçeneği (seçiliyse Vektör'e geçer).
 - Sadeleştirme (S40; cihazda denenmedi): Scooter sekmesinde ayarlar ve ZIP düğmeleri yok (ayarlar Daha fazla'da, scooter kayıtlarının ZIP'i Kayıtlar'da); vardiya kartı her yerde tek satır, küçük "BAŞLAT" düğmesiyle.
 - Düzeltme (cihazda denenmedi): APK'daki hazır yol verisi artık gerçekten kurulur; yeni APK'da harita kartı internetten "Yol məlumatı 1/91" indirmeye başlamaz (Android derlemesi dosya adını değiştiriyordu, uygulama bulamıyordu).

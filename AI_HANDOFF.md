@@ -2,6 +2,11 @@
 
 En yeni en üstte; **en çok 5 bölüm**, bölüm başına en çok 6 satır (başlık + Yapılan · Doğrulama · Açık). Yeni bölüm eklenince en alttaki silinir (eski bölümler git'te). Okurken yalnız en üst bölüm.
 
+## 2026-10-28 — S43: A10.7 ön denetim (Claude Opus; PR #26, APK `weem-build-17`)
+- Yapılan: `/code-review high` (app, map, scooter, link, capture, orders, core, remote) → 9 düzeltme: `LinkService` `on` bayrağı (STICKY), `StreamNet` kabul çökmesi, `ScooterService` canlı FGS reddi, `LinkRuntime` UDP yeniden açma, `TheftRuntime` PIN tuzsuz, `ScooterShiftLink` 4902, `WatchService.onFailure` guarded, `OrdersHost` rozet 30 sn; `TheftGuard.sirenOn` + test. `MapScreen` poi seçimi `produceState`+Default. `apk.yml` elle: `weem-<sürüm>-build-N.apk`.
+- Doğrulama: `logic:link` yeşil (197); Android derlemesi yerelde Maven Central 429 → yalnız CI. Telefonda denenmedi.
+- Açık: `StreamNet.listen` bind hatası `HostMachine`'e bildirilmiyor; regresyon testleri Android düzeltmeleri için yok (Robolectric servis testi yazılabilir); `weem-build-16` hiç indirilmemişti (indirme sayısı 0), neden bilinmiyor.
+
 ## 2026-10-26 — S42: telefon geri bildirimi 4 + SORU-S39-1 madde 1–3 (Claude Opus; PR #25 CI #31 yeşil, `main` `543dcdf`, APK `weem-build-16`)
 - Yapılan: harita iki parmakla döner; dokunuş/elle hareket "yalnız harita" (S37 tersine; `MapTab` `mapOnly`, `show-panels`), takibe dönüş hareket bitince; Ses+ ters yön önerisini öğrenme kapalıyken onaylar (`VolumeDispatch.captures`/`approveSuggestion`); yeni hava simgeleri (`WeatherGlyph`, `WeatherGlyphs.kt`); gölge mod (eşitlik testi test kaynağında), ZIP/YolGo içe aktarma (`RestoreHook`), OSM raster silindi; simge üreticisi yalnız kullanılanı yazar.
 - Belgeler: `OPTIMIZASYON.md` 5 (A10.7 öncesi 16 madde, "Karar" sütunu kullanıcıda) ve 6 (Google anahtarı); plan Bölüm 8 S42.
@@ -27,11 +32,3 @@ En yeni en üstte; **en çok 5 bölüm**, bölüm başına en çok 6 satır (ba�
 - CI: `build_tiles.sh` APK işinde çalıştı (2 dk); APK 70.989.967 bayt (önceki 57,8 MB → karolar ~13 MB, z0–15). İlk CI kırmızısı `CrashGuardTest` (kabuk metnini birebir arıyordu; yerelde Gradle testi güncel saymıştı → kaynak-metin testlerinde `--rerun-tasks`).
 - Açık kalan: MapLibre `pmtiles://file://` ve `file://` glifleri cihazda doğrulanmadı; sipariş değişiminin 2 telefonda Provider'da da rota açması (zararsız) gözlenecek.
 - Kullanıcı kararları bekliyor: SORU-S39-1 (özellik sadeleştirme), SORU-S39-2 (pil seçenekleri) — `docs/SADELESTIRME.md` 4–5.
-
-## 2026-10-23 — A10.4k bitti: S38 telefon geri bildirimi 2 (Claude Opus; dal `ccr-5395b034-i2z288`; PR #21 CI yeşil, `main` `be6db4f`; APK `weem-build-10`)
-- Yapılan: yüzey kaynak farkı (`MapLibreHolder`/`GoogleHolder`, `baseLines`, `MapLive`, `GeoJson.Builder`); `CompassSensor` + `logic/map` `CompassSmoother`, `PuckAnimator`/`PuckHeading`, `CameraEase`; `MapScreen` takip `snapshotFlow`, `CameraSpot`, `PoiLayerRules.refreshNeeded`/`SELECT_MARGIN`, `RouteLights` + `POI_LIGHT_ROUTE`; `BatteryEstimator.EXTERNAL_HOLD_MS`, `ScooterPanel.batterySub`; `MapStyles.DEFAULT=google` + `googleDefault`/`MapSettingsRepo.preferGoogle`; `apk.yml` anahtar adımı; `NavLocation` 500/1000 ms; hava hapı durağan; `CrashReport` LowMemory/ExcessiveResourceUsage.
-- Doğrulama: `-p logic test` 2.164/0; `:app` 114/114, `:map` 10/10; 4 modülde lint 0 hata; telefonda denenmedi.
-- Açık kalan: pusula ekseni ve gidonda yön telefonda doğrulanmadı; kapanıp açılmanın nedeni cihazda görülmedi (kart çıkarsa metni istenecek); Google anahtarı GitHub'da yoksa APK yine vektörle derlenir (günlük satırı söyler).
-- CI notu: `PhoneBridgeTest.receiverDayReachesTheProvider` yarışı (Default'ta geç abonelik) CI'da iki kez kırmızıydı → `UNDISPATCHED` abonelik + zaman aşımlı bekleme.
-- APK `weem-build-10` (57.805.586 bayt) hazır; Maps anahtarı Weem'in beş adında da boş (günlük `Google Maps anahtarı yok`): kullanıcı Weem → Settings → Secrets and variables → Actions'a `GOOGLE_MAPS_API_KEY` eklemeli (ya da kuruluş gizli değişkenini Weem'e açmalı), sonra APK yeniden.
-- Sıradaki: kullanıcı `weem-build-10`'u telefonda dener (pusula, harita dönüşü, çizgiler, pil, Google Maps); sonra A10.5 (K) / A10.6.
