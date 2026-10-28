@@ -32,6 +32,7 @@ import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -106,9 +107,11 @@ import com.kuryelog.logic.map.ui.RouteLights
 import com.kuryelog.logic.map.ui.SurfaceLayerRules
 import com.kuryelog.logic.map.ui.Toasts
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Harita sekmesi (MAP.md 6.2, 6.3, 6.9): graf yokken vardiya kartı + kurulum kartı (harita yüzeyi yok); graf hazırsa harita yüzeyi (altlık `mapStyle`, tema) + HUD.
@@ -446,16 +449,21 @@ private fun LiveMap(
         }
     }
     // Yer ve ışık işaretleri (MAP.md 5.3): düzeltilmiş yerler + ışık işaretleri, yakınlığa ve görünür kutuya (S38: 1,6 kat payla) göre süzülür.
-    val poiMarkers = remember(poiCenter, poiZoom, viewport, poiRev, lightsRev, data.pois, routeLights, google) {
-        val c = poiCenter ?: return@remember emptyList<MapMarker>()
-        if (viewport == IntSize.Zero) return@remember emptyList<MapMarker>()
+    // A10.7 (OPTIMIZASYON 5 #5): binlerce yer arasından seçim ana iş parçacığında değil; yeni seçim gelene dek önceki işaretler kalır.
+    val poiMarkers by produceState(emptyList<MapMarker>(), poiCenter, poiZoom, viewport, poiRev, lightsRev, data.pois, routeLights, google) {
+        val c = poiCenter
+        if (c == null || viewport == IntSize.Zero) { value = emptyList(); return@produceState }
         val wDp = with(density) { viewport.width.toDp().value.toDouble() }
         val hDp = with(density) { viewport.height.toDp().value.toDouble() }
-        val box = PoiLayerRules.bounds(c.lat, c.lon, wDp, hDp, poiZoom, PoiLayerRules.SELECT_MARGIN)
-        val all = PoiLayerRules.withLights(MapPois.all(ctx), dayRt.lightSpots())
-        val chosen = if (google) PoiLayerRules.selectGoogle(all, c.lat, c.lon, poiZoom, routeLights) else PoiLayerRules.select(all, box, poiZoom, route = routeLights)
-        chosen.mapIndexed { i, p ->
-            p.toMarker(i, onRoute = p.kind == 'l' && routeLights?.near(p.lat, p.lon) == true)
+        val z = poiZoom
+        val lights = routeLights
+        value = withContext(Dispatchers.Default) {
+            val box = PoiLayerRules.bounds(c.lat, c.lon, wDp, hDp, z, PoiLayerRules.SELECT_MARGIN)
+            val all = PoiLayerRules.withLights(MapPois.all(ctx), dayRt.lightSpots())
+            val chosen = if (google) PoiLayerRules.selectGoogle(all, c.lat, c.lon, z, lights) else PoiLayerRules.select(all, box, z, route = lights)
+            chosen.mapIndexed { i, p ->
+                p.toMarker(i, onRoute = p.kind == 'l' && lights?.near(p.lat, p.lon) == true)
+            }
         }
     }
     val markers = remember(routeMarkers, poiMarkers) { routeMarkers + poiMarkers }
