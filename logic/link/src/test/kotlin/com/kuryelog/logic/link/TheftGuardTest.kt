@@ -205,4 +205,17 @@ class TheftGuardTest {
         assertFalse(TheftPin.valid("12a4"))
         assertFalse(TheftPin.matches("258", salt, h))
     }
+
+    @Test fun sirenFullTenMinutesThenThirtySecondsEachMinute() {
+        val since = t0
+        val min = 60_000L
+        assertTrue(TheftGuard.sirenOn(since, since))
+        assertTrue(TheftGuard.sirenOn(since, since + 10 * min - 1))
+        assertTrue(TheftGuard.sirenOn(since, since + 10 * min))
+        assertTrue(TheftGuard.sirenOn(since, since + 10 * min + 29_999))
+        assertFalse(TheftGuard.sirenOn(since, since + 10 * min + 30_000))
+        assertFalse(TheftGuard.sirenOn(since, since + 11 * min - 1))
+        assertTrue(TheftGuard.sirenOn(since, since + 11 * min))
+        assertFalse(TheftGuard.sirenOn(since, since + 25 * min + 45_000))
+    }
 }

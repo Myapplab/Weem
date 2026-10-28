@@ -97,6 +97,8 @@ object ScooterShiftLink : ShiftMachine.Hooks {
             .setContentTitle(title).setContentText(text)
         if (ok) b.setTimeoutAfter(RECEIVING_TIMEOUT_MS)
         nm.notify(NotificationIds.SCOOTER_LINK, b.build())
+        // Aynı kimlik (4902): "koptu" bildirimi artık yok; sonraki droppedNotice(false) bu M23 bildirimini silmesin.
+        droppedShown = false
     }
 
     // ---- A10.4f (S18 b): bağlantı koptu, boşta ----

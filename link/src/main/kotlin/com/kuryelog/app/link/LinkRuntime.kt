@@ -445,6 +445,8 @@ class LinkRuntime(
     }
 
     private fun startTcp() {
+        // TCP ya da UDP yuvası açılamazsa ikisi için tek yeniden deneme (açık olan yeniden açılmaz).
+        var retry = false
         if (tcpServer == null) {
             val server = try {
                 ServerSocket().apply {
@@ -455,7 +457,7 @@ class LinkRuntime(
                 null
             }
             if (server == null) {
-                retryListen(Transport.WIFI)
+                retry = true
             } else {
                 tcpServer = server
                 bg { acceptTcp(server) }
@@ -472,8 +474,9 @@ class LinkRuntime(
                 null
             }
             beaconSocket = udp
-            if (udp != null) bg { receiveBeacons(udp) }
+            if (udp != null) bg { receiveBeacons(udp) } else retry = true
         }
+        if (retry) retryListen(Transport.WIFI)
     }
 
     private fun stopTcp() {
@@ -529,6 +532,14 @@ class LinkRuntime(
             val from = p.address?.hostAddress ?: continue
             if (!LanTargets.onLan(from, net.interfaces())) continue
             feed(LinkEvent.BeaconIn(from, buf.copyOf(p.length), p.length))
+        }
+        // Okuma hatayla bittiyse ölü yuva bırakılmaz: sonraki dinleme yeniden açar (acceptTcp ile aynı).
+        synchronized(lock) {
+            if (beaconSocket === sock) {
+                sock.closeQuietly()
+                beaconSocket = null
+                if (running && wanted[Transport.WIFI] == true) retryListen(Transport.WIFI)
+            }
         }
     }
 

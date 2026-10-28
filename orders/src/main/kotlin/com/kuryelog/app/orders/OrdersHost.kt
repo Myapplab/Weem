@@ -30,6 +30,8 @@ object OrdersHost : CaptureHost {
     /** Every 500 ms; a TextView re-lays out its overlay window on each setText, so an unchanged badge is left as it is. */
     private var badgeLp: WindowManager.LayoutParams? = null
     private var badgeDodging = false
+    /** Rozet penceresi reddedildiyse yeniden deneme zamanı (her 500 ms'de yeni pencere denenmez). */
+    private var badgeRetryAt = 0L
 
     /** RS `maskOverlays`: the badge's place on screen while it is attached. */
     private val badgeRect: () -> Rect? = {
@@ -46,7 +48,7 @@ object OrdersHost : CaptureHost {
         val flow = Orders.flow(service)
         if (shiftOn) {
             flow.tick(now)
-            if (Store.prefs(service).getBoolean(OVERLAY_PREF, true)) { if (badge == null) addBadge(service); updateBadge(service) }
+            if (Store.prefs(service).getBoolean(OVERLAY_PREF, true)) { if (badge == null && now >= badgeRetryAt) addBadge(service, now); updateBadge(service) }
             else removeBadge(service)
             reminders?.update(flow.reminder)
         } else { removeBadge(service); reminders?.update(null) }
@@ -57,7 +59,7 @@ object OrdersHost : CaptureHost {
         OwnOverlays.remove(badgeRect)
     }
 
-    private fun addBadge(s: AccessibilityService) {
+    private fun addBadge(s: AccessibilityService, now: Long) {
         val wm = s.getSystemService(WindowManager::class.java)
         // K35: the badge wraps its text (no names, so no long line that wraps and leaves empty width); no extra font padding.
         val density = s.resources.displayMetrics.density
@@ -75,7 +77,7 @@ object OrdersHost : CaptureHost {
         }
         badgeLp = lp; badgeDodging = false
         runCatching { wm.addView(tv, lp); badge = tv; styleBadge(s) }
-            .onFailure { Store.log(s).lastError = Orders.tl(s, "Rozet açılamadı: ", "Nişan açılmadı: ") + it.message }
+            .onFailure { badgeRetryAt = now + BADGE_RETRY_MS; Store.log(s).lastError = Orders.tl(s, "Rozet açılamadı: ", "Nişan açılmadı: ") + it.message }
     }
     private fun styleBadge(s: AccessibilityService) {
         val b = badge ?: return
@@ -110,11 +112,12 @@ object OrdersHost : CaptureHost {
         if (b.text.toString() != text) b.text = text
     }
     private fun removeBadge(s: AccessibilityService) {
-        badge?.let { runCatching { s.getSystemService(WindowManager::class.java).removeView(it) } }; badge = null; badgeDark = null; badgeLp = null; badgeDodging = false
+        badge?.let { runCatching { s.getSystemService(WindowManager::class.java).removeView(it) } }; badge = null; badgeDark = null; badgeLp = null; badgeDodging = false; badgeRetryAt = 0L
     }
 
     /** Tercihler (ORDERS.md 6.2): rozet açık (varsayılan true) ve yeri piksel. */
     const val OVERLAY_PREF = "overlay"
     const val BX = "bx"
     const val BY = "by"
+    private const val BADGE_RETRY_MS = 30_000L
 }

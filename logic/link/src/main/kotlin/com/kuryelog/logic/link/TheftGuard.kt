@@ -214,6 +214,15 @@ class TheftGuard(private val cfg: Config = Config()) {
     private fun good(f: Fix) = f.accuracyM <= cfg.gpsMaxAccuracyM
 
     companion object {
+        const val SIREN_FULL_MS = 10 * 60_000L
+        const val SIREN_ON_MS = 30_000L
+
+        /** Receiver'da alarm sireni (LINK.md 5.1): ilk 10 dk sürekli, sonra her dakikanın ilk 30 sn'si. */
+        fun sirenOn(alarmSinceMs: Long, now: Long): Boolean {
+            val over = now - alarmSinceMs - SIREN_FULL_MS
+            return over < 0 || over % 60_000L < SIREN_ON_MS
+        }
+
         /** Açık siparişlerden durakta olanlar (aşama = otomatik devreye alma girdisi). */
         fun atStopOf(s: TripStages): Map<String, TripStages.Stage> = s.trips
             .filter { it.active && (it.stage == TripStages.Stage.AT_PICKUP || it.stage == TripStages.Stage.AT_DROPOFF) }

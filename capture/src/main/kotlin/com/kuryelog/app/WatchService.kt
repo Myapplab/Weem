@@ -251,8 +251,10 @@ class WatchService : AccessibilityService() {
                 pace.failed(r.id, at)
                 // K37: an invalid window (code 5) switches OCR to the display screenshot cropped to the window for a while.
                 if (errorCode == OfferCapture.INVALID_WINDOW && !display) invalidWindowAt = at
-                Store.event(this@WatchService, "screenshot_unavailable", CaptureRows.screenshotUnavailable(r.pkg, errorCode, display))
-                Store.log(this@WatchService).lastError = CaptureText.OCR_UNAVAILABLE.get(Store.lang(this@WatchService)).format(errorCode)
+                Store.guarded(this@WatchService, "ocr") {
+                    Store.event(this@WatchService, "screenshot_unavailable", CaptureRows.screenshotUnavailable(r.pkg, errorCode, display))
+                    Store.log(this@WatchService).lastError = CaptureText.OCR_UNAVAILABLE.get(Store.lang(this@WatchService)).format(errorCode)
+                }
             }
         }
         if (Build.VERSION.SDK_INT >= 34 && !display) takeScreenshotOfWindow(r.id, mainExecutor, callback)

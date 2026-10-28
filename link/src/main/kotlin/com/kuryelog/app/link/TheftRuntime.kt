@@ -67,8 +67,6 @@ object TheftRuntime {
     private const val K_PIN_SALT = "pin_salt"
     private val K_SMS = listOf("sms_1", "sms_2")
     /** Alarm 10 dk sürekli, sonra dakikada 30 sn (LINK.md 5.1). */
-    private const val SIREN_FULL_MS = 10 * 60_000L
-    private const val SIREN_ON_MS = 30_000L
     private const val SIREN_TEST_MS = 3_000L
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -192,7 +190,8 @@ object TheftRuntime {
         val p = prefs(ctx)
         val hash = p.getString(K_PIN_HASH, null)
         val salt = p.getString(K_PIN_SALT, null)?.let(::unhex)
-        if (hash != null && salt != null && (pin == null || !TheftPin.matches(pin, salt, hash))) return false
+        // PIN ayarlıysa (hasPin) tuz okunamasa da kapatılmaz: Pixel'den kapatma yolu kalır.
+        if (hash != null && (salt == null || pin == null || !TheftPin.matches(pin, salt, hash))) return false
         guard.disarm(System.currentTimeMillis())
         _status.value = guard.status
         return true
@@ -262,8 +261,7 @@ object TheftRuntime {
         when (s.state) {
             State.WARNING -> Sound.beep(a)
             State.ALARM -> {
-                val over = now - s.sinceMs - SIREN_FULL_MS
-                if (over < 0 || over % 60_000L < SIREN_ON_MS) Sound.siren(a) else Sound.stop(a)
+                if (TheftGuard.sirenOn(s.sinceMs, now)) Sound.siren(a) else Sound.stop(a)
             }
             else -> if (now >= sirenTestUntil) Sound.stop(a)
         }
