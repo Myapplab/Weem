@@ -30,8 +30,10 @@ class LinkService : Service() {
             return START_NOT_STICKY
         }
         val ok = runCatching { startForeground(NotificationIds.LINK_FGS, notification(this), ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE) }.isSuccess
-        // Reddedildi: bayrak düşer ki sonraki `set(true)` (ör. uygulama öne gelince) yeniden denesin.
-        if (!ok) { on = false; stopSelf() }
+        // Reddedildi: bayrak düşer ki sonraki `set(true)` (ör. uygulama öne gelince) yeniden denesin. Kabul: bayrak kalkar; sistem servisi
+        // START_STICKY ile yeni süreçte yeniden başlattığında da (bayrak orada false doğar) sonraki `set(false)` servisi durdurabilsin.
+        on = ok
+        if (!ok) stopSelf()
         return START_STICKY
     }
 
