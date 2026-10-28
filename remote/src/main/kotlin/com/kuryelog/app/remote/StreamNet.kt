@@ -59,11 +59,13 @@ internal class StreamNet(private val name: String, private val listener: Listene
                 continue
             }
             runCatching { sock.tcpNoDelay = true }
+            // Bağlanıp hemen kopan eş: akış alınamazsa soket kapanır (iş parçacığında yakalanmayan hata uygulamayı çökertir; LinkRuntime.acceptTcp gibi).
+            val streams = try { sock.getInputStream() to sock.getOutputStream() } catch (e: IOException) { sock.closeQuietly(); continue }
             val id = inbound.incrementAndGet()
             val p = Pipe(id, sock)
             pipes[id] = p
             listener.accepted(id)
-            p.run(sock.getInputStream(), sock.getOutputStream())
+            p.run(streams.first, streams.second)
         }
     }
 
