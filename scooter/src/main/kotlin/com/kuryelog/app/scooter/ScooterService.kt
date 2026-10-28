@@ -130,7 +130,7 @@ class ScooterService : Service() {
             fgsType = ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
             val fallback = !live && runCatching { startForeground(NotificationIds.SCOOTER_FGS, notification(ScooterUiText.N_STARTING.get(lang), false), fgsType) }
                 .onFailure { Store.failure(this, "scooter_fgs", it) }.isSuccess
-            if (!fallback) { stopSelf(); return START_NOT_STICKY }
+            if (!fallback) { stopForeground(STOP_FOREGROUND_REMOVE); stopSelf(); return START_NOT_STICKY }
             noBackgroundLocation = true
         }
         // Both flags before the worker runs, so the toolbar never shows a new recording as a live panel.
