@@ -7,7 +7,7 @@ Kurallar: `AGENTS.md`. Durumlar: `bekliyor` · `sürüyor (<tarih saat>)` · `bi
 ## Şu an
 
 - **Son yapılan:** 26 Ekim — S42 telefon geri bildirimi 4 (PR #25 CI yeşil → `main` `543dcdf`; APK `weem-build-16`): harita elle döndürülür, dokunuş ve elle hareket "yalnız harita" (S37 tersine), Ses+ ters yön önerisini öğrenme kapalıyken de onaylar, yeni hava simgeleri; SORU-S39-1 madde 1–3 silindi (gölge mod, içe aktarma, OSM raster); A10.7 öncesi 16 maddelik liste ve Google anahtarı yanıtı `docs/OPTIMIZASYON.md` 5–6. Önceki: S41 repo düzeni (PR #24).
-- **Devam eden (yarım) iş:** yok.
+- **Devam eden (yarım) iş:** A10.7 ön denetim (hata + optimizasyon taraması, yeni APK) — sürüyor (28 Ekim 04:10; dal `ccr-62d7f101-3q8w0h`).
 - **Sıradaki:** kullanıcı yeni APK'yı telefonda dener (harita döndürme ve yalnız harita, Ses+ onayı, hava simgeleri; A10.4 maddeleri) ve `OPTIMIZASYON.md` 5'teki "Karar" maddeleri ile SORU-S39-1 madde 4–11 ve SORU-S39-2'yi yanıtlar; Çarşamba A10.7 büyük denetim (liste girdi).
 - **Kullanıcıdan ayrıca:** Google Maps anahtarı isteğe bağlı (yeni anahtar kart ister; eski anahtar Cloud Console'dan → Actions `GOOGLE_MAPS_API_KEY`; `OPTIMIZASYON.md` 6); `weem-v1.0.0` etiketi (A10.3); metin onayları (`MAP.md` 17.3, `SORU-T1-1`); ev konumu + "Her zaman" konum izniyle otomatik vardiya denemesi; Pixel–Poco Bluetooth eşleştirmesi (S23); uygulama simgesi; kalıcı Receiver telefonu.
 
