@@ -68,6 +68,8 @@ class PhoneBridge(
         val navOpened: (NavTarget) -> Unit = {},
         /** Receiver'da Pixel'den gelen hırsızlık komutu ([TheftGuard.arm]/[TheftGuard.disarm]); aynı kimlik bir kez. */
         val theftCommand: (TheftCommand) -> Unit = {},
+        /** S44: Receiver'da Provider'ın arama uygulamasında açılan numara (panoya); aynı kimlik bir kez. */
+        val dial: (String) -> Unit = {},
     )
 
     private val lock = Any()
@@ -116,6 +118,7 @@ class PhoneBridge(
     private var activeTrips: Set<String>? = null
     private val openedTargets = LinkedHashSet<String>()
     private val doneTheftCommands = LinkedHashSet<String>()
+    private val doneDials = LinkedHashSet<String>()
 
     // --- Provider: Receiver'ın günü (A10.4i) ---
     private val _daySnapshot = MutableStateFlow<String?>(null)
@@ -310,6 +313,12 @@ class PhoneBridge(
         return publish(LinkTopic.THEFT_COMMAND) { LinkPayloads.theftCommand(TheftCommand(UUID.randomUUID().toString(), action, now)) } != null
     }
 
+    /** S44: Provider'da arama uygulamasının numarası Receiver'a (teslim zorunlu, 2 dk). Kuyruğa girmediyse false. */
+    fun sendDial(number: String, now: Long = wall()): Boolean {
+        if (role != LinkRole.PROVIDER) return false
+        return publish(LinkTopic.DIAL) { LinkPayloads.dial(DialNumber(UUID.randomUUID().toString(), number, now)) } != null
+    }
+
     /** A10.4i: Receiver'ın gün kartı (son durum; çağıran 60 sn'de bir ve değişince yollar). */
     fun receiverDay(snapshot: String) {
         if (role != LinkRole.RECEIVER) return
@@ -363,6 +372,7 @@ class PhoneBridge(
                 LinkTopic.THEFT_COMMAND -> d.theftCommand(payload)?.let(::gotTheftCommand)
                 LinkTopic.DAY_SNAPSHOT -> _daySnapshot.value = String(payload, Charsets.UTF_8)
                 LinkTopic.DAY_REPORT -> _dayReports.tryEmit(String(payload, Charsets.UTF_8))
+                LinkTopic.DIAL -> d.dial(payload)?.let { gotDial(it, now, sentAtMs) }
             }
         } catch (e: Exception) {
             failures.failure("link_${topic.type}", e)
@@ -500,6 +510,16 @@ class PhoneBridge(
         if (fresh) local.theftCommand(c)
     }
 
+    /** S44: Receiver'da numara: aynı kimlik bir kez; gönderiminden [DIAL_FRESH_MS]'den geç geleni (bağlantı sonradan kuruldu) açılmaz. */
+    private fun gotDial(n: DialNumber, now: Long, sentAtMs: Long?) {
+        if (role != LinkRole.RECEIVER) return
+        if (now - (sentAtMs ?: n.atMs) > DIAL_FRESH_MS) return
+        val fresh = synchronized(lock) {
+            doneDials.add(n.id).also { while (doneDials.size > MAX_THEFT_COMMANDS) doneDials.remove(doneDials.first()) }
+        }
+        if (fresh) local.dial(n.number)
+    }
+
     /** Provider'da uzak canlı değer: bağlıyken ve son özet [BATTERY_CURRENT_MS] içindeyse özetin kendisi; değilse bağlantısız. */
     private fun refreshLive(now: Long) {
         val b = battery ?: run { _live.value = null; return }
@@ -552,6 +572,8 @@ class PhoneBridge(
         const val BATTERY_CURRENT_MS = 75_000L
         /** Uyarı/alarmdayken `TheftState` yineleme aralığı (LINK.md 5.2). */
         const val THEFT_ALARM_EVERY_MS = 10_000L
+        /** S44: bu süreden geç gelen numara kopyalanmaz (kurye çoktan aradı ya da vazgeçti). */
+        const val DIAL_FRESH_MS = 60_000L
         private const val MAX_THEFT_COMMANDS = 64
         private const val MAX_ENERGY_WAITING = 256
         private const val ENERGY_PREFIX = "e1"
