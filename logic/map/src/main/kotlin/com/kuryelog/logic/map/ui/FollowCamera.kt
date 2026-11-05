@@ -11,7 +11,7 @@ import kotlin.math.hypot
  * çıkarken merkez (ben ↔ ben ile hedefin ortası) sıçramaz. Önceden konuma dönüş ve odak merkezi tek karede sıçrıyordu.
  *
  * Kayma işarete göre tutulur (derece): işaret yürürken kamera onunla birlikte gider, yalnız aradaki fark azalır. Başlangıçta kamera [SNAP_M]'den
- * uzaksa (açılış, uzakta kaydırılmış harita) bir anda gelinir: uzun kayma yol boyunca karo yükletir. Yön bir kez yakalanınca ([BEARING_CAUGHT_DEG])
+ * uzaksa (uzakta kaydırılmış harita) bir anda gelinir: uzun kayma yol boyunca karo yükletir; uzun rotanın sığdırmasından dönüş bunun altında kalır. Yön bir kez yakalanınca ([BEARING_CAUGHT_DEG])
  * doğrudan işaretin yönünü izler (işaret zaten yumuşatılmış; ek gecikme oku eğerdi). Saf; süreler kare arası ms.
  */
 class FollowCamera private constructor(private var offLat: Double, private var offLon: Double, private var bearing: Double?) {
@@ -51,7 +51,7 @@ class FollowCamera private constructor(private var offLat: Double, private var o
         const val STEP_MS = 80L
         const val CENTER_DONE_M = 0.3
         const val BEARING_CAUGHT_DEG = 2.0
-        const val SNAP_M = 1_500.0
+        const val SNAP_M = 5_000.0
 
         /** Takip başlangıcı: kameranın şimdiki merkezi ve yönü (bilinmiyorsa null: işarete ve hedef yöne bir anda). */
         fun start(cameraLat: Double?, cameraLon: Double?, cameraBearing: Double?, puckLat: Double, puckLon: Double): FollowCamera {

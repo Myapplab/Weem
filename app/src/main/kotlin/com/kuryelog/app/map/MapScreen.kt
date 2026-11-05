@@ -110,6 +110,7 @@ import com.kuryelog.logic.map.ui.SurfaceLayerRules
 import com.kuryelog.logic.map.ui.Toasts
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.drop
@@ -186,7 +187,9 @@ private fun rememberMapData(): State<MapDataState> {
     LaunchedEffect(settings.region) {
         if (MapScreenLoad.loadedRegion != settings.region && data.value.phase != MapDataPhase.BUILDING) {
             MapScreenLoad.loadedRegion = settings.region
-            runCatching { controller.load(settings.region) }
+            // S44: kompozisyon yükleme sürerken iptal olursa (sekme/ilk kurulum adımı değişti) bir sonraki açılışta yeniden yüklenir;
+            // önceden runCatching iptali de yutuyordu, bölge "yüklendi" sayılıp graf hiç kurulmayabiliyordu (S40 açığı).
+            try { controller.load(settings.region) } catch (e: CancellationException) { MapScreenLoad.loadedRegion = null; throw e } catch (_: Exception) {}
         }
     }
     return data
