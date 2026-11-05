@@ -6,8 +6,8 @@ Kurallar: `AGENTS.md`. Durumlar: `bekliyor` · `sürüyor (<tarih saat>)` · `bi
 
 ## Şu an
 
-- **Son yapılan:** 5 Kasım — S44 telefon geri bildirimi 5 (dal `claude/zen-hypatia-o0ctcd`): tek dokunuş paneller (MapLibre kaydırma eşiği), harita kip değişince taşınmaz + solan paneller, yumuşak takip kamerası (`FollowCamera`), yaklaşma zoom'u 18; otomatik vardiya için ev izleme ön plan servisi (5105) + GPS bekleme artışı; 2 telefonda aranan numara Receiver panosuna (`DialNumber`, 7407); graf yükleme iptali. Önceki: S43 (PR #26).
-- **Devam eden (yarım) iş:** S44 PR'ı CI bekliyor (dal `claude/zen-hypatia-o0ctcd`); yeşilse `main`'e birleştir ve APK derlet (`apk.yml`).
+- **Son yapılan:** 5 Kasım — S44 telefon geri bildirimi 5 (PR #27 CI yeşil, `main` `23d4978`; APK `weem-build-18`): tek dokunuş paneller (MapLibre kaydırma eşiği), harita kip değişince taşınmaz + solan paneller, yumuşak takip kamerası (`FollowCamera`), yaklaşma zoom'u 18; otomatik vardiya için ev izleme ön plan servisi (5105) + GPS bekleme artışı; 2 telefonda aranan numara Receiver panosuna (`DialNumber`, 7407); graf yükleme iptali. Önceki: S43 (PR #26).
+- **Devam eden (yarım) iş:** yok.
 - **Sıradaki:** kullanıcı yeni APK'yı dener (S44: tek dokunuş, zoom/yaklaşma, evden çıkınca vardiya — Pixel cepte, 2 telefonda numara) ve rota motorundaki sorunun örneğini yazar; `OPTIMIZASYON.md` 5 "Karar", SORU-S39-1 4–11, SORU-S39-2; ardından A10.7 büyük denetim.
 - **Kullanıcıdan ayrıca:** Google Maps anahtarı isteğe bağlı (yeni anahtar kart ister; eski anahtar Cloud Console'dan → Actions `GOOGLE_MAPS_API_KEY`; `OPTIMIZASYON.md` 6); `weem-v1.0.0` etiketi (A10.3); metin onayları (`MAP.md` 17.3, `SORU-T1-1`); ev konumu + "Her zaman" konum izniyle otomatik vardiya denemesi; Pixel–Poco Bluetooth eşleştirmesi (S23); uygulama simgesi; kalıcı Receiver telefonu.
 
@@ -49,7 +49,7 @@ Ayrıntılı görev tabloları: `git show bc790c5:docs/WEEM_ISLER.md`. Ara saha 
 | A10.4k | Telefon geri bildirimi 2 (S38) | Testler yeşil | Opus · high | A10.4j | bitti (23 Ekim; PR #21) |
 | A10.4l | Telefon geri bildirimi 3 (S39): gömülü harita, dokunma tepkisi, pil; sadeleştirme raporu | Testler yeşil | Opus · high | A10.4k | bitti (24 Ekim; PR #22; S40 düzeltmesi PR #23) |
 | A10.4m | Telefon geri bildirimi 4 (S42): harita döndürme/yalnız harita, Ses+, hava simgeleri, SORU-S39-1 1–3 silme, A10.7 öncesi liste | Testler yeşil | Opus · high | A10.4l | bitti (26 Ekim; PR #25; `OPTIMIZASYON.md` 5) |
-| A10.4n | Telefon geri bildirimi 5 (S44): dokunuş/akıcılık, zoom ve yaklaşma, kamera geçişleri, otomatik vardiya, 2 telefonda numara | Testler yeşil | Opus · high | A10.4m | sürüyor (5 Kasım; PR CI bekliyor) |
+| A10.4n | Telefon geri bildirimi 5 (S44): dokunuş/akıcılık, zoom ve yaklaşma, kamera geçişleri, otomatik vardiya, 2 telefonda numara | Testler yeşil | Opus · high | A10.4m | bitti (5 Kasım; PR #27, APK `weem-build-18`) |
 | A10.5 | (K) Gerçek kullanım dönemi: kullanıcı gereksiz özellikleri ve aynı motora birleşebilecekleri yazar | Kullanıcının listesi | — | A10.4 | bekliyor |
 | A10.5b | Bekleyen özellikler kullanıcıya soruldu (S29, S32) | Kararlar plan Bölüm 8'de | Sonnet · medium | A10.5 | bitti (21 Ekim, erken: kullanıcı istedi) |
 | A10.6 | Sadeleştirme: kod düzeyi + özellik düzeyi (kullanıcı kararıyla; kararlar Bölüm 8'e) | Testler yeşil, satır sayısı belgede | Opus · high | A10.5, A10.5b | kod düzeyi bitti (24 Ekim; `docs/SADELESTIRME.md`); özellik düzeyi SORU-S39-1'i bekliyor |

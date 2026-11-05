@@ -2,9 +2,9 @@
 
 En yeni en üstte; **en çok 5 bölüm**, bölüm başına en çok 6 satır (başlık + Yapılan · Doğrulama · Açık). Yeni bölüm eklenince en alttaki silinir (eski bölümler git'te). Okurken yalnız en üst bölüm.
 
-## 2026-11-05 — S44: telefon geri bildirimi 5 (Claude Opus; dal `claude/zen-hypatia-o0ctcd`)
+## 2026-11-05 — S44: telefon geri bildirimi 5 (Claude Opus; PR #27 CI yeşil, `main` `23d4978`, APK `weem-build-18`)
 - Yapılan: MapLibre kaydırma eşiği = dokunma payı × 1,5 (dokunuş kaydırma da sayılıp takip/otomatik zoom kapanıyordu → "zoom yok, yaklaşınca yakınlaşmıyor"); `MapTab` tek ağaç (yüzey taşınmaz, GL yeniden kurulmaz) + `AnimatedVisibility`; `FollowCamera` yumuşak takip, sığdırma 650 ms; `ApproachZoom` üst 18. `HomeWatchService` (5105, MIN) + `HomeWatchPlan` boş pencere beklemesi, `startBlocked`'ta GPS yok. `DialShare`/`DialNumber`/`DialNotice` (S5 istisnası, ayar `dial_share`). `rememberMapData` iptal.
-- Doğrulama: `logic` core/map/capture/link/app/orders yeşil, Android derlemesi yerelde yeşil; Robolectric ve lint yerelde Maven 429 → CI. Telefonda denenmedi.
+- Doğrulama: `logic` core/map/capture/link/app/orders yeşil, Android derlemesi yerelde yeşil; lint (app, map, core, capture, link) yerelde yeşil; Robolectric yerelde Maven 429, CI #27 (test + lint + Robolectric) yeşil. Telefonda denenmedi.
 - Açık: rota motoru değişmedi (kullanıcıdan örnek); numara yalnız Provider → Receiver (Receiver ekran okumaz); `StreamNet.listen` bind hatası (S43'ten).
 
 ## 2026-10-28 — S43: A10.7 ön denetim (Claude Opus; PR #26, APK `weem-build-17`)
