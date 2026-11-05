@@ -12,5 +12,10 @@
             android:name="com.kuryelog.app.core.ShiftService"
             android:exported="false"
             android:foregroundServiceType="location" />
+        <!-- S44 ev izleme (vardiya dışı, otomatik vardiya): süreç ön planda kalır, konum istekleri ekran kapalıyken kısılmaz. -->
+        <service
+            android:name="com.kuryelog.app.core.HomeWatchService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
     </application>
 </manifest>

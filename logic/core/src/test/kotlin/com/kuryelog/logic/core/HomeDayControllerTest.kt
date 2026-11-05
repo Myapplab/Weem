@@ -23,6 +23,22 @@ class HomeDayControllerTest {
         r.watch(70.0, 20.0, acc = 8f, dtS = 2.0)
     }
 
+    /** S44: ev izlenirken süreç ön planda kalır (ekran kapalıyken konum kısılmasın); vardiya açılınca, ev silinince ya da izin yokken durur. */
+    @Test fun homeWatchServiceRunsOnlyWhileWatching() {
+        val r = ShiftRig(temp.root)
+        r.watcher.recheck(r.mono)
+        assertEquals(true, r.alive)
+        leave(r)
+        assertTrue(r.machine.shiftOn())
+        assertEquals("shift on: the shift service keeps the process", false, r.alive)
+        r.machine.onStartCommand(ShiftMachine.ACTION_STOP, null)
+        r.watcher.recheck(r.mono)
+        assertEquals(true, r.alive)
+        r.permissions = true to false
+        r.watcher.recheck(r.mono)
+        assertEquals("no background location: nothing to keep", false, r.alive)
+    }
+
     @Test fun leavingHomeStartsTheDayAndComingBackEndsItAfter30s() {
         val r = ShiftRig(temp.root)
         leave(r)

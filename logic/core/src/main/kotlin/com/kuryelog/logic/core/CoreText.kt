@@ -16,4 +16,8 @@ enum class CoreText(override val tr: String, override val az: String) : Bilingua
     HOME_LEFT_TEXT("Vardiyayı başlatmak için dokun.", "Növbəni başlatmaq üçün toxun."),
     SHIFT_INTERRUPTED_TITLE("Vardiya durdu", "Növbə dayandı"),
     SHIFT_INTERRUPTED_TEXT("GPS kaydı yok. Devam etmek için dokun.", "GPS qeydi yoxdur. Davam etmək üçün toxun."),
+    // S44: vardiya dışında ev izlenirken (otomatik vardiya) sessiz ön plan bildirimi.
+    HOME_WATCH_CHANNEL("Otomatik vardiya", "Avtomatik növbə"),
+    HOME_WATCH_TITLE("Otomatik vardiya hazır", "Avtomatik növbə hazırdır"),
+    HOME_WATCH_TEXT("Evden çıkınca vardiya kendiliğinden başlar.", "Evdən çıxanda növbə özü başlayır."),
 }

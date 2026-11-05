@@ -34,6 +34,21 @@ object Notices {
             .build()
     }
 
+    /** S44 (5105): vardiya dışında ev izlenirken ön plan bildirimi (kanal `home_watch`, MIN: durum çubuğunda simge yok, ses yok); dokununca uygulama. */
+    fun homeWatch(ctx: Context): Notification {
+        nm(ctx).createNotificationChannel(NotificationChannel(NotificationIds.CHANNEL_HOME_WATCH, text(ctx, CoreText.HOME_WATCH_CHANNEL), NotificationManager.IMPORTANCE_MIN))
+        val open = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)
+            ?.let { PendingIntent.getActivity(ctx, NotificationIds.HOME_WATCH_FGS, it, PendingIntent.FLAG_IMMUTABLE) }
+        return Notification.Builder(ctx, NotificationIds.CHANNEL_HOME_WATCH)
+            .setContentTitle(text(ctx, CoreText.HOME_WATCH_TITLE))
+            .setContentText(text(ctx, CoreText.HOME_WATCH_TEXT))
+            .setSmallIcon(android.R.drawable.ic_menu_mylocation)
+            .setContentIntent(open)
+            .setOngoing(true)
+            .setShowWhen(false)
+            .build()
+    }
+
     /** 5101: evden çıkış görüldü ama Android vardiyayı arka plandan başlatmadı; dokunuş aynı `HOME_START`'ı gönderir. */
     fun homeStart(ctx: Context, revision: Long) {
         val start = PendingIntent.getForegroundService(ctx, NotificationIds.HOME_AUTO_START, Home.startIntent(ctx, revision),

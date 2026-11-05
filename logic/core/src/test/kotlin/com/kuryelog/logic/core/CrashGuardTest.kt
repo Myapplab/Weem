@@ -88,6 +88,8 @@ class CrashGuardTest {
                 if (f.name == "CaptureService.kt") return@forEach
                 // Yol kalibrasyonu servisi (A10.4b) vardiya servisi değil; her başlatışı startForeground'a varır (aşağıda).
                 if (f.name == "RoadCalibrationService.kt") return@forEach
+                // S44 ev izleme servisi vardiya servisi değil; her başlatışı startForeground'a varır (aşağıda).
+                if (f.name == "HomeWatchService.kt") return@forEach
                 calls++
                 assertTrue("${f.name}: $call", call.contains("ACTION_START") || call.contains("Home.startIntent(") || call.contains("ScooterService.startIntent("))
             }
@@ -119,6 +121,11 @@ class CrashGuardTest {
         assertTrue(captureStart.contains("startForeground(NotificationIds.REMOTE_FGS"))
         assertEquals(1, Regex("""stopSelf\(\)""").findAll(captureStart.substringBefore("startForeground(")).count())
         assertTrue(capture.contains("ctx.startService(Intent(ctx, CaptureService::class.java).setAction(ACTION_STOP))"))
+        // S44: ev izleme servisi; yalnız ACTION_STOP startForeground'dan önce durur.
+        val homeWatch = RepoSource.text(core + "HomeWatchService.kt")
+        val homeStart = RepoSource.body(homeWatch, "override fun onStartCommand(", "companion object")
+        assertTrue(homeStart.contains("startForeground(NotificationIds.HOME_WATCH_FGS"))
+        assertEquals(1, Regex("""stopSelf\(\)""").findAll(homeStart.substringBefore("startForeground(")).count())
         assertTrue(RepoSource.text(core + "Home.kt").contains("Intent(ctx, ShiftService::class.java).setAction(ShiftMachine.ACTION_HOME_START)"))
     }
 }
