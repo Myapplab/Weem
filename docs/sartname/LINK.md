@@ -226,6 +226,7 @@ Plan 4.3–4.5'in kodu. Saf kısım `logic/link` (`LinkRoles`, `LinkPayloads`, `
 | `DaySnapshot` | son durum | 10 dk | R | **A10.4i (S35 #17):** Receiver'ın gün kartı (`:map` `DaySnapshot`: duruşlar ve bütün koordinatlar çıkarılmış gün durumu, ≤ 3.200 karakter, sığmazsa en eski biten siparişler atılır); kart değişince (en çok 5 sn'de bir) ve 60 sn'de bir |
 | `DayReport` | teslim zorunlu | 24 sa | R | **A10.4i:** Receiver gün raporu (`.gun.json`) yazınca: `{schemaVersion, name, report}` (≤ 60.000 karakter; Bluetooth'ta sığmaz, Wi-Fi'ı bekler); Provider ad denetimiyle `files/map/logs/`'a yazar (İstatistik) |
 | `RouteStatus` | son durum | 60 sn | R | hedef ya da rota ölçümü değişince, en çok 1/sn; rota yoksa hedefsiz ve ölçümsüz |
+| `DialNumber` | teslim zorunlu | 2 dk | P | **S44:** arama uygulaması numarayla açılınca (`DialShare`: yalnız açılıştan sonraki 3 sn, yalnız numara alanı, aynı numara 30 sn'de bir); `{schemaVersion, id, number, atMs}`; Receiver 60 sn'den geç geleni kopyalamaz, panoya + bildirim 7407 |
 | `LinkRole` | son durum | 24 sa | ikisi | bağlanınca |
 
 `WeatherNow` ve saniyelik `ScooterLive` tür değildir (S6; plan 4.4). Yanlış yönden gelen tür (iki Provider), bilinmeyen tür ve bozuk yük atılır.
@@ -260,7 +261,7 @@ Provider'da `LinkIntake` → `NavController.onExternalText` hedefi çözer; 60 m
 
 ### 4.8 Gizlilik (S5)
 
-Giden her yük `ReceiverSafety`'den geçer: anahtarında `customername`, `customerphone`, `phone`, `tel`, `note`, `comment`, `instruction`, `firstname`, `lastname`, `fullname`, `recipient` geçen ya da `name`/`customer` olan yük yollanmaz (`UnsafePayload`, hata kaydı yalnız anahtar adı). Tipler bu alanları zaten taşımaz; `TwoPhonePrivacyTest` sipariş akışında adı, telefonu, notu, talimatı ve kapı kodu olan bir teklifin ve siparişin yükünde bunların olmadığını, adres metninin olduğunu denetler.
+Giden her yük `ReceiverSafety`'den geçer: anahtarında `customername`, `customerphone`, `phone`, `tel`, `note`, `comment`, `instruction`, `firstname`, `lastname`, `fullname`, `recipient` geçen ya da `name`/`customer` olan yük yollanmaz (`UnsafePayload`, hata kaydı yalnız anahtar adı). Tipler bu alanları zaten taşımaz; `TwoPhonePrivacyTest` sipariş akışında adı, telefonu, notu, talimatı ve kapı kodu olan bir teklifin ve siparişin yükünde bunların olmadığını, adres metninin olduğunu denetler. **S44 istisnası (kullanıcı kararı):** `DialNumber.number` yalnız "Aranan numarayı öteki telefona kopyala" açıkken (`weem-link` → `dial_share`, varsayılan açık, iki telefonda da) gider; Receiver'da yalnız panoya ve bildirime, kayda ya da loga yazılmaz.
 
 ### 4.9 Testler
 
