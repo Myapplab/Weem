@@ -7,7 +7,7 @@ Kurallar: `AGENTS.md`. Durumlar: `bekliyor` · `sürüyor (<tarih saat>)` · `bi
 ## Şu an
 
 - **Son yapılan:** 28 Ekim — S43 A10.7 ön denetim (PR #26; APK `weem-build-17`): `/code-review high` Android modülleri, 9 hata düzeltildi (2 telefon servisi durdurulamıyordu, uzaktan kullanımda ve scooter canlı panelde çökme, Wi-Fi işaret yuvası, PIN, M23 bildirimi, ekran görüntüsü hatası, rozet yeniden deneme), siren kuralı `logic`'te; harita işaret seçimi arka planda; APK adı yapı numaralı (`weem-1.0.0-build-N.apk`). Özet `OPTIMIZASYON.md` 5 altı. Önceki: S42 (PR #25).
-- **Devam eden (yarım) iş:** yok.
+- **Devam eden (yarım) iş:** S44 telefon geri bildirimi 5 (harita dokunuşu/akıcılık, zoom, rota yaklaşma, otomatik vardiya, 2 telefonda arayan numara) — sürüyor (5 Kasım; dal `claude/zen-hypatia-o0ctcd`).
 - **Sıradaki:** kullanıcı yeni APK'yı telefonda dener (harita döndürme ve yalnız harita, Ses+ onayı, hava simgeleri; A10.4 maddeleri) ve `OPTIMIZASYON.md` 5'teki "Karar" maddeleri ile SORU-S39-1 madde 4–11 ve SORU-S39-2'yi yanıtlar; Çarşamba A10.7 büyük denetim (liste girdi).
 - **Kullanıcıdan ayrıca:** Google Maps anahtarı isteğe bağlı (yeni anahtar kart ister; eski anahtar Cloud Console'dan → Actions `GOOGLE_MAPS_API_KEY`; `OPTIMIZASYON.md` 6); `weem-v1.0.0` etiketi (A10.3); metin onayları (`MAP.md` 17.3, `SORU-T1-1`); ev konumu + "Her zaman" konum izniyle otomatik vardiya denemesi; Pixel–Poco Bluetooth eşleştirmesi (S23); uygulama simgesi; kalıcı Receiver telefonu.
 
