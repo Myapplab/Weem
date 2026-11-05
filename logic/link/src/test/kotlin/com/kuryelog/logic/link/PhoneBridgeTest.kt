@@ -110,11 +110,12 @@ class PhoneBridgeTest {
     private val rScooter = Scooter()
     private val rOpened = ArrayList<NavTarget>()
     private val rTheft = ArrayList<TheftCommand>()
+    private val rDial = ArrayList<String>()
     private val pOut = Wire()
     private val rOut = Wire()
     private var provider = newProvider()
     private val receiver = PhoneBridge(LinkRole.RECEIVER, rOut, { now }, scope,
-        PhoneBridge.Local(nav = rNav, scooter = rScooter, shift = rShift, navOpened = { rOpened += it }, theftCommand = { rTheft += it }),
+        PhoneBridge.Local(nav = rNav, scooter = rScooter, shift = rShift, navOpened = { rOpened += it }, theftCommand = { rTheft += it }, dial = { rDial += it }),
         energyWaitMs = 2_000)
 
     private fun newProvider() = PhoneBridge(LinkRole.PROVIDER, pOut, { now }, scope, PhoneBridge.Local(nav = pNav), energyWaitMs = 2_000)
@@ -541,6 +542,27 @@ class PhoneBridgeTest {
         assertEquals(1, rTheft.size)
         provider.receiverTheft(TheftGuard.Status(TheftGuard.State.ALARM), now)
         assertEquals(0, pOut.count(LinkTopic.THEFT_STATE))
+    }
+
+    /** S44: arama uygulamasının numarası yalnız Provider'dan, bir kez; geç gelen (bağlantı sonradan kuruldu) kopyalanmaz. */
+    @Test
+    fun dialNumberReachesReceiverOnceFreshAndOnlyFromProvider() {
+        assertTrue(provider.sendDial("+994501234567", now))
+        assertFalse(receiver.sendDial("+994501234567", now))
+        flush()
+        assertEquals(listOf("+994501234567"), rDial)
+        val again = pOut.sent.last { it.first == LinkTopic.DIAL }
+        receiver.incoming(LinkTopic.DIAL.type, again.second, now)
+        assertEquals("aynı kimlik bir kez", 1, rDial.size)
+        provider.incoming(LinkTopic.DIAL.type, again.second, now)
+        assertEquals(1, rDial.size)
+        val late = LinkPayloads.dial(DialNumber("late", "+994551112233", now))
+        receiver.incoming(LinkTopic.DIAL.type, late, now + PhoneBridge.DIAL_FRESH_MS + 1, sentAtMs = now)
+        assertEquals("geç gelen kopyalanmaz", 1, rDial.size)
+        val d = LinkPayloads.Decoder(1_000)
+        assertEquals(DialNumber("x", "+994501234567", t0), d.dial(LinkPayloads.dial(DialNumber("x", "+994501234567", t0 + 1_000))))
+        assertNull(d.dial("""{"schemaVersion":1,"id":"x","number":"","atMs":1}""".toByteArray()))
+        assertNull(d.dial("""{"schemaVersion":2,"id":"x","number":"1234567","atMs":1}""".toByteArray()))
     }
 
     @Test

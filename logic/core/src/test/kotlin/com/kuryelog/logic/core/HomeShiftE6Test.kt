@@ -105,6 +105,31 @@ class HomeShiftE6Test {
         assertEquals(HomeWatchPlan.Mode.LOW, HomeWatchPlan().onFix(500.0, null, null, 0))
     }
 
+    /** S44: evden uzakta duran telefonda boş GPS pencereleri seyrekleşir (10, 20, 40, 60 dk); evde görülünce ve hızda hemen. */
+    @Test fun emptyGpsWindowsBackOffUntilSeenAtHome() {
+        val p = HomeWatchPlan()
+        val min = 60_000L
+        var t = 0L
+        val pauses = ArrayList<Long>()
+        repeat(5) {
+            assertEquals(HomeWatchPlan.Mode.HIGH, p.onFix(400.0, 30.0, null, t))
+            t += 5 * min
+            assertEquals(HomeWatchPlan.Mode.LOW, p.tick(t))
+            pauses += p.pause
+            t += p.pause
+        }
+        assertEquals(listOf(10, 20, 40, 60, 60).map { it * min }, pauses)
+        assertEquals(HomeWatchPlan.Mode.LOW, p.onFix(400.0, 30.0, null, t - 1))
+        // Seen at home: the next departure opens a window at once (10 min pause counted from the last window, long over).
+        p.onFix(20.0, 25.0, null, t)
+        assertEquals(10 * min, p.pause)
+        assertEquals(HomeWatchPlan.Mode.HIGH, p.onFix(200.0, 30.0, null, t + 30_000))
+        // Fast is never paused.
+        val q = HomeWatchPlan()
+        repeat(3) { q.onFix(400.0, 30.0, null, it * 100 * min); q.tick(it * 100 * min + 5 * min) }
+        assertEquals(HomeWatchPlan.Mode.HIGH, q.onFix(400.0, 30.0, 15 / 3.6, 300 * min + 6 * min))
+    }
+
     @Test fun watcherAndSettingsFollowTheRule() {
         val watch = RepoSource.text("core/src/main/kotlin/com/kuryelog/app/core/HomeWatch.kt")
         assertTrue(watch.contains("HomeWatchCore("))

@@ -25,6 +25,11 @@ class HomeWatchCore(
         fun startShift(revision: Long)
         /** 5101 "Evden çıktın": dokununca aynı `HOME_START` isteği (ön plan servisi olarak). */
         fun showHomeStart(revision: Long)
+        /**
+         * S44: izlenirken süreç ön planda kalsın mı (ev izleme ön plan servisi). Ekran kapalıyken Android arka plandaki uygulamanın konumunu
+         * saatte birkaç kez verir; servis çalışırken istekler kısılmaz. Her denetimde çağrılır: ucuz ve tekrar güvenli olmalı.
+         */
+        fun keepAlive(on: Boolean) {}
     }
 
     private val plan = HomeWatchPlan()
@@ -46,9 +51,10 @@ class HomeWatchCore(
         if (lastCheck != 0L && now - lastCheck < CHECK_MS) return
         lastCheck = now
         val (fine, background) = permissions()
-        if (!home.mayWatch(shiftOn(), importing(), fine, background)) { if (listening) stop(); plan.reset(); return }
+        if (!home.mayWatch(shiftOn(), importing(), fine, background)) { if (listening) stop(); plan.reset(); runCatching { platform.keepAlive(false) }; return }
         val m = plan.tick(now)
         if (!listening || m != mode) start(m)
+        runCatching { platform.keepAlive(listening) }
     }
 
     private fun start(next: HomeWatchPlan.Mode) {
@@ -77,8 +83,10 @@ class HomeWatchCore(
         val decision = home.observe(fix, false)
         if (decision != HomeShift.Decision.START) {
             // E6: ayrılmanın olası olduğunu söyleyen düşük güçlü fix GPS'e geçirir (pencereden sonra geri).
-            val d = home.engine()?.distanceToHomeM(fix) ?: return
-            val next = plan.onFix(d, fix.accuracyM, fix.speedMps, now)
+            val engine = home.engine() ?: return
+            val d = engine.distanceToHomeM(fix)
+            // S44: elle bitirilmiş vardiyadan sonra evde görülene dek başlangıç yok: GPS penceresi açılmaz (eve dönüş yolunda boşa GPS).
+            val next = if (engine.startBlocked) plan.tick(now) else plan.onFix(d, fix.accuracyM, fix.speedMps, now)
             if (next != mode) start(next)
             return
         }

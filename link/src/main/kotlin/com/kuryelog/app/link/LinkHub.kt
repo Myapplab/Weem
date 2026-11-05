@@ -102,6 +102,12 @@ object LinkHub {
         return true
     }
 
+    /** S44: "Aranan numarayı öteki telefona kopyala" (`weem-link` → `dial_share`; varsayılan açık: kullanıcı istedi). İki telefonda da sorulur. */
+    fun dialShare(ctx: Context): Boolean = prefs(ctx.applicationContext).getBoolean(DIAL_SHARE_KEY, true)
+
+    @SuppressLint("ApplySharedPref")
+    fun setDialShare(ctx: Context, on: Boolean) { prefs(ctx.applicationContext).edit().putBoolean(DIAL_SHARE_KEY, on).commit() }
+
     /** Veren telefon: QR metni (yalnız ekranda; loga yazılmaz). Kimlik açılamazsa null. */
     fun startPairing(ctx: Context): String? {
         val a = ctx.applicationContext
@@ -243,6 +249,7 @@ object LinkHub {
     }
 
     private const val REMOTE_PREFIX = "remote."
+    private const val DIAL_SHARE_KEY = "dial_share"
 
     private fun prefs(a: Context) = a.getSharedPreferences(IdentityVault.PREFS, Context.MODE_PRIVATE)
 }

@@ -38,6 +38,8 @@ object LinkPayloads {
     fun route(r: RouteStatus): ByteArray = bytes(r.toJson())
     fun theftState(s: TheftState): ByteArray = bytes(s.toJson())
     fun theftCommand(c: TheftCommand): ByteArray = bytes(c.toJson())
+    /** S44: S5 istisnası (yalnız bu tür numara taşır; anahtarı `number`, süzgeçten geçer). */
+    fun dial(n: DialNumber): ByteArray = bytes(n.toJson())
     fun role(r: LinkRole): ByteArray = bytes(JSONObject().put("schemaVersion", ROLE_SCHEMA).put("role", r.key))
 
     private fun bytes(j: JSONObject): ByteArray {
@@ -82,6 +84,7 @@ object LinkPayloads {
             TheftState(s.status.copy(sinceMs = t(s.status.sinceMs), fix = s.status.fix?.let { it.copy(atMs = t(it.atMs)) }), t(s.atMs))
         }
         fun theftCommand(b: ByteArray): TheftCommand? = obj(b)?.let(TheftCommand::parse)?.let { it.copy(atMs = t(it.atMs)) }
+        fun dial(b: ByteArray): DialNumber? = obj(b)?.let(DialNumber::parse)?.let { it.copy(atMs = t(it.atMs)) }
         fun role(b: ByteArray): LinkRole? {
             val j = obj(b) ?: return null
             if (j.opt("schemaVersion") != ROLE_SCHEMA) return null
@@ -98,7 +101,8 @@ object LinkPayloads {
 class UnsafePayload(val key: String) : IllegalArgumentException("unsafe link payload key")
 
 /**
- * S5 süzgeci: müşteri koordinatı ve adres metni gider; müşteri adı, telefonu, notları gitmez. Anahtarlar küçük harfe çevrilip
+ * S5 süzgeci: müşteri koordinatı ve adres metni gider; müşteri adı, telefonu, notları gitmez. Tek istisna S44 [DialNumber] (kullanıcı kararı:
+ * arama uygulamasında açılan numara, ayar açıkken, öteki telefonun panosuna). Anahtarlar küçük harfe çevrilip
  * [FORBIDDEN] parçaları aranır (iç içe nesne ve diziler dahil). Değerlere bakılmaz: adres metni serbest metindir.
  */
 object ReceiverSafety {

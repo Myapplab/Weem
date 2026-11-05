@@ -29,6 +29,7 @@ import com.kuryelog.logic.capture.CaptureText
 import com.kuryelog.logic.capture.CaptureTiming
 import com.kuryelog.logic.capture.CourierObservation
 import com.kuryelog.logic.capture.CourierParser
+import com.kuryelog.logic.capture.DialShare
 import com.kuryelog.logic.capture.Dialer
 import com.kuryelog.logic.capture.OcrAcceptance
 import com.kuryelog.logic.capture.OcrPace
@@ -51,6 +52,10 @@ import com.kuryelog.logic.core.KuryelogPrefs
 class WatchService : AccessibilityService() {
     private val h = Handler(Looper.getMainLooper())
     private var scheduled = false
+    // S44: 2 telefon modunda (Provider) arama uygulamasının numarası öteki telefona: yalnız açılışta ve yalnız numara alanından ([DialShare]).
+    private val dialShare = DialShare()
+    private var dialReadPosted = false
+    private val dialRead = Runnable { dialReadPosted = false; Store.guarded(this, "dial_share") { readDialer() } }
     private var recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
     private val deduper = ScreenDeduper()
     /** D6: which window OCR reads next and how soon (hot after a notification, a new window state or a card without its fee). */
@@ -86,9 +91,16 @@ class WatchService : AccessibilityService() {
     private fun onEvent(e: AccessibilityEvent) {
         if (!Store.canRecordScreen(this) || CaptureState.receiverRole()) return
         val pkg = e.packageName?.toString() ?: ""
-        // The dialer is read only right after a customer card, for the number the courier is calling.
-        if (Dialer.isDialer(pkg) && sink().awaitingPhone(now())) {
-            if (!scheduled) { scheduled = true; h.post(capture); h.postDelayed({ if (Store.canRecordScreen(this)) readScreen() }, CaptureTiming.SECOND_READ_MS) }
+        if (Dialer.isDialer(pkg)) {
+            // S44: the dialer just came up with a number (Wolt/Bolt "Call") → the other phone's clipboard; typed digits later are not sent.
+            if (CaptureState.dialShare()) {
+                if (e.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) dialShare.opened(now())
+                if (dialShare.reading(now()) && !dialReadPosted) { dialReadPosted = true; h.postDelayed(dialRead, DialShare.READ_DELAY_MS) }
+            }
+            // The dialer is read only right after a customer card, for the number the courier is calling.
+            if (sink().awaitingPhone(now()) && !scheduled) {
+                scheduled = true; h.post(capture); h.postDelayed({ if (Store.canRecordScreen(this)) readScreen() }, CaptureTiming.SECOND_READ_MS)
+            }
             return
         }
         if (pkg !in Store.targets(this)) return
@@ -217,6 +229,27 @@ class WatchService : AccessibilityService() {
         if (values.isNotEmpty()) nodes.add(CaptureRows.Node(n.text?.toString() ?: "", n.contentDescription?.toString() ?: "",
             n.viewIdResourceName ?: "", n.className?.toString() ?: "", b.flattenToString(), actionable))
         for (i in 0 until n.childCount) n.getChild(i)?.let { walk(it, texts, actions, nodes, depth + 1, actionable, window, spin, labels, ticks) }
+    }
+    /** S44: the dialer's number field only (never the call log behind it); the number is handed over, never written or logged. */
+    private fun readDialer() {
+        val now = now()
+        if (!dialShare.reading(now) || !CaptureState.dialShare() || !Store.canRecordScreen(this) || CaptureState.receiverRole()) return
+        for (w in windows.orEmpty()) {
+            if (w.type != AccessibilityWindowInfo.TYPE_APPLICATION) continue
+            val root = w.root ?: continue
+            if (!Dialer.isDialer(root.packageName?.toString() ?: continue)) continue
+            val fields = ArrayList<String>()
+            numberFields(root, fields, 0)
+            dialShare.read(fields, now)?.let { CaptureState.dialOut(it); return }
+        }
+        // The field may fill a little later without another event: retried while the window lasts.
+        if (dialShare.reading(now) && !dialReadPosted) { dialReadPosted = true; h.postDelayed(dialRead, DialShare.RETRY_MS) }
+    }
+    /** Number fields: id `…:id/digits` (AOSP, Google, Samsung, Xiaomi dialers) or an editable node. */
+    private fun numberFields(n: AccessibilityNodeInfo, out: MutableList<String>, depth: Int) {
+        if (depth > CaptureTiming.WALK_DEPTH || out.size >= MAX_DIAL_FIELDS) return
+        if ((n.viewIdResourceName ?: "").endsWith(":id/digits") || n.isEditable) n.text?.toString()?.takeIf { it.isNotBlank() }?.let(out::add)
+        for (i in 0 until n.childCount) n.getChild(i)?.let { numberFields(it, out, depth + 1) }
     }
     // Callers check SDK_INT >= 30 (lint enforces it for @RequiresApi).
     @RequiresApi(30)
@@ -370,5 +403,6 @@ class WatchService : AccessibilityService() {
     companion object {
         /** Tercih `ocr` (varsayılan açık; Daha fazla → "Görünür ekran OCR yedeği", CAPTURE.md 6.4). */
         const val OCR_PREF = "ocr"
+        private const val MAX_DIAL_FIELDS = 4
     }
 }

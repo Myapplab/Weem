@@ -50,6 +50,8 @@ enum class LinkTopic(val type: String, val reliable: Boolean, val ttlMs: Long, v
     DAY_SNAPSHOT("DaySnapshot", false, 10 * MINUTE, LinkRole.RECEIVER),
     /** A10.4i: Receiver'ın yazdığı gün raporu dosyası (`.gun.json`); Provider'ın İstatistik'i için. */
     DAY_REPORT("DayReport", true, 24 * HOUR, LinkRole.RECEIVER),
+    /** S44: Provider'da arama uygulamasının numarası; Receiver panoya kopyalar ([PhoneBridge.DIAL_FRESH_MS]'den geç geleni değil). */
+    DIAL("DialNumber", true, 2 * MINUTE, LinkRole.PROVIDER),
     /** İki yönde: öteki telefonun rolü (iki Provider ya da iki Receiver uyarısı). */
     ROLE("LinkRole", false, 24 * HOUR, null);
 

@@ -164,30 +164,39 @@ class HomeWatchPlan(private val highMs: Long = HIGH_MS, private val cooldownMs: 
         private set
     private var highSince = Long.MIN_VALUE / 2
     private var lastHighEnd = Long.MIN_VALUE / 2
+    /** S44: GPS pencereleri başlatmadan bitti (evde görülene dek): bekleme her seferinde ikiye katlanır, en çok [MAX_COOLDOWN_MS]. */
+    private var misses = 0
+
+    /** Şimdiki bekleme: ilk pencereden sonra [cooldownMs], sonra 2×, 4× … (evden uzakta duran telefonda GPS saatte 4 kez 5 dk açılmasın). */
+    val pause: Long get() = if (misses <= 1) cooldownMs else minOf(MAX_COOLDOWN_MS, cooldownMs shl minOf(misses - 1, 8))
 
     /** A fix of the current request; returns the mode to use now. */
     fun onFix(distanceM: Double, accuracyM: Double?, speedMps: Double?, now: Long): Mode {
         tick(now)
+        // S44: seen at home: the next departure gets a window at once again.
+        if (accuracyM != null && accuracyM.isFinite() && distanceM + accuracyM <= HomeShift.START_RADIUS_M + HomeShift.HOME_SEEN_ACCURACY_M) misses = 0
         if (mode == Mode.LOW) {
             val fast = speedMps != null && speedMps.isFinite() && speedMps >= HomeShift.START_SPEED_MPS
             val away = accuracyM != null && accuracyM.isFinite() && distanceM - accuracyM >= HomeShift.START_RADIUS_M
-            if (fast || away && now - lastHighEnd >= cooldownMs) { mode = Mode.HIGH; highSince = now }
+            if (fast || away && now - lastHighEnd >= pause) { mode = Mode.HIGH; highSince = now }
         }
         return mode
     }
 
     /** The GPS window ends after [highMs] even without fixes. */
     fun tick(now: Long): Mode {
-        if (mode == Mode.HIGH && now - highSince >= highMs) { mode = Mode.LOW; lastHighEnd = now }
+        if (mode == Mode.HIGH && now - highSince >= highMs) { mode = Mode.LOW; lastHighEnd = now; misses++ }
         return mode
     }
 
     /** Shift started or home changed: low power, no pause. */
-    fun reset() { mode = Mode.LOW; lastHighEnd = Long.MIN_VALUE / 2 }
+    fun reset() { mode = Mode.LOW; lastHighEnd = Long.MIN_VALUE / 2; misses = 0 }
 
     companion object {
         const val HIGH_MS = 5 * 60_000L
         const val COOLDOWN_MS = 10 * 60_000L
+        /** S44: art arda boş pencerelerde bekleme en çok 1 saat. */
+        const val MAX_COOLDOWN_MS = 60 * 60_000L
         const val LOW_INTERVAL_MS = 30_000L
         const val HIGH_INTERVAL_MS = 2_000L
     }

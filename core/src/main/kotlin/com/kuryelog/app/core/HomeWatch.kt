@@ -42,6 +42,7 @@ object HomeWatch {
             override fun remove() { ctx.getSystemService(LocationManager::class.java)?.removeUpdates(this@Watcher) }
             override fun startShift(revision: Long) { ctx.startForegroundService(Home.startIntent(ctx, revision)) }
             override fun showHomeStart(revision: Long) = Notices.homeStart(ctx, revision)
+            override fun keepAlive(on: Boolean) = HomeWatchService.set(ctx, on)
         }, { Store.shiftOn(ctx) }, { Store.importing }, { Home.hasFine(ctx) to Home.hasBackground(ctx) })
 
         /** E6: LOW = dengeli güç 30 sn (FUSED API 31+, yoksa ağ, o da yoksa GPS); HIGH = GPS 2 sn (GPS'in kendi hızı, ≤20 m).

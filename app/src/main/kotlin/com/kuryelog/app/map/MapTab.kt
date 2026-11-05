@@ -1,5 +1,6 @@
 package com.kuryelog.app.map
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -112,26 +113,14 @@ fun MapTab(
     metrics: @Composable () -> Unit = { MapMetrics(state.metrics, lang) },
     topCard: @Composable () -> Unit = {},
 ) {
-    // Harita görünümü kipler arasında taşınır, yeniden kurulmaz (MapView/Google haritası pahalı; kamera korunur).
-    val surface by rememberUpdatedState(mapSurface)
-    val map = remember { movableContentOf { surface() } }
-    val alerts = @Composable { Box(Modifier.fillMaxSize().testTag("task-alerts")) { taskAlerts() } }
-    val toastSlot = @Composable { Box(Modifier.fillMaxWidth().testTag("toast-banner")) { toast() } }
-    val reminderSlot = @Composable { Box(Modifier.fillMaxWidth().testTag("reminder-slot")) { reminder() } }
+    // S44 (kullanıcı: "tek dokunuşta haritadaki her şey gitmiyor, gelmiyor", "çok takılıyor"): harita yüzeyi her kipte ağacın aynı yerinde durur.
+    // Önceden kip (yalnız harita, varış odağı) değişince yüzey `movableContentOf` ile başka yere taşınıyordu: MapLibre'nin GL yüzeyi pencereden
+    // sökülüp yeniden kuruluyordu (her dokunuşta takılma, boş kare). Kipler yalnız HUD'u değiştirir; paneller solarak ve kayarak gider/gelir.
     val keyboard = state.keyboard
-    if (state.arrivalFocus && !keyboard) {
-        MapHudLayout(
-            keyboard = false, map = map, modifier = modifier, alerts = alerts,
-            header = { Column(Modifier.fillMaxWidth()) { toastSlot(); reminderSlot() } },
-            footer = {
-                Column(Modifier.fillMaxWidth()) {
-                    wrongWay()
-                    state.nav.activeStop?.let { ArrivalAddressCard(it.label, it.unitNote) }
-                }
-            },
-        )
-        return
-    }
+    val focus = state.arrivalFocus && !keyboard
+    val only = state.mapOnly && !keyboard && !focus
+    val full = !focus && !only
+    val alerts = @Composable { Box(Modifier.fillMaxSize().testTag("task-alerts")) { taskAlerts() } }
     var collapseSignal by remember { mutableIntStateOf(0) }
     var weatherOpen by remember { mutableStateOf(false) }
     var shiftCollapsed by remember { mutableStateOf(true) }
@@ -155,30 +144,9 @@ fun MapTab(
             )
         }
     }
-    val locate = @Composable { SmartLocateButton(state.cameraMode, actions.onLocate, lang = lang) }
     val onCollapse by rememberUpdatedState(actions.onCardCollapse)
-    // S42 (kullanıcı: "haritaya dokununca diğer her şey gitmiyor"): yalnız harita kipi geri geldi (YolGo `_toggleMapOnly`); bildirim şeridi, ters yön
-    // sorusu ve görev uyarıları kalır. Kip yukarıdaki durumlardan sonra seçilir: hava hapının açık/kapalı durumu dönüşte korunur; gün kartı katlı döner.
-    if (state.mapOnly && !keyboard) {
-        LaunchedEffect(Unit) { shiftCollapsed = true }
-        MapHudLayout(
-            keyboard = false, map = map, modifier = modifier, alerts = alerts,
-            header = {
-                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
-                    ShowPanelsButton(actions.onShowPanels, lang)
-                    Spacer(Modifier.height(WeemSpace.s))
-                    toastSlot()
-                }
-            },
-            footer = {
-                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    locate()
-                    wrongWay()
-                }
-            },
-        )
-        return
-    }
+    // Yalnız harita ve varış odağında gün kartı yok; dönüşte katlı gelir (S42). Hava hapının açık/kapalı durumu korunur.
+    LaunchedEffect(full) { if (!full) shiftCollapsed = true }
     Box(
         modifier.fillMaxSize().onGloballyPositioned { rootCoords = it }.pointerInput(Unit) {
             // Kartın dışına dokunuş (harita, başka düğme) açık gün kartını katlar; olay tüketilmez.
@@ -194,49 +162,68 @@ fun MapTab(
         },
     ) {
         MapHudLayout(
-            keyboard = keyboard, map = map, alerts = alerts,
+            keyboard = keyboard, map = mapSurface, alerts = alerts,
             header = {
                 Column(Modifier.fillMaxWidth()) {
-                    topCard()
-                    // A10.4d (K4): arama hapı ve sağında hava hapı; hava açılınca şerit aramanın altına iner.
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
-                        SearchBar(lang, actions.onSearch, Modifier.weight(1f))
-                        if (state.weatherStrip && !weatherOpen) {
-                            WeatherChip(state.weather, lang, state.nowMs, onRefresh = actions.onWeatherRefresh, expanded = false, onExpandedChange = { weatherOpen = it })
+                    // Varış odağı (MAP.md 6.3, 7.10) ve yalnız harita (S42): arama, hava ve sol göstergeler yok.
+                    AnimatedVisibility(full) {
+                        Column(Modifier.fillMaxWidth()) {
+                            topCard()
+                            // A10.4d (K4): arama hapı ve sağında hava hapı; hava açılınca şerit aramanın altına iner.
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(WeemSpace.s)) {
+                                SearchBar(lang, actions.onSearch, Modifier.weight(1f))
+                                if (state.weatherStrip && !weatherOpen) {
+                                    WeatherChip(state.weather, lang, state.nowMs, onRefresh = actions.onWeatherRefresh, expanded = false, onExpandedChange = { weatherOpen = it })
+                                }
+                            }
+                            if (state.weatherStrip && weatherOpen) {
+                                Spacer(Modifier.height(WeemSpace.s))
+                                WeatherChip(state.weather, lang, state.nowMs, onRefresh = actions.onWeatherRefresh, expanded = true, onExpandedChange = { weatherOpen = it })
+                            }
+                            Spacer(Modifier.height(WeemSpace.m))
+                            if (!keyboard) metrics()
+                            Spacer(Modifier.height(WeemSpace.s))
                         }
                     }
-                    if (state.weatherStrip && weatherOpen) {
-                        Spacer(Modifier.height(WeemSpace.s))
-                        WeatherChip(state.weather, lang, state.nowMs, onRefresh = actions.onWeatherRefresh, expanded = true, onExpandedChange = { weatherOpen = it })
+                    AnimatedVisibility(only) {
+                        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
+                            ShowPanelsButton(actions.onShowPanels, lang)
+                            Spacer(Modifier.height(WeemSpace.s))
+                        }
                     }
-                    Spacer(Modifier.height(WeemSpace.m))
-                    if (!keyboard) metrics()
-                    Spacer(Modifier.height(WeemSpace.s))
-                    toastSlot()
-                    reminderSlot()
+                    Box(Modifier.fillMaxWidth().testTag("toast-banner")) { toast() }
+                    // Yalnız harita kipinde bildirim şeridi ve ters yön sorusu kalır; hatırlatıcı yok (S42).
+                    if (!only) Box(Modifier.fillMaxWidth().testTag("reminder-slot")) { reminder() }
                 }
             },
             footer = {
-                // 1.7.1: gün kartı katlıyken konum ve rota düğmeleri kartın yanına iner; açılınca yerlerine döner.
-                // A10.4d (K4): konum düğmesi rota kartının üstünde; gün kartı katlıyken rota düğmesi onun sağında.
-                if (shiftCollapsed) {
-                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) { locate() }
-                        wrongWay()
-                        routePanel()
-                        Row(verticalAlignment = Alignment.Bottom) {
-                            Box(Modifier.weight(1f), contentAlignment = Alignment.BottomStart) { bar() }
-                            Spacer(Modifier.width(WeemSpace.s))
-                            RouteFab(actions.onRouteFab, lang = lang, open = state.routeOpen, busy = state.nav.busy, error = state.nav.error != null)
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    // A10.4d (K4): konum düğmesi rota kartının üstünde, sağda; varış odağında yok.
+                    AnimatedVisibility(!focus) {
+                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) { SmartLocateButton(state.cameraMode, actions.onLocate, lang = lang) }
+                    }
+                    wrongWay()
+                    AnimatedVisibility(full) {
+                        // 1.7.1: gün kartı katlıyken rota düğmesi kartın sağında; açılınca kartın üstüne çıkar.
+                        if (shiftCollapsed) {
+                            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                routePanel()
+                                Row(verticalAlignment = Alignment.Bottom) {
+                                    Box(Modifier.weight(1f), contentAlignment = Alignment.BottomStart) { bar() }
+                                    Spacer(Modifier.width(WeemSpace.s))
+                                    RouteFab(actions.onRouteFab, lang = lang, open = state.routeOpen, busy = state.nav.busy, error = state.nav.error != null)
+                                }
+                            }
+                        } else {
+                            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                routePanel()
+                                RouteFab(actions.onRouteFab, lang = lang, open = state.routeOpen, busy = state.nav.busy, error = state.nav.error != null)
+                                bar()
+                            }
                         }
                     }
-                } else {
-                    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        locate()
-                        wrongWay()
-                        routePanel()
-                        RouteFab(actions.onRouteFab, lang = lang, open = state.routeOpen, busy = state.nav.busy, error = state.nav.error != null)
-                        bar()
+                    AnimatedVisibility(focus) {
+                        state.nav.activeStop?.let { ArrivalAddressCard(it.label, it.unitNote) }
                     }
                 }
             },

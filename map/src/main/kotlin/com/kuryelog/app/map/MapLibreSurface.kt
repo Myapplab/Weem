@@ -1,6 +1,7 @@
 package com.kuryelog.app.map
 
 import android.content.Context
+import android.view.ViewConfiguration
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -118,6 +119,9 @@ internal class MapLibreHolder(private val app: Context, private val userAgent: S
             m.uiSettings.apply {
                 setCompassEnabled(false); setLogoEnabled(false); setAttributionEnabled(false); setTiltGesturesEnabled(false)
             }
+            // S44: dokunuştaki küçük kayma (MapLibre kaydırma eşiği 4 dp, Android dokunma payı ~8 dp) hem elle kaydırma hem dokunuş sayılıyordu:
+            // paneller gizlenip hemen geri geliyor, takip ve otomatik zoom kapanıyordu. Eşik dokunma payının üstünde: bir basış ya kaydırma ya dokunuştur.
+            m.gesturesManager.moveGestureDetector.setMoveThreshold(ViewConfiguration.get(ctx).scaledTouchSlop * MapCamera.MOVE_THRESHOLD_SLOP)
             m.setMinZoomPreference(MapCamera.MAPLIBRE_MIN_ZOOM)
             m.setMaxZoomPreference(MapCamera.MAPLIBRE_MAX_ZOOM)
             m.cameraPosition = CameraPosition.Builder().target(LatLng(MapCamera.BAKU.lat, MapCamera.BAKU.lon)).zoom(MapCamera.STANDARD_ZOOM).build()
@@ -179,7 +183,7 @@ internal class MapLibreHolder(private val app: Context, private val userAgent: S
             cam.zoom?.let { b.zoom(it) }
             cam.bearing?.let { b.bearing(it) }
             val u = CameraUpdateFactory.newCameraPosition(b.build())
-            if (cam.animate) m.animateCamera(u, MapCamera.MAPLIBRE_MOVE_MS.toInt() * 4) else m.moveCamera(u)
+            if (cam.animate) m.animateCamera(u, MapCamera.ANIMATE_MS) else m.moveCamera(u)
         }
     }
 

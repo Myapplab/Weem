@@ -35,6 +35,8 @@ class ShiftRig(root: File, val homeAt: Pair<Double, Double>? = 40.4093 to 49.867
     var importing = false
     var busy = false
     var permissions = true to true
+    /** S44: ev izleme ön plan servisi istendi mi (son `keepAlive`). */
+    var alive: Boolean? = null
     val states = mutableListOf<ShiftState>()
     var hooks: ShiftMachine.Hooks = object : ShiftMachine.Hooks {
         override fun busy() = this@ShiftRig.busy
@@ -63,6 +65,7 @@ class ShiftRig(root: File, val homeAt: Pair<Double, Double>? = 40.4093 to 49.867
                 machine.onStartCommand(ShiftMachine.ACTION_HOME_START, revision)
             }
             override fun showHomeStart(revision: Long) { calls += "notify:${NotificationIds.HOME_AUTO_START}" }
+            override fun keepAlive(on: Boolean) { alive = on }
         }, machine::shiftOn, { importing }, { permissions })
     }
 

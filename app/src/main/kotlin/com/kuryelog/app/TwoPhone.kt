@@ -5,6 +5,7 @@ import com.kuryelog.app.capture.CaptureState
 import com.kuryelog.app.core.ShiftHub
 import com.kuryelog.app.core.Store
 import com.kuryelog.app.economics.Economics
+import com.kuryelog.app.link.DialNotice
 import com.kuryelog.app.link.LinkHub
 import com.kuryelog.app.link.TheftRuntime
 import com.kuryelog.app.remote.RemoteHub
@@ -61,6 +62,8 @@ object TwoPhone {
                 nav = port, scooter = Scooter.bridge, shift = ShiftHub, navOpened = { nav?.showMap() },
                 // A8.4: Pixel'den Park/Kapat (LINK.md 5.2).
                 theftCommand = { TheftRuntime.command(it) },
+                // S44: Provider'ın arama uygulamasında açılan numara panoya (ayar bu telefonda da kapatılabilir).
+                dial = { n -> if (LinkHub.dialShare(app)) DialNotice.show(app, n) },
             )
             LinkRole.PROVIDER -> PhoneBridge.Local(nav = port)
             LinkRole.OFF -> PhoneBridge.Local()
@@ -88,6 +91,9 @@ object TwoPhone {
         val events = Store.guarded(app, "two_phone_events") { Orders.events(app) }
         val day = Store.guarded(app, "two_phone_day") { DayRuntime.get(app) }
         nav?.controller?.forward = null
+        // S44: yalnız Provider'da arama uygulamasının numarası Receiver'a (ayar açıkken).
+        CaptureState.dialShare = { b?.role == LinkRole.PROVIDER && LinkHub.dialShare(app) }
+        CaptureState.dialOut = { n -> if (b?.role == LinkRole.PROVIDER) b.sendDial(n) }
         // A10.4i (S35 #17): gün motoru yalnız Receiver'da (tek telefonda yerel); Provider Receiver'ın gününü gösterir.
         val reports = Store.guarded(app, "two_phone_reports") { DayReportWriter.get(app) }
         reports?.onWritten = null

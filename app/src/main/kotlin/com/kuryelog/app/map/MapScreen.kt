@@ -38,6 +38,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
@@ -90,6 +91,7 @@ import com.kuryelog.logic.map.route.RideMode
 import com.kuryelog.logic.map.ui.BikewayLayerRules
 import com.kuryelog.logic.map.ui.BikewayMenu
 import com.kuryelog.logic.map.ui.CameraEase
+import com.kuryelog.logic.map.ui.FollowCamera
 import com.kuryelog.logic.map.ui.LocateAction
 import com.kuryelog.logic.map.ui.LocateButtonRules
 import com.kuryelog.logic.map.ui.LongPressAction
@@ -106,10 +108,13 @@ import com.kuryelog.logic.map.ui.RouteLayer
 import com.kuryelog.logic.map.ui.RouteLights
 import com.kuryelog.logic.map.ui.SurfaceLayerRules
 import com.kuryelog.logic.map.ui.Toasts
+import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -182,7 +187,9 @@ private fun rememberMapData(): State<MapDataState> {
     LaunchedEffect(settings.region) {
         if (MapScreenLoad.loadedRegion != settings.region && data.value.phase != MapDataPhase.BUILDING) {
             MapScreenLoad.loadedRegion = settings.region
-            runCatching { controller.load(settings.region) }
+            // S44: kompozisyon yükleme sürerken iptal olursa (sekme/ilk kurulum adımı değişti) bir sonraki açılışta yeniden yüklenir;
+            // önceden runCatching iptali de yutuyordu, bölge "yüklendi" sayılıp graf hiç kurulmayabiliyordu (S40 açığı).
+            try { controller.load(settings.region) } catch (e: CancellationException) { MapScreenLoad.loadedRegion = null; throw e } catch (_: Exception) {}
         }
     }
     return data
@@ -334,20 +341,21 @@ private fun LiveMap(
     }
     val navNow by rememberUpdatedState(nav)
 
-    fun command(center: GeoPoint, z: Double?, bearing: Double?, force: Boolean = false) {
+    fun command(center: GeoPoint, z: Double?, bearing: Double?, force: Boolean = false, animate: Boolean = false) {
         val last = cameraState.value
-        // Takipte aynı kamera yeniden gönderilmez (duran işaret, kuzey-yukarıda dönen koni); konuma dönüş ve sığdırma her zaman gider (arada elle kaydırılmış olabilir).
+        // Takipte aynı kamera yeniden gönderilmez (duran işaret, kuzey-yukarıda dönen koni); sığdırma her zaman gider (arada elle kaydırılmış olabilir).
         if (!force && last != null && last.center == center && last.zoom == z && last.bearing == bearing) return
         cameraSeq++
-        cameraState.value = MapCameraCommand(cameraSeq, center, zoom = z, bearing = bearing)
+        cameraState.value = MapCameraCommand(cameraSeq, center, zoom = z, bearing = bearing, animate = animate)
     }
-    fun recenter(resetZoom: Boolean = true, bearingNow: Double? = null) {
+    // S44: konuma dönüş kamerayı sıçratmaz; takip kamerası ([FollowCamera]) bulunduğu yerden işarete kayar, zoom da yumuşakça gelir.
+    var followSeq by remember { mutableIntStateOf(0) }
+    fun recenter(resetZoom: Boolean = true) {
         follow = true
         freeByGesture = false
         mapOnly = false
         if (resetZoom) { autoZoom = true; navZoom = spot.zoom }
-        val p = puckState.value ?: return
-        command(p.point, if (resetZoom && !navNow.hasRoute) MapCamera.STANDARD_ZOOM else null, bearingNow ?: if (headingUp) p.heading else 0.0, force = true)
+        followSeq++
     }
     // Hata ya da bekleyen adres gelince rota paneli kendiliğinden açılır (YolGo `RouteFab`).
     LaunchedEffect(nav.error, nav.pending) { if (nav.error != null || nav.pending != null) { panelOpen = true; mapOnly = false } }
@@ -369,7 +377,8 @@ private fun LiveMap(
         follow = false
         freeByGesture = false
         mapOnly = false
-        command(GeoPoint(cam.lat, cam.lon), cam.zoom, 0.0, force = true)
+        // S44: sığdırma kayarak (önceden tek karede sıçrardı).
+        command(GeoPoint(cam.lat, cam.lon), cam.zoom, 0.0, force = true, animate = true)
         val fittedAt = System.currentTimeMillis()
         delay(RouteLayer.REFOLLOW_AFTER_FIT_MS)
         if (!follow && lastGestureMs < fittedAt) recenter()
@@ -389,32 +398,47 @@ private fun LiveMap(
     }
     // Takip (S38): işaret her değişince (kayma ~30 fps, pusulayla dönüş) kamera da kayar ve döner; yön-yukarıda kamera yönü işaretin yönü (dururken pusula,
     // hareketteyken GPS yönü + anlık dönüş). Rota açıkken yaklaşma zoom'u, varış odağında ben + hedef aynı karede; yaklaşma zamana bağlı.
+    // S44: merkez, yön ve zoom hedefe yumuşakça gelir (konuma dönüş, sığdırmadan takibe, odağa giriş/çıkış); hedefe varılana dek her karede,
+    // sonra yalnız işaret değişince çizilir. Rota yokken otomatik zoom standart yakınlığa kayar (önceden konum düğmesinde sıçrardı).
     val measuredNow by rememberUpdatedState(measured)
-    LaunchedEffect(follow, headingUp, focusOn) {
+    LaunchedEffect(follow, headingUp, focusOn, followSeq) {
         if (!follow) return@LaunchedEffect
         var lastMs = 0L
-        snapshotFlow { puckState.value }.collect { p ->
-            if (p == null) return@collect
+        var cam: FollowCamera? = null
+        while (true) {
+            val p = puckState.value
+            if (p == null) { snapshotFlow { puckState.value }.first { it != null }; continue }
+            if (!follow) return@LaunchedEffect
             val now = SystemClock.uptimeMillis()
             val dt = if (lastMs == 0L) EASE_STEP_MS else now - lastMs
             lastMs = now
-            val bearing = if (headingUp) p.heading else 0.0
+            val c = cam ?: FollowCamera.start(spot.center?.lat, spot.center?.lon, spot.bearing, p.point.lat, p.point.lon).also { cam = it }
             val st = navNow
             val dest = st.activeStop?.point
+            var target = p.point
+            val wantZoom: Double?
             if (focusOn && dest != null && viewport != IntSize.Zero) {
                 val shortPx = with(density) { minOf(viewport.width, viewport.height).toDp().value.toInt() }
                 val f = ArrivalFocus.focusCamera(p.point.lat, p.point.lon, dest.lat, dest.lon, shortPx)
-                navZoom += (f.zoom - navZoom) * CameraEase.factor(FOCUS_EASE, EASE_STEP_MS, dt)
-                command(GeoPoint(f.lat, f.lon), navZoom, bearing)
-                return@collect
-            }
-            val z = if (autoZoom && st.hasRoute) {
+                target = GeoPoint(f.lat, f.lon)
+                wantZoom = f.zoom
+            } else if (autoZoom && st.hasRoute) {
                 val park = st.plan?.legs?.firstOrNull()?.parkPoint
                 val remaining = measuredNow ?: park?.let { Geo.haversine(p.point.lat, p.point.lon, it.lat, it.lon) }
-                navZoom += (ApproachZoom.zoomFor(runtime.speedKmh, remaining) - navZoom) * CameraEase.factor(ZOOM_EASE, EASE_STEP_MS, dt)
+                wantZoom = ApproachZoom.zoomFor(runtime.speedKmh, remaining)
+            } else {
+                wantZoom = if (autoZoom) MapCamera.STANDARD_ZOOM else null
+            }
+            val z = wantZoom?.let { w ->
+                navZoom += (w - navZoom) * CameraEase.factor(if (focusOn) FOCUS_EASE else ZOOM_EASE, EASE_STEP_MS, dt)
+                if (abs(w - navZoom) < ZOOM_DONE) navZoom = w
                 navZoom
-            } else if (autoZoom && cameraState.value == null) MapCamera.STANDARD_ZOOM else null
-            command(p.point, z, bearing)
+            }
+            val (lat, lon, bearing) = c.step(p.point.lat, p.point.lon, target.lat, target.lon, if (headingUp) p.heading else 0.0, dt)
+            command(GeoPoint(lat, lon), z, bearing)
+            val zoomDone = wantZoom == null || navZoom == wantZoom
+            // Hedefe varıldıysa yeni kare yalnız işaret değişince; değilse bir sonraki ekran karesinde.
+            if (c.settled && zoomDone) snapshotFlow { puckState.value }.first { it !== p } else withFrameMillis { }
         }
     }
     val mode = LocateButtonRules.cameraModeOf(follow, headingUp)
@@ -486,8 +510,8 @@ private fun LiveMap(
             follow = false; autoZoom = false; freeByGesture = true; lastGestureMs = System.currentTimeMillis()
             if (!focusOn) mapOnly = true
         },
-        onCameraIdle = { c, z, _ ->
-            spot.center = c; spot.zoom = z
+        onCameraIdle = { c, z, b ->
+            spot.center = c; spot.zoom = z; spot.bearing = b
             if (freeByGesture && !follow) lastGestureMs = System.currentTimeMillis()
             // Takipte kamera her karede durur: simge seçimi her karede değil, belirgin değişimde (S38).
             val pc = poiCenter
@@ -531,7 +555,7 @@ private fun LiveMap(
                 else when (LocateButtonRules.locateActionFor(mode)) {
                     LocateAction.RECENTER -> recenter()
                     LocateAction.HEADING_UP -> { headingUp = true; recenter() }
-                    LocateAction.NORTH_UP -> { headingUp = false; recenter(bearingNow = 0.0) }
+                    LocateAction.NORTH_UP -> { headingUp = false; recenter() }
                 }
             },
             onRouteFab = { panelOpen = !panelOpen },
@@ -703,6 +727,8 @@ private const val MOVING_KMH = 3.0
 private const val ZOOM_EASE = 0.15
 private const val FOCUS_EASE = 0.25
 private const val EASE_STEP_MS = 80L
+/** Zoom hedefe bu kadar yaklaşınca varılmış sayılır (sonra kare yalnız işaret değişince). */
+private const val ZOOM_DONE = 0.005
 
 /** S42: gün kartını katlayan basıştan sonra bu süre içindeki harita dokunuşu yalnız haritayı açıp kapatmaz (MapLibre tek dokunuşu bırakışta onaylar). */
 private const val TAP_AFTER_COLLAPSE_MS = 1_000L
@@ -711,6 +737,7 @@ private const val TAP_AFTER_COLLAPSE_MS = 1_000L
 private class CameraSpot {
     var center: GeoPoint? = null
     var zoom = MapCamera.STANDARD_ZOOM
+    var bearing: Double? = null
 }
 private val DAY_ROWS = setOf(
     LongPressAction.GO_TO, LongPressAction.ADD_STOP, LongPressAction.GO_TO_RESTAURANT, LongPressAction.PICK_AS_RESTAURANT, LongPressAction.CURB_WAIT,
