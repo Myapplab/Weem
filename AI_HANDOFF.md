@@ -2,6 +2,11 @@
 
 En yeni en üstte; **en çok 5 bölüm**, bölüm başına en çok 6 satır (başlık + Yapılan · Doğrulama · Açık). Yeni bölüm eklenince en alttaki silinir (eski bölümler git'te). Okurken yalnız en üst bölüm.
 
+## 2026-11-05 — S44: telefon geri bildirimi 5 (Claude Opus; dal `claude/zen-hypatia-o0ctcd`)
+- Yapılan: MapLibre kaydırma eşiği = dokunma payı × 1,5 (dokunuş kaydırma da sayılıp takip/otomatik zoom kapanıyordu → "zoom yok, yaklaşınca yakınlaşmıyor"); `MapTab` tek ağaç (yüzey taşınmaz, GL yeniden kurulmaz) + `AnimatedVisibility`; `FollowCamera` yumuşak takip, sığdırma 650 ms; `ApproachZoom` üst 18. `HomeWatchService` (5105, MIN) + `HomeWatchPlan` boş pencere beklemesi, `startBlocked`'ta GPS yok. `DialShare`/`DialNumber`/`DialNotice` (S5 istisnası, ayar `dial_share`). `rememberMapData` iptal.
+- Doğrulama: `logic` core/map/capture/link/app/orders yeşil, Android derlemesi yerelde yeşil; Robolectric ve lint yerelde Maven 429 → CI. Telefonda denenmedi.
+- Açık: rota motoru değişmedi (kullanıcıdan örnek); numara yalnız Provider → Receiver (Receiver ekran okumaz); `StreamNet.listen` bind hatası (S43'ten).
+
 ## 2026-10-28 — S43: A10.7 ön denetim (Claude Opus; PR #26, APK `weem-build-17`)
 - Yapılan: `/code-review high` (app, map, scooter, link, capture, orders, core, remote) → 9 düzeltme: `LinkService` `on` bayrağı (STICKY), `StreamNet` kabul çökmesi, `ScooterService` canlı FGS reddi, `LinkRuntime` UDP yeniden açma, `TheftRuntime` PIN tuzsuz, `ScooterShiftLink` 4902, `WatchService.onFailure` guarded, `OrdersHost` rozet 30 sn; `TheftGuard.sirenOn` + test. `MapScreen` poi seçimi `produceState`+Default. `apk.yml` elle: `weem-<sürüm>-build-N.apk`.
 - Doğrulama: `logic:link` yeşil (197); Android derlemesi yerelde Maven Central 429 → yalnız CI. Telefonda denenmedi.
@@ -25,10 +30,3 @@ En yeni en üstte; **en çok 5 bölüm**, bölüm başına en çok 6 satır (ba�
 - Ayrıca (kullanıcı): Scooter sekmesinde ayarlar/ZIP düğmesi yok; vardiya kartı her yerde tek satır (`Text.SHIFT_START` silindi).
 - APK `weem-build-15` (APK işi yeşil; build 13–14 kırmızıydı: `MapDataTest` yer tutucu varsayımı, Robolectric kabuk testlerinde MapLibre `UnsatisfiedLinkError` → `mapViewOrBlank`). APK işinde Robolectric gömülü grafı gerçekten kurdu (READY).
 - Açık: telefonda kurulum kartının çıkmadığı denenmeli. `rememberMapData` yüklemesi kompozisyon iptal olursa yeniden denenmiyor (`MapScreenLoad.loadedRegion` önceden yazılıyor) — küçük risk, dokunulmadı.
-
-## 2026-10-24 — A10.4l bitti: S39 telefon geri bildirimi 3 + sadeleştirme (Claude Opus; dal `ccr-bd4f7a85-wefii4`; PR #22 CI yeşil, `main` `272d1f6`; APK `weem-build-12`)
-- Yapılan: gömülü altlık (`ci/build_tiles.sh`, `tools/basemap/make_style.cjs`, `map/src/main/assets/basemap/`, `logic/map` `BasemapInstaller`, `:map` `Basemap`, `MapLibreHolder` yerel stil + 60 fps); akışlı graf açma (`MapAssets.open`, `AtomicFile.write(InputStream)`), bellek eşlemeli graf/SRTM; Harita sekmesi arkada (`WeemApp`, `MapScreen(visible)`, `collectWhile`); `baseline-prof.txt`; `WatchService` içerik okuma sınırı (`CaptureTiming.CONTENT_READ_MS`); Google işaret farkı + `PoiLayerRules.selectGoogle`; `PassiveSession`/`OrderSwitch` bağlandı; ölü kod ve 2 kopya kaldırıldı.
-- Doğrulama: `-p logic test` 2.177/0; `:app` 114/114, `:map` 10/10; `lintDebug` 0 hata; release yerelde 32.570.447 bayt (karosuz); telefonda denenmedi.
-- CI: `build_tiles.sh` APK işinde çalıştı (2 dk); APK 70.989.967 bayt (önceki 57,8 MB → karolar ~13 MB, z0–15). İlk CI kırmızısı `CrashGuardTest` (kabuk metnini birebir arıyordu; yerelde Gradle testi güncel saymıştı → kaynak-metin testlerinde `--rerun-tasks`).
-- Açık kalan: MapLibre `pmtiles://file://` ve `file://` glifleri cihazda doğrulanmadı; sipariş değişiminin 2 telefonda Provider'da da rota açması (zararsız) gözlenecek.
-- Kullanıcı kararları bekliyor: SORU-S39-1 (özellik sadeleştirme), SORU-S39-2 (pil seçenekleri) — `docs/SADELESTIRME.md` 4–5.
