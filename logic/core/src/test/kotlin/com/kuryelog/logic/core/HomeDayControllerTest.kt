@@ -39,6 +39,23 @@ class HomeDayControllerTest {
         assertEquals("no background location: nothing to keep", false, r.alive)
     }
 
+    /** S44: elle bitirilen vardiyadan sonra evde görülene dek GPS penceresi açılmaz (başlangıç zaten olamaz; eve dönüşte boşa GPS). */
+    @Test fun noGpsWindowWhileTheStartIsBlocked() {
+        val r = ShiftRig(temp.root)
+        r.machine.onStartCommand(ShiftMachine.ACTION_START, null)
+        r.watch(800.0, 30.0, acc = 8f, dtS = 30.0)
+        r.machine.onStartCommand(ShiftMachine.ACTION_STOP, null)
+        r.watcher.recheck(r.mono)
+        r.watch(700.0, 25.0, acc = 30f, dtS = 30.0)
+        r.watch(600.0, 25.0, acc = 30f, dtS = 30.0)
+        assertFalse(r.machine.shiftOn())
+        assertEquals(HomeWatchPlan.Mode.LOW, r.watcher.mode)
+        // Seen at home: unblocked, the next fast departure opens the GPS window.
+        r.watch(10.0, 0.0, acc = 20f, dtS = 120.0)
+        r.watch(80.0, 20.0, acc = 30f, dtS = 30.0)
+        assertEquals(HomeWatchPlan.Mode.HIGH, r.watcher.mode)
+    }
+
     @Test fun leavingHomeStartsTheDayAndComingBackEndsItAfter30s() {
         val r = ShiftRig(temp.root)
         leave(r)

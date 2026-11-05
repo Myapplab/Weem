@@ -83,8 +83,10 @@ class HomeWatchCore(
         val decision = home.observe(fix, false)
         if (decision != HomeShift.Decision.START) {
             // E6: ayrılmanın olası olduğunu söyleyen düşük güçlü fix GPS'e geçirir (pencereden sonra geri).
-            val d = home.engine()?.distanceToHomeM(fix) ?: return
-            val next = plan.onFix(d, fix.accuracyM, fix.speedMps, now)
+            val engine = home.engine() ?: return
+            val d = engine.distanceToHomeM(fix)
+            // S44: elle bitirilmiş vardiyadan sonra evde görülene dek başlangıç yok: GPS penceresi açılmaz (eve dönüş yolunda boşa GPS).
+            val next = if (engine.startBlocked) plan.tick(now) else plan.onFix(d, fix.accuracyM, fix.speedMps, now)
             if (next != mode) start(next)
             return
         }
