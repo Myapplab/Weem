@@ -176,7 +176,8 @@ internal class GoogleHolder(private val app: Context) {
             appliedCameraSeq = cam.seq
             val cur = m.cameraPosition
             val pos = CameraPosition(LatLng(cam.center.lat, cam.center.lon), (cam.zoom ?: cur.zoom.toDouble()).toFloat(), 0f, (cam.bearing ?: cur.bearing.toDouble()).toFloat())
-            m.moveCamera(CameraUpdateFactory.newCameraPosition(pos))
+            val u = CameraUpdateFactory.newCameraPosition(pos)
+            if (cam.animate) m.animateCamera(u, MapCamera.ANIMATE_MS, null) else m.moveCamera(u)
         }
     }
 

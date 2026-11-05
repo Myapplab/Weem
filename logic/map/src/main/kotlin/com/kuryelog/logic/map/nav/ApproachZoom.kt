@@ -7,7 +7,8 @@ enum class Refollow { NONE, FOLLOW_AUTO_ZOOM, FOLLOW_KEEP_ZOOM }
 object ApproachZoom {
     const val APPROACH_START_M = 1000.0
     const val APPROACH_END_M = 100.0
-    const val APPROACH_MAX_ZOOM = 17.5
+    /** S44 (kullanıcı: "rotaya yaklaşınca ekran yaklaşmıyor"): 17,5 → 18 = varış odağının en yakın sınırı ([ArrivalFocus.FOCUS_MIN_ZOOM]); odağa geçişte zoom sıçramaz. */
+    const val APPROACH_MAX_ZOOM = 18.0
     const val AUTO_ZOOM_PAUSE_S = 10
 
     /** `<6 km/s → 16.6`, `<16 → 16.2`, `<24 → 15.9`, aksi `15.6`. */

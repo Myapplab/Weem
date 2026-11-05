@@ -29,6 +29,10 @@ object MapCamera {
      * işaret zaten ~30 fps kayar, 60 akıcı kalır, GPU işi yarıya iner.
      */
     const val MAPLIBRE_MAX_FPS = 60
+    /** S44: tek seferlik kamera geçişi (yeni rotada sığdırma) bu sürede kayar; önceden anlık sıçrardı. */
+    const val ANIMATE_MS = 650
+    /** S44: MapLibre kaydırma eşiği = Android dokunma payı × bu (dokunuştaki küçük kayma kaydırma sayılmaz). */
+    const val MOVE_THRESHOLD_SLOP = 1.5f
 }
 
 /** Atıf metni ve dokununca açılan sayfa. */

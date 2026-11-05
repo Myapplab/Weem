@@ -165,4 +165,10 @@ class PuckAnimator {
 object CameraEase {
     /** [perStep] oranının [stepMs]'lik adımlarla [dtMs] sürede birikmiş karşılığı. */
     fun factor(perStep: Double, stepMs: Long, dtMs: Long): Double = 1 - Math.pow(1 - perStep, dtMs.coerceIn(0L, 1_000L).toDouble() / stepMs)
+
+    /** [from]'dan [to]'ya kısa yoldan açı farkı, [-180, 180). */
+    fun angleDelta(from: Double, to: Double): Double = ((to - from) % 360 + 540) % 360 - 180
+
+    /** [from]'dan [to]'ya kısa yoldan [f] (0–1) oranında yaklaşmış açı, [0, 360). */
+    fun easeAngle(from: Double, to: Double, f: Double): Double = ((from + angleDelta(from, to) * f) % 360 + 360) % 360
 }
