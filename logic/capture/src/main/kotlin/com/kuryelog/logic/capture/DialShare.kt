@@ -30,6 +30,10 @@ class DialShare(private val windowMs: Long = WINDOW_MS, private val repeatMs: Lo
 
     companion object {
         const val WINDOW_MS = 3_000L
+        /** İçerik olaylarından sonra okuma bu kadar bekler (alan dolsun, olaylar birleşsin). */
+        const val READ_DELAY_MS = 250L
+        /** Alan boşsa pencere süresince bu aralıkla yeniden okunur (içerik olayı gelmese de). */
+        const val RETRY_MS = 400L
         const val REPEAT_MS = 30_000L
         const val MIN_DIGITS = 7
         const val MAX_DIGITS = 20

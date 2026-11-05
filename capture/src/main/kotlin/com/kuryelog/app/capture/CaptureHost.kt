@@ -31,6 +31,10 @@ object CaptureState {
      * `:app` (`TwoPhone`) takar; vardiya Provider'dan aynalansa da okuma kapalı kalır (A10.2).
      */
     @Volatile var receiverRole: () -> Boolean = { false }
+    /** S44: 2 telefon modunda Provider'da arama uygulamasının numarası öteki telefona gitsin mi (rol + ayar; `:app` `TwoPhone` takar). */
+    @Volatile var dialShare: () -> Boolean = { false }
+    /** S44: numarayı öteki telefona yollar (`TwoPhone`); numara burada ve orada hiçbir yere yazılmaz. */
+    @Volatile var dialOut: (String) -> Unit = {}
     /** E7: ekran okuma şu an bağlı (uyarı bunu okur, [ScreenReadingWarning]). */
     @Volatile var running = false
     /** Tanı kartı: her izlenen uygulamanın son okuma ve son "Accept" görülme anı (CAPTURE.md 1.9). */

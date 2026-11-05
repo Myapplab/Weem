@@ -14,9 +14,12 @@ class PrivacyAuditTest {
 
     @Test fun receiverPhoneReadsNoScreenAndNoNotification() {
         val watch = src("capture/src/main/kotlin/com/kuryelog/app/WatchService.kt")
-        // Olay girişi, ekran okuma ve gözlem kabulü: üçü de rolü sorar.
-        assertEquals(3, Regex("""!Store\.canRecordScreen\(this\) \|\| CaptureState\.receiverRole\(\)""").findAll(watch).count())
+        // Olay girişi, ekran okuma, gözlem kabulü ve S44 arama numarası okuması: dördü de rolü sorar.
+        assertEquals(4, Regex("""!Store\.canRecordScreen\(this\) \|\| CaptureState\.receiverRole\(\)""").findAll(watch).count())
         assertTrue(watch.contains("syncEventScope(Store.canRecordScreen(this@WatchService) && !CaptureState.receiverRole())"))
+        // S44: arama numarası yalnız Provider'da okunur ve yollanır (TwoPhone rolü ve ayarı sorar).
+        val two = src("app/src/main/kotlin/com/kuryelog/app/TwoPhone.kt")
+        assertTrue(two.contains("CaptureState.dialShare = { b?.role == LinkRole.PROVIDER && LinkHub.dialShare(app) }"))
         val notif = src("capture/src/main/kotlin/com/kuryelog/app/NotifService.kt")
         assertEquals(2, Regex("""Store\.canRecordScreen\(this\) && !CaptureState\.receiverRole\(\)""").findAll(notif).count())
         assertTrue(src("app/src/main/kotlin/com/kuryelog/app/TwoPhone.kt").contains("CaptureState.receiverRole = { LinkHub.role.value == LinkRole.RECEIVER }"))

@@ -45,6 +45,14 @@ enum class LinkText(override val tr: String, override val az: String) : Bilingua
     QR_NEWER("QR daha yeni bir WEEM'den: bu telefonda WEEM'i güncelleyin", "QR daha yeni WEEM-dəndir: bu telefonda WEEM-i yeniləyin"),
     SCAN_FAILED("QR okunamadı", "QR oxunmadı"),
     UNPAIR("Eşleşmeyi kaldır", "Cütləşməni sil"),
+    // S44: Provider'da arama uygulamasında açılan numara Receiver'da panoya.
+    DIAL_SHARE("Aranan numarayı öteki telefona kopyala", "Zəng edilən nömrəni o biri telefona köçür"),
+    DIAL_SHARE_HINT("Wolt/Bolt telefonunda arama uygulaması bir numarayla açılınca (vardiyada) numara öteki telefonda panoya kopyalanır.",
+        "Wolt/Bolt telefonunda zəng tətbiqi nömrə ilə açılanda (növbədə) nömrə o biri telefonda buferə köçürülür."),
+    DIAL_CHANNEL("Öteki telefonun aradığı numara", "O biri telefonun zəng etdiyi nömrə"),
+    DIAL_COPIED("Numara kopyalandı", "Nömrə köçürüldü"),
+    DIAL_TAP("%s · aramak için dokun", "%s · zəng üçün toxun"),
+    DIAL_CALL("Ara", "Zəng et"),
     UNPAIRED_BY_PEER("Öteki telefon eşleşmeyi kaldırdı", "Digər telefon cütləşməni sildi"),
     IDENTITY_FAILED("Bu telefonun bağlantı anahtarı açılamadı; sonra yeniden deneyin", "Bu telefonun bağlantı açarı açılmadı; sonra yenidən cəhd edin"),
 

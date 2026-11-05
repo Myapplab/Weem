@@ -43,6 +43,7 @@ import com.kuryelog.app.ui.RadioRow
 import com.kuryelog.app.ui.SettingsGroup
 import com.kuryelog.app.ui.StatusPill
 import com.kuryelog.app.ui.SubScreen
+import com.kuryelog.app.ui.SwitchRow
 import com.kuryelog.app.ui.WButton
 import com.kuryelog.app.ui.WCard
 import com.kuryelog.app.ui.WTone
@@ -120,6 +121,15 @@ fun TwoPhoneScreen(lang: Lang, version: String, onBack: () -> Unit) {
 
         // A8.4: hırsızlık koruması (LINK.md 5.4).
         if (role != LinkRole.OFF) TheftCard(lang)
+
+        // S44: Provider'da arama uygulamasında açılan numara Receiver'da panoya.
+        if (role != LinkRole.OFF) {
+            var dial by remember { mutableStateOf(LinkHub.dialShare(ctx)) }
+            WCard(Modifier.padding(top = WeemSpace.l)) {
+                SwitchRow(LinkText.DIAL_SHARE.get(lang), dial, { LinkHub.setDialShare(ctx, it); dial = it }, subtitle = LinkText.DIAL_SHARE_HINT.get(lang),
+                    icon = WeemIcons.ContentCopy, tag = "dial-share")
+            }
+        }
 
         SettingsGroup(LinkText.THIS_PHONE.get(lang)) {
             ListRow(mine?.let { LinkText.FINGERPRINT.get(lang).format(it) } ?: LinkText.IDENTITY_FAILED.get(lang), icon = WeemIcons.PhoneAndroid, titleStyle = WeemType.bodyM)
