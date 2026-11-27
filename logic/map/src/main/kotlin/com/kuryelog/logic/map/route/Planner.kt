@@ -36,7 +36,13 @@ class PlanRequest(
     val bikeways: Set<Long> = emptySet(),
     /** UTC an; null → şimdi. */
     val departure: Instant? = null,
-)
+) {
+    /** Aynı istek, başka kalkış noktasından (yön bilgisi düşer). */
+    fun from(o: GeoPoint) = PlanRequest(
+        graph, o, stops, params, approved, blocked, steep, null, fixedOrder, ghost, learned, marks, surface, surfaceQuality, wwRatio,
+        wwAvoid, reverseHours, wrongWayEdges, bikeways, departure,
+    )
+}
 
 /** [error]: hiç plan yoksa ilk rota hatası (yoksa "Rota bulunamadı"); plan varsa null. */
 class PlanResult(val plans: Map<RideMode, Plan>, val error: RouteMsg?)
@@ -52,6 +58,23 @@ object Planner {
 
     /** Düzgün yol arayan adayda ölçülmüş yüzey cezasının çarpanı. */
     const val QUALITY_SEEK_SCALE = 15.0
+
+    /** S45b: konum 60 m'de hiçbir yola düşmüyorsa (bina içi, avlu, ±70 m GPS) en yakın sürülebilir yol bu kadar içinde aranır (m). */
+    const val FAR_START_M = 250.0
+
+    /**
+     * Uygulamanın girişi (S45b, kullanıcı: "rota açmada problem var"): [computePlans]; "konumunun yakınında sürülebilir yol yok"
+     * çıkarsa rota [FAR_START_M] içindeki en yakın sürülebilir yolun izdüşümünden yeniden hesaplanır (YolGo'da yok; altın testler
+     * [computePlans]'ı ölçer, değişmez). Orada da olmazsa ilk hata kalır.
+     */
+    fun computeNearRoad(r: PlanRequest, probe: RouteProbe? = null): PlanResult {
+        val first = computePlans(r, probe)
+        if (first.plans.isNotEmpty() || first.error?.code != RouteCode.NO_RIDEABLE_NEAR_START) return first
+        val m = CostModel(r.graph, mode = RideMode.TIME, params = r.params, approved = r.approved, blocked = r.blocked, ghost = r.ghost)
+        val hit = r.graph.nearestEdge(r.origin.lat, r.origin.lon, maxDist = FAR_START_M, accept = m::rideable) ?: return first
+        val again = computePlans(r.from(GeoPoint(hit.lat, hit.lon)), probe)
+        return if (again.plans.isNotEmpty()) again else first
+    }
 
     fun computePlans(r: PlanRequest, probe: RouteProbe? = null): PlanResult {
         val plans = LinkedHashMap<RideMode, Plan>()

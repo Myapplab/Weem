@@ -40,4 +40,15 @@ class StartWalkOutTest {
         assertTrue(normal.startWalk.isEmpty())
         assertEquals(0.0, normal.startWalkM, 0.0)
     }
+
+    @Test
+    fun `S45b konum 60 m'de yola düşmüyorsa rota en yakın yoldan açılır, altın giriş değişmez`() {
+        val req = PlanRequest(TestGraphs.plazaGraph(), p(200.0, 370.0), listOf(p(400.0, 250.0)), RideParams(), emptySet(), emptySet())
+        assertEquals(RouteCode.NO_RIDEABLE_NEAR_START, Planner.computePlans(req).error?.code)
+        val near = Planner.computeNearRoad(req)
+        assertEquals(null, near.error)
+        assertEquals(200.0, near.plans.values.first().legs.first().rideM, 5.0)
+        val far = PlanRequest(TestGraphs.plazaGraph(), p(-900.0, -900.0), listOf(p(400.0, 250.0)), RideParams(), emptySet(), emptySet())
+        assertTrue(Planner.computeNearRoad(far).plans.isEmpty())
+    }
 }

@@ -48,7 +48,7 @@ class RouteEngine(val timeoutMs: Long = 25_000, dispatcher: CoroutineDispatcher 
         }
         val task = CoroutineScope(w.job + queue).async {
             val job = coroutineContext.job
-            Planner.computePlans(request, RouteProbe { job.ensureActive() })
+            Planner.computeNearRoad(request, RouteProbe { job.ensureActive() })
         }
         try {
             // Yalnız bu motorun süresi RouteTimeout olur; çağıranın kendi zaman aşımı ya da iptali olduğu gibi geçer.
