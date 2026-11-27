@@ -2,6 +2,11 @@
 
 En yeni en üstte; **en çok 5 bölüm**, bölüm başına en çok 6 satır (başlık + Yapılan · Doğrulama · Açık). Yeni bölüm eklenince en alttaki silinir (eski bölümler git'te). Okurken yalnız en üst bölüm.
 
+## 2026-11-28 — S45b: G3 eşleştirme 32 bayt (Claude Opus; dal `claude/g3-pair-32`, APK `weem-build-19`)
+- Yapılan: güncel G3 16 baytlık SET_PWD'ye kayıtlı anahtarla yanıt veriyordu (eşleşme takılıyordu); `NinebotSession.pairPayload` artık 32 bayt (ilk 16 = anahtar, ikinci 16 = SHA-256(anahtar)[:16]; Segway'in ikinci yarısının kaynağı bilinmiyor). `PairFormatTest`.
+- Doğrulama: `logic:scooter` yeşil (önceden kırık `ScooterContractTest` hariç, Windows'ta değişiklikten bağımsız); CI APK #19 yeşil; **Pixel'de denendi**: eşleşme + güç tuşu → bağlı, canlı veri.
+- Açık: Segway uygulaması artık yeni anahtarla eşleşmek isteyecek (güç tuşu); `ScooterContractTest` Windows hatası incelenmedi.
+
 ## 2026-11-28 — S45: G3 ekranına harita araştırması (Claude Opus; `main`, yalnız belge)
 - Yapılan: Segway verisi temizlenip yeniden eşleşirken HCI kaydı alındı ve tamamen çözüldü (SET_PWD 32 bayt, AUTH anahtarı ilk 16 bayt). Resmî navigasyon = kart `0x23` cmd `0x71` (başlat, mesafe, sokak adı); görüntü komutu yok → canlı harita stok yazılımda yok. Ayrıntı `BEKLEYEN_OZELLIKLER.md` N10, karar `WEEM_PLANI.md` S45.
 - Doğrulama: yalnız kayıt çözümü (MAC'ler geçti); WEEM'den scooter'a hiçbir şey gönderilmedi, kod değişmedi.
@@ -22,9 +27,3 @@ En yeni en üstte; **en çok 5 bölüm**, bölüm başına en çok 6 satır (ba�
 - Belgeler: `OPTIMIZASYON.md` 5 (A10.7 öncesi 16 madde, "Karar" sütunu kullanıcıda) ve 6 (Google anahtarı); plan Bölüm 8 S42.
 - Doğrulama: `tools/test.sh logic app map lint:app lint:map lint:orders lint:core` yeşil (1.599 + logic:map 690); hava simgeleri Robolectric çizimiyle bakıldı. Telefonda denenmedi.
 - Açık: SORU-S39-1 madde 4–11, SORU-S39-2, `OPTIMIZASYON.md` 5 madde 1/10/11 kararları; Çarşamba A10.7.
-
-## 2026-10-25 — S41: repo düzeni ve usage tasarrufu (Claude Opus; PR #24 CI yeşil, `main` `5476f9a`)
-- Yapılan: kanca `LC_ALL=C.UTF-8` (logic/ ısıtması her oturum `InvalidPathException`'la kırılıyordu) ve ~1,8 KB çıktı; `.claude/settings.json` env; `tools/test.sh` (özet + başarısız testler, güncel sayılıp koşmayanlar, daemon/429 yeniden deneme); `docs/KOD_HARITASI.md`; logic testleri kaynak taramasının okuduğu Android/tools dosyalarını girdi sayar.
-- Belgeler: "Şu an" 4 satır, Aşama 0–9 özet (ayrıntı `bc790c5`), AI_HANDOFF en çok 5 bölüm, AGENTS.md tek yerde kısa belge kuralı; `tools/test-translate/` ve `.pyc` silindi.
-- Doğrulama: `tools/test.sh logic` yeşil (1.931 + core 249), `map` Robolectric 10/10, `compile:core`/`lint:core`; CI #24 yeşil. Uygulama kodu değişmedi.
-- Açık: `docs/sartname/bulgular/` bırakıldı (60+ başvuru); özellik düzeyi sadeleştirme SORU-S39-1'de.

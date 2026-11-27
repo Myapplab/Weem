@@ -6,7 +6,7 @@ Kurallar: `AGENTS.md`. Durumlar: `bekliyor` · `sürüyor (<tarih saat>)` · `bi
 
 ## Şu an
 
-- **Son yapılan:** 28 Kasım — S45 G3 ekranına harita araştırması (yalnız belge): Segway navigasyon protokolü çözüldü (kart `0x23` cmd `0x71`; ok/mesafe/sokak, görüntü yok); N10 bekleyen özellik.
+- **Son yapılan:** 28 Kasım — S45 G3: Segway navigasyon protokolü çözüldü (kart `0x23` cmd `0x71`; N10) ve eşleştirme 32 bayta çevrildi (APK `weem-build-19`, Pixel'de eşleşip bağlandı).
 - **Devam eden (yarım) iş:** yok.
 - **Sıradaki:** kullanıcı yeni APK'yı dener (S44: tek dokunuş, zoom/yaklaşma, evden çıkınca vardiya — Pixel cepte, 2 telefonda numara) ve rota motorundaki sorunun örneğini yazar; `OPTIMIZASYON.md` 5 "Karar", SORU-S39-1 4–11, SORU-S39-2; ardından A10.7 büyük denetim.
 - **Kullanıcıdan ayrıca:** Google Maps anahtarı isteğe bağlı (yeni anahtar kart ister; eski anahtar Cloud Console'dan → Actions `GOOGLE_MAPS_API_KEY`; `OPTIMIZASYON.md` 6); `weem-v1.0.0` etiketi (A10.3); metin onayları (`MAP.md` 17.3, `SORU-T1-1`); ev konumu + "Her zaman" konum izniyle otomatik vardiya denemesi; Pixel–Poco Bluetooth eşleştirmesi (S23); uygulama simgesi; kalıcı Receiver telefonu.
