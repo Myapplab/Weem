@@ -217,6 +217,14 @@ class NinebotSession(
         auth(now)
     }
 
+    /**
+     * SET_PWD (0x5c) veri alanı (S45, 28 Kasım HCI): G3 artık 32 bayt bekliyor; 16 baytlık eski çerçeveye cevabı kayıtlı
+     * anahtarla şifreleyip veriyor ve eşleşme ilerlemiyordu. Resmî Segway: ilk 16 bayt = AUTH anahtarı, ikinci 16 baytın
+     * kaynağı bilinmiyor (doğrulanmadı). WEEM ikinci yarıyı anahtarın SHA-256'sından türetir: deterministik, anahtardan ayrı.
+     */
+    private fun pairPayload(key: ByteArray): ByteArray =
+        key + java.security.MessageDigest.getInstance("SHA-256").digest(key).copyOf(16)
+
     private fun remaining(now: Long): Long = maxOf(0L, (pairUntil - now) / 1000)
 
     private fun expired(now: Long): Boolean {
@@ -235,7 +243,7 @@ class NinebotSession(
             crypto.setKey(name.toByteArray(Charsets.UTF_8), challenge)
             authAttempts = 0
             port.note("pair_resumed", "reason=$reason; same_candidate=true; deadline_mono_ms=$pairUntil; remaining_seconds=${remaining(now)}")
-            send(4, 0x5c, 0, sessionKey!!)
+            send(4, 0x5c, 0, pairPayload(sessionKey!!))
             deadline = now + 2000
             port.state("AUTH kabul edilmedi • eşleştirme onayı bekleniyor (${remaining(now)} sn)")
         } else if (stage != Stage.FAILED) {
@@ -327,7 +335,7 @@ class NinebotSession(
                     "pair_started",
                     "deadline_mono_ms=$pairUntil; retry_ms=2000; generator=${if (newKey == null) "reference_java_lcg_sha256" else "secure_random"}",
                 )
-                send(4, 0x5c, 0, fresh)
+                send(4, 0x5c, 0, pairPayload(fresh))
                 deadline = now + 2000
                 port.state("Scooter güç düğmesine kısa bas • eşleştirme onayı bekleniyor (${maxOf(0L, (pairUntil - now) / 1000)} sn)")
             } else if (sessionKey == null || index == 0 || pair) {
@@ -402,7 +410,7 @@ class NinebotSession(
         } else if ((stage == Stage.PAIR || stage == Stage.AUTH) && expired(now)) {
             return
         } else if (stage == Stage.PAIR && now >= deadline) {
-            send(4, 0x5c, 0, sessionKey!!)
+            send(4, 0x5c, 0, pairPayload(sessionKey!!))
             deadline = now + 2000
         } else if (stage == Stage.AUTH && now >= deadline) {
             if (authAttempts < 3) auth(now) else recoverPair(now, "AUTH timeout after 3 attempts")
