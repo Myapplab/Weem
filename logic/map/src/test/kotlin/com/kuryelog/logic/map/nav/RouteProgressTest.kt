@@ -106,4 +106,17 @@ class RouteProgressTest {
         tracker.setPlan(planWalk(walkM = 240.0))
         assertEquals("yeni bacak son fix'le yeniden ölçülür", before + 200, tracker.measure!!.remainingM, 1.0)
     }
+
+    @Test
+    fun `S45 G3 ekranı ölçüm yokken planın ilk bacağını kalkıştan gösterir`() {
+        val p = plan()
+        val leg = p.legs.first()
+        assertNull(RouteProgress.guide(null, null))
+        val g = RouteProgress.guide(null, p)!!
+        assertEquals(leg.rideM + leg.walkM + leg.startWalkM, g.remainingM, 1e-9)
+        assertEquals(leg.timeS, g.remainingS!!, 1e-9)
+        assertEquals(leg.turns.firstOrNull()?.atM, g.nextTurnM)
+        val live = RouteMeasure(10.0, 0, 1L, true)
+        assertTrue(RouteProgress.guide(live, p) === live)
+    }
 }

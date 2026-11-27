@@ -43,6 +43,21 @@ class LegLine(val leg: RouteLeg) {
 
 /** Ölçüm saf işlevleri (MAP.md 7.9). */
 object RouteProgress {
+    /**
+     * S45 (G3 ekranı): canlı ölçüm varsa o; yoksa (iyi fix yok: bina içi ±70 m, ya da rota yeni açıldı) planın ilk bacağı kalkıştan:
+     * toplam yol ve süre, ilk dönüş. Plan yoksa null.
+     */
+    fun guide(measure: RouteMeasure?, plan: Plan?): RouteMeasure? {
+        if (plan == null) return null
+        if (measure != null) return measure
+        val leg = plan.legs.firstOrNull() ?: return null
+        val t = leg.turns.firstOrNull()
+        return RouteMeasure(
+            leg.rideM + leg.walkM + leg.startWalkM, leg.turns.size, 0L, false,
+            nextTurnM = t?.let { it.atM + leg.startWalkM }, nextTurn = t, remainingS = leg.timeS,
+        )
+    }
+
     const val OFF_ROUTE_M = 40.0
 
     /** Canlı ölçüme giren fix'in en kötü doğruluğu (kaba konum yok sayılır). */
