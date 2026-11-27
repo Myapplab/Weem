@@ -14,6 +14,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.PowerManager
 import android.os.SystemClock
+import com.kuryelog.logic.scooter.G3Display
 import com.kuryelog.logic.scooter.GattPlan
 import com.kuryelog.logic.scooter.LinkRetry
 import com.kuryelog.logic.scooter.NinebotDashboard
@@ -147,6 +148,27 @@ class BleLink(private val context: Context, private val handler: Handler, privat
     }
 
     /** "Şimdi dene" (bildirim düğmesi): bekleyen boşta yeniden denemeyi hemen yapar; bekleyen yoksa bir şey yapmaz. [handler] üstünde. */
+    private var displayStep = -1
+    private val displayProbe: Runnable = Runnable {
+        val s = session
+        val frames = G3Display.probe(displayStep)
+        if (retry.closed || s == null || frames == null || !s.display(frames)) {
+            sink.event("g3_display_test", json("step", displayStep, "done", true))
+            displayStep = -1
+            return@Runnable
+        }
+        sink.event("g3_display_test", json("step", displayStep))
+        displayStep++
+        handler.postDelayed(displayProbe, if (displayStep == 1) 1000L else G3Display.PROBE_STEP_MS)
+    }
+
+    /** S45 "G3 ekran testi": başlat, sonra dönüş adayı 0..40 her 4 sn (G3Display.probe); yeniden basınca baştan. */
+    fun displayTest() {
+        handler.removeCallbacks(displayProbe)
+        displayStep = 0
+        displayProbe.run()
+    }
+
     fun retryNow() {
         if (retry.closed || !idlePending) return
         handler.removeCallbacks(idleRetry)

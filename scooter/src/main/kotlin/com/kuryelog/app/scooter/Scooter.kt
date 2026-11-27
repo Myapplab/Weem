@@ -146,6 +146,13 @@ object Scooter {
         return true
     }
 
+    /** S45 "G3 ekran testi": bağlantı varsa G3 ekranına dönüş kodlarını sırayla gönderir; bağlantı yoksa false. */
+    fun displayTest(ctx: Context): Boolean {
+        if (!active) return false
+        ctx.startService(Intent(ctx, ScooterService::class.java).setAction(ScooterService.DISPLAY_TEST))
+        return true
+    }
+
     /** Çalışan canlı paneli bağlantıyı düşürmeden kayda çevirir. */
     fun record(ctx: Context) {
         if (active && !recording) ctx.startService(Intent(ctx, ScooterService::class.java).setAction(ScooterService.RECORD))

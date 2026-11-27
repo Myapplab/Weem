@@ -69,6 +69,7 @@ class NinebotSession(
     private var authTrigger = "stored_key"
     private val detectedBms = HashSet<Int>()
     private var pending: NinebotMetrics.Read? = null
+    private val displayQueue = java.util.ArrayDeque<G3Display.Frame>()
     private var fastPos = 0
     private var slowPos = 0
     private var rarePos = 0
@@ -173,11 +174,12 @@ class NinebotSession(
         port.state("G3 şifreli bağlantısı hazırlanıyor • ${mode.setting}")
     }
 
-    // Read-only guard: only read-register (command 1) and the standard pairing/handshake frames
-    // (board 4, 0x5b/0x5c/0x5d) may ever be transmitted. Any setting/control/write command is
+    // Read-only guard: only read-register (command 1), the standard pairing/handshake frames
+    // (board 4, 0x5b/0x5c/0x5d) and the dashboard navigation frame (board 0x23, 0x71; S45) may ever be transmitted. Any setting/control/write command is
     // rejected here. Explicit PAIR (0x5c) does change its stored pairing credential; READ does not.
     private fun send(board: Int, command: Int, index: Int, payload: ByteArray) {
-        if (command != 1 && !(board == 4 && (command == 0x5b || command == 0x5c || command == 0x5d))) {
+        if (command != 1 && !(board == 4 && (command == 0x5b || command == 0x5c || command == 0x5d)) &&
+            !(board == G3Display.BOARD && command == G3Display.CMD)) {
             throw IllegalArgumentException("read/handshake commands only")
         }
         val wire = crypto.encrypt(NinebotFrames.request(board, command, index, payload))
@@ -367,6 +369,10 @@ class NinebotSession(
             port.note("authenticated", "profile=0; mode=${mode.setting}; counter=${counter(raw)}; trigger=$authTrigger")
             return
         }
+        if ((p[3].toInt() and 255) == G3Display.BOARD && (p[5].toInt() and 255) == G3Display.CMD) {
+            port.frequentNote("display_reply") { "index=$index; length=${p[2].toInt() and 255}" }
+            return
+        }
         val read = pending
         if (stage == Stage.READING && read != null && NinebotFrames.reply(p, read.board, 4, read.index, read.size)) {
             val data = p.copyOfRange(7, p.size)
@@ -415,6 +421,7 @@ class NinebotSession(
         } else if (stage == Stage.AUTH && now >= deadline) {
             if (authAttempts < 3) auth(now) else recoverPair(now, "AUTH timeout after 3 attempts")
         } else if (stage == Stage.READING) {
+            displayQueue.pollFirst()?.let { send(G3Display.BOARD, G3Display.CMD, it.index, it.data) }
             val lost = pending
             if (lost != null && now >= deadline) {
                 pending = null
@@ -619,6 +626,14 @@ class NinebotSession(
     }
 
     /** Fastest cadence while somebody can see the values, a lighter one otherwise (BleCapture.updatePriority, once a second). */
+    /** G3 ekranına navigasyon çerçeveleri (S45): yalnız READING'de, tik başına bir çerçeve (yazma kuyruğu 4); en çok 16 bekler. */
+    fun display(frames: List<G3Display.Frame>): Boolean {
+        if (stage != Stage.READING) return false
+        while (displayQueue.size + frames.size > 16 && displayQueue.isNotEmpty()) displayQueue.pollFirst()
+        displayQueue.addAll(frames.takeLast(16))
+        return true
+    }
+
     fun panelVisible(visible: Boolean) {
         readGapMs = if (visible) VISIBLE_GAP_MS else BACKGROUND_GAP_MS
         speedEveryMs = if (visible) VISIBLE_SPEED_MS else BACKGROUND_SPEED_MS
