@@ -5,6 +5,7 @@ Kullanıcı kararı (17 Ekim 2026): bu özellikler WEEM 1.0'da **yok**. WEEM tam
 | Kod | Özellik | Ne yapar | Eski kod (başvuru) | Not |
 |---|---|---|---|---|
 | N7 | Sesli uyarılar | Teklif değeri, batarya %20, sıcaklık | Yeni | — |
+| N10 | G3 ekranına harita | WEEM haritası/navigasyonu G3 TFT'sinde (240×320, RGB565) | Yeni; NB `G3_HCI_2026-10-04.md` | Kullanıcı istedi (27 Kasım, S45), **araştırma**. Bilinen: ekran Cortex-M33 + LVGL (StarCFW), BLE AES-128, resmî nav mesaj formatı bilinmiyor; Segway yeniden bağlanırken bulut/kayıtlı 16 bayt parola kullanıyor, HCI'yi çözmek için kayıtta yeni eşleştirme (SET_PWD) gerekli. Canlı görüntü stok yazılımda yok sayılır (doğrulanmadı) |
 
 **1.0'a alınan:** Y12 Yol kalitesi öğrenme — kullanıcı kararı 17 Ekim (S3); sıfırdan öğrenir, Ses+/Ses− tuşu yakalama dahil (`WEEM_ISLER.md` A6.11).
 
