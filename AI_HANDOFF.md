@@ -2,6 +2,11 @@
 
 En yeni en üstte; **en çok 5 bölüm**, bölüm başına en çok 6 satır (başlık + Yapılan · Doğrulama · Açık). Yeni bölüm eklenince en alttaki silinir (eski bölümler git'te). Okurken yalnız en üst bölüm.
 
+## 2026-11-28 — S45: G3 ekranına harita araştırması (Claude Opus; `main`, yalnız belge)
+- Yapılan: Segway verisi temizlenip yeniden eşleşirken HCI kaydı alındı ve tamamen çözüldü (SET_PWD 32 bayt, AUTH anahtarı ilk 16 bayt). Resmî navigasyon = kart `0x23` cmd `0x71` (başlat, mesafe, sokak adı); görüntü komutu yok → canlı harita stok yazılımda yok. Ayrıntı `BEKLEYEN_OZELLIKLER.md` N10, karar `WEEM_PLANI.md` S45.
+- Doğrulama: yalnız kayıt çözümü (MAC'ler geçti); WEEM'den scooter'a hiçbir şey gönderilmedi, kod değişmedi.
+- Açık: dönüş kodları ve güncelleme sıklığı bilinmiyor (kayıt 43 sn); Segway yeniden eşleştiği için WEEM'in G3 anahtarı geçersiz olabilir. Kullanıcı şimdilik ek kayıt istemedi.
+
 ## 2026-11-05 — S44: telefon geri bildirimi 5 (Claude Opus; PR #27 CI yeşil, `main` `23d4978`, APK `weem-build-18`)
 - Yapılan: MapLibre kaydırma eşiği = dokunma payı × 1,5 (dokunuş kaydırma da sayılıp takip/otomatik zoom kapanıyordu → "zoom yok, yaklaşınca yakınlaşmıyor"); `MapTab` tek ağaç (yüzey taşınmaz, GL yeniden kurulmaz) + `AnimatedVisibility`; `FollowCamera` yumuşak takip, sığdırma 650 ms; `ApproachZoom` üst 18. `HomeWatchService` (5105, MIN) + `HomeWatchPlan` boş pencere beklemesi, `startBlocked`'ta GPS yok. `DialShare`/`DialNumber`/`DialNotice` (S5 istisnası, ayar `dial_share`). `rememberMapData` iptal.
 - Doğrulama: `logic` core/map/capture/link/app/orders yeşil, Android derlemesi yerelde yeşil; lint (app, map, core, capture, link) yerelde yeşil; Robolectric yerelde Maven 429, CI #27 (test + lint + Robolectric) yeşil. Telefonda denenmedi.
@@ -23,10 +28,3 @@ En yeni en üstte; **en çok 5 bölüm**, bölüm başına en çok 6 satır (ba�
 - Belgeler: "Şu an" 4 satır, Aşama 0–9 özet (ayrıntı `bc790c5`), AI_HANDOFF en çok 5 bölüm, AGENTS.md tek yerde kısa belge kuralı; `tools/test-translate/` ve `.pyc` silindi.
 - Doğrulama: `tools/test.sh logic` yeşil (1.931 + core 249), `map` Robolectric 10/10, `compile:core`/`lint:core`; CI #24 yeşil. Uygulama kodu değişmedi.
 - Açık: `docs/sartname/bulgular/` bırakıldı (60+ başvuru); özellik düzeyi sadeleştirme SORU-S39-1'de.
-
-## 2026-10-24 — S40: gömülü yol grafı kurulmuyordu (Claude Opus; dal `ccr-e1fa4a64-vy2iqs`)
-- Yapılan: AGP `.gz` asset'leri açıp uzantıyı siliyor; `MapDataController.installBundled` artık `.gz` yoksa düz adı açar (gzip imzasına göre). Build 1–12'de gömülü graf hiç kurulmamış olabilir.
-- Doğrulama: weem-build-12 APK'sından çıkarılan dosyalarla eski kod MISSING, yeni kod READY; `logic` testleri yeşil; telefonda denenmedi.
-- Ayrıca (kullanıcı): Scooter sekmesinde ayarlar/ZIP düğmesi yok; vardiya kartı her yerde tek satır (`Text.SHIFT_START` silindi).
-- APK `weem-build-15` (APK işi yeşil; build 13–14 kırmızıydı: `MapDataTest` yer tutucu varsayımı, Robolectric kabuk testlerinde MapLibre `UnsatisfiedLinkError` → `mapViewOrBlank`). APK işinde Robolectric gömülü grafı gerçekten kurdu (READY).
-- Açık: telefonda kurulum kartının çıkmadığı denenmeli. `rememberMapData` yüklemesi kompozisyon iptal olursa yeniden denenmiyor (`MapScreenLoad.loadedRegion` önceden yazılıyor) — küçük risk, dokunulmadı.
