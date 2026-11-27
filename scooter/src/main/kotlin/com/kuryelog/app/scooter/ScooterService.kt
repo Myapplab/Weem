@@ -99,6 +99,11 @@ class ScooterService : Service() {
             if (Scooter.active && link != null) bleWorker.post { link.retryNow() } else if (!Scooter.active) stopSelf()
             return START_NOT_STICKY
         }
+        if (intent != null && DISPLAY_TEST == intent.action) {
+            val link = ble
+            if (Scooter.active && link != null) bleWorker.post { link.displayTest() } else if (!Scooter.active) stopSelf()
+            return START_NOT_STICKY
+        }
         if (intent != null && RECORD == intent.action) {
             if (Scooter.active && !Scooter.recording && !Scooter.maintenance) worker.post { upgrade() } else if (!Scooter.active) stopSelf()
             return START_NOT_STICKY
@@ -579,6 +584,7 @@ class ScooterService : Service() {
         const val STOP = "com.kuryelog.app.scooter.STOP"
         const val RECORD = "com.kuryelog.app.scooter.RECORD"
         const val RETRY = "com.kuryelog.app.scooter.RETRY"
+        const val DISPLAY_TEST = "com.kuryelog.app.scooter.DISPLAY_TEST"
         const val CHANNEL = "recording"
         private const val QUEUE_LIMIT = 2048
         private const val WAKE_MS = 24 * 60 * 60 * 1000L

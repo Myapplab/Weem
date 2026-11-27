@@ -2,6 +2,11 @@
 
 En yeni en üstte; **en çok 5 bölüm**, bölüm başına en çok 6 satır (başlık + Yapılan · Doğrulama · Açık). Yeni bölüm eklenince en alttaki silinir (eski bölümler git'te). Okurken yalnız en üst bölüm.
 
+## 2026-11-28 — S45c: G3 ekranında WEEM navigasyonu + rota açma (Claude Opus; dal `claude/g3-display`, APK `weem-build-24`)
+- Yapılan: `G3Display`/`G3Guide` (kart 0x23 cmd 0x71; dönüş kodları ekran testi videosundan), `RouteMeasure` sıradaki dönüş + kalan süre, `RouteProgress.guide` (iyi fix yokken plan), `G3NavBridge`; Tanı'da "G3 ekran testi"; `Planner.computeNearRoad` (60 m'de yol yoksa 250 m içindeki en yakın yoldan).
+- Doğrulama: logic scooter/map yeşil (Windows'a özgü eski kırmızılar hariç); CI APK #24 yeşil; **Pixel + G3'te**: ekran testi okları, bina içinde rota açıldı ve G3'te ok/mesafe göründü.
+- Açık: sürüşte denenmedi (mesafe azalması, dönüş değişimi); rota bitince G3 navigasyon ekranının kapanışı bilinmiyor (kapatma mesajı yok).
+
 ## 2026-11-28 — S45b: G3 eşleştirme 32 bayt (Claude Opus; dal `claude/g3-pair-32`, APK `weem-build-19`)
 - Yapılan: güncel G3 16 baytlık SET_PWD'ye kayıtlı anahtarla yanıt veriyordu (eşleşme takılıyordu); `NinebotSession.pairPayload` artık 32 bayt (ilk 16 = anahtar, ikinci 16 = SHA-256(anahtar)[:16]; Segway'in ikinci yarısının kaynağı bilinmiyor). `PairFormatTest`.
 - Doğrulama: `logic:scooter` yeşil (önceden kırık `ScooterContractTest` hariç, Windows'ta değişiklikten bağımsız); CI APK #19 yeşil; **Pixel'de denendi**: eşleşme + güç tuşu → bağlı, canlı veri.
@@ -21,9 +26,3 @@ En yeni en üstte; **en çok 5 bölüm**, bölüm başına en çok 6 satır (ba�
 - Yapılan: `/code-review high` (app, map, scooter, link, capture, orders, core, remote) → 9 düzeltme: `LinkService` `on` bayrağı (STICKY), `StreamNet` kabul çökmesi, `ScooterService` canlı FGS reddi, `LinkRuntime` UDP yeniden açma, `TheftRuntime` PIN tuzsuz, `ScooterShiftLink` 4902, `WatchService.onFailure` guarded, `OrdersHost` rozet 30 sn; `TheftGuard.sirenOn` + test. `MapScreen` poi seçimi `produceState`+Default. `apk.yml` elle: `weem-<sürüm>-build-N.apk`.
 - Doğrulama: `logic:link` yeşil (197); Android derlemesi yerelde Maven Central 429 → yalnız CI. Telefonda denenmedi.
 - Açık: `StreamNet.listen` bind hatası `HostMachine`'e bildirilmiyor; regresyon testleri Android düzeltmeleri için yok (Robolectric servis testi yazılabilir); `weem-build-16` hiç indirilmemişti (indirme sayısı 0), neden bilinmiyor.
-
-## 2026-10-26 — S42: telefon geri bildirimi 4 + SORU-S39-1 madde 1–3 (Claude Opus; PR #25 CI #31 yeşil, `main` `543dcdf`, APK `weem-build-16`)
-- Yapılan: harita iki parmakla döner; dokunuş/elle hareket "yalnız harita" (S37 tersine; `MapTab` `mapOnly`, `show-panels`), takibe dönüş hareket bitince; Ses+ ters yön önerisini öğrenme kapalıyken onaylar (`VolumeDispatch.captures`/`approveSuggestion`); yeni hava simgeleri (`WeatherGlyph`, `WeatherGlyphs.kt`); gölge mod (eşitlik testi test kaynağında), ZIP/YolGo içe aktarma (`RestoreHook`), OSM raster silindi; simge üreticisi yalnız kullanılanı yazar.
-- Belgeler: `OPTIMIZASYON.md` 5 (A10.7 öncesi 16 madde, "Karar" sütunu kullanıcıda) ve 6 (Google anahtarı); plan Bölüm 8 S42.
-- Doğrulama: `tools/test.sh logic app map lint:app lint:map lint:orders lint:core` yeşil (1.599 + logic:map 690); hava simgeleri Robolectric çizimiyle bakıldı. Telefonda denenmedi.
-- Açık: SORU-S39-1 madde 4–11, SORU-S39-2, `OPTIMIZASYON.md` 5 madde 1/10/11 kararları; Çarşamba A10.7.

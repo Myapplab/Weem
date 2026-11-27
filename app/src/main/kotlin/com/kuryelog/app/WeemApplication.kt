@@ -57,6 +57,8 @@ class WeemApplication : Application() {
         Store.guarded(this, "start") { Orders.bindRange(BatteryRuntime.get(this).range) }
         // A6.9: gün motoru, sürüş günlüğü, gün raporu, görev ve hatırlatıcı çalışma zamanları süreçle birlikte kalkar (vardiya arka planda sürerken ekran kapalı olabilir).
         Store.guarded(this, "start") { NavRuntime.get(this) }
+        // S45 (N10): WEEM rotası → G3 ekranındaki ok, mesafe ve sokak.
+        Store.guarded(this, "start") { G3NavBridge.start(this) }
         // Scooter dikişi (teklif anı pili, sipariş enerjisi R14, batarya tahmininin çapası), sipariş olayları → harita aşama izleyicisi ve
         // A8.3 2 telefon modu: role göre yerel ya da uzak portlar (TwoPhone; Provider'da scooter BLE açılmaz, S11).
         Store.guarded(this, "start") { TwoPhone.start(this) }

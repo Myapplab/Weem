@@ -10,7 +10,8 @@ import java.lang.reflect.InvocationTargetException
  * sözleşmesi, 11.2). Eski testlerde yok; davranış değiştirmez, gerilemeyi yakalar.
  */
 class ScooterGuardTest {
-    /** 2.6: every command except read (0x01) and the board-4 handshake (0x5b PRE_COMM, 0x5c PAIR, 0x5d AUTH) is refused before
+    /** 2.6: every command except read (0x01), the board-4 handshake (0x5b PRE_COMM, 0x5c PAIR, 0x5d AUTH) and the G3 dashboard
+     *  navigation frame (0x23/0x71, S45) is refused before
      *  anything is encrypted or written. */
     @Test fun sessionSendsOnlyReadAndHandshakeCommands() {
         val sent = ArrayList<ByteArray>()
@@ -27,8 +28,8 @@ class ScooterGuardTest {
         val send = NinebotSession::class.java.getDeclaredMethod("send", Int::class.java, Int::class.java, Int::class.java, ByteArray::class.java)
         send.isAccessible = true
         var allowed = 0
-        for (board in intArrayOf(4, 7, 0x16, 0x22, 0x3e)) for (command in 0..255) {
-            val ok = command == 1 || (board == 4 && command in intArrayOf(0x5b, 0x5c, 0x5d))
+        for (board in intArrayOf(4, 7, 0x16, 0x22, 0x23, 0x3e)) for (command in 0..255) {
+            val ok = command == 1 || (board == 4 && command in intArrayOf(0x5b, 0x5c, 0x5d)) || (board == 0x23 && command == 0x71)
             val before = sent.size
             val refused = try {
                 send.invoke(s, board, command, 0, ByteArray(0)); false
@@ -39,7 +40,7 @@ class ScooterGuardTest {
             assertEquals(if (ok) before + 1 else before, sent.size)
             if (ok) allowed++
         }
-        assertEquals(5 + 3, allowed)
+        assertEquals(6 + 3 + 1, allowed)
     }
 
     /** 2.6: frames are built and encrypted only in `NinebotSession.send` (the one place the guard sits). */
@@ -103,7 +104,7 @@ class ScooterGuardTest {
             "pair_resumed", "pair_window_expired", "auth_reply", "auth_failed", "authenticated", "protocol_tx", "protocol_rejected",
             "protocol_state", "read_timeout", "read_disabled", "measurement_rejected", "battery_boards", "battery_probe_candidate",
             "battery_probe_reject", "battery_probe_timeout", "battery_probe_miss", "battery_probe_found", "battery_probe_partial",
-            "battery_probe_done", "battery_quiet", "battery_quiet_timeout", "battery_back",
+            "battery_probe_done", "battery_quiet", "battery_quiet_timeout", "battery_back", "display_reply",
         )
         assertEquals(contract, kinds)
     }

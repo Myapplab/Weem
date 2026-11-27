@@ -169,6 +169,7 @@ fun ScooterSettingsScreen(lang: Lang, onBack: () -> Unit) {
             Section(WeemIcons.Settings, T.SECTION_SYSTEM.get(lang)) {
                 // S37: pil, izin ve GPS ayarları burada yok (uygulama tek; Daha fazla → İzinler).
                 PrefSwitch(T.KEEP_SCREEN.get(lang), null, prefs.getBoolean("keep_screen_on", true)) { prefs.edit().putBoolean("keep_screen_on", it).apply() }
+                PrefSwitch(T.G3_NAV.get(lang), T.G3_NAV_SUB.get(lang), prefs.getBoolean("g3_nav", true)) { prefs.edit().putBoolean("g3_nav", it).apply() }
             }
             Section(WeemIcons.Bluetooth, T.SECTION_LINK.get(lang)) {
                 Nav(T.INFO.get(lang), T.INFO_SUB.get(lang)) { ask = SettingsAsk.Info }
@@ -182,6 +183,9 @@ fun ScooterSettingsScreen(lang: Lang, onBack: () -> Unit) {
                 PrefSwitch(T.DETAILED.get(lang), T.DETAILED_SUB.get(lang), prefs.getBoolean("detailed_diagnostics", false)) { prefs.edit().putBoolean("detailed_diagnostics", it).apply() }
                 PrefSwitch(T.SWEEP.get(lang), T.SWEEP_SUB.get(lang) + if (idle) "" else " • " + T.WHEN_IDLE.get(lang), prefs.getBoolean("sweep", false), enabled = idle) {
                     prefs.edit().putBoolean("sweep", it).apply()
+                }
+                Nav(T.DISPLAY_TEST.get(lang), T.DISPLAY_TEST_SUB.get(lang)) {
+                    ask = SettingsAsk.Message((if (Scooter.displayTest(ctx)) T.DISPLAY_TEST_STARTED else T.DISPLAY_TEST_OFFLINE).get(lang))
                 }
                 Info(T.DIAG_FULL_HINT.get(lang), Modifier.padding(horizontal = WeemSpace.l, vertical = WeemSpace.m))
             }
