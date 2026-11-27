@@ -205,6 +205,8 @@ enum class ScooterUiText(override val tr: String, override val az: String) : Bil
     DETAILED_SUB("Sonraki kaydın ilk 10 dakikası", "Növbəti qeydin ilk 10 dəqiqəsi"),
     SWEEP("Register keşif (sweep) modu", "Register kəşfi (sweep) rejimi"),
     SWEEP_SUB("Salt-okunur teşhis • normal sürüşte kapalı tut", "Yalnız oxuyan diaqnostika • adi sürüşdə söndür"),
+    G3_NAV("G3 ekranında navigasyon", "G3 ekranında naviqasiya"),
+    G3_NAV_SUB("WEEM rotasının oku, mesafesi ve sokağı scooter ekranında", "WEEM marşrutunun oxu, məsafəsi və küçəsi skuter ekranında"),
     DISPLAY_TEST("G3 ekran testi", "G3 ekran sınağı"),
     DISPLAY_TEST_SUB("Bağlıyken G3 ekranına sırayla dönüş kodları gönderir (KOD 0–40, 4'er sn); ekranda hangi ok çıktığını not et",
         "Bağlı olanda G3 ekranına növbə ilə dönüş kodları göndərir (KOD 0–40, 4 san); ekranda hansı ox çıxdığını qeyd et"),

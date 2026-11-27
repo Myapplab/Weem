@@ -15,6 +15,7 @@ import android.os.Handler
 import android.os.PowerManager
 import android.os.SystemClock
 import com.kuryelog.logic.scooter.G3Display
+import com.kuryelog.logic.scooter.G3Guide
 import com.kuryelog.logic.scooter.GattPlan
 import com.kuryelog.logic.scooter.LinkRetry
 import com.kuryelog.logic.scooter.NinebotDashboard
@@ -148,6 +149,7 @@ class BleLink(private val context: Context, private val handler: Handler, privat
     }
 
     /** "Şimdi dene" (bildirim düğmesi): bekleyen boşta yeniden denemeyi hemen yapar; bekleyen yoksa bir şey yapmaz. [handler] üstünde. */
+    private val g3Guide = G3Guide()
     private var displayStep = -1
     private val displayProbe: Runnable = Runnable {
         val s = session
@@ -198,6 +200,10 @@ class BleLink(private val context: Context, private val handler: Handler, privat
         if (retry.closed || g == null || s == null) return
         val watched = watched()
         s.panelVisible(watched)
+        if (displayStep < 0 && s.stage == NinebotSession.Stage.READING) {
+            val g = if (LoggerPreferences.get(context).getBoolean("g3_nav", true)) Scooter.navGuide else null
+            g3Guide.update(g, SystemClock.elapsedRealtime())?.let { s.display(it) }
+        }
         val desired = if (watched) BluetoothGatt.CONNECTION_PRIORITY_HIGH else BluetoothGatt.CONNECTION_PRIORITY_BALANCED
         if (desired == priority) return
         try {
@@ -365,6 +371,7 @@ class BleLink(private val context: Context, private val handler: Handler, privat
         }
         val s = NinebotSession(port(vault), name, key, start.pair, now, mode, start.window, System::currentTimeMillis, sweep, SessionKey::random)
         session = s
+        g3Guide.reset()
         key?.fill(0)
         // External pack ("Battery 2"): boards found by an earlier probe are read every connection; the opt-in probe runs once.
         val prefs = LoggerPreferences.get(context)

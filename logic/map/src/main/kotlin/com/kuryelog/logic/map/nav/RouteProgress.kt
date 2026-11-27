@@ -4,12 +4,23 @@ import com.kuryelog.logic.core.NavKind
 import com.kuryelog.logic.core.RouteStatus
 import com.kuryelog.logic.map.route.Plan
 import com.kuryelog.logic.map.route.RouteLeg
+import com.kuryelog.logic.map.route.RouteTurn
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.roundToLong
 
 /** Etkin bacağın bir fix için ölçümü (MAP.md 7.9, `NavFeedLeg`): [onRoute] iç alandır, `RouteStatus.Route`'ta yoktur. */
-data class RouteMeasure(val remainingM: Double, val remainingTurns: Int, val measuredAtMs: Long, val onRoute: Boolean)
+data class RouteMeasure(
+    val remainingM: Double,
+    val remainingTurns: Int,
+    val measuredAtMs: Long,
+    val onRoute: Boolean,
+    /** S45 (G3 ekranı): sıradaki dönüşe kalan m ve dönüş; dönüş kalmadıysa null. */
+    val nextTurnM: Double? = null,
+    val nextTurn: RouteTurn? = null,
+    /** Bacağın süresinden kalan yola oranla (s). */
+    val remainingS: Double? = null,
+)
 
 /** Bir bacağın izdüşüm çizgisi ve dönüşlerinin çizgi üstündeki yerleri (`NavFeedLeg`; her fix'te yeniden kurulmaz). */
 class LegLine(val leg: RouteLeg) {
@@ -19,7 +30,14 @@ class LegLine(val leg: RouteLeg) {
     fun measure(fix: NavFix): RouteMeasure {
         val (along, off) = line.project(fix.lat, fix.lon)
         val remaining = max(0.0, line.lengthM - along) + leg.walkM
-        return RouteMeasure((remaining * 10).roundToLong() / 10.0, turns.count { it > along }, fix.atMs, off <= RouteProgress.OFF_ROUTE_M)
+        val next = turns.indexOfFirst { it > along }
+        val total = line.lengthM + leg.walkM
+        return RouteMeasure(
+            (remaining * 10).roundToLong() / 10.0, turns.count { it > along }, fix.atMs, off <= RouteProgress.OFF_ROUTE_M,
+            nextTurnM = if (next < 0) null else turns[next] - along,
+            nextTurn = if (next < 0) null else leg.turns[next],
+            remainingS = if (total > 0) leg.timeS * remaining / total else null,
+        )
     }
 }
 

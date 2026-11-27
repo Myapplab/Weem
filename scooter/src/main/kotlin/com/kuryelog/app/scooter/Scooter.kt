@@ -13,6 +13,7 @@ import com.kuryelog.logic.core.EnergyStep
 import com.kuryelog.logic.core.ScooterBridge
 import com.kuryelog.logic.core.ScooterLive
 import com.kuryelog.logic.core.Lang
+import com.kuryelog.logic.scooter.G3Display
 import com.kuryelog.logic.scooter.LogExport
 import com.kuryelog.logic.scooter.NinebotDashboard
 import com.kuryelog.logic.scooter.ScooterPanel
@@ -145,6 +146,9 @@ object Scooter {
         ctx.startForegroundService(ScooterService.startIntent(ctx, pair = false, live = true))
         return true
     }
+
+    /** S45: WEEM navigasyonunun son yönlendirmesi (null = rota yok); bağlı BleLink saniyede bir G3 ekranına yazar ("g3_nav" açıksa). */
+    @Volatile var navGuide: G3Display.Guide? = null
 
     /** S45 "G3 ekran testi": bağlantı varsa G3 ekranına dönüş kodlarını sırayla gönderir; bağlantı yoksa false. */
     fun displayTest(ctx: Context): Boolean {

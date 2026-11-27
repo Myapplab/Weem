@@ -169,6 +169,7 @@ fun ScooterSettingsScreen(lang: Lang, onBack: () -> Unit) {
             Section(WeemIcons.Settings, T.SECTION_SYSTEM.get(lang)) {
                 // S37: pil, izin ve GPS ayarları burada yok (uygulama tek; Daha fazla → İzinler).
                 PrefSwitch(T.KEEP_SCREEN.get(lang), null, prefs.getBoolean("keep_screen_on", true)) { prefs.edit().putBoolean("keep_screen_on", it).apply() }
+                PrefSwitch(T.G3_NAV.get(lang), T.G3_NAV_SUB.get(lang), prefs.getBoolean("g3_nav", true)) { prefs.edit().putBoolean("g3_nav", it).apply() }
             }
             Section(WeemIcons.Bluetooth, T.SECTION_LINK.get(lang)) {
                 Nav(T.INFO.get(lang), T.INFO_SUB.get(lang)) { ask = SettingsAsk.Info }
